@@ -12,6 +12,8 @@ func main() {
     }
     log.ReplaceLogger(logger)
 
+    Nodes = make(map[string]InfoStruct)
+
     log.Info("Starting NET (:8282)")
     netStart()
 

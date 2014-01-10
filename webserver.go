@@ -28,6 +28,7 @@ func webStart() { /*{{{*/
     http.HandleFunc("/", webHandler)
 
     handler.SetRoutes(
+        rest.Route{"GET", "/api/nodes", GetNodes},
         rest.Route{"GET", "/api/users/:id", GetUser},
     )
 
