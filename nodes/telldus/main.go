@@ -5,6 +5,7 @@ import (
     "flag"
     "fmt"
     log "github.com/cihub/seelog"
+    "io/ioutil"
     "net"
     "os/exec"
     "regexp"
@@ -20,6 +21,7 @@ type Device struct { /*{{{*/
     Id       string
     Name     string
     State    string
+    Type     string
     Features []string
 }                        /*}}}*/
 type InfoStruct struct { /*{{{*/
@@ -89,6 +91,11 @@ func updateActions() {
             "Set",
             []string{"Devices.Id"},
         },
+        Action{
+            "toggle",
+            "Toggle",
+            []string{"Devices.Id"},
+        },
     }
 }
 
@@ -120,11 +127,42 @@ func readState() {
     findDevices := regexp.MustCompile("(?m)^(.+)\t(.+)\t(.*)$")
     if result := findDevices.FindAllStringSubmatch(string(out), -1); len(result) > 0 {
         for _, dev := range result {
-            devices = append(devices, Device{dev[1], dev[2], dev[3], []string{"toggle"}})
+            devices = append(devices, Device{dev[1], dev[2], dev[3], "", []string{"toggle"}})
         }
     }
 
     Info.State.Devices = devices
+
+    // Read all features from config
+    config, _ := ioutil.ReadFile("/etc/tellstick.conf")
+    findDevices = regexp.MustCompile("(?msU)device {.*id = ([0-9]+).*model = \"(.*)\".*^}$")
+    if result := findDevices.FindAllStringSubmatch(string(config), -1); len(result) > 0 {
+        for _, row := range result {
+            for id, dev := range devices {
+                if dev.Id == row[1] {
+                    devices[id].Type = row[2]
+
+                    switch row[2] {
+                    case "selflearning-dimmer":
+                        devices[id].Features = append(devices[id].Features, "dimmable")
+                    }
+                }
+            }
+            //devices = append(devices, Device{dev[1], dev[2], dev[3], []string{"toggle"}})
+        }
+    }
+    /*
+    	device {
+    	  id = 7
+    	  name = "tak bel."
+    	  protocol = "arctech"
+    	  model = "selflearning-dimmer"
+    	  parameters {
+    		house = "954"
+    		unit = "2"
+    	  }
+    	}
+    */
 
     log.Debug(devices)
 }
