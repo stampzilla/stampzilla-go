@@ -98,7 +98,7 @@ func updateLayout() {
             "1",
             "switch",
             "toggle",
-            "devices[type=!dimmable]",
+            "Devices[Type=!dimmable]",
             "Lamps",
         },
     }

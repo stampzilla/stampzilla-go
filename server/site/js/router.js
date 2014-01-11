@@ -19,21 +19,29 @@ window.Stampzilla = window.Stampzilla || {Routers: {}, Collections: {}, Models: 
     }
   Stampzilla.Routers.MainRouter = Backbone.Router.extend({
     routes: {
-      "": "index",
-      "nodes/": "nodes",
-      "nodes/:id": "showNode",
+        "": "index",
+        "nodes/": "nodes",
+        "node/:id": "showNode",
     },
 
     initialize: function () {
     },
 
     index: function () {
-      this.currentView = new Stampzilla.Views.NodesView();
-      $('#main').html(this.currentView.render().el);
+        var collection = new Stampzilla.Collections.NodesCollection();
+        collection.fetch();
+        this.currentView = new Stampzilla.Views.NodesTable({collection:collection});
+        $('#main').html(this.currentView.el);
+    },
+    showNode: function (id) {
+        var model = new Stampzilla.Models.NodeModel({id:id});
+        model.fetch();
+        this.currentView = new Stampzilla.Views.Node({model:model});
+        $('#main').html(this.currentView.el);
     },
     nodes: function () {
-      this.currentView = new Stampzilla.Views.NodesView();
-      $('#main').html("");;
+        //this.currentView = new Stampzilla.Views.NodesView();
+        $('#main').html("");;
     }
   });
 

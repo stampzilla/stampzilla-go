@@ -55,16 +55,21 @@
             "js/libs/backbone-min.js",
             "js/router.js",
             "js/views/nodes.view.js",
+            "js/models/nodes.model.js",
+            "js/websocket.js",
             "css/bootstrap.css",
             "starter-template.css",
         ], function() {
 
         Stampzilla.loadTemplates([
-            "NodesView",
+            "NodesTable",
+            "NodesTableRow",
+            "Node",
             ],
             function () {
                 Stampzilla.Router = new Stampzilla.Routers.MainRouter();
                 Backbone.history.start();
+                WebSocketTest();
             });
     });
 

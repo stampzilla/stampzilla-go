@@ -35,8 +35,8 @@ type State struct { /*{{{*/
     Devices []Device
 }   /*}}}*/
 
-func netStart() {
-    l, err := net.Listen("tcp", ":8282")
+func netStart(port string) {
+    l, err := net.Listen("tcp", ":"+port)
     if err != nil {
         fmt.Println("listen error", err)
         return
