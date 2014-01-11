@@ -11,6 +11,7 @@ type Device struct { /*{{{*/
     Id       string
     Name     string
     State    string
+    Type     string
     Features []string
 }                        /*}}}*/
 type InfoStruct struct { /*{{{*/
