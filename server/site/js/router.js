@@ -1,8 +1,7 @@
 /*global Stampzilla:true, _:true, jQuery:true, Backbone:true, JST:true, $:true*/
-
-window.Stampzilla = window.Stampzilla || {Routers: {}, Collections: {}, Models: {}, Views: {}};
+window.Stampzilla = window.Stampzilla || {Routers: {}, Collections: {}, Models: {}, Views: {}, Data: {}};
 (function () {
-  "use strict";
+    "use strict";
     Stampzilla.loadTemplates = function(views,callback){
         var deferreds = [];
         $.each(views, function(index, view) {
@@ -17,33 +16,44 @@ window.Stampzilla = window.Stampzilla || {Routers: {}, Collections: {}, Models: 
 
         $.when.apply(null, deferreds).done(callback);
     }
-  Stampzilla.Routers.MainRouter = Backbone.Router.extend({
-    routes: {
-        "": "index",
-        "nodes/": "nodes",
-        "node/:id": "showNode",
-    },
+    Stampzilla.Routers.MainRouter = Backbone.Router.extend({
+        routes: {
+            "": "index",
+            "nodes/": "nodes",
+            "node/:id": "showNode",
+        },
 
-    initialize: function () {
-    },
+        initialize: function () {
+            Stampzilla.Data.NodesCollection = new Stampzilla.Collections.NodesCollection();
+            //Stampzilla.Data.NodesCollection.fetch();
 
-    index: function () {
-        var collection = new Stampzilla.Collections.NodesCollection();
-        collection.fetch();
-        this.currentView = new Stampzilla.Views.NodesTable({collection:collection});
-        $('#main').html(this.currentView.el);
-    },
-    showNode: function (id) {
-        var model = new Stampzilla.Models.NodeModel({id:id});
-        model.fetch();
-        this.currentView = new Stampzilla.Views.Node({model:model});
-        $('#main').html(this.currentView.el);
-    },
-    nodes: function () {
-        //this.currentView = new Stampzilla.Views.NodesView();
-        $('#main').html("");;
-    }
-  });
+            this.cached = {
+                view:{},
+                model:{}
+            }
+        },
+
+        index: function () {
+            this.cached.view.NodesTable = this.cached.view.NodesTable || new Stampzilla.Views.NodesTable({collection:Stampzilla.Data.NodesCollection});
+            //Stampzilla.Data.NodesCollection.fetch();
+            
+            $('#main').html(this.cached.view.NodesTable.el);
+            this.cached.view.NodesTable.render();
+        },
+        showNode: function (id) {
+            //wait for intial fetch to finish using deferred before we get model by id
+            var self = this;
+            Stampzilla.Data.NodesCollection.deferred.done(function(){
+                self.cached.view.Node = self.cached.view.Node || new Stampzilla.Views.Node({model:Stampzilla.Data.NodesCollection.get(id)});
+                $('#main').html(self.cached.view.Node.el);
+                self.cached.view.Node.render();
+            });
+        },
+        nodes: function () {
+            //this.currentView = new Stampzilla.Views.NodesView();
+            $('#main').html("");;
+        }
+    });
 
 
 

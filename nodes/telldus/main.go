@@ -96,6 +96,11 @@ func updateActions() {
             "Toggle",
             []string{"Devices.Id"},
         },
+        Action{
+            "dim",
+            "Dim",
+            []string{"Devices.Id"},
+        },
     }
 }
 
@@ -105,7 +110,8 @@ func updateLayout() {
             "1",
             "switch",
             "toggle",
-            "Devices[Type=!dimmable]",
+            //"Devices[Type=!dimmable]",
+            "Devices",
             "Lamps",
         },
     }
@@ -124,10 +130,20 @@ func readState() {
     }
 
     // Read all devices
-    findDevices := regexp.MustCompile("(?m)^(.+)\t(.+)\t(.*)$")
+    findDevices := regexp.MustCompile("(?m)^(.+)\t(.+)\t([A-Z]+|([A-Z]+):([0-9]+))$")
     if result := findDevices.FindAllStringSubmatch(string(out), -1); len(result) > 0 {
         for _, dev := range result {
-            devices = append(devices, Device{dev[1], dev[2], dev[3], "", []string{"toggle"}})
+            fmt.Println(dev[1:])
+            switch {
+            case dev[4] == "DIMMED":
+                devices = append(devices, Device{dev[1], dev[2], dev[5], "", []string{"toggle"}})
+            case dev[3] == "OFF":
+                devices = append(devices, Device{dev[1], dev[2], "false", "", []string{"toggle"}})
+            case dev[3] == "ON":
+                devices = append(devices, Device{dev[1], dev[2], "true", "", []string{"toggle"}})
+            default:
+                devices = append(devices, Device{dev[1], dev[2], dev[3], "", []string{"toggle"}})
+            }
         }
     }
 
@@ -144,7 +160,7 @@ func readState() {
 
                     switch row[2] {
                     case "selflearning-dimmer":
-                        devices[id].Features = append(devices[id].Features, "dimmable")
+                        devices[id].Features = append(devices[id].Features, "dim")
                     }
                 }
             }
