@@ -62,18 +62,20 @@
 
             //TODO change Using from Devices to Devices[Type=!dimmable] or add filter element
             //
-            var states = this.parseStates(layout.Using,this.model.get('State'));
+            var states = this.parseStates(layout.Using,this.model.get('State').get(layout.Using));
+
+            console.log(states);
 
             //loop each state and create NodeActionRow view
             _.each(states, function(state){
-                this.ActionSubviews[state.Id] = new Stampzilla.Views.NodeActionRow(state,this.model);
+                this.ActionSubviews[state.Id] = new Stampzilla.Views.NodeActionRow(state,this.model.get('State'));
                 this.$el.find('#nodeList').append(this.ActionSubviews[state.Id].render().el);
             },this);
 
         },
         parseStates: function(key,states){
             var ret = [];
-            _.each(states[key], function(state){
+            _.each(states, function(state){
                 state.Actions = {};
                 _.each(state.Features, function(f){
                     state.Actions[f] = this.getAction(f);
@@ -146,17 +148,22 @@
             return this;
         },
         runAction: function(e){
-            //console.log(this.action);
-            //console.log(this.state);
+            var args = [],tmp;
 
-            
-            //TODO run set on nested models in some way. This is not pretty.
-            // want to be able to run thid.model.set({'State':'ON'}) in this context;
-            var newState = _.clone(this.model.get('State'));
-            console.log(newState);
-            this.state.State = "ON";
-            newState["Devices"][this.state.Id-1] = this.state;
-            this.model.save({State:newState});
+            _.each(this.action.Arguments, function(arg){
+                tmp = arg.split('.');
+                args.push(this.state[tmp[1]])
+                args.push(this.action.Id);
+
+            },this);
+
+            this.model.clear({silent:true});
+            this.model.save({To:this.model.node.get('Id'),args:args});
+            // this posts to /api/Tellstick/state
+            // TODO
+            // make sure we get new State back from sever here for our device (Tellstick in this case)
+            // 
+            //
         },
         events: {
             "click" : "runAction",
