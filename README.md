@@ -1,4 +1,4 @@
 stampzilla-go
 =============
 
-New version of stampzilla written in GO
+New version of stampzilla written in GO and javascript with backbonejs
