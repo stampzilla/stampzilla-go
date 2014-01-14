@@ -9,7 +9,7 @@
     Stampzilla.Models.StateModel = Backbone.Model.extend({
         url: function(){
             //return '/api/'+this.node.get('Id')+'/state';
-            return '/api/'+this.node.get('Id')+'/state';
+            return '/api/node/'+this.node.get('Id')+'/state';
         },
         initialize : function(attributes,options) {
             this.node = options.node;

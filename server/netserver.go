@@ -7,6 +7,9 @@ import (
     "net"
 )
 
+var NodesConnection map[string]net.Conn
+var NodesWait map[string]chan bool
+
 type Device struct { /*{{{*/
     Id       string
     Name     string
@@ -30,6 +33,7 @@ type Layout struct { /*{{{*/
     Type    string
     Action  string
     Using   string
+    Filter  []string
     Section string
 }                   /*}}}*/
 type State struct { /*{{{*/
@@ -42,6 +46,9 @@ func netStart(port string) {
         fmt.Println("listen error", err)
         return
     }
+
+    NodesConnection = make(map[string]net.Conn)
+    NodesWait = make(map[string]chan bool)
 
     go func() {
         for {
@@ -78,6 +85,27 @@ func newClient(c net.Conn) {
         } else {
             id = info.Id
             Nodes[info.Id] = info
+            NodesConnection[info.Id] = c
+
+            log.Info("Got update on state")
+
+            if NodesWait[info.Id] != nil {
+                select {
+                case NodesWait[info.Id] <- false:
+                    close(NodesWait[info.Id])
+                    NodesWait[info.Id] = nil
+                    log.Info("Closed channel")
+                default:
+                }
+            }
+
+            // Skicka till alla
+            for n, _ := range WebSockets {
+                select {
+                case WebSockets[n] <- string(data):
+                default:
+                }
+            }
         }
 
         /*_, err = c.Write(data)

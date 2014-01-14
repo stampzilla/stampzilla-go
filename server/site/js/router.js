@@ -6,16 +6,42 @@ window.Stampzilla = window.Stampzilla || {Routers: {}, Collections: {}, Models: 
         var deferreds = [];
         $.each(views, function(index, view) {
             if (Stampzilla.Views[view]) {
-                deferreds.push($.get('templates/' + view + '.html', function(data) {
+                deferreds.push($.get('templates/' + view + '.html', function(data,textStatus) {
+                    console.log(textStatus);
                     Stampzilla.Views[view].prototype.template = _.template(data);
-                }, 'html'));
+                }, 'html').fail(function(){
+                    console.log("failed to fetch " + this.url);
+                }));
             } else {
                 alert(view + " not found");
             }
         });
 
-        $.when.apply(null, deferreds).done(callback);
+        $.when.apply(null, deferreds).done(callback).fail(callback);
     }
+
+    Stampzilla.registerModel = function(model){
+
+
+    }
+    Stampzilla.registerView = function(viewName, viewObject){
+        
+        if(Stampzilla.Views[viewName] === undefined){
+            Stampzilla.Views[viewName] =  viewObject;
+        }
+        return Stampzilla.Views[viewName];
+    }
+    Stampzilla.getViews = function(){
+        var ret = new Array();
+        _.each(Stampzilla.Views, function(view,key){
+            ret.push(key);
+        });
+        return ret;
+    }
+    Stampzilla.getView = function(viewName){
+        return Stampzilla.Views[viewName] || {};
+    }
+
     Stampzilla.Routers.MainRouter = Backbone.Router.extend({
         routes: {
             "": "index",
@@ -25,8 +51,6 @@ window.Stampzilla = window.Stampzilla || {Routers: {}, Collections: {}, Models: 
 
         initialize: function () {
             Stampzilla.Data.NodesCollection = new Stampzilla.Collections.NodesCollection();
-            //Stampzilla.Data.NodesCollection.fetch();
-
             this.cached = {
                 view:{},
                 model:{}
@@ -35,7 +59,6 @@ window.Stampzilla = window.Stampzilla || {Routers: {}, Collections: {}, Models: 
 
         index: function () {
             this.cached.view.NodesTable = this.cached.view.NodesTable || new Stampzilla.Views.NodesTable({collection:Stampzilla.Data.NodesCollection});
-            //Stampzilla.Data.NodesCollection.fetch();
             
             $('#main').html(this.cached.view.NodesTable.el);
             this.cached.view.NodesTable.render();

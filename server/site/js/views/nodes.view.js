@@ -1,11 +1,10 @@
 /*global Stampzilla:true, _:true, jQuery:true, Backbone:true, JST:true, $:true*/
 (function () {
     "use strict";
-    Stampzilla.Views.NodesTable = Backbone.View.extend({
+    var NodesTable = Backbone.View.extend({
         initialize: function () {
             //fetch in router triggers this sync
             this.listenTo(this.collection,'sync reset', this.render, this);
-
             this.listenTo(this.collection,'add', this.addOne, this);
         },
         // populate the html to the dom
@@ -24,7 +23,9 @@
             this.$el.find("tbody").append(view.render().el);
         }
     });
-    Stampzilla.Views.NodesTableRow = Backbone.View.extend({
+    Stampzilla.registerView('NodesTable',NodesTable);
+
+    var NodesTableRow = Backbone.View.extend({
         // the constructor
         tagName: "tr",
         // populate the html to the dom
@@ -41,10 +42,13 @@
 
     });
 
+    Stampzilla.registerView('NodesTableRow',NodesTableRow);
 
-    Stampzilla.Views.Node = Backbone.View.extend({
+
+    var Node = Backbone.View.extend({
         initialize: function () {
             this.listenTo(this.model,'change', this.render, this);
+            this.listenTo(this.model.get('State'),'change', this.render, this);
             this.ActionSubviews = [];
         },
         // populate the html to the dom
@@ -56,15 +60,9 @@
         parseLayout: function(layout){
             var data = {};
 
-            //if( layout.Type == "switch" && layout.Action == "toggle"){
-
-            //}
-
             //TODO change Using from Devices to Devices[Type=!dimmable] or add filter element
             //
-            var states = this.parseStates(layout.Using,this.model.get('State').get(layout.Using));
-
-            console.log(states);
+            var states = this.parseStates(layout,this.model.get('State').get(layout.Using));
 
             //loop each state and create NodeActionRow view
             _.each(states, function(state){
@@ -73,14 +71,18 @@
             },this);
 
         },
-        parseStates: function(key,states){
+        parseStates: function(layout,states){
             var ret = [];
             _.each(states, function(state){
-                state.Actions = {};
-                _.each(state.Features, function(f){
-                    state.Actions[f] = this.getAction(f);
+            
+                _.each(layout.Filter, function(line){
+                    if($.inArray(line, state.Features) != -1){
+                        state.Action = this.getAction(layout.Action);
+                        ret.push(state);
+                    }
                 },this);
-                ret.push(state);
+
+
             },this);
             return ret;
         },
@@ -98,7 +100,9 @@
         }
 
     });
-    Stampzilla.Views.NodeActionRow = Backbone.View.extend({
+    Stampzilla.registerView('Node',Node);
+
+    var NodeActionRow = Backbone.View.extend({
         tagName: 'li',
         initialize: function(state,model) {
             this.state = state;
@@ -106,45 +110,36 @@
             this.actionViews = []
         },
         render: function () {
-            console.log(this.state);
 
 
             this.$el.html(this.template(this.state));
 
-            _.each(this.state.Actions, function(action){
-                //this.$el.find('.actions').append(this.generateActionElement(action));
-                this.actionViews[action.Name] = new Stampzilla.Views.NodeActionDiv(action,this);
-                this.$el.find('.actions').append(this.actionViews[action.Name].render().el);
-            },this);
+            this.actionViews[this.state.Action] = new Stampzilla.Views.NodeActionDiv(this.state.Action,this);
+            this.$el.find('.actions').append(this.actionViews[this.state.Action].render().el);
 
             return this;
         },
 
-        generateActionElement: function(action){
-            var actionElement = $("<div>",{
-                id:action.Id,
-                "class": 'test',
-                text:action.Name,
-            });
-            return actionElement;
-        },
-
     });
-    Stampzilla.Views.NodeActionDiv = Backbone.View.extend({
-        tagName: 'div',
-        className:'test',
+    Stampzilla.registerView('NodeActionRow',NodeActionRow);
+
+    var NodeActionDiv = Backbone.View.extend({
+        tagName: 'button',
+        className:'btn btn-default',
         initialize: function(action,parentView) {
             this.action = action;
             this.state = parentView.state;
             this.model = parentView.model;
         },
         render: function () {
-            //var actionElement = $("<div>",{
-                //id:action.Id,
-                //"class": 'test',
-                //text:action.Name,
-            //});
-            this.$el.html(this.action.Name);
+
+            if(this.state.State == "true"){
+                this.$el.addClass('btn-primary').removeClass('btn-default');
+            } else{
+                this.$el.addClass('btn-default').removeClass('btn-primary');
+            }
+
+            this.$el.html(this.action.Name+this.state.State);
             return this;
         },
         runAction: function(e){
@@ -153,21 +148,16 @@
             _.each(this.action.Arguments, function(arg){
                 tmp = arg.split('.');
                 args.push(this.state[tmp[1]])
-                args.push(this.action.Id);
-
             },this);
 
             this.model.clear({silent:true});
-            this.model.save({To:this.model.node.get('Id'),args:args});
+            this.model.save({Cmd:this.action.Id,Args:args},{wait:true});
             // this posts to /api/Tellstick/state
-            // TODO
-            // make sure we get new State back from sever here for our device (Tellstick in this case)
-            // 
-            //
         },
         events: {
             "click" : "runAction",
         }
     });
+    Stampzilla.registerView('NodeActionDiv',NodeActionDiv);
 
 }());

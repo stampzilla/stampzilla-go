@@ -61,16 +61,14 @@
             "starter-template.css",
         ], function() {
 
-        Stampzilla.loadTemplates([
-            "NodesTable",
-            "NodesTableRow",
-            "Node",
-            "NodeActionRow",
-            ],
+        Stampzilla.loadTemplates(Stampzilla.getViews(),
             function () {
+                //start websocket connection
+                Stampzilla.Websocket();
+
+                //initialize our backbone Router
                 Stampzilla.Router = new Stampzilla.Routers.MainRouter();
                 Backbone.history.start();
-                WebSocketTest();
             });
     });
 

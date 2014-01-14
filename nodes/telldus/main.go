@@ -14,6 +14,8 @@ import (
 var Info InfoStruct
 var devices []Device
 
+var Connection net.Conn
+
 var host string
 var port string
 
@@ -40,13 +42,19 @@ type Layout struct { /*{{{*/
     Type    string
     Action  string
     Using   string
+    Filter  []string
     Section string
 }                   /*}}}*/
 type State struct { /*{{{*/
     Devices []Device
 }   /*}}}*/
 
-func main() {
+type Command struct {
+    Cmd  string
+    Args []string
+}
+
+func main() { /*{{{*/
     // Load logger
     logger, err := log.LoggerFromConfigAsFile("../logconfig.xml")
     if err != nil {
@@ -68,23 +76,41 @@ func main() {
     updateLayout()
     readState()
 
-    b, err := json.Marshal(Info)
+    log.Info("Connect to ", host, ":", port)
+    Connection, err = net.Dial("tcp", net.JoinHostPort(host, port))
     if err != nil {
         log.Error(err)
+        return
     }
 
-    log.Info("Connect to ", host, ":", port)
-    c, e := net.Dial("tcp", net.JoinHostPort(host, port))
-    if e != nil {
-        log.Error(e)
-    } else {
-        fmt.Fprintf(c, string(b))
+    // Send update
+    sendUpdate()
+
+    // Recive data
+    for {
+        buf := make([]byte, 51200)
+        nr, err := Connection.Read(buf)
+        if err != nil {
+            return
+        }
+
+        data := buf[0:nr]
+
+        var cmd Command
+        err = json.Unmarshal(data, &cmd)
+        if err != nil {
+            log.Warn(err)
+        } else {
+            log.Info(cmd)
+            processCommand(cmd)
+        }
+
     }
 
     select {}
-}
+}   /*}}}*/
 
-func updateActions() {
+func updateActions() { /*{{{*/
     Info.Actions = []Action{
         Action{
             "set",
@@ -99,12 +125,11 @@ func updateActions() {
         Action{
             "dim",
             "Dim",
-            []string{"Devices.Id"},
+            []string{"Devices.Id", "value"},
         },
     }
-}
-
-func updateLayout() {
+}                     /*}}}*/
+func updateLayout() { /*{{{*/
     Info.Layout = []Layout{
         Layout{
             "1",
@@ -112,12 +137,22 @@ func updateLayout() {
             "toggle",
             //"Devices[Type=!dimmable]",
             "Devices",
+            []string{"check"},
+            "Lamps",
+        },
+        Layout{
+            "2",
+            "slider",
+            "dim",
+            //"Devices[Type=dimmable]",
+            "Devices",
+            []string{"dim"},
             "Lamps",
         },
     }
-}
+}   /*}}}*/
 
-func readState() {
+func readState() { /*{{{*/
     out, err := exec.Command("tdtool", "--list").Output()
     if err != nil {
         log.Critical(err)
@@ -136,13 +171,13 @@ func readState() {
             fmt.Println(dev[1:])
             switch {
             case dev[4] == "DIMMED":
-                devices = append(devices, Device{dev[1], dev[2], dev[5], "", []string{"toggle"}})
+                devices = append(devices, Device{dev[1], dev[2], dev[5], "", []string{"check"}})
             case dev[3] == "OFF":
-                devices = append(devices, Device{dev[1], dev[2], "false", "", []string{"toggle"}})
+                devices = append(devices, Device{dev[1], dev[2], "false", "", []string{"check"}})
             case dev[3] == "ON":
-                devices = append(devices, Device{dev[1], dev[2], "true", "", []string{"toggle"}})
+                devices = append(devices, Device{dev[1], dev[2], "true", "", []string{"check"}})
             default:
-                devices = append(devices, Device{dev[1], dev[2], dev[3], "", []string{"toggle"}})
+                devices = append(devices, Device{dev[1], dev[2], dev[3], "", []string{"check"}})
             }
         }
     }
@@ -181,4 +216,29 @@ func readState() {
     */
 
     log.Debug(devices)
+}   /*}}}*/
+func sendUpdate() {
+    b, err := json.Marshal(Info)
+    if err != nil {
+        log.Error(err)
+    }
+    fmt.Fprintf(Connection, string(b))
+}
+func processCommand(cmd Command) {
+    switch cmd.Cmd {
+    case "toggle":
+        for n, row := range Info.State.Devices {
+            if row.Id == cmd.Args[0] {
+                if Info.State.Devices[n].State == "false" {
+                    Info.State.Devices[n].State = "true"
+                } else {
+                    Info.State.Devices[n].State = "false"
+                }
+
+                sendUpdate()
+                log.Info("Toggled=", Info.State.Devices[n].State)
+            }
+        }
+
+    }
 }

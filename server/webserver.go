@@ -7,12 +7,14 @@ import (
     "github.com/stamp/go-json-rest"
     "io/ioutil"
     "net/http"
-    "time"
 )
 
 // Webserver that serves static files
 var chttp = http.NewServeMux()
 var handler = rest.ResourceHandler{}
+
+var WebSockets map[int]chan string
+var WebSocketPointer int
 
 // The webserver
 type Response map[string]interface{} /*{{{*/
@@ -33,6 +35,7 @@ func webStart(port string) { /*{{{*/
     handler.SetRoutes(
         rest.Route{"GET", "/api/nodes", GetNodes},
         rest.Route{"GET", "/api/node/:id", GetNode},
+        rest.Route{"POST", "/api/node/:id/state", PostNodeState},
         rest.Route{"GET", "/api/users/:id", GetUser},
     )
 
@@ -65,25 +68,38 @@ type T struct {
     Msg string
 }
 
-func socketServer(ws *websocket.Conn) {
+func socketServer(ws *websocket.Conn) { /*{{{*/
     fmt.Printf("jsonServer %#v\n", ws.Config())
+
+    pointer := WebSocketPointer
+    WebSocketPointer++
+
+    WebSockets[pointer] = make(chan string)
+    defer close(WebSockets[pointer])
 
     var msg T
 
 Main:
     for {
         select {
-        case <-time.After(time.Second / 1):
-            msg.Msg = "$(\".navbar-brand\").html(\"" + time.Now().Format(time.StampMilli) + "\")"
-            err := websocket.JSON.Send(ws, msg)
+        //case <-time.After(time.Second / 1):
+        //msg.Msg = "$(\".navbar-brand\").html(\"" + time.Now().Fomat(time.StampMilli) + "\")"
+        //err := websocket.JSON.Send(ws, msg)
 
-            //buf := []byte("test")
-            //_, err := ws.Write(buf[:])
+        ////buf := []byte("test")
+        ////_, err := ws.Write(buf[:])
+        //if err != nil {
+        //fmt.Println(err)
+        //break Main
+        //}
+        //fmt.Printf("send:%q\n", buf[:])
+        case txt := <-WebSockets[pointer]:
+            //websocket.Message.Send(ws, txt)
+            _, err := ws.Write([]byte(txt))
             if err != nil {
                 fmt.Println(err)
                 break Main
             }
-            //fmt.Printf("send:%q\n", buf[:])
         }
         continue
 
@@ -102,7 +118,7 @@ Main:
         }
         fmt.Printf("send:%#v\n", msg)
     }
-}
+}   /*}}}*/
 
 func GetUser(w *rest.ResponseWriter, req *rest.Request) {
 
