@@ -229,11 +229,21 @@ func processCommand(cmd Command) {
     case "toggle":
         for n, row := range Info.State.Devices {
             if row.Id == cmd.Args[0] {
+                var arg = ""
                 if Info.State.Devices[n].State == "false" {
                     Info.State.Devices[n].State = "true"
+                    arg = "--on"
                 } else {
                     Info.State.Devices[n].State = "false"
+                    arg = "--off"
                 }
+
+                // Run command
+                out, err := exec.Command("tdtool", arg, row.Id).Output()
+                if err != nil {
+                    log.Critical(err)
+                }
+                log.Warn(string(out))
 
                 sendUpdate()
                 log.Info("Toggled=", Info.State.Devices[n].State)

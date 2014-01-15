@@ -98,7 +98,7 @@ Main:
         //}
         //fmt.Printf("send:%q\n", buf[:])
         case txt := <-WebSockets[pointer]:
-            log.Critical(txt)
+            log.Critical("Worker recived data: ", txt)
             //websocket.Message.Send(ws, txt)
             _, err := ws.Write([]byte(txt))
             if err != nil {
