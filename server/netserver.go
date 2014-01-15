@@ -65,11 +65,13 @@ func netStart(port string) {
 
 // Handle a client
 func newClient(c net.Conn) {
+    log.Info("New client connected")
     id := ""
     for {
         buf := make([]byte, 51200)
         nr, err := c.Read(buf)
         if err != nil {
+            log.Info(id, " - Client disconnected")
             if id != "" {
                 delete(Nodes, id)
             }
@@ -87,21 +89,19 @@ func newClient(c net.Conn) {
             Nodes[info.Id] = info
             NodesConnection[info.Id] = c
 
-            log.Info("Got update on state")
+            log.Info(info.Id, " - Got update on state")
 
             if NodesWait[info.Id] != nil {
                 select {
                 case NodesWait[info.Id] <- false:
                     close(NodesWait[info.Id])
                     NodesWait[info.Id] = nil
-                    log.Info("Closed channel")
                 default:
                 }
             }
 
             // Skicka till alla
             for n, _ := range WebSockets {
-                log.Warn("Send, ", n)
                 if WebSockets[n] != nil {
                     select {
                     case WebSockets[n] <- string(data):
