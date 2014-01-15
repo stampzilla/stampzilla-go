@@ -9,6 +9,7 @@ import (
     "net"
     "os/exec"
     "regexp"
+    "time"
 )
 
 var Info InfoStruct
@@ -76,13 +77,34 @@ func main() { /*{{{*/
     updateLayout()
     readState()
 
-    log.Info("Connect to ", host, ":", port)
-    Connection, err = net.Dial("tcp", net.JoinHostPort(host, port))
-    if err != nil {
-        log.Error(err)
-        return
-    }
+    // Start the connection
+    go connection()
 
+    select {}
+}   /*}}}*/
+
+func connection() {
+    var err error
+    for {
+        log.Info("Connection to ", host, ":", port)
+        Connection, err = net.Dial("tcp", net.JoinHostPort(host, port))
+
+        if err != nil {
+            log.Error("Failed connection: ", err)
+            <-time.After(time.Second)
+            continue
+        }
+
+        log.Trace("Connected")
+
+        connectionWorker()
+
+        log.Warn("Lost connection, reconnecting")
+        <-time.After(time.Second)
+    }
+}
+
+func connectionWorker() {
     // Send update
     sendUpdate()
 
@@ -106,9 +128,7 @@ func main() { /*{{{*/
         }
 
     }
-
-    select {}
-}   /*}}}*/
+}
 
 func updateActions() { /*{{{*/
     Info.Actions = []Action{
@@ -168,7 +188,7 @@ func readState() { /*{{{*/
     findDevices := regexp.MustCompile("(?m)^(.+)\t(.+)\t([A-Z]+|([A-Z]+):([0-9]+))$")
     if result := findDevices.FindAllStringSubmatch(string(out), -1); len(result) > 0 {
         for _, dev := range result {
-            fmt.Println(dev[1:])
+            // fmt.Println(dev[1:])
             switch {
             case dev[4] == "DIMMED":
                 devices = append(devices, Device{dev[1], dev[2], dev[5], "", []string{"check"}})
@@ -215,7 +235,7 @@ func readState() { /*{{{*/
     	}
     */
 
-    log.Debug(devices)
+    //log.Debug(devices)
 }   /*}}}*/
 func sendUpdate() {
     b, err := json.Marshal(Info)
