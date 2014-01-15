@@ -101,9 +101,12 @@ func newClient(c net.Conn) {
 
             // Skicka till alla
             for n, _ := range WebSockets {
-                select {
-                case WebSockets[n] <- string(data):
-                default:
+                log.Warn("Send, ", n)
+                if WebSockets[n] != nil {
+                    select {
+                    case WebSockets[n] <- string(data):
+                    default:
+                    }
                 }
             }
         }

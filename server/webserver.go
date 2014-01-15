@@ -4,6 +4,7 @@ import (
     "code.google.com/p/go.net/websocket"
     "encoding/json"
     "fmt"
+    log "github.com/cihub/seelog"
     "github.com/stamp/go-json-rest"
     "io/ioutil"
     "net/http"
@@ -31,6 +32,8 @@ func webStart(port string) { /*{{{*/
     chttp.Handle("/", http.FileServer(http.Dir("./site/")))
     http.HandleFunc("/", webHandler)
     http.Handle("/socket", websocket.Handler(socketServer))
+
+    WebSockets = make(map[int]chan string)
 
     handler.SetRoutes(
         rest.Route{"GET", "/api/nodes", GetNodes},
@@ -75,6 +78,7 @@ func socketServer(ws *websocket.Conn) { /*{{{*/
     WebSocketPointer++
 
     WebSockets[pointer] = make(chan string)
+    defer func() { WebSockets[pointer] = nil }()
     defer close(WebSockets[pointer])
 
     var msg T
@@ -94,6 +98,7 @@ Main:
         //}
         //fmt.Printf("send:%q\n", buf[:])
         case txt := <-WebSockets[pointer]:
+            log.Critical(txt)
             //websocket.Message.Send(ws, txt)
             _, err := ws.Write([]byte(txt))
             if err != nil {
