@@ -1,5 +1,5 @@
 /*global Stampzilla:true, _:true, jQuery:true, Backbone:true, JST:true, $:true*/
-window.Stampzilla = window.Stampzilla || {Routers: {}, Collections: {}, Models: {}, Views: {}, Data: {}};
+window.Stampzilla = window.Stampzilla || {Routers: {}, Collections: {}, Models: {}, Views: {}, Data: {}, Websocket: {}};
 (function () {
     "use strict";
     Stampzilla.loadTemplates = function(views,callback){
@@ -57,7 +57,7 @@ window.Stampzilla = window.Stampzilla || {Routers: {}, Collections: {}, Models: 
             }
         },
 
-        index: function () {
+        nodes: function () {
             this.cached.view.NodesTable = this.cached.view.NodesTable || new Stampzilla.Views.NodesTable({collection:Stampzilla.Data.NodesCollection});
             
             $('#main').html(this.cached.view.NodesTable.el);
@@ -72,7 +72,7 @@ window.Stampzilla = window.Stampzilla || {Routers: {}, Collections: {}, Models: 
                 self.cached.view.Node.render();
             });
         },
-        nodes: function () {
+        index: function () {
             //this.currentView = new Stampzilla.Views.NodesView();
             $('#main').html("");;
         }

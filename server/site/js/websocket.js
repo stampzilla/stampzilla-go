@@ -36,7 +36,7 @@
 
 
     if ("WebSocket" in window){
-        Stampzilla.Websocket = function () {
+        var ws = function () {
             _.extend(this, Backbone.Events);
             var self = this;
 
@@ -51,9 +51,9 @@
                 self.trigger('error', e);
             };
             self.socket.onmessage = function(e) {
-                self.trigger('message', e);
-                self.trigger('data', e.data);
-                console.log(e.data);
+                //self.trigger('message', e);
+                //self.trigger('data', e.data);
+                //console.log(e.data);
                 self.trigger('change_ws', JSON.parse(e.data));
             };
             self.socket.onclose = function(e) {
@@ -61,6 +61,7 @@
                 console.log('socket closed');
             };
         };  
+        Stampzilla.Websocket = new ws();
     }
 
 

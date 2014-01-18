@@ -78,6 +78,7 @@
                 _.each(layout.Filter, function(line){
                     if($.inArray(line, state.Features) != -1){
                         state.Action = this.getAction(layout.Action);
+                        state.Type = layout.Type;
                         ret.push(state);
                     }
                 },this);
@@ -114,7 +115,14 @@
 
             this.$el.html(this.template(this.state));
 
-            this.actionViews[this.state.Action] = new Stampzilla.Views.NodeActionDiv(this.state.Action,this);
+            switch(this.state.Type) {
+                case "switch":
+                    this.actionViews[this.state.Action] = new Stampzilla.Views.NodeActionDiv({el:this.$el.find(".btn").get(0),action:this.state.Action,state:this.state,model:this.model,tag:"button"});
+                    break;
+                case "slider":
+                    this.actionViews[this.state.Action] = new Stampzilla.Views.NodeActionDiv({el:this.$el.find(".input-slider").get(0),action:this.state.Action,state:this.state,model:this.model,tag:"input"});
+                    break;
+            }
             this.$el.find('.actions').append(this.actionViews[this.state.Action].render().el);
 
             return this;
@@ -124,23 +132,68 @@
     Stampzilla.registerView('NodeActionRow',NodeActionRow);
 
     var NodeActionDiv = Backbone.View.extend({
-        tagName: 'button',
         className:'btn btn-default',
-        initialize: function(action,parentView) {
-            this.action = action;
-            this.state = parentView.state;
-            this.model = parentView.model;
+        initialize: function(options) {
+            this.action = options.action;
+            this.state = options.state;
+            this.model = options.model;
+            this.tag = options.tag;
+        },
+        tagName: function(){
+            return this.tag;
         },
         render: function () {
 
-            if(this.state.State == "true"){
-                this.$el.addClass('btn-primary').removeClass('btn-default');
-            } else{
-                this.$el.addClass('btn-default').removeClass('btn-primary');
+
+            this.$el.show();
+            var self = this;
+            // SWITCH
+            switch(this.state.Type) {
+                case "switch":
+                    if(this.state.State == "true"){
+                        this.$el.addClass('btn-primary').removeClass('btn-default');
+                    } else{
+                        this.$el.addClass('btn-default').removeClass('btn-primary');
+                    }
+                break;
+                case "slider":
+                    this.$el.attr({
+                        "data-slider-id":'ex1slider',
+                        "data-slider-min":'0',
+                        "data-slider-max":'100',
+                        "data-slider-step":'1',
+                        "data-slider-value": this.state.State,
+                    });
+                    this.$el.slider().on('slideStop', function(){
+                        self.$el.trigger("change");
+                    });
+                    break;
+
             }
+
+
 
             this.$el.html(this.action.Name+this.state.State);
             return this;
+        },
+        sliderChanged: function(e){
+
+            console.log(this.$el.val());
+
+            var args = [],tmp;
+
+            _.each(this.action.Arguments, function(arg){
+                tmp = arg.split('.');
+                if(arg === "value"){
+                    args.push(this.$el.val());
+                } else{
+                    args.push(this.state[tmp[1]])
+                }
+            },this);
+
+            this.model.clear({silent:true});
+            this.model.save({Cmd:this.action.Id,Args:args},{wait:true});
+
         },
         runAction: function(e){
             var args = [],tmp;
@@ -152,10 +205,10 @@
 
             this.model.clear({silent:true});
             this.model.save({Cmd:this.action.Id,Args:args},{wait:true});
-            // this posts to /api/Tellstick/state
         },
         events: {
             "click" : "runAction",
+            "change" : "sliderChanged",
         }
     });
     Stampzilla.registerView('NodeActionDiv',NodeActionDiv);
