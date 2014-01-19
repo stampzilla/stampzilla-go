@@ -155,7 +155,7 @@
                     } else{
                         this.$el.addClass('btn-default').removeClass('btn-primary');
                     }
-                break;
+                    break;
                 case "slider":
                     this.$el.attr({
                         "data-slider-id":'ex1slider',
