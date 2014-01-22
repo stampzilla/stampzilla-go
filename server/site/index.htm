@@ -53,19 +53,19 @@
             "js/libs/bootstrap.min.js",
             "js/libs/underscore-min.js",
             "js/libs/backbone-min.js",
+            "js/libs/bootstrap-slider.min.js",
+            "js/libs/modernizr-min.js",
             "js/router.js",
+            "js/websocket.js",
             "js/views/nodes.view.js",
             "js/models/nodes.model.js",
-            "js/websocket.js",
             "css/bootstrap.css",
-            "starter-template.css",
+            "css/starter-template.css",
+            "css/bootstrap-slider.min.css",
         ], function() {
 
         Stampzilla.loadTemplates(Stampzilla.getViews(),
             function () {
-                //start websocket connection
-                Stampzilla.Websocket();
-
                 //initialize our backbone Router
                 Stampzilla.Router = new Stampzilla.Routers.MainRouter();
                 Backbone.history.start();
