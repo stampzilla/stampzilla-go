@@ -206,7 +206,7 @@ func readState() { /*{{{*/
 
     // Read all features from config
     config, _ := ioutil.ReadFile("/etc/tellstick.conf")
-    findDevices = regexp.MustCompile("(?msU)device {.*id = ([0-9]+).*model = \"(.*)\".*^}$")
+    findDevices = regexp.MustCompile("(?msU)device {.*id = ([0-9]+)[^0-9].*model = \"(.*)\".*^}$")
     if result := findDevices.FindAllStringSubmatch(string(config), -1); len(result) > 0 {
         for _, row := range result {
             for id, dev := range devices {
@@ -215,6 +215,7 @@ func readState() { /*{{{*/
 
                     switch row[2] {
                     case "selflearning-dimmer":
+                        log.Warn("Found DIM at row ",id," - ",dev," | ",row);
                         devices[id].Features = append(devices[id].Features, "dim")
                     }
                 }
@@ -267,6 +268,23 @@ func processCommand(cmd Command) {
 
                 sendUpdate()
                 log.Info("Toggled=", Info.State.Devices[n].State)
+            }
+        }
+    case "dim":
+        for n, row := range Info.State.Devices {
+            if row.Id == cmd.Args[0] {
+                c := exec.Command("tdtool", "--dimlevel", cmd.Args[1],"--dim", row.Id);
+                out, err := c.Output()
+                if err != nil {
+                    log.Critical(err)
+                }
+                log.Warn(c);
+                log.Warn(string(out))
+
+                Info.State.Devices[n].State =  cmd.Args[1]
+
+                sendUpdate()
+                log.Info("Dimmed=", Info.State.Devices[n].State)
             }
         }
 
