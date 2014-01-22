@@ -274,9 +274,10 @@ func processCommand(cmd Command) {
 	case "dim":
 		for n, row := range Info.State.Devices {
 			if row.Id == cmd.Args[0] {
-				val, _ := strconv.Atoi(cmd.Args[1])
-				dimmlevel := val * (255 / 100)
-				c := exec.Command("tdtool", "--dimlevel", fmt.Sprintf("%d", dimmlevel), "--dim", row.Id)
+				var dimmlevel float64
+				val, _ := strconv.ParseFloat(cmd.Args[1], 64)
+				dimmlevel = val * 255 / 100
+				c := exec.Command("tdtool", "--dimlevel", fmt.Sprintf("%.0f", dimmlevel), "--dim", row.Id)
 				out, err := c.Output()
 				if err != nil {
 					log.Critical(err)
