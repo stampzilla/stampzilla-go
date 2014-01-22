@@ -19,6 +19,15 @@
     Stampzilla.Models.NodeModel = Backbone.Model.extend({
         urlRoot : '/api/node',
         idAttribute: "Id",
+        initialize: function(){
+            var self = this;
+
+            //Update our model when we get change from websocket
+            Stampzilla.Websocket.on("change_ws", function(data){
+                self.set(self.parse(data));
+            });
+
+        },
         parse: function (data){
 
             if(data.State instanceof Object){
