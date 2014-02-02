@@ -30,6 +30,7 @@ func (r Response) String() (s string) {
 }                            /*}}}*/
 func webStart(port string) { /*{{{*/
     chttp.Handle("/", http.FileServer(http.Dir("./site/")))
+
     http.HandleFunc("/", webHandler)
     http.Handle("/socket", websocket.Handler(socketServer))
 
@@ -54,11 +55,6 @@ func webHandler(w http.ResponseWriter, r *http.Request) { /*{{{*/
 
     switch r.URL.Path[1:] {
     case "": // The main page (index.htm)
-        // Handle simulate tag scans
-        if r.FormValue("tag") != "" {
-            //
-        }
-
         // Serve the index.htm
         body, _ := ioutil.ReadFile("./site/index.htm")
         fmt.Fprintf(w, string(body))
