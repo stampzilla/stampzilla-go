@@ -3,7 +3,7 @@ Copyright (c) 2007, Jim Studt  (original old version - many contributors since)
 
 The latest version of this library may be found at:
   http://www.pjrc.com/teensy/td_libs_OneWire.html
-
+  
 OneWire has been maintained by Paul Stoffregen (paul@pjrc.com) since
 January 2010.  At the time, it was in need of many bug fixes, but had
 been abandoned the original author (Jim Studt).  None of the known
@@ -12,6 +12,17 @@ works on OneWire every 6 to 12 months.  Patches usually wait that
 long.  If anyone is interested in more actively maintaining OneWire,
 please contact Paul.
 
+Version 2.2 for pcDuino3: Modifications by Iulian Virtejanu, viulian@gmail.com, Apr 2014
+  Added more accurate delayMicroseconds (busy loop vs usleep)
+  Using hardware pin modes as opposed to Arduino wrappers provided by pcDuino
+  Removed calls to interrupt() / noInterrupt()
+  Removed unneeded operation in write() method which would pull the bus to LOW after each byte
+  Modified the write_bit() method so that instead of setting bus to HIGH, it just lets it float
+  Used delays specified here: http://www.maximintegrated.com/app-notes/index.mvp/id/126
+  On pcDuino3 the write has to happen after the pin direction switch, not before
+    thus, swapped some methods that were actually setting the pin value before
+    setting it direction to output.
+  
 Version 2.2:
   Teensy 3.0 compatibility, Paul Stoffregen, paul@pjrc.com
   Arduino Due compatibility, http://arduino.cc/forum/index.php?topic=141030
@@ -114,19 +125,54 @@ sample code bearing this copyright.
 //--------------------------------------------------------------------------
 */
 
+#include <time.h> // for clock related operations
 #include "OneWire.h"
 
+// Doing experiments with the hardware clock, it seems that the DIRECT_... pin commands
+// take between 2 and 3 microseconds. We need to substract them from the One Wire
+// standard delays otherwise we get a lot more CRC errors (or it will appear that the sensors
+// have dissapeared from the bus)
+#define PIN_COMMAND_ESTIM_DELAY 2
+
+// From: http://www.raspberry-projects.com/pi/programming-in-c/timing/clock_gettime-for-acurate-timing
+//*****************************************************
+//*****************************************************
+//********** DELAY FOR # uS WITHOUT SLEEPING **********
+//*****************************************************
+//*****************************************************
+//Using DelayMicrosecondsNoSleep lets the linux scheduler decide to jump to another process.  Using this function avoids letting the
+//scheduler know we are pausing and provides much faster operation if you are needing to use lots of delays.
+static void DelayMicrosecondsNoSleep (int delay_us)
+{
+	long int start_time;
+	long int time_difference;
+	struct timespec gettime_now;
+	
+	// Magic! 850 works better than 1000, probably because it factors in the time for the clock_gettime and the ifs.
+	long delay_us_in_nano = delay_us * 850;
+
+	clock_gettime(CLOCK_MONOTONIC, &gettime_now);
+	start_time = gettime_now.tv_nsec;		//Get nS value
+	while (1)
+	{
+		clock_gettime(CLOCK_MONOTONIC, &gettime_now);
+		time_difference = gettime_now.tv_nsec - start_time;
+		if (time_difference < 0)
+			time_difference += 1000000000;				//(Rolls over every 1 second)
+		if (time_difference > delay_us_in_nano)				//Delay for # nS
+			break;
+	}
+}
 
 OneWire::OneWire(uint8_t pin)
 {
-	pinMode(pin, INPUT);
-	bitmask = PIN_TO_BITMASK(pin);
-	baseReg = PIN_TO_BASEREG(pin);
+    // If you need this, please check http://pcduino.com/forum/index.php?topic=4465.0
+	// hw_pinMode(pin, INPUT);
+	baseReg = pin;
 #if ONEWIRE_SEARCH
 	reset_search();
 #endif
 }
-
 
 // Perform the onewire reset function.  We will wait up to 250uS for
 // the bus to come high, if it doesn't then it is broken or shorted
@@ -136,31 +182,28 @@ OneWire::OneWire(uint8_t pin)
 //
 uint8_t OneWire::reset(void)
 {
-	IO_REG_TYPE mask = bitmask;
-	volatile IO_REG_TYPE *reg IO_REG_ASM = baseReg;
 	uint8_t r;
 	uint8_t retries = 125;
-
-	noInterrupts();
-	DIRECT_MODE_INPUT(reg, mask);
-	interrupts();
+	
+	DIRECT_MODE_INPUT(baseReg);
+	
 	// wait until the wire is high... just in case
 	do {
 		if (--retries == 0) return 0;
-		delayMicroseconds(2);
-	} while ( !DIRECT_READ(reg, mask));
-
-	noInterrupts();
-	DIRECT_WRITE_LOW(reg, mask);
-	DIRECT_MODE_OUTPUT(reg, mask);	// drive output low
-	interrupts();
-	delayMicroseconds(480);
-	noInterrupts();
-	DIRECT_MODE_INPUT(reg, mask);	// allow it to float
-	delayMicroseconds(70);
-	r = !DIRECT_READ(reg, mask);
-	interrupts();
-	delayMicroseconds(410);
+		DelayMicrosecondsNoSleep(2);
+	} while ( !DIRECT_READ(baseReg));
+	
+	DIRECT_MODE_OUTPUT(baseReg);	// drive output low
+	DIRECT_WRITE_LOW(baseReg);
+	
+	DelayMicrosecondsNoSleep(480);	// delay H
+	
+	DIRECT_MODE_INPUT(baseReg);	// allow it to float
+ 
+	DelayMicrosecondsNoSleep(70);
+	r = !DIRECT_READ(baseReg);
+	
+	DelayMicrosecondsNoSleep(410);
 	return r;
 }
 
@@ -170,25 +213,23 @@ uint8_t OneWire::reset(void)
 //
 void OneWire::write_bit(uint8_t v)
 {
-	IO_REG_TYPE mask=bitmask;
-	volatile IO_REG_TYPE *reg IO_REG_ASM = baseReg;
-
 	if (v & 1) {
-		noInterrupts();
-		DIRECT_WRITE_LOW(reg, mask);
-		DIRECT_MODE_OUTPUT(reg, mask);	// drive output low
-		delayMicroseconds(10);
-		DIRECT_WRITE_HIGH(reg, mask);	// drive output high
-		interrupts();
-		delayMicroseconds(55);
-	} else {
-		noInterrupts();
-		DIRECT_WRITE_LOW(reg, mask);
-		DIRECT_MODE_OUTPUT(reg, mask);	// drive output low
-		delayMicroseconds(65);
-		DIRECT_WRITE_HIGH(reg, mask);	// drive output high
-		interrupts();
-		delayMicroseconds(5);
+		
+		DIRECT_MODE_OUTPUT(baseReg);	// drive output low
+		DIRECT_WRITE_LOW(baseReg);
+
+		DelayMicrosecondsNoSleep(6 - PIN_COMMAND_ESTIM_DELAY);    // delay A
+		DIRECT_MODE_INPUT(baseReg);	// let it float -> pull up resistor will bing the output high
+		
+		DelayMicrosecondsNoSleep(64 - PIN_COMMAND_ESTIM_DELAY);   // delay B
+	} else {		
+		DIRECT_MODE_OUTPUT(baseReg);	// drive output low
+		DIRECT_WRITE_LOW(baseReg);
+
+		DelayMicrosecondsNoSleep(60);   // delay C
+		DIRECT_MODE_INPUT(baseReg);	// let it float -> pull up resistor will bing the output high
+		
+		DelayMicrosecondsNoSleep(10 - PIN_COMMAND_ESTIM_DELAY);   // delay D
 	}
 }
 
@@ -198,19 +239,19 @@ void OneWire::write_bit(uint8_t v)
 //
 uint8_t OneWire::read_bit(void)
 {
-	IO_REG_TYPE mask=bitmask;
-	volatile IO_REG_TYPE *reg IO_REG_ASM = baseReg;
 	uint8_t r;
-
-	noInterrupts();
-	DIRECT_MODE_OUTPUT(reg, mask);
-	DIRECT_WRITE_LOW(reg, mask);
-	delayMicroseconds(3);
-	DIRECT_MODE_INPUT(reg, mask);	// let pin float, pull up will raise
-	delayMicroseconds(10);
-	r = DIRECT_READ(reg, mask);
-	interrupts();
-	delayMicroseconds(53);
+	
+	DIRECT_MODE_OUTPUT(baseReg);
+	DIRECT_WRITE_LOW(baseReg);
+	
+	DelayMicrosecondsNoSleep(6 - 2 * PIN_COMMAND_ESTIM_DELAY);	// delay A
+	DIRECT_MODE_INPUT(baseReg);	// let pin float, pull up will raise
+	
+	DelayMicrosecondsNoSleep(9 - PIN_COMMAND_ESTIM_DELAY);	// delay E
+	r = DIRECT_READ(baseReg);
+	
+	DelayMicrosecondsNoSleep(55);	// delay F
+	
 	return r;
 }
 
@@ -228,10 +269,8 @@ void OneWire::write(uint8_t v, uint8_t power /* = 0 */) {
 	OneWire::write_bit( (bitMask & v)?1:0);
     }
     if ( !power) {
-	noInterrupts();
-	DIRECT_MODE_INPUT(baseReg, bitmask);
-	DIRECT_WRITE_LOW(baseReg, bitmask);
-	interrupts();
+	DIRECT_MODE_INPUT(baseReg);
+	// DIRECT_WRITE_LOW(baseReg);
     }
 }
 
@@ -239,10 +278,9 @@ void OneWire::write_bytes(const uint8_t *buf, uint16_t count, bool power /* = 0 
   for (uint16_t i = 0 ; i < count ; i++)
     write(buf[i]);
   if (!power) {
-    noInterrupts();
-    DIRECT_MODE_INPUT(baseReg, bitmask);
-    DIRECT_WRITE_LOW(baseReg, bitmask);
-    interrupts();
+    
+    DIRECT_MODE_INPUT(baseReg);
+    // DIRECT_WRITE_LOW(baseReg);
   }
 }
 
@@ -254,7 +292,7 @@ uint8_t OneWire::read() {
     uint8_t r = 0;
 
     for (bitMask = 0x01; bitMask; bitMask <<= 1) {
-	if ( OneWire::read_bit()) r |= bitMask;
+		if ( OneWire::read_bit()) r |= bitMask;
     }
     return r;
 }
@@ -285,10 +323,8 @@ void OneWire::skip()
 }
 
 void OneWire::depower()
-{
-	noInterrupts();
-	DIRECT_MODE_INPUT(baseReg, bitmask);
-	interrupts();
+{	
+	DIRECT_MODE_INPUT(baseReg);	
 }
 
 #if ONEWIRE_SEARCH
@@ -378,10 +414,9 @@ uint8_t OneWire::search(uint8_t *newAddr)
          cmp_id_bit = read_bit();
 
          // check for no devices on 1-wire
-         if ((id_bit == 1) && (cmp_id_bit == 1))
+         if ((id_bit == 1) && (cmp_id_bit == 1)) {
             break;
-         else
-         {
+         } else {
             // all devices coupled have 0 or 1
             if (id_bit != cmp_id_bit)
                search_direction = id_bit;  // bit write value for search
@@ -455,7 +490,7 @@ uint8_t OneWire::search(uint8_t *newAddr)
    }
    for (int i = 0; i < 8; i++) newAddr[i] = ROM_NO[i];
    return search_result;
-  }
+}
 
 #endif
 

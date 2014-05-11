@@ -3,12 +3,7 @@
 
 #include <inttypes.h>
 
-#if ARDUINO >= 100
 #include "Arduino.h"       // for delayMicroseconds, digitalPinToBitMask, etc
-#else
-#include "WProgram.h"      // for delayMicroseconds
-#include "pins_arduino.h"  // for digitalPinToBitMask, etc
-#endif
 
 // You can exclude certain features from OneWire.  In theory, this
 // might save some space.  In practice, the compiler automatically
@@ -19,6 +14,10 @@
 // and redesign your program to not need them!  ONEWIRE_CRC8_TABLE
 // is the exception, because it selects a fast but large algorithm
 // or a small but slow algorithm.
+
+#ifndef __PCDUINO3__
+#define __PCDUINO3__ 1
+#endif
 
 // you can exclude onewire_search by defining that to 0
 #ifndef ONEWIRE_SEARCH
@@ -61,9 +60,30 @@
 #define DIRECT_WRITE_LOW(base, mask)    ((*((base)+2)) &= ~(mask))
 #define DIRECT_WRITE_HIGH(base, mask)   ((*((base)+2)) |= (mask))
 
+#elif defined(__PCDUINO3__)
+// #define PIN_TO_BASEREG(pin)             (portInputRegister(digitalPinToPort(pin)))
+// #define PIN_TO_BITMASK(pin)             (digitalPinToBitMask(pin))
+#define IO_REG_TYPE uint8_t
+#define IO_REG_ASM
+// #define DIRECT_READ(base, mask)         (((*(base)) & (mask)) ? 1 : 0)
+#define DIRECT_READ(base)                  (digitalRead(base))
+// #define DIRECT_MODE_INPUT(base, mask)   ((*((base)+1)) &= ~(mask))
+#define DIRECT_MODE_INPUT(base)            (hw_pinMode(base, INPUT))
+// #define DIRECT_MODE_OUTPUT(base, mask)  ((*((base)+1)) |= (mask))
+#define DIRECT_MODE_OUTPUT(base)           (hw_pinMode(base, OUTPUT))
+// #define DIRECT_WRITE_LOW(base, mask)    ((*((base)+2)) &= ~(mask))
+#define DIRECT_WRITE_LOW(base)             (digitalWrite(base, LOW))
+// #define DIRECT_WRITE_HIGH(base, mask)   ((*((base)+2)) |= (mask))
+#define DIRECT_WRITE_HIGH(base)            (digitalWrite(base, HIGH))
+#ifndef PROGMEM
+#define PROGMEM
+#endif
+#ifndef pgm_read_byte
+#define pgm_read_byte(addr) (*(const uint8_t *)(addr))
+#endif
+
 #elif defined(__MK20DX128__)
 #define PIN_TO_BASEREG(pin)             (portOutputRegister(pin))
-#define PIN_TO_BITMASK(pin)             (1)
 #define IO_REG_TYPE uint8_t
 #define IO_REG_ASM
 #define DIRECT_READ(base, mask)         (*((base)+512))
@@ -112,8 +132,7 @@
 class OneWire
 {
   private:
-    IO_REG_TYPE bitmask;
-    volatile IO_REG_TYPE *baseReg;
+    volatile IO_REG_TYPE baseReg;
 
 #if ONEWIRE_SEARCH
     // global search state
