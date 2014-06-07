@@ -124,7 +124,7 @@ Main:
 		case txt := <-WebSockets[pointer]:
 			log.Critical("Worker recived data: ", txt)
 			//websocket.Message.Send(ws, txt)
-			err := ws.WriteJSON([]byte(txt))
+			err := ws.WriteMessage(1, []byte(txt))
 			if err != nil {
 				fmt.Println(err)
 				break Main
