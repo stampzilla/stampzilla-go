@@ -82,9 +82,9 @@ func webStart(port string) { /*{{{*/
 //}
 //} [>}}}<]
 
-type T struct {
-	Msg string
-}
+//type T struct {
+//Msg string
+//}
 
 func socketServer(w http.ResponseWriter, r *http.Request) { /*{{{*/
 
@@ -110,17 +110,6 @@ func socketServer(w http.ResponseWriter, r *http.Request) { /*{{{*/
 Main:
 	for {
 		select {
-		//case <-time.After(time.Second / 1):
-		//msg.Msg = "$(\".navbar-brand\").html(\"" + time.Now().Fomat(time.StampMilli) + "\")"
-		//err := websocket.JSON.Send(ws, msg)
-
-		////buf := []byte("test")
-		////_, err := ws.Write(buf[:])
-		//if err != nil {
-		//fmt.Println(err)
-		//break Main
-		//}
-		//fmt.Printf("send:%q\n", buf[:])
 		case txt := <-WebSockets[pointer]:
 			log.Critical("Worker recived data: ", txt)
 			//websocket.Message.Send(ws, txt)
@@ -130,23 +119,24 @@ Main:
 				break Main
 			}
 		}
-		continue
+		//continue
 
 		// Receive receives a text message serialized T as JSON.
-		_, msg, err := ws.ReadMessage()
-		if err != nil {
-			fmt.Println(err)
-			break
-		}
-		fmt.Printf("recv:%#v\n", msg)
+		//_, msg, err := ws.ReadMessage()
+		//if err != nil {
+		//fmt.Println(err)
+		//break
+		//}
+		//fmt.Printf("recv:%#v\n", msg)
+
 		// Send send a text message serialized T as JSON.
-		err = ws.WriteJSON([]byte(msg))
+		//err = ws.WriteJSON([]byte(msg))
 		//err = websocket.JSON.Send(ws, msg)
-		if err != nil {
-			fmt.Println(err)
-			break
-		}
-		fmt.Printf("send:%#v\n", msg)
+		//if err != nil {
+		//fmt.Println(err)
+		//break
+		//}
+		//fmt.Printf("send:%#v\n", msg)
 	}
 } /*}}}*/
 
