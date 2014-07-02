@@ -1,77 +1,96 @@
-
 <!DOCTYPE html>
-<html lang="en">
+<html>
   <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="">
-    <meta name="author" content="">
+    <script src="bower_components/platform/platform.js"></script>
 
-    <title>Starter Template for Bootstrap</title>
+    <link rel="import"
+          href="bower_components/core-ajax/core-ajax.html">
 
-    <!-- Bootstrap core CSS -->
+<link rel="import" href="bower_components/font-roboto/roboto.html">
 
-    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
-    <!--[if lt IE 9]>
-      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
-      <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
-    <![endif]-->
-    <script src="js/libs/head.load.min.js"></script>
+<link rel="import" href="bower_components/core-scaffold/core-scaffold.html">
+<link rel="import" href="bower_components/core-header-panel/core-header-panel.html">
+<link rel="import" href="bower_components/core-menu/core-menu.html">
+<link rel="import" href="bower_components/core-item/core-item.html">
+<link rel="import" href="bower_components/core-icon-button/core-icon-button.html">
+<link rel="import" href="bower_components/core-toolbar/core-toolbar.html">
+<link rel="import" href="bower_components/core-menu/core-submenu.html">
+<link rel="import" href="bower_components/paper-tabs/paper-tabs.html">
+
+    <style>
+      html,body {
+        height: 100%;
+        margin: 0;
+        background-color: #E5E5E5;
+        font-family: 'RobotoDraft', sans-serif;
+      }
+    </style>
+
   </head>
-
   <body>
 
-    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
-      <div class="container">
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="navbar-brand" href="#">Project name</a>
-        </div>
-        <div class="collapse navbar-collapse">
-          <ul class="nav navbar-nav">
-            <li class="active"><a href="#">Home</a></li>
-            <li><a href="#nodes/">Nodes</a></li>
-            <li><a href="#test">Test</a></li>
-          </ul>
-        </div><!--/.nav-collapse -->
-      </div>
-    </div>
 
-    <div id="main" class="container">
 
-    </div><!-- /.container -->
-    <script>
 
-    head.load([
-            "js/libs/jquery-1.10.2.min.js",
-            "js/libs/bootstrap.min.js",
-            "js/libs/underscore-min.js",
-            "js/libs/backbone-min.js",
-            "js/libs/bootstrap-slider.min.js",
-            "js/libs/modernizr-min.js",
-            "js/router.js",
-            "js/websocket.js",
-            "js/views/nodes.view.js",
-            "js/models/nodes.model.js",
-            "css/bootstrap.css",
-            "css/starter-template.css",
-            "css/bootstrap-slider.min.css",
-        ], function() {
+<polymer-element name="my-element">
 
-        Stampzilla.loadTemplates(Stampzilla.getViews(),
-            function () {
-                //initialize our backbone Router
-                Stampzilla.Router = new Stampzilla.Routers.MainRouter();
-                Backbone.history.start();
-            });
+  <template>
+    <style>    
+      :host {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+      }
+      #core_scaffold {
+        position: absolute;
+        top: 0px;
+        right: 0px;
+        bottom: 0px;
+        left: 0px;
+      }
+      #core_header_panel {
+        background-color: rgb(255, 255, 255);
+      }
+      #core_toolbar {
+        color: rgb(255, 255, 255);
+        background-color: rgb(79, 125, 201);
+      }
+      #core_menu {
+        font-size: 16px;
+      }
+    </style>
+    <core-scaffold id="core_scaffold">
+      <core-header-panel mode="seamed" id="core_header_panel" navigation flex>
+        <core-toolbar id="core_toolbar">
+        </core-toolbar>
+        <core-menu selected="Item1" valueattr="label" selectedindex="0" id="core_menu" theme="core-light-theme">
+          <core-item label="Item1" icon="settings" id="core_item" horizontal center layout active></core-item>
+          <core-item label="Item2" icon="settings" id="core_item1" horizontal center layout></core-item>
+        </core-menu>
+      </core-header-panel>
+      <div id="div" tool>Stampzilla</div>
+
+          <paper-tabs selected="all" valueattr="name" self-end>
+            <paper-tab name="all">ALL</paper-tab>
+            <paper-tab name="favorites">FAVORITES</paper-tab>
+          </paper-tabs>
+    </core-scaffold>
+  </template>
+
+  <script>
+
+    Polymer('my-element', {
+      
     });
 
-    </script>
+  </script>
+
+</polymer-element>
+
+
+
+        <my-element></my-element>
+
   </body>
 </html>
