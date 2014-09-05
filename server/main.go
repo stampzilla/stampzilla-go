@@ -19,9 +19,21 @@ func main() {
 	// Load logger
 	logger, err := log.LoggerFromConfigAsFile("logconfig.xml")
 	if err != nil {
-		panic(err)
-	}
-	log.ReplaceLogger(logger)
+        testConfig := `
+        <seelog type="sync">
+            <outputs formatid="main">
+                <console/>
+            </outputs>
+            <formats>
+                <format id="main" format="%Ns [%Level] %Msg%n"/>
+            </formats>
+        </seelog>`
+
+        logger, _ := log.LoggerFromConfigAsBytes([]byte(testConfig))
+	    log.ReplaceLogger(logger)
+	} else {
+	    log.ReplaceLogger(logger)
+    }
 
 	Nodes = make(map[string]InfoStruct)
 
