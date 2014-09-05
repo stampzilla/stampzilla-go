@@ -1,0 +1,159 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<polymer-element name="x-websocket" attributes="url json jsonSend jsonReceive message" constructor="XWebsocket">
+	<template>
+		<style>
+			:host {
+				display: none;
+			}
+		</style>
+	</template>
+	<script type="text/javascript">
+		/* jshint newcap: false */
+		/*global Polymer */
+		(function() {
+			'use strict';
+			Polymer("x-websocket", {
+				//messageChanged: function() {
+				//	console.log("message",this.message);
+				//	this.send(this.message);
+				//},
+				message: '',
+				/**
+				 * Should both sent and received data be interpreted as json and encoded/decoded ? Defaults to false.
+				 * @public
+				 * @type {Boolean}
+				 */
+				json: false,
+				/**
+				 * Should sent data be json-encoded, even if {{json}} is falsy ? Defaults to false.
+				 * @public
+				 * @type {Boolean}
+				 */
+				jsonSend: false,
+				/**
+				 * Should received data be json-decoded, even if {{json}} is falsy ? Defaults to false.
+				 * @type {Boolean}
+				 */
+				jsonReceive: false,
+				/**
+				 * WebSocket object.
+				 * @private
+				 * @type {WebSocket}
+				 */
+				_ws: null,
+				/**
+				 * Send data through the WebSocket connection. Will optionally be json-encoded if {{json}} or {{jsonSend}} is truthy.
+				 * @public
+				 * @param  {*} data The data to send.
+				 */
+				send: function(data) {
+					if(!this._ws) {
+						throw new Error("x-websocket.send(...): not connected.");
+					}
+					if(this.json || this.jsonSend) {
+						data = JSON.stringify(data);
+					}
+					this._ws.send(data);
+				},
+				/**
+				 * Close the current connection. Optionally provide with a reason.
+				 * @public
+				 * @param {[String]} Optional closing reason to provide the server with.
+				 */
+				close: function(reason) {
+					if(this._ws) {
+						this._ws.close(reason);
+						this._ws = null;
+					}
+				},
+				/**
+				 * Underlying connection readyState getter.
+				 * @see {@link http://www.w3.org/TR/websockets/#dom-websocket-readystate}
+				 * @public
+				 * @type {Number}
+				 */
+				get readyState() {
+					if(this._ws) {
+						return this._ws.readyState;
+					}
+					else {
+						return -1;
+					}
+				},
+
+				/**
+				 * {{url}} change handler.
+				 * @private
+				 */
+				urlChanged: function() {
+					this._connect();
+				},
+
+				/**
+				 * Create a connection to the remote server identified by {{url}}.
+				 * @private
+				 */
+				_connect: function() {
+					if(!this.url) {
+						throw new Error("x-websocket.connect(...): no url.");
+					}
+					if(this._ws) {
+						throw new Error("x-websocket.connect(...): already connected.");
+					}
+					this._ws = new WebSocket(this.url);
+					this._ws.onopen = this._onwsopen.bind(this);
+					this._ws.onerror = this._onwserror.bind(this);
+					this._ws.onmessage = this._onwsmessage.bind(this);
+					this._ws.onclose = this._onwsclose.bind(this);
+				},
+				/**
+				 * WebSocket open event handler. Re-fires to the x-websocket element.
+				 * @private
+				 */
+				_onwsopen: function() {
+					if (typeof this.interval !== 'undefined') {
+						clearInterval(this.interval);
+					}
+					this.fire("open");
+				},
+				/**
+				 * WebSocket error event handler. Re-fires to the x-websocket element.
+				 * @private
+				 */
+				_onwserror: function() {
+					this.fire("error");
+				},
+				/**
+				 * WebSocket message event handler. Re-fires to the x-websocket element, after optionally json-parsing the payload if {{json}} or {{jsonReceive}} is truthy.
+				 * @private
+				 */
+				_onwsmessage: function(event) {
+					var data = event.data;
+					if(this.json || this.jsonReceive) {
+						data = JSON.parse(data);
+					}
+					this.fire("message", { data: data });
+					this.message = data;
+				},
+				/**
+				 * WebSocket close event handler.
+				 * @private
+				 */
+				_onwsclose: function(e) {
+					this._ws = null;
+					this.fire("error", { code: e.code, reason: e.reason });
+					if(e.code === 1001){
+						this._reconnect();
+					}
+				},
+				_reconnect: function(){
+					var self = this;
+					this.interval = setInterval(function(){
+						self._connect();
+					},5000);
+
+				}
+			});
+		})();
+	</script>
+</polymer-element>

@@ -1,0 +1,64 @@
+<link rel="import" href="/bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="/bower_components/core-animated-pages/core-animated-pages.html">
+<link rel="import" href="/bower_components/core-animated-pages/transitions/slide-down.html">
+<link rel="import" href="/bower_components/core-animated-pages/transitions/slide-up.html">
+<link rel="import" href="/bower_components/core-animated-pages/transitions/slide-from-right.html">
+<link rel="import" href="/bower_components/font-roboto/roboto.html">
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/core-scaffold/core-scaffold.html">
+<link rel="import" href="/bower_components/core-header-panel/core-header-panel.html">
+<link rel="import" href="/bower_components/core-menu/core-menu.html">
+<link rel="import" href="/bower_components/core-item/core-item.html">
+<link rel="import" href="/bower_components/core-icon-button/core-icon-button.html">
+<link rel="import" href="/bower_components/core-toolbar/core-toolbar.html">
+<link rel="import" href="/bower_components/core-menu/core-submenu.html">
+<link rel="import" href="x-websocket.html">
+
+<polymer-element name="stampzilla-devices-menu" attributes="websocketMessage" >
+	<template>
+		<link rel="stylesheet" href="stampzilla-devices-menu.css">
+
+		<core-menu valueattr="label" selectedindex="0" id="core_menu" theme="core-light-theme">
+			<template repeat="{{ device in devices  }}">
+				<core-item label="{{ device.Id }}" icon="settings" id="core_item" horizontal center layout active></core-item>
+			</template>
+		</core-menu>
+
+	</template>
+	<script>
+		/* jshint newcap: false */
+		/*global Polymer */
+
+		(function() {
+			"use strict";
+
+			Polymer('stampzilla-devices-menu', {
+				websocketMessage: {},
+				devices: [],
+				websocketMessageChanged: function(){
+					switch(this.websocketMessage.type){
+						case 'all':
+							this.devices = this.objectToArray(this.websocketMessage.data);
+							break;
+						case 'singlenode':
+							this.devices.push(this.websocketMessage.data);
+							break;
+					}
+				},
+				ready: function(){
+
+				},
+				objectToArray: function(object){
+					var arr = [];
+					for(var index in object) {
+					   if (object.hasOwnProperty(index)) {
+							arr.push(object[index]);
+					   }
+					}
+					return arr;
+				}
+			});
+
+		})();
+	</script>
+</polymer-element>
