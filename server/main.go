@@ -14,6 +14,8 @@ func main() {
 	flag.StringVar(&webPort, "web-port", "8080", "Webserver port")
 	flag.Parse()
 
+	clients = newClients()
+
 	// Load logger
 	logger, err := log.LoggerFromConfigAsFile("logconfig.xml")
 	if err != nil {

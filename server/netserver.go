@@ -75,6 +75,8 @@ func newClient(c net.Conn) {
 			if id != "" {
 				delete(Nodes, id)
 			}
+			//TODO be able to not send everything always.
+			clients.messageOtherClients(&Message{"all", Nodes})
 			return
 		}
 
@@ -100,20 +102,22 @@ func newClient(c net.Conn) {
 				}
 			}
 
+			clients.messageOtherClients(&Message{"singlenode", Nodes[info.Id]})
+			//clients.messageOtherClients(&Message{"all", Nodes})
 			// Skicka till alla
-			for n, _ := range WebSockets {
-				if WebSockets[n] != nil {
-					select {
-					case WebSockets[n] <- string(data):
-					default:
-					}
-				}
-			}
+			//for n, _ := range WebSockets {
+			//if WebSockets[n] != nil {
+			//select {
+			//case WebSockets[n] <- string(data):
+			//default:
+			//}
+			//}
+			//}
 		}
 
 		/*_, err = c.Write(data)
 		  if err != nil {
-		      fmt.Println("Failed write: ", err)
+			  fmt.Println("Failed write: ", err)
 		  }*/
 	}
 }
