@@ -25,3 +25,20 @@ void unregisterCallbacks() {
 	tdUnregisterCallback( callbackRawDeviceEvent );
 	tdClose();
 }
+
+void updateDevices( ) {
+    int intNumberOfDevices = tdGetNumberOfDevices();
+    int i;
+    for (i = 0; i < intNumberOfDevices; i++) {
+        int id = tdGetDeviceId( i );
+        char *name = tdGetName( id );
+        int methods = tdMethods(id, TELLSTICK_TURNON | TELLSTICK_TURNOFF | TELLSTICK_BELL | TELLSTICK_TOGGLE | TELLSTICK_DIM | TELLSTICK_EXECUTE | TELLSTICK_UP | TELLSTICK_DOWN | TELLSTICK_STOP );
+
+        int state = tdLastSentCommand( id, TELLSTICK_TURNON | TELLSTICK_TURNOFF | TELLSTICK_DIM );
+        char *value = tdLastSentValue( id );
+
+        newDevice(id,name,methods,state,value);
+
+        tdReleaseString(name);
+    }
+}
