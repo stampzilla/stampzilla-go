@@ -1,0 +1,102 @@
+<link rel="import" href="/bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="/bower_components/core-animated-pages/core-animated-pages.html">
+<link rel="import" href="/bower_components/core-animated-pages/transitions/slide-down.html">
+<link rel="import" href="/bower_components/core-animated-pages/transitions/slide-up.html">
+<link rel="import" href="/bower_components/core-animated-pages/transitions/slide-from-right.html">
+<link rel="import" href="/bower_components/font-roboto/roboto.html">
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/core-scaffold/core-scaffold.html">
+<link rel="import" href="/bower_components/core-header-panel/core-header-panel.html">
+<link rel="import" href="/bower_components/core-menu/core-menu.html">
+<link rel="import" href="/bower_components/core-item/core-item.html">
+<link rel="import" href="/bower_components/core-icon-button/core-icon-button.html">
+<link rel="import" href="/bower_components/core-toolbar/core-toolbar.html">
+<link rel="import" href="/bower_components/core-menu/core-submenu.html">
+<link rel="import" href="x-websocket.html">
+
+<polymer-element name="stampzilla-default-layout" attributes="layoutId devices selectedDevice" >
+	<template>
+		<link rel="stylesheet" href="stampzilla-default-layout.css">
+
+		<template repeat="{{ action in actions  }}">
+			<div>{{action.Name}}</div>
+			<div>{{layoutId}}</div>
+		</template>
+	
+		test
+
+	</template>
+	<script>
+		/* jshint newcap: false */
+		/*global Polymer */
+
+		(function() {
+			"use strict";
+
+			Polymer('stampzilla-default-layout', {
+				devices: [],
+				layoutId: null,
+				actions: [],
+				selectedDevice: null,
+				selectedDeviceChanged: function(){
+					if(this.selectedDevice === null){
+						return [];
+					}
+					
+					var object = this.devices[this.selectedDevice].Layout;
+					var arr = [];
+					for(var index in object) {
+						if (object.hasOwnProperty(index)) {
+							if(arr.indexOf(object[index].Section) === -1){
+								arr.push(object[index].Section);
+							}
+						}
+					}
+					this.tabs = arr;
+				},
+				ready: function(){
+				},
+				layoutIdChanged: function(){
+					console.log(this.selectedDevice);
+					console.log(this.layoutId);
+					var layout = this.devices[this.selectedDevice].Layout[this.layoutId];
+
+					var devices = this.devices[this.selectedDevice].State[layout.Using];
+
+					var arr = [];
+
+					var featureIsMissing = false;
+					for(var index in devices) {
+						if (devices.hasOwnProperty(index)) {
+							featureIsMissing = false;
+							for(var index2 in layout.Filter) {
+								if (layout.Filter.hasOwnProperty(index2)) {
+									
+									if(devices[index].Features.indexOf(layout.Filter[index2]) === -1){
+										featureIsMissing = true;
+									}
+
+								}
+							}
+							if(!featureIsMissing){
+								arr.push(devices[index]);
+							}
+						}
+					}
+
+					this.actions = arr;
+				},
+				objectToArray: function(object){
+					var arr = [];
+					for(var index in object) {
+						if (object.hasOwnProperty(index)) {
+							arr.push(object[index]);
+						}
+					}
+					return arr;
+				}
+			});
+
+		})();
+	</script>
+</polymer-element>
