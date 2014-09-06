@@ -1,0 +1,101 @@
+<link rel="import" href="/bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="/bower_components/core-animated-pages/core-animated-pages.html">
+<link rel="import" href="/bower_components/core-animated-pages/transitions/slide-down.html">
+<link rel="import" href="/bower_components/core-animated-pages/transitions/slide-up.html">
+<link rel="import" href="/bower_components/core-animated-pages/transitions/slide-from-right.html">
+<link rel="import" href="/bower_components/font-roboto/roboto.html">
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/core-scaffold/core-scaffold.html">
+<link rel="import" href="/bower_components/core-header-panel/core-header-panel.html">
+<link rel="import" href="/bower_components/core-menu/core-menu.html">
+<link rel="import" href="/bower_components/core-item/core-item.html">
+<link rel="import" href="/bower_components/core-icon-button/core-icon-button.html">
+<link rel="import" href="/bower_components/core-toolbar/core-toolbar.html">
+<link rel="import" href="/bower_components/core-menu/core-submenu.html">
+<link rel="import" href="stampzilla-default-layout.html">
+
+<polymer-element name="stampzilla-device" attributes="selectedDevice devices" >
+	<template>
+		<link rel="stylesheet" href="stampzilla-device.css">
+		<paper-tabs selected="{{page}}" class="mainTabs" >
+			<template repeat="{{ tab in tabs  }}">
+				<paper-tab >{{tab.Section}}</paper-tab>
+			</template>
+		</paper-tabs>
+		
+		<core-animated-pages transitions="slide-from-right" selected="{{page}}" selectedindex="0" >
+			<template repeat="{{ tab,key in tabs  }}">
+				<section id="{{tab}}">
+					<div slide-from-right>
+						<template repeat="{{ layout in tab.Layouts }}">
+							<stampzilla-default-layout layoutId="{{layout.index}}" selectedDevice="{{selectedDevice}}" devices="{{devices}}"></stampilla-default-layout>
+						</template>
+					</div>
+				</section>
+			</template>
+		</core-animated-pages>
+
+
+	</template>
+	<script>
+		/* jshint newcap: false */
+		/*global Polymer */
+
+		(function() {
+			"use strict";
+
+			Polymer('stampzilla-device', {
+				websocketMessage: {},
+				selectedDevice: null,
+				devices: [],
+				tabs: [],
+				page:0,
+				selectedDeviceChanged: function(){
+					if(this.selectedDevice === null){
+						return [];
+					}
+					
+					var object = this.devices[this.selectedDevice].Layout;
+					var arr = [];
+					var layouts = {};
+					for(var index in object) {
+						if (object.hasOwnProperty(index)) {
+							//Lägg till sectioner som inte redan finns i arr listan. 
+							if(arr.indexOf(object[index].Section) === -1){
+								arr.push(object[index].Section);
+							}
+
+							//spara layouterna med section som nyckel. 
+							if(layouts[object[index].Section] === undefined){
+								layouts[object[index].Section] = [];
+							}
+							object[index].index = index;
+							layouts[object[index].Section].push(object[index]);
+						}
+					}
+
+					//skapa object med sections namn och layouter. 
+					arr.forEach(function(data,index){
+						arr[index] = {Section:data};
+						arr[index].Layouts = layouts[data];
+					});
+
+					this.tabs = arr;
+				},
+				ready: function(){
+
+				},
+				objectToArray: function(object){
+					var arr = [];
+					for(var index in object) {
+						if (object.hasOwnProperty(index)) {
+							arr.push(object[index]);
+						}
+					}
+					return arr;
+				}
+			});
+
+		})();
+	</script>
+</polymer-element>

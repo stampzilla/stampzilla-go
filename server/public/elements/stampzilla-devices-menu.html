@@ -14,13 +14,13 @@
 <link rel="import" href="/bower_components/core-menu/core-submenu.html">
 <link rel="import" href="x-websocket.html">
 
-<polymer-element name="stampzilla-devices-menu" attributes="websocketMessage" >
+<polymer-element name="stampzilla-devices-menu" attributes="websocketMessage selectedDevice devices" >
 	<template>
 		<link rel="stylesheet" href="stampzilla-devices-menu.css">
 
 		<core-menu valueattr="label" selectedindex="0" id="core_menu" theme="core-light-theme">
-			<template repeat="{{ device in devices  }}">
-				<core-item label="{{ device.Id }}" icon="settings" id="core_item" horizontal center layout active></core-item>
+			<template repeat="{{ device,key in devices  }}">
+				<core-item data-key="{{key}}" on-tap="{{selectDevice}}" label="{{ device.Id }}" icon="settings" id="core_item" horizontal center layout active></core-item>
 			</template>
 		</core-menu>
 
@@ -35,6 +35,10 @@
 			Polymer('stampzilla-devices-menu', {
 				websocketMessage: {},
 				devices: [],
+				selectedDevice: null,
+				selectDevice: function(a,b,c){
+					this.selectedDevice = c.dataset.key;
+				},
 				websocketMessageChanged: function(){
 					switch(this.websocketMessage.type){
 						case 'all':

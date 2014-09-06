@@ -14,6 +14,7 @@
 <link rel="import" href="/bower_components/core-menu/core-submenu.html">
 <link rel="import" href="x-websocket.html">
 <link rel="import" href="stampzilla-devices-menu.html">
+<link rel="import" href="stampzilla-device.html">
 
 <polymer-element name="stampzilla-app" >
 	<template>
@@ -30,7 +31,7 @@
 				</core-toolbar>
 				<core-animated-pages transitions="slide-from-right" selected="{{page}}" selectedindex="0" >
 					<section id="devices">
-						<stampzilla-devices-menu websocketMessage="{{websocketMessage}}">
+						<stampzilla-devices-menu devices="{{devices}}" selectedDevice="{{selectedDevice}}" websocketMessage="{{websocketMessage}}">
 						</stampzilla-devices-menu>
 					</section>
 					<section id="rooms">
@@ -41,11 +42,10 @@
 					</section>
 				</core-animated-pages>
 			</core-header-panel>
-		  <div id="div" tool>Stampzilla</div>
-			  <paper-tabs class="mainTabs" selected="all" valueattr="name" self-end>
-				<paper-tab name="all">ALL</paper-tab>
-				<paper-tab name="favorites">FAVORITES</paper-tab>
-			  </paper-tabs>
+			<div id="div" tool>Stampzilla</div>
+
+			<stampzilla-device devices="{{devices}}" selectedDevice={{selectedDevice}}></stampzilla-device>
+
 		</core-scaffold>
 
 
