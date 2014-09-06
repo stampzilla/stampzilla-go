@@ -12,6 +12,8 @@
 <link rel="import" href="/bower_components/core-icon-button/core-icon-button.html">
 <link rel="import" href="/bower_components/core-toolbar/core-toolbar.html">
 <link rel="import" href="/bower_components/core-menu/core-submenu.html">
+<link rel="import" href="/bower_components/paper-toggle-button/paper-toggle-button.html">
+<link rel="import" href="/bower_components/paper-slider/paper-slider.html">
 <link rel="import" href="x-websocket.html">
 
 <polymer-element name="stampzilla-default-layout" attributes="layoutId devices selectedDevice" >
@@ -21,11 +23,11 @@
 		<template repeat="{{ action in actions  }}">
 			<template if="{{ action.layout.Type == 'switch' }}">
 				<div>SWITCH - {{action.data.Name}}</div>
-				<div>{{action.data.State}}</div>
+				<paper-toggle-button checked="{{action.data.State | parseTrueFalse}}" ></paper-toggle-button>
 			</template>
 			<template if="{{ action.layout.Type == 'slider' }}">
 				<div>SLIDER - {{action.data.Name}}</div>
-				<div>{{action.data.State}}</div>
+				<paper-slider pin value="{{action.data.State}}"></paper-slider>
 			</template>
 		</template>
 	
@@ -59,6 +61,13 @@
 						}
 					}
 					this.tabs = arr;
+				},
+				//since State is string in golang we must parse this here. 
+				parseTrueFalse: function(data){
+					if(data === 'false'){
+						return false;
+					}
+					return true;
 				},
 				ready: function(){
 				},
