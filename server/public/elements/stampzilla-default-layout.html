@@ -19,8 +19,14 @@
 		<link rel="stylesheet" href="stampzilla-default-layout.css">
 
 		<template repeat="{{ action in actions  }}">
-			<div>{{action.Name}}</div>
-			<div>{{layoutId}}</div>
+			<template if="{{ action.layout.Type == 'switch' }}">
+				<div>SWITCH - {{action.data.Name}}</div>
+				<div>{{action.data.State}}</div>
+			</template>
+			<template if="{{ action.layout.Type == 'slider' }}">
+				<div>SLIDER - {{action.data.Name}}</div>
+				<div>{{action.data.State}}</div>
+			</template>
 		</template>
 	
 		test
@@ -79,7 +85,9 @@
 								}
 							}
 							if(!featureIsMissing){
-								arr.push(devices[index]);
+								var obj = {data:devices[index],layout:layout};
+								console.log(obj);
+								arr.push(obj);
 							}
 						}
 					}
