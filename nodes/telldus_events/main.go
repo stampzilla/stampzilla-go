@@ -52,8 +52,9 @@ func main() {
 	node.AddAction("dim", "Dim", []string{"Devices.Id", "value"})
 
 	// Describe available layouts
-	node.AddLayout("1", "switch", "toggle", "Devices", []string{"toggle"}, "Lamps")
-	node.AddLayout("2", "slider", "dim", "Devices", []string{"dim"}, "Lamps")
+	node.AddLayout("1", "switch", "toggle", "Devices", []string{"on"}, "Switches")
+	node.AddLayout("2", "slider", "dim", "Devices", []string{"dim"}, "Dimmers")
+	node.AddLayout("3", "slider", "dim", "Devices", []string{"dim"}, "Specials")
 
 	// Add devices
 	C.updateDevices()
@@ -65,8 +66,37 @@ func main() {
 }
 
 func processCommand(cmd protocol.Command) {
+	var result C.int = C.TELLSTICK_ERROR_UNKNOWN
+	var id C.int = 9
+
 	switch cmd.Cmd {
+	case "on":
+		result = C.tdTurnOn(id)
+	case "off":
+		result = C.tdTurnOff(id)
 	case "toggle":
+		s := C.tdLastSentCommand(id, C.TELLSTICK_TURNON|C.TELLSTICK_TURNOFF|C.TELLSTICK_DIM)
+		switch {
+		case s&C.TELLSTICK_DIM != 0:
+			var state *C.char = C.tdLastSentValue(id)
+			log.Info("DIM: ", C.GoString(state))
+			if C.GoString(state) == "0" {
+				result = C.tdTurnOn(id)
+			} else {
+				result = C.tdTurnOff(id)
+			}
+			C.tdReleaseString(state)
+		case s&C.TELLSTICK_TURNON != 0:
+			result = C.tdTurnOff(id)
+		case s&C.TELLSTICK_TURNOFF != 0:
+			result = C.tdTurnOn(id)
+		}
+	}
+
+	if result != C.TELLSTICK_SUCCESS {
+		var errorString *C.char = C.tdGetErrorString(result)
+		log.Error(C.GoString(errorString))
+		C.tdReleaseString(errorString)
 	}
 }
 
