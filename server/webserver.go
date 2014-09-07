@@ -21,10 +21,18 @@ func (r Response) String() (s string) {
 	}
 	s = string(b)
 	return
-}                            /*}}}*/
-func webStart(port string) { /*{{{*/
+}                                  /*}}}*/
+func webStart(port, root string) { /*{{{*/
 
-	m := martini.Classic()
+	//m := martini.Classic()
+	r := martini.NewRouter()
+	ma := martini.New()
+	ma.Use(martini.Logger())
+	ma.Use(martini.Recovery())
+	ma.Use(martini.Static(root))
+	ma.MapTo(r, (*martini.Routes)(nil))
+	ma.Action(r.Handle)
+	m := &martini.ClassicMartini{ma, r}
 
 	m.Use(func(c martini.Context, w http.ResponseWriter) {
 		c.MapTo(encoder.JsonEncoder{}, (*encoder.Encoder)(nil))
