@@ -67,7 +67,15 @@ func main() {
 
 func processCommand(cmd protocol.Command) {
 	var result C.int = C.TELLSTICK_ERROR_UNKNOWN
-	var id C.int = 9
+	var id C.int = 0
+
+	i, err := strconv.Atoi(cmd.Args[0])
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	id = C.int(i)
 
 	switch cmd.Cmd {
 	case "on":
