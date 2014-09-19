@@ -50,7 +50,9 @@ func main() {
 	// Describe available layouts
 	node.AddLayout("1", "switch", "toggle", "Devices", []string{"on"}, "")
 	node.AddLayout("2", "slider", "dim", "Devices", []string{"dim"}, "")
+	node.AddLayout("3", "color-picker", "dim", "Devices", []string{"color"}, "")
 
+	node.AddDevice("0","Color",[]string{"color"},"0");
 	node.AddDevice("1","Red",[]string{"dim"},"0");
 	node.AddDevice("2","Green",[]string{"dim"},"0");
 	node.AddDevice("3","Blue",[]string{"dim"},"0");
