@@ -1,7 +1,7 @@
 stampzilla-go
 =============
 
-New version of stampzilla written in GO and javascript with backbonejs
+New version of stampzilla written in GO and javascript with Polymer and webcomponents. 
 
 After clone install go deps:
 ```bash
