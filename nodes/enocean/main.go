@@ -33,6 +33,7 @@ func processPacket(data []byte) {
 	p, err := goenocean.Decode(data)
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 
 	fmt.Println(p)
