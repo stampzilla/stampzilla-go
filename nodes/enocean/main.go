@@ -20,9 +20,8 @@ func main() {
 
 func testSend(send chan goenocean.Packet) {
 	p := goenocean.NewTelegramRps()
-	//p.SetSenderId([4]byte{0xfe, 0xfe, 0x74, 0x9b}) //the hardcoded senderid of my PTM215 button
 	p.SetTelegramData(0x50) //on
-	p.SetStatus(0x30)
+	//p.SetStatus(0x30) //testing shows this does not need to be set! Status defaults to 0
 
 	fmt.Println("Sending:", p.Encode())
 	send <- p
