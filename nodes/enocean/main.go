@@ -3,6 +3,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/jonaz/goenocean"
 )
@@ -19,14 +20,16 @@ func main() {
 
 func testSend(send chan goenocean.Packet) {
 	p := goenocean.NewTelegramRps()
-	p.SetSenderId([4]byte{0xfe, 0xfe, 0x74, 0x9b}) //the hardcoded senderid of my PTM215 button
-	//p.SetTelegramData(0x70) //off
+	//p.SetSenderId([4]byte{0xfe, 0xfe, 0x74, 0x9b}) //the hardcoded senderid of my PTM215 button
 	p.SetTelegramData(0x50) //on
-	//p.SetStatus(0x30)
+	p.SetStatus(0x30)
 
-	fmt.Printf("sending: % x\n", p.Encode())
+	fmt.Println("Sending:", p.Encode())
 	send <- p
 
+	time.Sleep(time.Second * 3)
+	p.SetTelegramData(0x70) //off
+	send <- p
 }
 
 func reciever(recv chan goenocean.Packet) {
