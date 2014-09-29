@@ -14,7 +14,7 @@ func main() {
 	recv := make(chan goenocean.Packet)
 	goenocean.Serial(send, recv)
 
-	testSend(send)
+	go testSend(send)
 	reciever(recv)
 }
 
@@ -41,9 +41,14 @@ func reciever(recv chan goenocean.Packet) {
 			fmt.Printf("senderID: % x\n", p.SenderId())
 
 			if b, ok := p.(*goenocean.TelegramRps); ok {
-				fmt.Printf("Action: %d\n", b.Action())
-				fmt.Printf("Action: %b\n", b.Action())
-				fmt.Printf("Action: %s\n", b.Action())
+				eep := goenocean.NewEepF60201()
+				eep.SetTelegram(b) //THIS IS COOL!
+
+				fmt.Println("EB:", eep.EnergyBow())
+				fmt.Println("R1B0:", eep.R1B0())
+				fmt.Println("R2B0:", eep.R2B0())
+				fmt.Println("R2B1:", eep.R2B1())
+				fmt.Printf("raw data: %b\n", eep.TelegramData())
 			}
 
 		}
