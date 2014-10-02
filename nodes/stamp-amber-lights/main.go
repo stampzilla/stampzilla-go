@@ -4,6 +4,7 @@ import (
 	"flag"
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/protocol"
+	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/tarm/goserial"
 	"io"
 	"bytes"
@@ -19,20 +20,16 @@ var c0 *SerialConnection;
 var targetColor [4]byte;
 var state *State = &State{[]*Device{},make(map[string]*Sensor,0)};
 
+
+var send chan string = make(chan string)
+
 type SerialConnection struct {
     Name string
     Baud int
 	Port io.ReadWriteCloser
 }
 
-func main() {
-	// Load logger
-	logger, err := log.LoggerFromConfigAsFile("../logconfig.xml")
-	if err != nil {
-		panic(err)
-	}
-	log.ReplaceLogger(logger)
-
+func init() {
 	// Load flags
 	var host string
 	var port string
@@ -42,8 +39,24 @@ func main() {
 	flag.StringVar(&dev, "dev", "/dev/ttyACM0", "Arduino serial port")
 	flag.Parse()
 
-	// Create new node description
+	//Setup Config
+	basenode.SetConfig(
+		&basenode.Config{
+			Host: host,
+			Port: port})
 
+	//Start communication with the server
+	recv := make(chan protocol.Command)
+	connectionState := basenode.Connect(send, recv)
+	go monitorState(connectionState, send)
+	go serverRecv(recv)
+
+	// Setup the serial connection
+	c0 = &SerialConnection{Name: dev, Baud: 9600}
+}
+
+func main() {
+	// Create new node description
 	node = protocol.NewNode("stamp-amber-lights")
 	node.SetState(state)
 	state.Sensors["temp1"] = NewSensor("temp1","Temperature - Bottom level","20C");
@@ -66,19 +79,41 @@ func main() {
 	state.AddDevice("2","Green",[]string{"dim"},"0");
 	state.AddDevice("3","Blue",[]string{"dim"},"0");
 
-	// Start the connection
-	go connection(host, port, node)
-
-	c0 = &SerialConnection{Name: dev, Baud: 9600}
 	c0.connect();
 
 	for {
 		select {
 			case <- time.After(time.Second):
 				state.Sensors["press"].State = strconv.FormatInt(int64(rand.Intn(40) + 980),10) +" hPa"
-				sendUpdate(node)
+					d, err := node.JsonEncode()
+					if err != nil {
+						log.Error(err)
+					}
+					send <- d
 		}
 	}
+}
+
+func monitorState(connectionState chan int, send chan string) {
+	for s := range connectionState {
+		switch s {
+		case basenode.ConnectionStateConnected:
+			d, err := node.JsonEncode()
+			if err != nil {
+				log.Error(err)
+			}
+			send <- d
+		case basenode.ConnectionStateDisconnected:
+		}
+	}
+}
+
+func serverRecv(recv chan protocol.Command) {
+
+	for d := range recv {
+		processCommand(d)
+	}
+
 }
 
 func processCommand(cmd protocol.Command) {
