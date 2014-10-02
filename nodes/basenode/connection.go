@@ -16,7 +16,7 @@ const (
 	ConnectionStateDisconnected = 0
 )
 
-func Connect(send chan string, recv chan protocol.Command) chan int {
+func Connect(send chan interface{}, recv chan protocol.Command) chan int {
 	connectionState := make(chan int)
 	go func() {
 		for {
@@ -44,11 +44,19 @@ func Connect(send chan string, recv chan protocol.Command) chan int {
 	return connectionState
 }
 
-func sendWorker(connection net.Conn, send chan string, quit chan bool) {
+func sendWorker(connection net.Conn, send chan interface{}, quit chan bool) {
 	for {
 		select {
 		case d := <-send:
-			fmt.Fprintf(connection, d)
+
+			if a, ok := d.(protocol.Node); ok {
+				a.Uuid = "teest"
+			}
+			ret, err := json.Marshal(d)
+			if err != nil {
+				fmt.Println("Error marshal json", err)
+			}
+			fmt.Fprintf(connection, string(ret))
 		case <-quit:
 			return
 

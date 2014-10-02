@@ -23,13 +23,14 @@ func init() {
 	flag.Parse()
 
 	//Setup Config
-	basenode.SetConfig(
-		&basenode.Config{
-			Host: host,
-			Port: port})
+	config := &basenode.Config{
+		Host: host,
+		Port: port}
+
+	basenode.SetConfig(config)
 
 	//Start communication with the server
-	send := make(chan string)
+	send := make(chan interface{})
 	recv := make(chan protocol.Command)
 	connectionState := basenode.Connect(send, recv)
 	go monitorState(connectionState, send)
@@ -53,15 +54,11 @@ func main() {
 	setupEnoceanCommunication()
 }
 
-func monitorState(connectionState chan int, send chan string) {
+func monitorState(connectionState chan int, send chan interface{}) {
 	for s := range connectionState {
 		switch s {
 		case basenode.ConnectionStateConnected:
-			d, err := node.JsonEncode()
-			if err != nil {
-				log.Error(err)
-			}
-			send <- d
+			send <- node
 		case basenode.ConnectionStateDisconnected:
 		}
 	}

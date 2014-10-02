@@ -3,8 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	log "github.com/cihub/seelog"
 	"net"
+
+	log "github.com/cihub/seelog"
 )
 
 var NodesConnection map[string]net.Conn
@@ -85,7 +86,7 @@ func newClient(c net.Conn) {
 		var info InfoStruct
 		err = json.Unmarshal(data, &info)
 		if err != nil {
-			log.Warn(err)
+			log.Warn(err, info)
 		} else {
 			id = info.Id
 			Nodes[info.Id] = info

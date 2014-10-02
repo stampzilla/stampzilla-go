@@ -4,6 +4,7 @@ import "encoding/json"
 
 type Node struct { /*{{{*/
 	Id      string
+	Uuid    string
 	Actions []*Action
 	Layout  []*Layout
 	State   State
@@ -16,6 +17,7 @@ type State interface {
 func NewNode(name string) *Node {
 	return &Node{
 		Id:      name,
+		Uuid:    "",
 		Actions: []*Action{},
 		Layout:  []*Layout{}}
 }
@@ -37,7 +39,6 @@ func (n *Node) SetState(state State) {
 }
 
 func (n *Node) JsonEncode() (string, error) {
-
 	ret, err := json.Marshal(n)
 	if err != nil {
 		return "", err
