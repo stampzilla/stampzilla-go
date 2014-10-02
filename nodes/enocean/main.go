@@ -2,6 +2,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"time"
 
@@ -14,11 +15,18 @@ import (
 var node *protocol.Node
 
 func init() {
+	var host string
+	var port string
+	flag.StringVar(&host, "host", "192.168.13.2", "Server host/ip")
+	flag.StringVar(&port, "port", "8282", "Server port")
+
+	flag.Parse()
+
 	//Setup Config
 	basenode.SetConfig(
 		&basenode.Config{
-			Port: "8383",
-			Host: "192.168.13.2"})
+			Host: host,
+			Port: port})
 
 	//Start communication with the server
 	send := make(chan string)

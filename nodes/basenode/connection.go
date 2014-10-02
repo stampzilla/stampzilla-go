@@ -57,9 +57,6 @@ func sendWorker(connection net.Conn, send chan string, quit chan bool) {
 }
 
 func connectionWorker(connection net.Conn, recv chan protocol.Command) {
-	// Send update
-	//sendUpdate(info)
-
 	// Recive data
 	for {
 		reader := bufio.NewReader(connection)
@@ -81,11 +78,3 @@ func connectionWorker(connection net.Conn, recv chan protocol.Command) {
 
 	}
 }
-
-//func sendUpdate(info *protocol.Node) {
-//b, err := json.Marshal(info)
-//if err != nil {
-//log.Error(err)
-//}
-//fmt.Fprintf(Connection, string(b))
-//}
