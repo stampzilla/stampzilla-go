@@ -13,11 +13,9 @@ type State interface {
 
 func NewNode(name string, state State) *Node {
 	return &Node{
-		name,
-		[]*Action{},
-		[]*Layout{},
-		state,
-	}
+		Id:      name,
+		Actions: []*Action{},
+		Layout:  []*Layout{}}
 }
 
 func (n *Node) AddAction(id, name string, args []string) {
@@ -30,4 +28,8 @@ func (n *Node) AddLayout(id, atype, action, using string, filter []string, secti
 	l := NewLayout(id, atype, action, using, filter, section)
 
 	n.Layout = append(n.Layout, l)
+}
+
+func (n *Node) SetState(state State) {
+	n.State = state
 }
