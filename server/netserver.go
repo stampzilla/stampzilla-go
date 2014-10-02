@@ -11,18 +11,11 @@ import (
 var NodesConnection map[string]net.Conn
 var NodesWait map[string]chan bool
 
-type Device struct {
-	Id       string
-	Name     string
-	State    string
-	Type     string
-	Features []string
-}
 type InfoStruct struct {
 	Id      string
 	Actions []Action
 	Layout  []Layout
-	State   State
+	State   interface{}
 }
 type Action struct {
 	Id        string
@@ -36,9 +29,6 @@ type Layout struct {
 	Using   string
 	Filter  []string
 	Section string
-}
-type State struct {
-	Devices []Device
 }
 
 func netStart(port string) {
