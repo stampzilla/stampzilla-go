@@ -11,7 +11,7 @@ type State interface {
 	GetState() interface{}
 }
 
-func NewNode(name string, state State) *Node {
+func NewNode(name string) *Node {
 	return &Node{
 		Id:      name,
 		Actions: []*Action{},

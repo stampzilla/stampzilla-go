@@ -2,7 +2,7 @@ package main
 
 type State struct { /*{{{*/
 	Devices []*Device
-	Sensors map[string]string
+	Sensors map[string]*Sensor
 } /*}}}*/
 
 

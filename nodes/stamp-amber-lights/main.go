@@ -9,13 +9,15 @@ import (
 	"bytes"
 	"encoding/binary"
 	"strconv"
+	"math/rand"
+	"time"
 )
 
 var node *protocol.Node
 var c0 *SerialConnection;
 
 var targetColor [4]byte;
-var state *State = &State{[]*Device{},make(map[string]string,0)};
+var state *State = &State{[]*Device{},make(map[string]*Sensor,0)};
 
 type SerialConnection struct {
     Name string
@@ -42,8 +44,11 @@ func main() {
 
 	// Create new node description
 
-	node = protocol.NewNode("stamp-amber-lights", state)
-	state.Sensors["glass"] = "pinne";
+	node = protocol.NewNode("stamp-amber-lights")
+	node.SetState(state)
+	state.Sensors["temp1"] = NewSensor("temp1","Temperature - Bottom level","20C");
+	state.Sensors["temp2"] = NewSensor("temp2","Temperature - Top level","30C");
+	state.Sensors["press"] = NewSensor("press","Air pressure","1019 hPa");
 
 	// Describe available actions
 	node.AddAction("set", "Set", []string{"Devices.Id"})
@@ -51,9 +56,10 @@ func main() {
 	node.AddAction("dim", "Dim", []string{"Devices.Id", "value"})
 
 	// Describe available layouts
-	node.AddLayout("1", "switch", "toggle", "Devices", []string{"on"}, "")
-	node.AddLayout("2", "slider", "dim", "Devices", []string{"dim"}, "")
-	node.AddLayout("3", "color-picker", "dim", "Devices", []string{"color"}, "")
+	node.AddLayout("1", "switch", "toggle", "Devices", []string{"on"}, "Lights")
+	node.AddLayout("2", "slider", "dim", "Devices", []string{"dim"}, "Lights")
+	node.AddLayout("3", "color-picker", "dim", "Devices", []string{"color"}, "Lights")
+	node.AddLayout("4", "text", "", "Sensors", []string{}, "Sensors")
 
 	state.AddDevice("0","Color",[]string{"color"},"0");
 	state.AddDevice("1","Red",[]string{"dim"},"0");
@@ -66,7 +72,13 @@ func main() {
 	c0 = &SerialConnection{Name: dev, Baud: 9600}
 	c0.connect();
 
-	select {}
+	for {
+		select {
+			case <- time.After(time.Second):
+				state.Sensors["press"].State = strconv.FormatInt(int64(rand.Intn(40) + 980),10) +" hPa"
+				sendUpdate(node)
+		}
+	}
 }
 
 func processCommand(cmd protocol.Command) {
