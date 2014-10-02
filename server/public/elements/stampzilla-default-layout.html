@@ -14,6 +14,7 @@
 <link rel="import" href="/bower_components/core-menu/core-submenu.html">
 <link rel="import" href="/bower_components/paper-toggle-button/paper-toggle-button.html">
 <link rel="import" href="/bower_components/paper-slider/paper-slider.html">
+<link rel="import" href="/bower_components/color-picker-element/dist/color-picker.html">
 <link rel="import" href="x-websocket.html">
 
 <polymer-element name="stampzilla-default-layout" attributes="layoutId devices selectedDevice" >
@@ -29,6 +30,10 @@
 				<div>SLIDER - {{action.data.Name}}</div>
 				<paper-slider pin value="{{action.data.State}}"></paper-slider>
 			</template>
+			<template if="{{ action.layout.Type == 'color-picker' }}">
+				<div>COLOR PICKER - {{action.data.Name}}</div>
+                <color-picker on-colorselected="{{colorselect}}"></paper-slider>
+			</template>
 		</template>
 	
 		test
@@ -37,6 +42,7 @@
 	<script>
 		/* jshint newcap: false */
 		/*global Polymer */
+
 
 		(function() {
 			"use strict";
@@ -52,6 +58,8 @@
 					}
 					
 					var object = this.devices[this.selectedDevice].Layout;
+
+                    // Create a list of all groups/tabs
 					var arr = [];
 					for(var index in object) {
 						if (object.hasOwnProperty(index)) {
@@ -70,8 +78,13 @@
 					return true;
 				},
 				ready: function(){
+
+                },
+                colorselect: function (e){
+                    console.log(e);
+                    console.log(e.detail.hex + ' (r=' + e.detail.rgb.r + ', g=' + e.detail.rgb.g + ', b=' + e.detail.rgb.b + ')');
 				},
-				layoutIdChanged: function(){
+				layoutIdChanged: function(){ // (The selected tab is changed)
 					console.log(this.selectedDevice);
 					console.log(this.layoutId);
 					var layout = this.devices[this.selectedDevice].Layout[this.layoutId];

@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "dependencies": {
     "polymer": "Polymer/polymer#latest",
-	"core-elements": "Polymer/core-elements#latest",
-	"paper-elements": "Polymer/paper-elements#latest",
-    "font-roboto": "Polymer/font-roboto#latest"
+    "core-elements": "Polymer/core-elements#latest",
+    "paper-elements": "Polymer/paper-elements#latest",
+    "font-roboto": "Polymer/font-roboto#latest",
+    "color-picker-element": "bbrewer97202/color-picker-element#latest"
   }
 }
