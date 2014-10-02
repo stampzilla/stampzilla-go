@@ -1,5 +1,7 @@
 package protocol
 
+import "encoding/json"
+
 type Node struct { /*{{{*/
 	Id      string
 	Actions []*Action
@@ -7,13 +9,15 @@ type Node struct { /*{{{*/
 	State   State
 } /*}}}*/
 
+type State interface {
+	GetState() interface{}
+}
+
 func NewNode(name string) *Node {
 	return &Node{
-		name,
-		[]*Action{},
-		[]*Layout{},
-		State{},
-	}
+		Id:      name,
+		Actions: []*Action{},
+		Layout:  []*Layout{}}
 }
 
 func (n *Node) AddAction(id, name string, args []string) {
@@ -28,8 +32,15 @@ func (n *Node) AddLayout(id, atype, action, using string, filter []string, secti
 	n.Layout = append(n.Layout, l)
 }
 
-func (n *Node) AddDevice(id, name string, features []string, state string) {
-	d := NewDevice(id, name, state, "", features)
+func (n *Node) SetState(state State) {
+	n.State = state
+}
 
-	n.State.Devices = append(n.State.Devices, d)
+func (n *Node) JsonEncode() (string, error) {
+
+	ret, err := json.Marshal(n)
+	if err != nil {
+		return "", err
+	}
+	return string(ret), nil
 }

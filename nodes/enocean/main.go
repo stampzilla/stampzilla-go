@@ -2,14 +2,84 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"time"
 
+	log "github.com/cihub/seelog"
 	"github.com/jonaz/goenocean"
+	"github.com/stampzilla/stampzilla-go/nodes/basenode"
+	"github.com/stampzilla/stampzilla-go/protocol"
 )
+
+var node *protocol.Node
+
+func init() {
+	var host string
+	var port string
+	flag.StringVar(&host, "host", "192.168.13.2", "Server host/ip")
+	flag.StringVar(&port, "port", "8282", "Server port")
+
+	flag.Parse()
+
+	//Setup Config
+	basenode.SetConfig(
+		&basenode.Config{
+			Host: host,
+			Port: port})
+
+	//Start communication with the server
+	send := make(chan string)
+	recv := make(chan protocol.Command)
+	connectionState := basenode.Connect(send, recv)
+	go monitorState(connectionState, send)
+	go serverRecv(recv)
+
+}
 
 func main() {
 
+	node = protocol.NewNode("enocean")
+	// Describe available actions
+	node.AddAction("set", "Set", []string{"Devices.Id"})
+	node.AddAction("toggle", "Toggle", []string{"Devices.Id"})
+	node.AddAction("dim", "Dim", []string{"Devices.Id", "value"})
+
+	// Describe available layouts
+	node.AddLayout("1", "switch", "toggle", "Devices", []string{"on"}, "Switches")
+	node.AddLayout("2", "slider", "dim", "Devices", []string{"dim"}, "Dimmers")
+	node.AddLayout("3", "slider", "dim", "Devices", []string{"dim"}, "Specials")
+
+	setupEnoceanCommunication()
+}
+
+func monitorState(connectionState chan int, send chan string) {
+	for s := range connectionState {
+		switch s {
+		case basenode.ConnectionStateConnected:
+			d, err := node.JsonEncode()
+			if err != nil {
+				log.Error(err)
+			}
+			send <- d
+		case basenode.ConnectionStateDisconnected:
+		}
+	}
+}
+
+func serverRecv(recv chan protocol.Command) {
+
+	for d := range recv {
+		processCommand(d)
+	}
+
+}
+
+func processCommand(cmd protocol.Command) {
+	log.Error("INCOMING COMMAND", cmd)
+}
+
+func setupEnoceanCommunication() {
 	send := make(chan goenocean.Packet)
 	recv := make(chan goenocean.Packet)
 	goenocean.Serial(send, recv)
