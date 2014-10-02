@@ -22,22 +22,25 @@
 		<link rel="stylesheet" href="stampzilla-default-layout.css">
 
 		<template repeat="{{ action in actions  }}">
+			<template if="{{ action.layout.Type == 'text' }}">
+				<div>Text - {{action.data.Name}}: </div>
+				<div>{{action.data.State}}</div>
+			</template>
+
 			<template if="{{ action.layout.Type == 'switch' }}">
 				<div>SWITCH - {{action.data.Name}}</div>
-				<paper-toggle-button checked="{{action.data.State | parseTrueFalse}}" ></paper-toggle-button>
+				<paper-toggle-button checked="{{action.data.State.On}}" data-action="{{action.layout.Action}}" on-change={{toggleButtonChange}}></paper-toggle-button>
 			</template>
 			<template if="{{ action.layout.Type == 'slider' }}">
 				<div>SLIDER - {{action.data.Name}}</div>
-				<paper-slider pin value="{{action.data.State}}"></paper-slider>
+				<paper-slider pin value="{{action.data.State.Dim}}"></paper-slider>
 			</template>
 			<template if="{{ action.layout.Type == 'color-picker' }}">
 				<div>COLOR PICKER - {{action.data.Name}}</div>
-                <color-picker on-colorselected="{{colorselect}}"></paper-slider>
+                <color-picker on-colorselected="{{colorSelect}}"></paper-slider>
 			</template>
 		</template>
 	
-		test
-
 	</template>
 	<script>
 		/* jshint newcap: false */
@@ -48,11 +51,44 @@
 			"use strict";
 
 			Polymer('stampzilla-default-layout', {
+                toggleButtonChange: function(e,a,b,c) {
+                    console.log(e,b);
+                    console.log(b.dataset['action']);
+                },
+                colorSelect: function (e){
+                    console.log(e);
+                    console.log(e.detail.hex + ' (r=' + e.detail.rgb.r + ', g=' + e.detail.rgb.g + ', b=' + e.detail.rgb.b + ')');
+				},
+
+                enableUpdates: false,
 				devices: [],
+                devicesChanged: function() {
+                    //console.log(this.devices);
+                    if ( !this.enableUpdates ) {
+                        console.log("Updates are disabled");
+                        return;
+                    }
+
+                    var arr = this.generateActions();
+        
+                    for(var key in arr) {
+                        if ( this.actions[key] == undefined || this.actions[key].prevState != arr[key].data.State ) {
+                            console.log("Updated: "+arr[key].data.Name);
+                            this.actions[key] = arr[key];
+                        }
+                    }
+
+                    for(var key in this.actions) {
+                        if ( arr[key] == undefined ) {
+                            delete this.actions[key];
+                        }
+                    }
+                },
 				layoutId: null,
 				actions: [],
 				selectedDevice: null,
 				selectedDeviceChanged: function(){
+                    this.enableUpdates = false;
 					if(this.selectedDevice === null){
 						return [];
 					}
@@ -80,13 +116,13 @@
 				ready: function(){
 
                 },
-                colorselect: function (e){
-                    console.log(e);
-                    console.log(e.detail.hex + ' (r=' + e.detail.rgb.r + ', g=' + e.detail.rgb.g + ', b=' + e.detail.rgb.b + ')');
-				},
 				layoutIdChanged: function(){ // (The selected tab is changed)
-					console.log(this.selectedDevice);
-					console.log(this.layoutId);
+                    this.actions = this.generateActions();
+                    this.enableUpdates = true;
+                },
+                generateActions: function() {
+					//console.log(this.selectedDevice);
+					//console.log(this.layoutId);
 					var layout = this.devices[this.selectedDevice].Layout[this.layoutId];
 
 					var devices = this.devices[this.selectedDevice].State[layout.Using];
@@ -107,14 +143,19 @@
 								}
 							}
 							if(!featureIsMissing){
-								var obj = {data:devices[index],layout:layout};
-								console.log(obj);
+								var obj = {
+                                    data:devices[index],
+                                    prevState: devices[index].State,
+                                    layout:layout,
+                                };
+								//console.log(obj);
 								arr.push(obj);
 							}
 						}
 					}
+                    return arr;
 
-					this.actions = arr;
+					//this.actions = arr;
 				},
 				objectToArray: function(object){
 					var arr = [];
