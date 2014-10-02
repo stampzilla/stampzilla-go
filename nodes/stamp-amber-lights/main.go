@@ -15,6 +15,7 @@ var node *protocol.Node
 var c0 *SerialConnection;
 
 var targetColor [4]byte;
+var state *State = &State{[]*Device{},make(map[string]string,0)};
 
 type SerialConnection struct {
     Name string
@@ -40,7 +41,9 @@ func main() {
 	flag.Parse()
 
 	// Create new node description
-	node = protocol.NewNode("stamp-amber-lights")
+
+	node = protocol.NewNode("stamp-amber-lights", state)
+	state.Sensors["glass"] = "pinne";
 
 	// Describe available actions
 	node.AddAction("set", "Set", []string{"Devices.Id"})
@@ -52,14 +55,13 @@ func main() {
 	node.AddLayout("2", "slider", "dim", "Devices", []string{"dim"}, "")
 	node.AddLayout("3", "color-picker", "dim", "Devices", []string{"color"}, "")
 
-	node.AddDevice("0","Color",[]string{"color"},"0");
-	node.AddDevice("1","Red",[]string{"dim"},"0");
-	node.AddDevice("2","Green",[]string{"dim"},"0");
-	node.AddDevice("3","Blue",[]string{"dim"},"0");
+	state.AddDevice("0","Color",[]string{"color"},"0");
+	state.AddDevice("1","Red",[]string{"dim"},"0");
+	state.AddDevice("2","Green",[]string{"dim"},"0");
+	state.AddDevice("3","Blue",[]string{"dim"},"0");
 
 	// Start the connection
 	go connection(host, port, node)
-
 
 	c0 = &SerialConnection{Name: dev, Baud: 9600}
 	c0.connect();
@@ -129,12 +131,12 @@ func (config *SerialConnection) connect() {
 		for {
 			  buf := make([]byte, 128)
 
-			  n, err := config.Port.Read(buf)
+			  _, err := config.Port.Read(buf)
 			  if err != nil {
 					  log.Critical(err)
 					return
 			  }
-			  log.Info("IN: ", string(buf[:n]) )
+			  //log.Info("IN: ", string(buf[:n]) )
 		}
 	}()
 }

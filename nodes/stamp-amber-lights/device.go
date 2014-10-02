@@ -1,4 +1,4 @@
-package protocol
+package main
 
 type Device struct { /*{{{*/
 	Id       string

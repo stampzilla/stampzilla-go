@@ -7,12 +7,16 @@ type Node struct { /*{{{*/
 	State   State
 } /*}}}*/
 
-func NewNode(name string) *Node {
+type State interface {
+	GetState() interface{}
+}
+
+func NewNode(name string, state State) *Node {
 	return &Node{
 		name,
 		[]*Action{},
 		[]*Layout{},
-		State{},
+		state,
 	}
 }
 
@@ -26,10 +30,4 @@ func (n *Node) AddLayout(id, atype, action, using string, filter []string, secti
 	l := NewLayout(id, atype, action, using, filter, section)
 
 	n.Layout = append(n.Layout, l)
-}
-
-func (n *Node) AddDevice(id, name string, features []string, state string) {
-	d := NewDevice(id, name, state, "", features)
-
-	n.State.Devices = append(n.State.Devices, d)
 }
