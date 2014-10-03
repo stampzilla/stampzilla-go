@@ -2,11 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/beatrichartz/martini-sockets"
 	log "github.com/cihub/seelog"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/encoder"
-	"net/http"
 )
 
 // Webserver that serves static files
@@ -42,6 +43,7 @@ func webStart(port, root string) { /*{{{*/
 	m.Get("/socket", sockets.JSON(Message{}), websocketRoute)
 	m.Get("/api/nodes", GetNodes)
 	m.Get("/api/node/:id", GetNode)
+	m.Put("/api/node/:id/cmd", CommandToNode)
 	m.Post("/api/node/:id/state", PostNodeState)
 	m.Get("/api/users/:id", GetUser)
 

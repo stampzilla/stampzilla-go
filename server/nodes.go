@@ -2,11 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"net/http"
+	"time"
+
 	log "github.com/cihub/seelog"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/encoder"
-	"net/http"
-	"time"
 )
 
 var Nodes map[string]InfoStruct
@@ -83,4 +84,8 @@ func decodeJson(r *http.Request) interface{} {
 		log.Error(err)
 	}
 	return t
+}
+
+func CommandToNode(r *http.Request) {
+	//  TODO: implement command here (jonaz) <Fri 03 Oct 2014 05:55:52 PM CEST>
 }
