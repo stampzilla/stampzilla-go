@@ -60,8 +60,6 @@ func sendWorker(connection net.Conn, send chan interface{}, quit chan bool) {
 			if err != nil {
 				fmt.Println("Error marshal json", err)
 			}
-			fmt.Println("JSON")
-			fmt.Println(string(ret))
 			fmt.Fprintf(connection, string(ret))
 		case <-quit:
 			return

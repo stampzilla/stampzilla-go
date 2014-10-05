@@ -13,6 +13,9 @@ import (
 )
 
 var node *protocol.Node
+var state *State
+var serverSendChannel chan interface{}
+var serverRecvChannel chan protocol.Command
 
 func init() {
 	var host string
@@ -30,11 +33,11 @@ func init() {
 	basenode.SetConfig(config)
 
 	//Start communication with the server
-	send := make(chan interface{})
-	recv := make(chan protocol.Command)
-	connectionState := basenode.Connect(send, recv)
-	go monitorState(connectionState, send)
-	go serverRecv(recv)
+	serverSendChannel = make(chan interface{})
+	serverRecvChannel = make(chan protocol.Command)
+	connectionState := basenode.Connect(serverSendChannel, serverRecvChannel)
+	go monitorState(connectionState, serverSendChannel)
+	go serverRecv(serverRecvChannel)
 
 }
 
@@ -50,6 +53,10 @@ func main() {
 	node.AddLayout("1", "switch", "toggle", "Devices", []string{"on"}, "Switches")
 	node.AddLayout("2", "slider", "dim", "Devices", []string{"dim"}, "Dimmers")
 	node.AddLayout("3", "slider", "dim", "Devices", []string{"dim"}, "Specials")
+
+	state = NewState()
+	//state.AddDevice([4]byte{1, 2, 3, 4}, "Testdevice", []string{"asdf"}, "off")
+	node.SetState(state)
 
 	setupEnoceanCommunication()
 }
@@ -107,6 +114,8 @@ func reciever(recv chan goenocean.Packet) {
 			fmt.Printf("Header\t %+v\n", p.Header())
 			fmt.Printf("senderID: % x\n", p.SenderId())
 
+			incomingPacket(p)
+
 			if b, ok := p.(*goenocean.TelegramRps); ok {
 				eep := goenocean.NewEepF60201()
 				eep.SetTelegram(b) //THIS IS COOL!
@@ -117,7 +126,57 @@ func reciever(recv chan goenocean.Packet) {
 				fmt.Println("R2B1:", eep.R2B1())
 				fmt.Printf("raw data: %b\n", eep.TelegramData())
 			}
+			//if b, ok := p.(*goenocean.TelegramVld); ok {
+			//eep := goenocean.NewEepF60201()
+			//eep.SetTelegram(b) //THIS IS COOL!
+			//}
 
 		}
 	}
+}
+
+func incomingPacket(p goenocean.Packet) {
+	d := NewDevice(p.SenderId(), "Unknown", "", "", nil)
+
+	if val, ok := state.Devices[d.Id()]; ok {
+		fmt.Println("deice already exists", val)
+
+		if b, ok := p.(*goenocean.TelegramVld); ok {
+			fmt.Println("VLD TELEGRAM DETECTED")
+			eep := goenocean.NewEepD20109()
+			eep.SetTelegram(b) //THIS IS COOL!
+			fmt.Println(eep.CommandId())
+
+			if eep.CommandId() == 4 {
+				fmt.Println("OUTPUTVALUE", eep.OutputValue())
+
+				if eep.OutputValue() > 0 {
+					state.Devices[d.Id()].State = "ON"
+					//d.State = "ON"
+				} else {
+					//d.State = "OFF"
+					state.Devices[d.Id()].State = "OFF"
+				}
+
+				serverSendChannel <- node
+			}
+		}
+		if b, ok := p.(*goenocean.Telegram4bs); ok {
+			fmt.Println("4BS TELEGRAM DETECTED")
+			eep := goenocean.NewEepA51201()
+			eep.SetTelegram(b) //THIS IS COOL!
+			fmt.Println("READING", eep.MeterReading())
+			fmt.Println("TARIFF", eep.TariffInfo())
+			fmt.Println("Datatype", eep.DataType())
+
+			state.Devices[d.Id()].Power = eep.MeterReading()
+			state.Devices[d.Id()].PowerUnit = eep.DataType()
+			serverSendChannel <- node
+		}
+		return
+	}
+
+	//Add unknown device
+	state.Devices[d.Id()] = d
+	serverSendChannel <- node
 }
