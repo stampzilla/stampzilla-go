@@ -45,17 +45,23 @@ func Connect(send chan interface{}, recv chan protocol.Command) chan int {
 }
 
 func sendWorker(connection net.Conn, send chan interface{}, quit chan bool) {
+	var err error
+	var ret []byte
 	for {
 		select {
 		case d := <-send:
 
-			if a, ok := d.(protocol.Node); ok {
-				a.Uuid = "teest"
+			if a, ok := d.(*protocol.Node); ok {
+				a.Uuid = config.Uuid
+				ret, err = json.Marshal(a)
+			} else {
+				ret, err = json.Marshal(d)
 			}
-			ret, err := json.Marshal(d)
 			if err != nil {
 				fmt.Println("Error marshal json", err)
 			}
+			fmt.Println("JSON")
+			fmt.Println(string(ret))
 			fmt.Fprintf(connection, string(ret))
 		case <-quit:
 			return

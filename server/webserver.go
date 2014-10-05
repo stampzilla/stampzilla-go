@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/beatrichartz/martini-sockets"
@@ -13,16 +12,16 @@ import (
 // Webserver that serves static files
 
 // The webserver
-type Response map[string]interface{} /*{{{*/
-func (r Response) String() (s string) {
-	b, err := json.Marshal(r)
-	if err != nil {
-		s = ""
-		return
-	}
-	s = string(b)
-	return
-}                                  /*}}}*/
+//type Response map[string]interface{} [>{{{<]
+//func (r Response) String() (s string) {
+//b, err := json.Marshal(r)
+//if err != nil {
+//s = ""
+//return
+//}
+//s = string(b)
+//return
+//}                                  [>}}}<]
 func webStart(port, root string) { /*{{{*/
 
 	//m := martini.Classic()
