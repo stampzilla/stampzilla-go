@@ -126,22 +126,17 @@ func reciever(recv chan goenocean.Packet) {
 				fmt.Println("R2B1:", eep.R2B1())
 				fmt.Printf("raw data: %b\n", eep.TelegramData())
 			}
-			//if b, ok := p.(*goenocean.TelegramVld); ok {
-			//eep := goenocean.NewEepF60201()
-			//eep.SetTelegram(b) //THIS IS COOL!
-			//}
 
 		}
 	}
 }
 
 func incomingPacket(p goenocean.Packet) {
-	d := NewDevice(p.SenderId(), "Unknown", "", "", nil)
 
-	if val, ok := state.Devices[d.Id()]; ok {
-		fmt.Println("deice already exists", val)
+	if d := state.Device(p.SenderId()); d != nil {
 
-		if b, ok := p.(*goenocean.TelegramVld); ok {
+		switch b := p.(type) {
+		case *goenocean.TelegramVld:
 			fmt.Println("VLD TELEGRAM DETECTED")
 			eep := goenocean.NewEepD20109()
 			eep.SetTelegram(b) //THIS IS COOL!
@@ -151,17 +146,15 @@ func incomingPacket(p goenocean.Packet) {
 				fmt.Println("OUTPUTVALUE", eep.OutputValue())
 
 				if eep.OutputValue() > 0 {
-					state.Devices[d.Id()].State = "ON"
+					d.State = "ON"
 					//d.State = "ON"
 				} else {
 					//d.State = "OFF"
-					state.Devices[d.Id()].State = "OFF"
+					d.State = "OFF"
 				}
 
-				serverSendChannel <- node
 			}
-		}
-		if b, ok := p.(*goenocean.Telegram4bs); ok {
+		case *goenocean.Telegram4bs:
 			fmt.Println("4BS TELEGRAM DETECTED")
 			eep := goenocean.NewEepA51201()
 			eep.SetTelegram(b) //THIS IS COOL!
@@ -169,14 +162,14 @@ func incomingPacket(p goenocean.Packet) {
 			fmt.Println("TARIFF", eep.TariffInfo())
 			fmt.Println("Datatype", eep.DataType())
 
-			state.Devices[d.Id()].Power = eep.MeterReading()
-			state.Devices[d.Id()].PowerUnit = eep.DataType()
-			serverSendChannel <- node
+			state.Device(p.SenderId()).SetPower(eep.MeterReading())
+			state.Device(p.SenderId()).PowerUnit = eep.DataType()
 		}
+		serverSendChannel <- node
 		return
 	}
 
 	//Add unknown device
-	state.Devices[d.Id()] = d
+	state.AddDevice(p.SenderId(), "UNKNOWN", nil, "")
 	serverSendChannel <- node
 }
