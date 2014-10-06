@@ -133,18 +133,35 @@ func reciever(recv chan goenocean.Packet) {
 
 func incomingPacket(p goenocean.Packet) {
 
-	if d := state.Device(p.SenderId()); d != nil {
+	var d *Device
+	if d = state.Device(p.SenderId()); d == nil {
+		//Add unknown device
+		d = state.AddDevice(p.SenderId(), "UNKNOWN", nil, "")
+		if d.Id() == "0186ff7d" {
+			d.AddEep("a51201")
+			d.AddEep("d20109")
+		}
+		serverSendChannel <- node
+	}
 
-		switch b := p.(type) {
-		case *goenocean.TelegramVld:
-			fmt.Println("VLD TELEGRAM DETECTED")
+	switch b := p.(type) {
+	case *goenocean.TelegramVld:
+		fmt.Println("VLD TELEGRAM DETECTED")
+		incomingVldTelegram(d, b)
+	case *goenocean.Telegram4bs:
+		fmt.Println("4BS TELEGRAM DETECTED")
+		incoming4bsTelegram(d, b)
+	}
+
+}
+func incomingVldTelegram(d *Device, t *goenocean.TelegramVld) {
+	for _, deviceEep := range d.EEPs {
+		switch deviceEep {
+		case "d20109":
 			eep := goenocean.NewEepD20109()
-			eep.SetTelegram(b) //THIS IS COOL!
-			fmt.Println(eep.CommandId())
-
+			eep.SetTelegram(t) //THIS IS COOL!
+			fmt.Println("OUTPUTVALUE", eep.OutputValue())
 			if eep.CommandId() == 4 {
-				fmt.Println("OUTPUTVALUE", eep.OutputValue())
-
 				if eep.OutputValue() > 0 {
 					d.State = "ON"
 					//d.State = "ON"
@@ -152,24 +169,25 @@ func incomingPacket(p goenocean.Packet) {
 					//d.State = "OFF"
 					d.State = "OFF"
 				}
-
 			}
-		case *goenocean.Telegram4bs:
-			fmt.Println("4BS TELEGRAM DETECTED")
-			eep := goenocean.NewEepA51201()
-			eep.SetTelegram(b) //THIS IS COOL!
-			fmt.Println("READING", eep.MeterReading())
-			fmt.Println("TARIFF", eep.TariffInfo())
-			fmt.Println("Datatype", eep.DataType())
-
-			state.Device(p.SenderId()).SetPower(eep.MeterReading())
-			state.Device(p.SenderId()).PowerUnit = eep.DataType()
 		}
-		serverSendChannel <- node
-		return
+
 	}
 
-	//Add unknown device
-	state.AddDevice(p.SenderId(), "UNKNOWN", nil, "")
+	serverSendChannel <- node
+}
+
+func incoming4bsTelegram(d *Device, t *goenocean.Telegram4bs) {
+	for _, deviceEep := range d.EEPs {
+		switch deviceEep {
+		case "a51201":
+			eep := goenocean.NewEepA51201()
+			eep.SetTelegram(t) //THIS IS COOL!
+			d.SetPower(eep.MeterReading())
+			d.PowerUnit = eep.DataType()
+		}
+
+	}
+
 	serverSendChannel <- node
 }

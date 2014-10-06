@@ -23,11 +23,12 @@ func (s *State) Device(id [4]byte) *Device {
 	}
 	return nil
 }
-func (s *State) AddDevice(id [4]byte, name string, features []string, state string) {
+func (s *State) AddDevice(id [4]byte, name string, features []string, state string) *Device {
 	d := NewDevice(id, name, state, "", features)
 	s.Lock()
 	defer s.Unlock()
 	s.Devices[d.Id()] = d
+	return d
 }
 func (s *State) RemoveDevice(id [4]byte) {
 	s.Lock()
@@ -60,7 +61,15 @@ type Device struct {
 	sync.Mutex
 }
 
+func (d *Device) AddEep(eep string) {
+	d.Lock()
+	defer d.Unlock()
+	d.EEPs = append(d.EEPs, eep)
+}
+
 func (d *Device) Id() string {
+	d.Lock()
+	defer d.Unlock()
 	return d.SenderId
 }
 func (d *Device) SetId(senderId [4]byte) {
@@ -71,9 +80,13 @@ func (d *Device) SetId(senderId [4]byte) {
 }
 
 func (d *Device) SetPower(pwr int64) {
+	d.Lock()
+	defer d.Unlock()
 	d.Power = pwr
 }
 
 func (d *Device) GetPower() int64 {
+	d.Lock()
+	defer d.Unlock()
 	return d.Power
 }
