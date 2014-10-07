@@ -2,6 +2,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"time"
@@ -58,6 +59,8 @@ func main() {
 	//state.AddDevice([4]byte{1, 2, 3, 4}, "Testdevice", []string{"asdf"}, "off")
 	node.SetState(state)
 
+	setupEepHandlers()
+
 	setupEnoceanCommunication()
 }
 
@@ -106,13 +109,11 @@ func testSend(send chan goenocean.Encoder) {
 }
 
 func reciever(recv chan goenocean.Packet) {
-
 	for p := range recv {
 		if p.SenderId() != [4]byte{0, 0, 0, 0} {
 			incomingPacket(p)
 		}
 	}
-
 }
 
 func incomingPacket(p goenocean.Packet) {
@@ -121,6 +122,8 @@ func incomingPacket(p goenocean.Packet) {
 	if d = state.Device(p.SenderId()); d == nil {
 		//Add unknown device
 		d = state.AddDevice(p.SenderId(), "UNKNOWN", nil, "")
+
+		//TODO save this to json file and read it back on start
 		if d.Id() == "0186ff7d" {
 			d.AddEep("a51201")
 			d.AddEep("d20109")
@@ -128,52 +131,16 @@ func incomingPacket(p goenocean.Packet) {
 		serverSendChannel <- node
 	}
 
-	if b, ok := p.(goenocean.Telegram); ok {
-		switch b.TelegramType() {
-		case goenocean.TelegramTypeVld:
-			fmt.Println("VLD TELEGRAM DETECTED")
-			incomingVldTelegram(d, b)
-		case goenocean.TelegramType4bs:
-			fmt.Println("4BS TELEGRAM DETECTED")
-			incoming4bsTelegram(d, b)
-		}
-	}
+	if t, ok := p.(goenocean.Telegram); ok {
+		for _, deviceEep := range d.EEPs {
+			if deviceEep[0:2] != hex.EncodeToString([]byte{t.TelegramType()}) {
+				continue
+			}
 
-}
-func incomingVldTelegram(d *Device, t goenocean.TelegramVld) {
-	for _, deviceEep := range d.EEPs {
-		switch deviceEep {
-		case "d20109":
-			eep := goenocean.NewEepD20109()
-			eep.SetTelegram(t) //THIS IS COOL!
-			fmt.Println("OUTPUTVALUE", eep.OutputValue())
-			if eep.CommandId() == 4 {
-				if eep.OutputValue() > 0 {
-					d.State = "ON"
-					//d.State = "ON"
-				} else {
-					//d.State = "OFF"
-					d.State = "OFF"
-				}
+			if h := handlers.getHandler(deviceEep); h != nil {
+				h(d, t)
 			}
 		}
-
 	}
 
-	serverSendChannel <- node
-}
-
-func incoming4bsTelegram(d *Device, t goenocean.Telegram4bs) {
-	for _, deviceEep := range d.EEPs {
-		switch deviceEep {
-		case "a51201":
-			eep := goenocean.NewEepA51201()
-			eep.SetTelegram(t) //THIS IS COOL!
-			d.SetPower(eep.MeterReading())
-			d.PowerUnit = eep.DataType()
-		}
-
-	}
-
-	serverSendChannel <- node
 }
