@@ -94,14 +94,14 @@ func setupEnoceanCommunication() {
 
 func testSend(send chan goenocean.Encoder) {
 	p := goenocean.NewTelegramRps()
-	p.SetTelegramData(0x50) //on
+	p.SetTelegramData([]byte{0x50}) //on
 	//p.SetStatus(0x30) //testing shows this does not need to be set! Status defaults to 0
 
 	fmt.Println("Sending:", p.Encode())
 	send <- p
 
 	time.Sleep(time.Second * 3)
-	p.SetTelegramData(0x70) //off
+	p.SetTelegramData([]byte{0x70}) //off
 	send <- p
 }
 
@@ -152,6 +152,9 @@ func incomingPacket(p goenocean.Packet) {
 	}
 
 	//TODO change here and check if p is Telegram interface then it will have the .TelegramType()
+	if b, ok := p.(goenocean.Telegram); ok {
+		fmt.Println("ITS A TELEGRAM WIHO:D ", b)
+	}
 	switch b := p.(type) {
 	case *goenocean.TelegramVld:
 		fmt.Println("VLD TELEGRAM DETECTED")
