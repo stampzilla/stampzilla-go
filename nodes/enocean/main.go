@@ -84,7 +84,7 @@ func processCommand(cmd protocol.Command) {
 }
 
 func setupEnoceanCommunication() {
-	send := make(chan goenocean.Packet)
+	send := make(chan goenocean.Encoder)
 	recv := make(chan goenocean.Packet)
 	goenocean.Serial(send, recv)
 
@@ -92,7 +92,7 @@ func setupEnoceanCommunication() {
 	reciever(recv)
 }
 
-func testSend(send chan goenocean.Packet) {
+func testSend(send chan goenocean.Encoder) {
 	p := goenocean.NewTelegramRps()
 	p.SetTelegramData(0x50) //on
 	//p.SetStatus(0x30) //testing shows this does not need to be set! Status defaults to 0
@@ -106,29 +106,36 @@ func testSend(send chan goenocean.Packet) {
 }
 
 func reciever(recv chan goenocean.Packet) {
-	for {
-		select {
-		case p := <-recv:
-			fmt.Printf("% x\n", p)
-			fmt.Printf("Packet\t %+v\n", p)
-			fmt.Printf("Header\t %+v\n", p.Header())
-			fmt.Printf("senderID: % x\n", p.SenderId())
 
+	for p := range recv {
+		if p.SenderId() != [4]byte{0, 0, 0, 0} {
 			incomingPacket(p)
-
-			if b, ok := p.(*goenocean.TelegramRps); ok {
-				eep := goenocean.NewEepF60201()
-				eep.SetTelegram(b) //THIS IS COOL!
-
-				fmt.Println("EB:", eep.EnergyBow())
-				fmt.Println("R1B0:", eep.R1B0())
-				fmt.Println("R2B0:", eep.R2B0())
-				fmt.Println("R2B1:", eep.R2B1())
-				fmt.Printf("raw data: %b\n", eep.TelegramData())
-			}
-
 		}
 	}
+	//for {
+	//select {
+	//case p := <-recv:
+	//fmt.Printf("% x\n", p)
+	//fmt.Printf("Packet\t %+v\n", p)
+	//fmt.Printf("Header\t %+v\n", p.Header())
+	//fmt.Printf("senderID: % x\n", p.SenderId())
+
+	//if p.SenderId() == [4]byte{0, 0, 0, 0} {
+	//incomingPacket(p)
+	//}
+
+	//if b, ok := p.(*goenocean.TelegramRps); ok {
+	//eep := goenocean.NewEepF60201()
+	//eep.SetTelegram(b) //THIS IS COOL!
+
+	//fmt.Println("EB:", eep.EnergyBow())
+	//fmt.Println("R1B0:", eep.R1B0())
+	//fmt.Println("R2B0:", eep.R2B0())
+	//fmt.Println("R2B1:", eep.R2B1())
+	//fmt.Printf("raw data: %b\n", eep.TelegramData())
+	//}
+
+	//}
 }
 
 func incomingPacket(p goenocean.Packet) {
@@ -144,6 +151,7 @@ func incomingPacket(p goenocean.Packet) {
 		serverSendChannel <- node
 	}
 
+	//TODO change here and check if p is Telegram interface then it will have the .TelegramType()
 	switch b := p.(type) {
 	case *goenocean.TelegramVld:
 		fmt.Println("VLD TELEGRAM DETECTED")
