@@ -91,21 +91,46 @@ func setupEnoceanCommunication() {
 	recv := make(chan goenocean.Packet)
 	goenocean.Serial(send, recv)
 
-	go testSend(send)
+	//go testSend(send)
+	//testLearn4bs(send)
+	testSenda53808(send)
 	reciever(recv)
 }
 
-func testSend(send chan goenocean.Encoder) {
+func testLearn4bs(send chan goenocean.Encoder) {
+	p := goenocean.NewTelegram4bsLearn()
+	p.SetLearnFunc(0x38)
+	p.SetLearnType(0x08)
+
+	// OMG THIS WORKS :D:D
+	fmt.Printf("Sending: % x\n", p.Encode())
+	send <- p
+}
+func testSenda53808(send chan goenocean.Encoder) {
+	p := goenocean.NewEepA53808()
+	p.SetDestinationId([4]byte{0x01, 0x86, 0xff, 0x7d})
+	p.SetCommand(2)
+	//PERMUNDO only supports 0 = off on = 1-255
+	p.SetDimValue(1)
+	fmt.Printf("Sending: % x\n", p.Encode())
+	send <- p
+
+	p.SetDimValue(0)
+	time.Sleep(time.Second * 1)
+	send <- p
+
+}
+func testSendWorking(send chan goenocean.Encoder) {
 	p := goenocean.NewTelegramRps()
 	p.SetTelegramData([]byte{0x50}) //on
 	//p.SetStatus(0x30) //testing shows this does not need to be set! Status defaults to 0
 
-	fmt.Println("Sending:", p.Encode())
+	fmt.Printf("Sending: % x\n", p.Encode())
 	send <- p
 
-	time.Sleep(time.Second * 3)
-	p.SetTelegramData([]byte{0x70}) //off
-	send <- p
+	//time.Sleep(time.Second * 3)
+	//p.SetTelegramData([]byte{0x70}) //off
+	//send <- p
 }
 
 func reciever(recv chan goenocean.Packet) {
