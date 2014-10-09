@@ -10,8 +10,9 @@ import (
 	"bytes"
 	"encoding/binary"
 	"strconv"
-	"math/rand"
-	"time"
+	//"math/rand"
+	//"time"
+	"strings"
 )
 
 var node *protocol.Node
@@ -21,7 +22,7 @@ var targetColor [4]byte;
 var state *State = &State{[]*Device{},make(map[string]*Sensor,0)};
 
 
-var send chan string = make(chan string)
+var send chan interface{} = make(chan interface{})
 
 type SerialConnection struct {
     Name string
@@ -81,28 +82,22 @@ func main() {
 
 	c0.connect();
 
-	for {
-		select {
-			case <- time.After(time.Second):
-				state.Sensors["press"].State = strconv.FormatInt(int64(rand.Intn(40) + 980),10) +" hPa"
-					d, err := node.JsonEncode()
-					if err != nil {
-						log.Error(err)
-					}
-					send <- d
-		}
-	}
+	//for {
+		//select {
+			//case <- time.After(time.Second):
+				//state.Sensors["press"].State = strconv.FormatInt(int64(rand.Intn(40) + 980),10) +" hPa"
+					//send <- node
+		//}
+	//}
+
+	select {}
 }
 
-func monitorState(connectionState chan int, send chan string) {
+func monitorState(connectionState chan int, send chan interface{}) {
 	for s := range connectionState {
 		switch s {
 		case basenode.ConnectionStateConnected:
-			d, err := node.JsonEncode()
-			if err != nil {
-				log.Error(err)
-			}
-			send <- d
+			send <- node
 		case basenode.ConnectionStateDisconnected:
 		}
 	}
@@ -175,15 +170,44 @@ func (config *SerialConnection) connect() {
     }
 
 	go func() {
-		for {
-			  buf := make([]byte, 128)
+		var incomming string = "";
 
-			  _, err := config.Port.Read(buf)
-			  if err != nil {
-					  log.Critical(err)
-					return
-			  }
-			  //log.Info("IN: ", string(buf[:n]) )
+		for {
+			buf := make([]byte, 128)
+
+			n, err := config.Port.Read(buf)
+			if err != nil {
+				log.Critical(err)
+				return
+			}
+
+			incomming += string(buf[:n]);
+
+			// try to process
+			for {
+				n := strings.Index(incomming, ">")
+
+				if ( n == -1 ) {
+					break;
+				}
+
+				msg := incomming[2:n]
+				incomming = incomming[n+1:]
+
+				pkgs := strings.Split(msg,"|");
+
+				if len(pkgs)>3 {
+					state.Sensors["temp1"].State = pkgs[0]+" C";
+					state.Sensors["temp2"].State = pkgs[3]+" C";
+					state.Sensors["press"].State = pkgs[2]+" hPa";
+
+					log.Info("IN: ", pkgs )
+
+					send <- node
+				}
+			}
 		}
+
+
 	}()
 }
