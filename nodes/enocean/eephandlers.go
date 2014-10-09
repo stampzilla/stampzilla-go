@@ -14,6 +14,7 @@ func eepa51201(d *Device, t goenocean.Telegram) {
 	d.PowerUnit = eep.DataType()
 	serverSendChannel <- node
 }
+
 func eepd20109(d *Device, t goenocean.Telegram) {
 	eep := goenocean.NewEepD20109()
 	eep.SetTelegram(t) //THIS IS COOL!

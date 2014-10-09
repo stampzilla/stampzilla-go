@@ -2,9 +2,12 @@
 package main
 
 import (
+	"bytes"
 	"encoding/hex"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"os"
 	"time"
 
 	log "github.com/cihub/seelog"
@@ -19,18 +22,11 @@ var serverSendChannel chan interface{}
 var serverRecvChannel chan protocol.Command
 
 func init() {
-	var host string
-	var port string
-	flag.StringVar(&host, "host", "192.168.13.2", "Server host/ip")
-	flag.StringVar(&port, "port", "8282", "Server port")
 
 	flag.Parse()
 
 	//Setup Config
-	config := &basenode.Config{
-		Host: host,
-		Port: port}
-
+	config := basenode.NewConfig()
 	basenode.SetConfig(config)
 
 	//Start communication with the server
@@ -147,6 +143,7 @@ func incomingPacket(p goenocean.Packet) {
 	if d = state.Device(p.SenderId()); d == nil {
 		//Add unknown device
 		d = state.AddDevice(p.SenderId(), "UNKNOWN", nil, "")
+		saveDevicesToFile()
 
 		//TODO save this to json file and read it back on start
 		if d.Id() == "0186ff7d" {
@@ -164,8 +161,39 @@ func incomingPacket(p goenocean.Packet) {
 
 			if h := handlers.getHandler(deviceEep); h != nil {
 				h(d, t)
+				return
 			}
 		}
 	}
 
+	//fmt.Println("Unknown packet")
+
+}
+
+func saveDevicesToFile() {
+	configFile, err := os.Create("devices.json")
+	if err != nil {
+		log.Error("creating config file", err.Error())
+	}
+	var out bytes.Buffer
+	b, err := json.MarshalIndent(state.Devices, "", "\t")
+	if err != nil {
+		log.Error("error marshal json", err)
+	}
+	json.Indent(&out, b, "", "\t")
+	out.WriteTo(configFile)
+}
+func readConfigFromFile() *Devices {
+	configFile, err := os.Open("config.json")
+	if err != nil {
+		log.Error("opening config file", err.Error())
+	}
+
+	config := &Config{}
+	jsonParser := json.NewDecoder(configFile)
+	if err = jsonParser.Decode(&config); err != nil {
+		log.Error("parsing config file", err.Error())
+	}
+
+	return config
 }
