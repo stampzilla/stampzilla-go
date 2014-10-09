@@ -22,7 +22,6 @@ var serverSendChannel chan interface{}
 var serverRecvChannel chan protocol.Command
 
 func init() {
-
 	flag.Parse()
 
 	//Setup Config

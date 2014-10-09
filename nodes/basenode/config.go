@@ -4,6 +4,7 @@ package basenode
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
 
@@ -12,6 +13,22 @@ import (
 )
 
 var config = &Config{}
+var host string
+var port string
+
+func init() {
+	flag.StringVar(&host, "host", "localhost", "Server host/ip")
+	flag.StringVar(&port, "port", "8282", "Server port")
+}
+
+func NewConfig() *Config {
+	var config = &Config{}
+
+	config.Host = host
+	config.Port = host
+
+	return config
+}
 
 func SetConfig(c *Config) {
 
@@ -39,6 +56,8 @@ func saveConfigToFile() {
 	if err != nil {
 		log.Error("creating config file", err.Error())
 	}
+
+	log.Info("Save config: ", config)
 	var out bytes.Buffer
 	b, err := json.MarshalIndent(config, "", "\t")
 	if err != nil {
@@ -75,10 +94,10 @@ func (c *Config) GetUuid() string {
 
 func (c *Config) Merge(c2 *Config) {
 
-	if c.Host != c2.Host && c.Host != "" {
+	if c.Host != c2.Host && c.Host == "localhost" {
 		c.Host = c2.Host
 	}
-	if c.Port != c2.Port && c.Port != "" {
+	if c.Port != c2.Port && c.Port == "8282" {
 		c.Port = c2.Port
 	}
 
