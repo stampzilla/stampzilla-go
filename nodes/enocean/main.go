@@ -2,6 +2,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"time"
@@ -13,6 +14,9 @@ import (
 )
 
 var node *protocol.Node
+var state *State
+var serverSendChannel chan interface{}
+var serverRecvChannel chan protocol.Command
 
 func init() {
 	var host string
@@ -30,11 +34,11 @@ func init() {
 	basenode.SetConfig(config)
 
 	//Start communication with the server
-	send := make(chan interface{})
-	recv := make(chan protocol.Command)
-	connectionState := basenode.Connect(send, recv)
-	go monitorState(connectionState, send)
-	go serverRecv(recv)
+	serverSendChannel = make(chan interface{})
+	serverRecvChannel = make(chan protocol.Command)
+	connectionState := basenode.Connect(serverSendChannel, serverRecvChannel)
+	go monitorState(connectionState, serverSendChannel)
+	go serverRecv(serverRecvChannel)
 
 }
 
@@ -50,6 +54,12 @@ func main() {
 	node.AddLayout("1", "switch", "toggle", "Devices", []string{"on"}, "Switches")
 	node.AddLayout("2", "slider", "dim", "Devices", []string{"dim"}, "Dimmers")
 	node.AddLayout("3", "slider", "dim", "Devices", []string{"dim"}, "Specials")
+
+	state = NewState()
+	//state.AddDevice([4]byte{1, 2, 3, 4}, "Testdevice", []string{"asdf"}, "off")
+	node.SetState(state)
+
+	setupEepHandlers()
 
 	setupEnoceanCommunication()
 }
@@ -77,47 +87,85 @@ func processCommand(cmd protocol.Command) {
 }
 
 func setupEnoceanCommunication() {
-	send := make(chan goenocean.Packet)
+	send := make(chan goenocean.Encoder)
 	recv := make(chan goenocean.Packet)
 	goenocean.Serial(send, recv)
 
-	go testSend(send)
+	//go testSend(send)
+	//testLearn4bs(send)
+	testSenda53808(send)
 	reciever(recv)
 }
 
-func testSend(send chan goenocean.Packet) {
+func testLearn4bs(send chan goenocean.Encoder) {
+	p := goenocean.NewTelegram4bsLearn()
+	p.SetLearnFunc(0x38)
+	p.SetLearnType(0x08)
+
+	// OMG THIS WORKS :D:D
+	fmt.Printf("Sending: % x\n", p.Encode())
+	send <- p
+}
+func testSenda53808(send chan goenocean.Encoder) {
+	p := goenocean.NewEepA53808()
+	p.SetDestinationId([4]byte{0x01, 0x86, 0xff, 0x7d})
+	p.SetCommand(2)
+	//PERMUNDO only supports 0 = off on = 1-255
+	p.SetDimValue(1)
+	fmt.Printf("Sending: % x\n", p.Encode())
+	send <- p
+
+	p.SetDimValue(0)
+	time.Sleep(time.Second * 1)
+	send <- p
+
+}
+func testSendWorking(send chan goenocean.Encoder) {
 	p := goenocean.NewTelegramRps()
-	p.SetTelegramData(0x50) //on
+	p.SetTelegramData([]byte{0x50}) //on
 	//p.SetStatus(0x30) //testing shows this does not need to be set! Status defaults to 0
 
-	fmt.Println("Sending:", p.Encode())
+	fmt.Printf("Sending: % x\n", p.Encode())
 	send <- p
 
-	time.Sleep(time.Second * 3)
-	p.SetTelegramData(0x70) //off
-	send <- p
+	//time.Sleep(time.Second * 3)
+	//p.SetTelegramData([]byte{0x70}) //off
+	//send <- p
 }
 
 func reciever(recv chan goenocean.Packet) {
-	for {
-		select {
-		case p := <-recv:
-			fmt.Printf("% x\n", p)
-			fmt.Printf("Packet\t %+v\n", p)
-			fmt.Printf("Header\t %+v\n", p.Header())
-			fmt.Printf("senderID: % x\n", p.SenderId())
-
-			if b, ok := p.(*goenocean.TelegramRps); ok {
-				eep := goenocean.NewEepF60201()
-				eep.SetTelegram(b) //THIS IS COOL!
-
-				fmt.Println("EB:", eep.EnergyBow())
-				fmt.Println("R1B0:", eep.R1B0())
-				fmt.Println("R2B0:", eep.R2B0())
-				fmt.Println("R2B1:", eep.R2B1())
-				fmt.Printf("raw data: %b\n", eep.TelegramData())
-			}
-
+	for p := range recv {
+		if p.SenderId() != [4]byte{0, 0, 0, 0} {
+			incomingPacket(p)
 		}
 	}
+}
+
+func incomingPacket(p goenocean.Packet) {
+
+	var d *Device
+	if d = state.Device(p.SenderId()); d == nil {
+		//Add unknown device
+		d = state.AddDevice(p.SenderId(), "UNKNOWN", nil, "")
+
+		//TODO save this to json file and read it back on start
+		if d.Id() == "0186ff7d" {
+			d.AddEep("a51201")
+			d.AddEep("d20109")
+		}
+		serverSendChannel <- node
+	}
+
+	if t, ok := p.(goenocean.Telegram); ok {
+		for _, deviceEep := range d.EEPs {
+			if deviceEep[0:2] != hex.EncodeToString([]byte{t.TelegramType()}) {
+				continue
+			}
+
+			if h := handlers.getHandler(deviceEep); h != nil {
+				h(d, t)
+			}
+		}
+	}
+
 }

@@ -6,30 +6,11 @@ import (
 	"net"
 
 	log "github.com/cihub/seelog"
+	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
 var NodesConnection map[string]net.Conn
 var NodesWait map[string]chan bool
-
-type InfoStruct struct {
-	Id      string
-	Actions []Action
-	Layout  []Layout
-	State   interface{}
-}
-type Action struct {
-	Id        string
-	Name      string
-	Arguments []string
-}
-type Layout struct {
-	Id      string
-	Type    string
-	Action  string
-	Using   string
-	Filter  []string
-	Section string
-}
 
 func netStart(port string) {
 	l, err := net.Listen("tcp", ":"+port)
@@ -74,7 +55,7 @@ func newClient(c net.Conn) {
 		//TODO: Handle when multiple messages gets concated ex: msg}{msg2
 		data := buf[0:nr]
 
-		var info InfoStruct
+		var info protocol.Node
 		err = json.Unmarshal(data, &info)
 		if err != nil {
 			log.Warn(err, " -->", string(data), "<--")
@@ -95,21 +76,6 @@ func newClient(c net.Conn) {
 			}
 
 			clients.messageOtherClients(&Message{"singlenode", Nodes[info.Id]})
-			//clients.messageOtherClients(&Message{"all", Nodes})
-			// Skicka till alla
-			//for n, _ := range WebSockets {
-			//if WebSockets[n] != nil {
-			//select {
-			//case WebSockets[n] <- string(data):
-			//default:
-			//}
-			//}
-			//}
 		}
-
-		/*_, err = c.Write(data)
-		  if err != nil {
-			  fmt.Println("Failed write: ", err)
-		  }*/
 	}
 }
