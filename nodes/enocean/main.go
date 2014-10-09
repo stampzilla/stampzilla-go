@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	log "github.com/cihub/seelog"
@@ -50,8 +51,9 @@ func main() {
 	node.AddLayout("2", "slider", "dim", "Devices", []string{"dim"}, "Dimmers")
 	node.AddLayout("3", "slider", "dim", "Devices", []string{"dim"}, "Specials")
 
+	//Setup state
 	state = NewState()
-	//state.AddDevice([4]byte{1, 2, 3, 4}, "Testdevice", []string{"asdf"}, "off")
+	state.Devices = readConfigFromFile()
 	node.SetState(state)
 
 	setupEepHandlers()
@@ -143,12 +145,6 @@ func incomingPacket(p goenocean.Packet) {
 		//Add unknown device
 		d = state.AddDevice(p.SenderId(), "UNKNOWN", nil, "")
 		saveDevicesToFile()
-
-		//TODO save this to json file and read it back on start
-		if d.Id() == "0186ff7d" {
-			d.AddEep("a51201")
-			d.AddEep("d20109")
-		}
 		serverSendChannel <- node
 	}
 
@@ -169,7 +165,11 @@ func incomingPacket(p goenocean.Packet) {
 
 }
 
+var devFileMutex sync.Mutex
+
 func saveDevicesToFile() {
+	devFileMutex.Lock()
+	defer devFileMutex.Unlock()
 	configFile, err := os.Create("devices.json")
 	if err != nil {
 		log.Error("creating config file", err.Error())
@@ -182,13 +182,15 @@ func saveDevicesToFile() {
 	json.Indent(&out, b, "", "\t")
 	out.WriteTo(configFile)
 }
-func readConfigFromFile() *Devices {
-	configFile, err := os.Open("config.json")
+func readConfigFromFile() map[string]*Device {
+	devFileMutex.Lock()
+	defer devFileMutex.Unlock()
+	configFile, err := os.Open("devices.json")
 	if err != nil {
 		log.Error("opening config file", err.Error())
 	}
 
-	config := &Config{}
+	config := make(map[string]*Device)
 	jsonParser := json.NewDecoder(configFile)
 	if err = jsonParser.Decode(&config); err != nil {
 		log.Error("parsing config file", err.Error())

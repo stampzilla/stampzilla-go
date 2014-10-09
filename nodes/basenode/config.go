@@ -25,7 +25,7 @@ func NewConfig() *Config {
 	var config = &Config{}
 
 	config.Host = host
-	config.Port = host
+	config.Port = port
 
 	return config
 }
