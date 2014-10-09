@@ -9,8 +9,15 @@ import (
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
-var NodesConnection map[string]net.Conn
-var NodesWait map[string]chan bool
+//var NodesConnection map[string]net.Conn
+//var NodesWait map[string]chan bool
+
+type NodeConnection struct {
+	conn net.Conn
+	wait chan bool
+}
+
+var nodesConnection map[string]*NodeConnection
 
 func netStart(port string) {
 	l, err := net.Listen("tcp", ":"+port)
@@ -19,8 +26,8 @@ func netStart(port string) {
 		return
 	}
 
-	NodesConnection = make(map[string]net.Conn)
-	NodesWait = make(map[string]chan bool)
+	nodesConnection = make(map[string]*NodeConnection)
+	//NodesWait = make(map[string]chan bool)
 
 	go func() {
 		for {
@@ -62,15 +69,15 @@ func newClient(c net.Conn) {
 		} else {
 			id = info.Id
 			Nodes[info.Id] = info
-			NodesConnection[info.Id] = c
+			nodesConnection[info.Id] = &NodeConnection{conn: c, wait: nil}
 
 			log.Info(info.Id, " - Got update on state")
 
-			if NodesWait[info.Id] != nil {
+			if nodesConnection[info.Id].wait != nil {
 				select {
-				case NodesWait[info.Id] <- false:
-					close(NodesWait[info.Id])
-					NodesWait[info.Id] = nil
+				case nodesConnection[info.Id].wait <- false:
+					close(nodesConnection[info.Id].wait)
+					nodesConnection[info.Id].wait = nil
 				default:
 				}
 			}

@@ -41,9 +41,9 @@ type Command struct {
 
 func PostNodeState(enc encoder.Encoder, params martini.Params, r *http.Request) (int, []byte) {
 	// Create a blocking channel
-	NodesWait[params["id"]] = make(chan bool)
+	nodesConnection[params["id"]].wait = make(chan bool)
 
-	soc, ok := NodesConnection[params["id"]]
+	soc, ok := nodesConnection[params["id"]]
 	if ok {
 		//c := Command{}
 
@@ -52,7 +52,7 @@ func PostNodeState(enc encoder.Encoder, params martini.Params, r *http.Request) 
 
 		data, err := json.Marshal(&c)
 
-		_, err = soc.Write(data)
+		_, err = soc.conn.Write(data)
 		if err != nil {
 			log.Error("Failed write: ", err)
 		} else {
@@ -65,7 +65,7 @@ func PostNodeState(enc encoder.Encoder, params martini.Params, r *http.Request) 
 	// Wait for answer or timeout..
 	select {
 	case <-time.After(5 * time.Second):
-	case <-NodesWait[params["id"]]:
+	case <-nodesConnection[params["id"]].wait:
 	}
 
 	n, ok := Nodes[params["id"]]
