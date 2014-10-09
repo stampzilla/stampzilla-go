@@ -22,6 +22,7 @@ extern void updateDevices();
 import "C"
 
 var node *protocol.Node
+var state *State = &State{[]*Device{}, make(map[string]*Sensor, 0)}
 
 func main() {
 	// Load logger
@@ -45,6 +46,7 @@ func main() {
 
 	// Create new node description
 	node = protocol.NewNode("tellstick-event")
+	node.SetState(state)
 
 	// Describe available actions
 	node.AddAction("set", "Set", []string{"Devices.Id"})
@@ -141,19 +143,18 @@ func newDevice(id int, name *C.char, methods, s int, value *C.char) {
 		features = append(features, "stop")
 	}
 
-	var state string
-
 	if s&C.TELLSTICK_TURNON != 0 {
-		state = "true"
+		state.AddDevice(strconv.Itoa(id), C.GoString(name), features, DeviceState{On: true, Dim: 100})
 	}
 	if s&C.TELLSTICK_TURNOFF != 0 {
-		state = "false"
+		state.AddDevice(strconv.Itoa(id), C.GoString(name), features, DeviceState{On: false})
 	}
 	if s&C.TELLSTICK_DIM != 0 {
-		state = C.GoString(value)
+		var currentState = C.GoString(value)
+		level, _ := strconv.ParseUint(currentState,10,16);
+		state.AddDevice(strconv.Itoa(id), C.GoString(name), features, DeviceState{On: level>0, Dim: int(level)})
 	}
 
-	node.AddDevice(strconv.Itoa(id), C.GoString(name), features, state)
 }
 
 //export sensorEvent
