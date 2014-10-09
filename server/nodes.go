@@ -2,23 +2,26 @@ package main
 
 import (
 	"encoding/json"
+	"net/http"
+	"time"
+
 	log "github.com/cihub/seelog"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/encoder"
-	"net/http"
-	"time"
+	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
-var Nodes map[string]InfoStruct
+var Nodes map[string]protocol.Node
 
 func GetNodes(enc encoder.Encoder) (int, []byte) {
-	nodes := []InfoStruct{}
+	//nodes := []InfoStruct{}
 
-	for _, node := range Nodes {
-		nodes = append(nodes, node)
-	}
+	//for _, node := range Nodes {
+	//nodes = append(nodes, node)
+	//}
 
-	return 200, encoder.Must(json.Marshal(&nodes))
+	//return 200, encoder.Must(json.Marshal(&nodes))
+	return 200, encoder.Must(json.Marshal(&Nodes))
 }
 
 func GetNode(enc encoder.Encoder, params martini.Params) (int, []byte) {
@@ -83,4 +86,8 @@ func decodeJson(r *http.Request) interface{} {
 		log.Error(err)
 	}
 	return t
+}
+
+func CommandToNode(r *http.Request) {
+	//  TODO: implement command here (jonaz) <Fri 03 Oct 2014 05:55:52 PM CEST>
 }

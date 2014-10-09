@@ -2,7 +2,9 @@ package main
 
 import (
 	"flag"
+
 	log "github.com/cihub/seelog"
+	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
 var netPort string
@@ -37,7 +39,8 @@ func main() {
 		log.ReplaceLogger(logger)
 	}
 
-	Nodes = make(map[string]InfoStruct)
+	//Nodes = make(map[string]InfoStruct)
+	Nodes = make(map[string]protocol.Node)
 
 	log.Info("Starting NET (:" + netPort + ")")
 	netStart(netPort)

@@ -7,7 +7,7 @@ type Node struct { /*{{{*/
 	Uuid    string
 	Actions []*Action
 	Layout  []*Layout
-	State   State
+	State   interface{}
 } /*}}}*/
 
 type State interface {
