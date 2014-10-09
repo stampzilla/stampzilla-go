@@ -1,198 +1,132 @@
 package main
 
 import (
-    "encoding/json"
-    "flag"
-    "fmt"
-    log "github.com/cihub/seelog"
-    "net"
-    "time"
+	"flag"
+	log "github.com/cihub/seelog"
+	"github.com/stampzilla/stampzilla-go/nodes/basenode"
+	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
 // GLOBAL VARS
-var Info InfoStruct
+var node *protocol.Node
+var state *State
+var serverSendChannel chan interface{}
+var serverRecvChannel chan protocol.Command
 
-var Connection net.Conn
+// INIT - The first function to run
+func init() { // {{{
+	// Parse all commandline arguments, host and port parameters are added in the basenode init function
+	flag.Parse()
 
-var host string
-var port string
+	//Get a config with the correct parameters
+	config := basenode.NewConfig()
 
-// TYPES
-type Device struct { /*{{{*/
-    Id       string
-    Name     string
-    State    string
-    Type     string
-    Features []string
-}                        /*}}}*/
-type InfoStruct struct { /*{{{*/
-    Id      string
-    Actions []Action
-    Layout  []Layout
-    State   State
-}                    /*}}}*/
-type Action struct { /*{{{*/
-    Id        string
-    Name      string
-    Arguments []string
-}                    /*}}}*/
-type Layout struct { /*{{{*/
-    Id      string
-    Type    string
-    Action  string
-    Using   string
-    Filter  []string
-    Section string
-}                   /*}}}*/
-type State struct { /*{{{*/
-    Devices []Device
-}                     /*}}}*/
-type Command struct { /*{{{*/
-    Cmd  string
-    Args []string
-}   /*}}}*/
+	//Activate the config
+	basenode.SetConfig(config)
 
-// MAIN
+	//Create channels so we can communicate with the stampzilla-go server
+	serverSendChannel = make(chan interface{})
+	serverRecvChannel = make(chan protocol.Command)
+
+	//Start communication with the server
+	connectionState := basenode.Connect(serverSendChannel, serverRecvChannel)
+
+	// Thit worker keeps track on our connection state, if we are connected or not
+	go monitorState(connectionState, serverSendChannel)
+
+	// This worker recives all incomming commands
+	go serverRecv(serverRecvChannel)
+} // }}}
+
+// MAIN - This is run when the init function is done
 func main() { /*{{{*/
-    // Load logger
-    logger, err := log.LoggerFromConfigAsFile("../logconfig.xml")
-    if err != nil {
-        panic(err)
-    }
-    log.ReplaceLogger(logger)
+	// Load logger
+	logger, err := log.LoggerFromConfigAsFile("../logconfig.xml")
+	if err != nil {
+		panic(err)
+	}
+	log.ReplaceLogger(logger)
 
-    // Load flags
-    flag.StringVar(&host, "host", "localhost", "Stampzilla server hostname")
-    flag.StringVar(&port, "port", "8282", "Stampzilla server port")
-    flag.Parse()
+	log.Info("Starting SIMPLE node")
 
-    log.Info("Starting SIMPLE node")
+	// Create new node description
+	node = protocol.NewNode("simple")
 
-    Info = InfoStruct{}
-    Info.Id = "Simple"
+	// Describe available actions
+	node.AddAction("set", "Set", []string{"Devices.Id"})
+	node.AddAction("toggle", "Toggle", []string{"Devices.Id"})
+	node.AddAction("dim", "Dim", []string{"Devices.Id", "value"})
 
-    updateActions()
-    updateLayout()
-    updateState()
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeText,
+		Name: "Example text",
+		Command: &protocol.Command{
+			Cmd:  "set",
+			Args: []string{"1"},
+		},
+		Feedback: "Devices[0].State",
+	})
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeButton,
+		Name: "Example button",
+		Command: &protocol.Command{
+			Cmd:  "set",
+			Args: []string{"1"},
+		},
+		Feedback: "Devices[1].State",
+	})
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeToggle,
+		Name: "Example toggle",
+		Command: &protocol.Command{
+			Cmd:  "set",
+			Args: []string{"1"},
+		},
+		Feedback: "Devices[2].State",
+	})
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeSlider,
+		Name: "Example slider",
+		Command: &protocol.Command{
+			Cmd:  "set",
+			Args: []string{"1"},
+		},
+		Feedback: "Devices[3].State",
+	})
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeColorPicker,
+		Name: "Example color picker",
+		Command: &protocol.Command{
+			Cmd:  "set",
+			Args: []string{"1"},
+		},
+		Feedback: "Devices[4].State",
+	})
 
-    // Start the connection, this gorutine will keep the connection up and reconnect if nessesary
-    go connection()
+	state = NewState()
+	node.SetState(state)
 
-    select {}
-}   /*}}}*/
+	select {}
+} /*}}}*/
 
-// CONNECTION
-func connection() { /*{{{*/
-    var err error
-    for {
-        log.Info("Connection to ", host, ":", port)
-        Connection, err = net.Dial("tcp", net.JoinHostPort(host, port))
+// WORKER that monitors the current connection state
+func monitorState(connectionState chan int, send chan interface{}) {
+	for s := range connectionState {
+		switch s {
+		case basenode.ConnectionStateConnected:
+			send <- node
+		case basenode.ConnectionStateDisconnected:
+		}
+	}
+}
 
-        if err != nil {
-            log.Error("Failed connection: ", err)
-            <-time.After(time.Second)
-            continue
-        }
+// WORKER that recives all incomming commands
+func serverRecv(recv chan protocol.Command) {
+	for d := range recv {
+		processCommand(d)
+	}
+}
 
-        log.Trace("Connected")
-
-        connectionWorker()
-
-        log.Warn("Lost connection, reconnecting")
-        <-time.After(time.Second)
-    }
-}                         /*}}}*/
-func connectionWorker() { /*{{{*/
-    // When connected, send a description about this node
-    sendUpdate()
-
-    // Recive data
-    for {
-        // Create a buffer to save recive data to
-        buf := make([]byte, 51200)
-
-        // Wait for data and save it to buff. n = number of recived bytes
-        nr, err := Connection.Read(buf)
-        if err != nil {
-            return
-        }
-
-        // Copy the recived bytes from buffer to data, length of data will be the same length as the recived bytes
-        data := buf[0:nr]
-
-        // Decode json command message
-        var cmd Command
-        err = json.Unmarshal(data, &cmd)
-        if err != nil {
-            log.Warn(err)
-        } else {
-            log.Info(cmd)
-
-            // If decode is successfull, run command
-            processCommand(cmd)
-        }
-
-    }
-}                   /*}}}*/
-func sendUpdate() { /*{{{*/
-    b, err := json.Marshal(Info)
-    if err != nil {
-        log.Error(err)
-    }
-    fmt.Fprintf(Connection, string(b))
-}   /*}}}*/
-
-// INFORMATION
-func updateActions() { /*{{{*/
-    Info.Actions = []Action{
-        Action{
-            "toggle",
-            "Toggle",
-            []string{"Devices.Id"},
-        },
-    }
-}                     /*}}}*/
-func updateLayout() { /*{{{*/
-    Info.Layout = []Layout{
-        Layout{
-            "1",
-            "switch",
-            "toggle",
-            "Devices",
-            []string{"check"},
-            "Lamps",
-        },
-    }
-}                    /*}}}*/
-func updateState() { /*{{{*/
-    Info.State = State{
-        []Device{
-            Device{
-                Id:       "test",
-                Name:     "asdasd",
-                State:    "false",
-                Type:     "toggle",
-                Features: []string{"check"},
-            },
-        },
-    }
-}   /*}}}*/
-
-// ACTIONS
-func processCommand(cmd Command) {
-    switch cmd.Cmd {
-    case "toggle":
-        for n, row := range Info.State.Devices {
-            if row.Id == cmd.Args[0] {
-                if Info.State.Devices[n].State == "false" {
-                    Info.State.Devices[n].State = "true"
-                } else {
-                    Info.State.Devices[n].State = "false"
-                }
-
-                sendUpdate()
-                log.Info("Toggled=", Info.State.Devices[n].State)
-            }
-        }
-    }
+// THis is called on each incomming command
+func processCommand(cmd protocol.Command) {
 }

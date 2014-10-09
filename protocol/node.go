@@ -3,11 +3,12 @@ package protocol
 import "encoding/json"
 
 type Node struct { /*{{{*/
-	Id      string
-	Uuid    string
-	Actions []*Action
-	Layout  []*Layout
-	State   interface{}
+	Id       string
+	Uuid     string
+	Actions  []*Action
+	Layout   []*Layout
+	Elements []*Element
+	State    interface{}
 } /*}}}*/
 
 type State interface {
@@ -32,6 +33,10 @@ func (n *Node) AddLayout(id, atype, action, using string, filter []string, secti
 	l := NewLayout(id, atype, action, using, filter, section)
 
 	n.Layout = append(n.Layout, l)
+}
+
+func (n *Node) AddElement(el *Element) {
+	n.Elements = append(n.Elements, el)
 }
 
 func (n *Node) SetState(state State) {
