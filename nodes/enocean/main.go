@@ -87,7 +87,7 @@ func processCommand(cmd protocol.Command) {
 }
 
 func setupEnoceanCommunication() {
-	send := make(chan goenocean.Request)
+	send := make(chan goenocean.Encoder)
 	recv := make(chan goenocean.Packet)
 	goenocean.Serial(send, recv)
 
@@ -97,27 +97,27 @@ func setupEnoceanCommunication() {
 	reciever(recv)
 }
 
-func testLearn4bs(send chan goenocean.Request) {
+func testLearn4bs(send chan goenocean.Encoder) {
 	p := goenocean.NewTelegram4bsLearn()
 	p.SetLearnFunc(0x38)
 	p.SetLearnType(0x08)
 
 	// OMG THIS WORKS :D:D
 	fmt.Printf("Sending: % x\n", p.Encode())
-	send <- goenocean.NewRequest(p)
+	send <- p
 }
-func testSenda53808(send chan goenocean.Request) {
+func testSenda53808(send chan goenocean.Encoder) {
 	p := goenocean.NewEepA53808()
 	p.SetDestinationId([4]byte{0x01, 0x86, 0xff, 0x7d})
 	p.SetCommand(2)
 	//PERMUNDO only supports 0 = off on = 1-255
 	p.SetDimValue(1)
 	fmt.Printf("Sending: % x\n", p.Encode())
-	send <- goenocean.NewRequest(p)
+	send <- p
 
 	p.SetDimValue(0)
 	time.Sleep(time.Second * 1)
-	send <- goenocean.NewRequest(p)
+	send <- p
 
 }
 func testSendWorking(send chan goenocean.Encoder) {
