@@ -75,10 +75,10 @@ func (c *Config) GetUuid() string {
 
 func (c *Config) Merge(c2 *Config) {
 
-	if c.Host != c2.Host && c2.Host != "" {
+	if c.Host != c2.Host && c.Host != "" {
 		c.Host = c2.Host
 	}
-	if c.Port != c2.Port && c2.Port != "" {
+	if c.Port != c2.Port && c.Port != "" {
 		c.Port = c2.Port
 	}
 
