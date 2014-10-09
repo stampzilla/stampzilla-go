@@ -21,7 +21,7 @@ var serverRecvChannel chan protocol.Command
 func init() {
 	var host string
 	var port string
-	flag.StringVar(&host, "host", "192.168.13.2", "Server host/ip")
+	flag.StringVar(&host, "host", "localhost", "Server host/ip")
 	flag.StringVar(&port, "port", "8282", "Server port")
 
 	flag.Parse()
