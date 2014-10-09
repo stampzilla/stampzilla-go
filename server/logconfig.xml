@@ -20,11 +20,11 @@
         </filter>
     </outputs>
     <formats>
-        <format id="colored-trace"  format="%Time %EscM(40)%Level%EscM(49) - %File - %Msg%n%EscM(0)"/>
-        <format id="colored-debug"  format="%Time %EscM(45)%Level%EscM(49) - %File - %Msg%n%EscM(0)"/>
-        <format id="colored-info"  format="%Time %EscM(46)%Level%EscM(49) - %File - %Msg%n%EscM(0)"/>
-        <format id="colored-warn"  format="%Time %EscM(43)%Level%EscM(49) - %File - %Msg%n%EscM(0)"/>
-        <format id="colored-error"  format="%Time %EscM(41)%Level%EscM(49) - %File - %Msg%n%EscM(0)"/>
-        <format id="colored-critical"  format="%Time %EscM(41)%Level%EscM(49) - %File - %Msg%n%EscM(0)"/>
+        <format id="colored-trace"  format="%Time %EscM(40)%Level%EscM(49) - %File:%Line - %Msg%n%EscM(0)"/>
+        <format id="colored-debug"  format="%Time %EscM(45)%Level%EscM(49) - %File:%Line - %Msg%n%EscM(0)"/>
+        <format id="colored-info"  format="%Time %EscM(46)%Level%EscM(49) - %File:%Line - %Msg%n%EscM(0)"/>
+        <format id="colored-warn"  format="%Time %EscM(43)%Level%EscM(49) - %File:%Line - %Msg%n%EscM(0)"/>
+        <format id="colored-error"  format="%Time %EscM(41)%Level%EscM(49) - %File:%Line - %Msg%n%EscM(0)"/>
+        <format id="colored-critical"  format="%Time %EscM(41)%Level%EscM(49) - %File:%Line - %Msg%n%EscM(0)"/>
     </formats>
 </seelog>

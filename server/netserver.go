@@ -52,12 +52,13 @@ func newClient(c net.Conn) {
 			return
 		}
 
+		//TODO: Handle when multiple messages gets concated ex: msg}{msg2
 		data := buf[0:nr]
 
 		var info protocol.Node
 		err = json.Unmarshal(data, &info)
 		if err != nil {
-			log.Warn(err, info)
+			log.Warn(err, " -->", string(data), "<--")
 		} else {
 			id = info.Id
 			Nodes[info.Id] = info
