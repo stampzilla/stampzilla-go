@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"os"
 
 	"code.google.com/p/go-uuid/uuid"
@@ -47,7 +46,7 @@ func SetConfig(c *Config) {
 	log.ReplaceLogger(logger)
 
 	config = c
-	fmt.Println("config:", config)
+
 	saveConfigToFile()
 }
 
@@ -94,10 +93,10 @@ func (c *Config) GetUuid() string {
 
 func (c *Config) Merge(c2 *Config) {
 
-	if c.Host != c2.Host && c.Host == "localhost" {
+	if c.Host != c2.Host && c.Host == "localhost" && c2.Host != "" {
 		c.Host = c2.Host
 	}
-	if c.Port != c2.Port && c.Port == "8282" {
+	if c.Port != c2.Port && c.Port == "8282" && c2.Port != "" {
 		c.Port = c2.Port
 	}
 
