@@ -12,7 +12,7 @@
 <link rel="import" href="/bower_components/core-icon-button/core-icon-button.html">
 <link rel="import" href="/bower_components/core-toolbar/core-toolbar.html">
 <link rel="import" href="/bower_components/core-menu/core-submenu.html">
-<link rel="import" href="stampzilla-default-layout.html">
+<link rel="import" href="stampzilla-default-elements.html">
 
 <polymer-element name="stampzilla-device" attributes="selectedDevice devices" >
 	<template>
@@ -28,7 +28,7 @@
 				<section id="{{tab}}">
 					<div slide-from-right>
 						<template repeat="{{ layout in tab.Layouts }}">
-							<stampzilla-default-layout layoutId="{{layout.index}}" selectedDevice="{{selectedDevice}}" devices="{{devices}}"></stampilla-default-layout>
+                        <stampzilla-default-elements layoutId="{{layout.index}}" elements={{device.Elements}} selectedDevice="{{selectedDevice}}" devices="{{devices}}"></stampilla-default-layout>
 						</template>
 					</div>
 				</section>
@@ -36,6 +36,9 @@
 		</core-animated-pages>
 
 
+        <template repeat="{{ device in devices }}">
+            <stampzilla-default-elements elements={{device.Elements}} selectedDevice="{{selectedDevice}}" devices="{{devices}}"></stampilla-default-layout>
+        </template>
 	</template>
 	<script>
 		/* jshint newcap: false */
