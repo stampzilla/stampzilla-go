@@ -81,7 +81,7 @@ func websocketRoute(params martini.Params, receiver <-chan *Message, sender chan
 	clients.appendClient(client)
 
 	//doPeriodicalStuff()
-	clients.messageOtherClients(&Message{"all", nodes})
+	clients.messageOtherClients(&Message{"all", nodes.GetAll()})
 
 	// A single select can be used to do all the messaging
 	for {
