@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
+	"sync"
+
 	"github.com/go-martini/martini"
 	"github.com/gorilla/websocket"
-	"sync"
 )
 
 var clients *Clients
@@ -80,7 +81,7 @@ func websocketRoute(params martini.Params, receiver <-chan *Message, sender chan
 	clients.appendClient(client)
 
 	//doPeriodicalStuff()
-	clients.messageOtherClients(&Message{"all", Nodes})
+	clients.messageOtherClients(&Message{"all", nodes})
 
 	// A single select can be used to do all the messaging
 	for {

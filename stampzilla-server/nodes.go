@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"net"
 	"net/http"
+	"sync"
 	"time"
 
 	log "github.com/cihub/seelog"
@@ -11,27 +13,75 @@ import (
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
-var Nodes map[string]protocol.Node
+type Node struct {
+	protocol.Node
+	conn net.Conn
+	wait chan bool
+}
+
+//  TODO: write tests for Nodes struct (jonaz) <Fri 10 Oct 2014 04:31:22 PM CEST>
+type Nodes struct {
+	nodes map[string]*Node
+	sync.RWMutex
+}
+
+func NewNodes() *Nodes {
+	n := &Nodes{}
+	n.nodes = make(map[string]*Node)
+	return n
+}
+
+func (n *Nodes) GetByName(name string) *Node {
+	n.RLock()
+	defer n.RUnlock()
+	for _, node := range n.nodes {
+		//  TODO: change Id to Name (jonaz) <Fri 10 Oct 2014 04:29:23 PM CEST>
+		if node.Id == name {
+			return node
+		}
+	}
+	return nil
+}
+func (n *Nodes) GetByUuid(uuid string) *Node {
+	n.RLock()
+	defer n.RUnlock()
+	if node, ok := n.nodes[uuid]; ok {
+		return node
+	}
+	return nil
+}
+func (n *Nodes) GetAll() map[string]*Node {
+	n.RLock()
+	defer n.RUnlock()
+	return n.nodes
+}
+func (n *Nodes) Add(node *Node) {
+	n.Lock()
+	defer n.Unlock()
+	//var newNode = node
+	n.nodes[node.Uuid] = node
+}
+func (n *Nodes) Delete(uuid string) {
+	n.Lock()
+	defer n.Unlock()
+	delete(n.nodes, uuid)
+}
+
+var nodes *Nodes
 
 func GetNodes(enc encoder.Encoder) (int, []byte) {
-	//nodes := []InfoStruct{}
-
-	//for _, node := range Nodes {
-	//nodes = append(nodes, node)
-	//}
-
-	//return 200, encoder.Must(json.Marshal(&nodes))
-	return 200, encoder.Must(json.Marshal(&Nodes))
+	return 200, encoder.Must(json.Marshal(nodes.GetAll()))
 }
 
 func GetNode(enc encoder.Encoder, params martini.Params) (int, []byte) {
-	n, ok := Nodes[params["id"]]
-	if !ok {
-		return 404, []byte("{}")
-
+	if n := nodes.GetByName(params["id"]); n != nil {
+		return 200, encoder.Must(json.Marshal(&n))
+	}
+	if n := nodes.GetByUuid(params["id"]); n != nil {
+		return 200, encoder.Must(json.Marshal(&n))
 	}
 
-	return 200, encoder.Must(json.Marshal(&n))
+	return 404, []byte("{}")
 }
 
 type Command struct {
@@ -68,8 +118,8 @@ func PostNodeState(enc encoder.Encoder, params martini.Params, r *http.Request) 
 	case <-nodesConnection[params["id"]].wait:
 	}
 
-	n, ok := Nodes[params["id"]]
-	if !ok {
+	n := nodes.GetByName(params["id"])
+	if n == nil {
 		return 404, []byte("{}")
 	}
 
