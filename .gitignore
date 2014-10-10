@@ -21,8 +21,8 @@ _testmain.go
 
 *.exe
 
-server/public/bower_components/
-server/gin-bin
+stampzilla-server/public/bower_components/
+stampzilla-server/gin-bin
 
 # application specifics
 config.json
