@@ -11,18 +11,7 @@ import (
 
 // Webserver that serves static files
 
-// The webserver
-//type Response map[string]interface{} [>{{{<]
-//func (r Response) String() (s string) {
-//b, err := json.Marshal(r)
-//if err != nil {
-//s = ""
-//return
-//}
-//s = string(b)
-//return
-//}                                  [>}}}<]
-func webStart(port, root string) { /*{{{*/
+func webStart(port, root string) {
 
 	//m := martini.Classic()
 	r := martini.NewRouter()
@@ -40,24 +29,12 @@ func webStart(port, root string) { /*{{{*/
 	})
 
 	m.Get("/socket", sockets.JSON(Message{}), websocketRoute)
-	m.Get("/api/nodes", GetNodes)
-	m.Get("/api/node/:id", GetNode)
-	m.Put("/api/node/:id/cmd", CommandToNode)
+	m.Get("/api/nodes", WebHandlerGetNodes)
+	m.Get("/api/node/:id", WebHandlerGetNode)
+	m.Put("/api/node/:id/cmd", WebHandlerCommandToNode)
 	m.Post("/api/node/:id/state", PostNodeState)
-	m.Get("/api/users/:id", GetUser)
-
-	//handler.SetRoutes(
-	//rest.Route{"GET", "/api/nodes", GetNodes},
-	//rest.Route{"GET", "/api/node/:id", GetNode},
-	//rest.Route{"POST", "/api/node/:id/state", PostNodeState},
-	//rest.Route{"GET", "/api/users/:id", GetUser},
-	//)
+	//m.Get("/api/users/:id", GetUser)
 
 	//go http.ListenAndServe(":"+port, nil)
 	log.Critical(http.ListenAndServe(":"+port, m))
-	//fmt.Println()
-} /*}}}*/
-
-func GetUser(w *http.ResponseWriter, req *http.Request) {
-
 }
