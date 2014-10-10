@@ -23,3 +23,7 @@ _testmain.go
 
 server/public/bower_components/
 server/gin-bin
+
+# application specifics
+config.json
+devices.json
