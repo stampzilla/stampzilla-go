@@ -30,13 +30,9 @@ type Client struct {
 // Add a client to a room
 func (r *Clients) appendClient(client *Client) {
 	r.Lock()
+	defer r.Unlock()
 	r.clients = append(r.clients, client)
-	for _, c := range r.clients {
-		if c != client {
-			c.out <- &Message{"status", "Joined this chat"}
-		}
-	}
-	r.Unlock()
+	clients.messageOtherClients(&Message{"all", nodes.All()})
 }
 
 func sendOnWs(p martini.Params) {
@@ -46,10 +42,10 @@ func sendOnWs(p martini.Params) {
 // Message all the other clients
 func (r *Clients) messageOtherClients(msg *Message) {
 	r.Lock()
+	defer r.Unlock()
 	for _, c := range r.clients {
 		c.out <- msg
 	}
-	defer r.Unlock()
 }
 
 // Remove a client
@@ -68,6 +64,7 @@ func (r *Clients) removeClient(client *Client) {
 func (r *Clients) disconnectAll() {
 	r.Lock()
 	defer r.Unlock()
+
 	for _, c := range r.clients {
 		c.disconnect <- websocket.CloseGoingAway
 	}
@@ -80,9 +77,6 @@ func websocketRoute(params martini.Params, receiver <-chan *Message, sender chan
 	client := &Client{params["clientname"], receiver, sender, done, err, disconnect}
 	clients.appendClient(client)
 
-	//doPeriodicalStuff()
-	clients.messageOtherClients(&Message{"all", nodes.GetAll()})
-
 	// A single select can be used to do all the messaging
 	for {
 		select {
@@ -93,7 +87,7 @@ func websocketRoute(params martini.Params, receiver <-chan *Message, sender chan
 			// Use the error for statistics etc
 		case msg := <-client.in:
 			//TODO handle request from websocket frontend here.
-			clients.messageOtherClients(msg)
+			fmt.Println("incoming message from webui on websocket", msg)
 		case <-client.done:
 			clients.removeClient(client)
 			fmt.Println("waitgroup DONE")

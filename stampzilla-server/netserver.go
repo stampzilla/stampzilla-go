@@ -9,25 +9,12 @@ import (
 	log "github.com/cihub/seelog"
 )
 
-//var NodesConnection map[string]net.Conn
-//var NodesWait map[string]chan bool
-
-type NodeConnection struct {
-	conn net.Conn
-	wait chan bool
-}
-
-var nodesConnection map[string]*NodeConnection
-
 func netStart(port string) {
 	l, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		fmt.Println("listen error", err)
 		return
 	}
-
-	nodesConnection = make(map[string]*NodeConnection)
-	//NodesWait = make(map[string]chan bool)
 
 	go func() {
 		for {
@@ -69,6 +56,8 @@ func newClient(connection net.Conn) {
 		} else {
 			id = info.Id
 			uuid = info.Uuid
+			info.conn = connection
+
 			nodes.Add(&info)
 			log.Info(info.Id, " - Got update on state")
 			clients.messageOtherClients(&Message{"singlenode", info})

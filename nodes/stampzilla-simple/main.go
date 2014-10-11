@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/stampzilla/stampzilla-go/protocol"
@@ -129,4 +130,5 @@ func serverRecv(recv chan protocol.Command) {
 
 // THis is called on each incomming command
 func processCommand(cmd protocol.Command) {
+	log.Info("Incoming command from server:", cmd)
 }

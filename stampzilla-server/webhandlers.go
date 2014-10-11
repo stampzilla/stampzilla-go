@@ -2,23 +2,21 @@ package main
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
-	"time"
 
 	log "github.com/cihub/seelog"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/encoder"
+	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
 func WebHandlerGetNodes(enc encoder.Encoder) (int, []byte) {
-	return 200, encoder.Must(json.Marshal(nodes.GetAll()))
+	return 200, encoder.Must(json.Marshal(nodes.All()))
 }
 
 func WebHandlerGetNode(enc encoder.Encoder, params martini.Params) (int, []byte) {
-	if n := nodes.GetByName(params["id"]); n != nil {
-		return 200, encoder.Must(json.Marshal(&n))
-	}
-	if n := nodes.GetByUuid(params["id"]); n != nil {
+	if n := nodes.Search(params["id"]); n != nil {
 		return 200, encoder.Must(json.Marshal(&n))
 	}
 
@@ -30,55 +28,65 @@ type Command struct {
 	Args []string
 }
 
-func PostNodeState(enc encoder.Encoder, params martini.Params, r *http.Request) (int, []byte) {
-	// Create a blocking channel
-	nodesConnection[params["id"]].wait = make(chan bool)
+//func PostNodeState(enc encoder.Encoder, params martini.Params, r *http.Request) (int, []byte) {
+//// Create a blocking channel
+//nodesConnection[params["id"]].wait = make(chan bool)
 
-	soc, ok := nodesConnection[params["id"]]
-	if ok {
-		//c := Command{}
+//soc, ok := nodesConnection[params["id"]]
+//if ok {
+////c := Command{}
 
-		c := decodeJson(r)
-		//err := r.DecodeJsonPayload(&c)
+//c := decodeJson(r)
+////err := r.DecodeJsonPayload(&c)
 
-		data, err := json.Marshal(&c)
+//data, err := json.Marshal(&c)
 
-		_, err = soc.conn.Write(data)
-		if err != nil {
-			log.Error("Failed write: ", err)
-		} else {
-			log.Info("Success transport command to: ", params["id"])
-		}
-	} else {
-		log.Error("Failed to transport command to: ", params["id"])
-	}
+//_, err = soc.conn.Write(data)
+//if err != nil {
+//log.Error("Failed write: ", err)
+//} else {
+//log.Info("Success transport command to: ", params["id"])
+//}
+//} else {
+//log.Error("Failed to transport command to: ", params["id"])
+//}
 
-	// Wait for answer or timeout..
-	select {
-	case <-time.After(5 * time.Second):
-	case <-nodesConnection[params["id"]].wait:
-	}
+//// Wait for answer or timeout..
+//select {
+//case <-time.After(5 * time.Second):
+//case <-nodesConnection[params["id"]].wait:
+//}
 
-	n := nodes.GetByName(params["id"])
-	if n == nil {
-		return 404, []byte("{}")
-	}
+//n := nodes.GetByName(params["id"])
+//if n == nil {
+//return 404, []byte("{}")
+//}
 
-	//w.WriteJson(&n.State)
-	return 200, encoder.Must(json.Marshal(&n.State))
-}
+////w.WriteJson(&n.State)
+//return 200, encoder.Must(json.Marshal(&n.State))
+//}
 
-func decodeJson(r *http.Request) interface{} {
+//func decodeJson(r *http.Request) interface{} {
 
-	decoder := json.NewDecoder(r.Body)
-	var t interface{}
-	err := decoder.Decode(&t)
+//decoder := json.NewDecoder(r.Body)
+//var t interface{}
+//err := decoder.Decode(&t)
+//if err != nil {
+//log.Error(err)
+//}
+//return t
+//}
+
+func WebHandlerCommandToNode(enc encoder.Encoder, params martini.Params, r *http.Request) (int, []byte) {
+	log.Info("Sending command to:", params["id"])
+	requestJsonPut, err := ioutil.ReadAll(r.Body)
+	log.Info("Command:", string(requestJsonPut))
+	node := nodes.Search(params["id"])
 	if err != nil {
 		log.Error(err)
+		return 500, []byte("Error")
 	}
-	return t
-}
 
-func WebHandlerCommandToNode(r *http.Request) {
-	//  TODO: implement command here (jonaz) <Fri 03 Oct 2014 05:55:52 PM CEST>
+	node.conn.Write(requestJsonPut)
+	return 200, encoder.Must(enc.Encode(protocol.Command{Cmd: "testresponse"}))
 }

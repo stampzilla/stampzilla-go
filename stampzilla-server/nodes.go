@@ -28,7 +28,7 @@ func NewNodes() *Nodes {
 	return n
 }
 
-func (n *Nodes) GetByName(name string) *Node {
+func (n *Nodes) ByName(name string) *Node {
 	n.RLock()
 	defer n.RUnlock()
 	for _, node := range n.nodes {
@@ -39,7 +39,16 @@ func (n *Nodes) GetByName(name string) *Node {
 	}
 	return nil
 }
-func (n *Nodes) GetByUuid(uuid string) *Node {
+func (n *Nodes) Search(nameoruuid string) *Node {
+	if n := n.ByName(nameoruuid); n != nil {
+		return n
+	}
+	if n := nodes.ByUuid(nameoruuid); n != nil {
+		return n
+	}
+	return nil
+}
+func (n *Nodes) ByUuid(uuid string) *Node {
 	n.RLock()
 	defer n.RUnlock()
 	if node, ok := n.nodes[uuid]; ok {
@@ -47,7 +56,7 @@ func (n *Nodes) GetByUuid(uuid string) *Node {
 	}
 	return nil
 }
-func (n *Nodes) GetAll() map[string]*Node {
+func (n *Nodes) All() map[string]*Node {
 	n.RLock()
 	defer n.RUnlock()
 	return n.nodes

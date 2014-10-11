@@ -1,6 +1,6 @@
 package protocol
 
 type Command struct {
-	Cmd  string
-	Args []string
+	Cmd  string   `json:"cmd"`
+	Args []string `json:"args"`
 }
