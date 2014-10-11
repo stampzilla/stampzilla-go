@@ -15,18 +15,36 @@ func WebHandlerGetNodes(enc encoder.Encoder) (int, []byte) {
 	return 200, encoder.Must(json.Marshal(nodes.All()))
 }
 
-func WebHandlerGetNode(enc encoder.Encoder, params martini.Params) (int, []byte) {
+func WebHandlerGetNode(params martini.Params) (int, []byte) {
 	if n := nodes.Search(params["id"]); n != nil {
 		return 200, encoder.Must(json.Marshal(&n))
 	}
-
 	return 404, []byte("{}")
 }
 
-type Command struct {
-	Cmd  string
-	Args []string
+func WebHandlerCommandToNode(enc encoder.Encoder, params martini.Params, r *http.Request) (int, []byte) {
+	log.Info("Sending command to:", params["id"])
+	requestJsonPut, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Error(err)
+		return 500, []byte("Error")
+	}
+	log.Info("Command:", string(requestJsonPut))
+
+	node := nodes.Search(params["id"])
+	if node == nil {
+		log.Debug("NODE: ", node)
+		return 404, []byte("Node not found")
+	}
+
+	node.conn.Write(requestJsonPut)
+	return 200, encoder.Must(enc.Encode(protocol.Command{Cmd: "testresponse"}))
 }
+
+//type Command struct {
+//Cmd  string
+//Args []string
+//}
 
 //func PostNodeState(enc encoder.Encoder, params martini.Params, r *http.Request) (int, []byte) {
 //// Create a blocking channel
@@ -76,17 +94,3 @@ type Command struct {
 //}
 //return t
 //}
-
-func WebHandlerCommandToNode(enc encoder.Encoder, params martini.Params, r *http.Request) (int, []byte) {
-	log.Info("Sending command to:", params["id"])
-	requestJsonPut, err := ioutil.ReadAll(r.Body)
-	log.Info("Command:", string(requestJsonPut))
-	node := nodes.Search(params["id"])
-	if err != nil {
-		log.Error(err)
-		return 500, []byte("Error")
-	}
-
-	node.conn.Write(requestJsonPut)
-	return 200, encoder.Must(enc.Encode(protocol.Command{Cmd: "testresponse"}))
-}

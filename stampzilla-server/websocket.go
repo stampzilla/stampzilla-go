@@ -86,7 +86,7 @@ func websocketRoute(params martini.Params, receiver <-chan *Message, sender chan
 			// The socket connection is already long gone.
 			// Use the error for statistics etc
 		case msg := <-client.in:
-			//TODO handle request from websocket frontend here.
+			//TODO implement command from websocket here. using same process as WebHandlerCommandToNode
 			fmt.Println("incoming message from webui on websocket", msg)
 		case <-client.done:
 			clients.removeClient(client)
