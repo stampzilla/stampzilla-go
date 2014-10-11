@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"flag"
 	"os"
+	"strconv"
 	"sync"
 
 	log "github.com/cihub/seelog"
@@ -77,9 +78,17 @@ func serverRecv(recv chan protocol.Command) {
 
 func processCommand(cmd protocol.Command) {
 	log.Debug("INCOMING COMMAND", cmd)
-	if cmd.Cmd == "toggle" {
-		device := state.DeviceByString(cmd.Args[0])
+	device := state.DeviceByString(cmd.Args[0])
+	switch cmd.Cmd {
+	case "toggle":
 		device.Toggle()
+	case "on":
+		device.On()
+	case "off":
+		device.Off()
+	case "dim":
+		lvl, _ := strconv.Atoi(cmd.Args[1])
+		device.Dim(lvl)
 	}
 }
 
