@@ -23,11 +23,20 @@ func (s *State) Device(id [4]byte) *Device {
 	}
 	return nil
 }
+func (s *State) DeviceByString(senderId string) *Device {
+	s.Lock()
+	defer s.Unlock()
+	if _, ok := s.Devices[senderId]; ok {
+		return s.Devices[senderId]
+	}
+	return nil
+}
+
 func (s *State) AddDevice(id [4]byte, name string, features []string, state string) *Device {
 	d := NewDevice(id, name, state, "", features)
 	s.Lock()
 	defer s.Unlock()
-	s.Devices[d.Id()] = d
+	s.Devices[d.IdString()] = d
 	return d
 }
 func (s *State) RemoveDevice(id [4]byte) {
@@ -55,19 +64,33 @@ type Device struct {
 	State     string
 	Type      string
 	Features  []string
-	EEPs      []string
+	SendEEPs  []string
+	RecvEEPs  []string
 	Power     int64
 	PowerUnit string
 	sync.Mutex
 }
 
-func (d *Device) AddEep(eep string) {
+func (d *Device) AddEepForSending(eep string) {
 	d.Lock()
 	defer d.Unlock()
-	d.EEPs = append(d.EEPs, eep)
+	d.SendEEPs = append(d.SendEEPs, eep)
+}
+func (d *Device) AddEepForReceiving(eep string) {
+	d.Lock()
+	defer d.Unlock()
+	d.RecvEEPs = append(d.RecvEEPs, eep)
 }
 
-func (d *Device) Id() string {
+func (d *Device) Id() [4]byte {
+	d.Lock()
+	defer d.Unlock()
+	senderid, _ := hex.DecodeString(d.SenderId)
+	var ret [4]byte
+	copy(ret[:], senderid[0:4])
+	return ret
+}
+func (d *Device) IdString() string {
 	d.Lock()
 	defer d.Unlock()
 	return d.SenderId
@@ -89,4 +112,20 @@ func (d *Device) GetPower() int64 {
 	d.Lock()
 	defer d.Unlock()
 	return d.Power
+}
+
+func (d *Device) handler() Handler {
+	return handlers.getHandler(d.SendEEPs[0])
+}
+func (d *Device) On() {
+	d.handler().On(d)
+}
+func (d *Device) Off() {
+	d.handler().Off(d)
+}
+func (d *Device) Toggle() {
+	d.handler().Toggle(d)
+}
+func (d *Device) Dim(val int) {
+	d.handler().Dim(val, d)
 }

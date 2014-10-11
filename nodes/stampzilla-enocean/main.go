@@ -80,17 +80,23 @@ func serverRecv(recv chan protocol.Command) {
 }
 
 func processCommand(cmd protocol.Command) {
-	log.Error("INCOMING COMMAND", cmd)
+	log.Debug("INCOMING COMMAND", cmd)
+	if cmd.Cmd == "toggle" {
+		device := state.DeviceByString(cmd.Args[0])
+		device.Toggle()
+	}
 }
 
+var enoceanSend chan goenocean.Encoder
+
 func setupEnoceanCommunication() {
-	send := make(chan goenocean.Encoder)
+	enoceanSend = make(chan goenocean.Encoder)
 	recv := make(chan goenocean.Packet)
-	goenocean.Serial(send, recv)
+	goenocean.Serial(enoceanSend, recv)
 
 	//go testSend(send)
 	//testLearn4bs(send)
-	testSenda53808(send)
+	testSenda53808()
 	reciever(recv)
 }
 
@@ -103,27 +109,27 @@ func testLearn4bs(send chan goenocean.Encoder) {
 	fmt.Printf("Sending: % x\n", p.Encode())
 	send <- p
 }
-func testSenda53808(send chan goenocean.Encoder) {
+func testSenda53808() {
 	p := goenocean.NewEepA53808()
 	p.SetDestinationId([4]byte{0x01, 0x86, 0xff, 0x7d})
 	p.SetCommand(2)
 	//PERMUNDO only supports 0 = off on = 1-255
 	p.SetDimValue(1)
 	fmt.Printf("Sending: % x\n", p.Encode())
-	send <- p
+	enoceanSend <- p
 
 	p.SetDimValue(0)
 	time.Sleep(time.Second * 1)
-	send <- p
+	enoceanSend <- p
 
 }
-func testSendWorking(send chan goenocean.Encoder) {
+func testSendWorking() {
 	p := goenocean.NewTelegramRps()
 	p.SetTelegramData([]byte{0x50}) //on
 	//p.SetStatus(0x30) //testing shows this does not need to be set! Status defaults to 0
 
 	fmt.Printf("Sending: % x\n", p.Encode())
-	send <- p
+	enoceanSend <- p
 
 	//time.Sleep(time.Second * 3)
 	//p.SetTelegramData([]byte{0x70}) //off
@@ -149,13 +155,13 @@ func incomingPacket(p goenocean.Packet) {
 	}
 
 	if t, ok := p.(goenocean.Telegram); ok {
-		for _, deviceEep := range d.EEPs {
+		for _, deviceEep := range d.RecvEEPs {
 			if deviceEep[0:2] != hex.EncodeToString([]byte{t.TelegramType()}) {
 				continue
 			}
 
 			if h := handlers.getHandler(deviceEep); h != nil {
-				h(d, t)
+				h.Process(d, t)
 				return
 			}
 		}
