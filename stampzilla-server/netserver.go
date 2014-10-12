@@ -32,7 +32,7 @@ func netStart(port string) {
 func newClient(connection net.Conn) {
 	// Recive data
 	log.Info("New client connected")
-	id := ""
+	name := ""
 	uuid := ""
 	for {
 		reader := bufio.NewReader(connection)
@@ -43,7 +43,7 @@ func newClient(connection net.Conn) {
 		//err = json.Unmarshal(data, &cmd)
 		if err != nil {
 			if err.Error() == "EOF" {
-				log.Info(id, " - Client disconnected")
+				log.Info(name, " - Client disconnected")
 				if uuid != "" {
 					nodes.Delete(uuid)
 				}
@@ -54,12 +54,12 @@ func newClient(connection net.Conn) {
 			log.Warn("Not disconnect but error: ", err)
 			//return here?
 		} else {
-			id = info.Id
+			name = info.Name
 			uuid = info.Uuid
 			info.conn = connection
 
 			nodes.Add(&info)
-			log.Info(info.Id, " - Got update on state")
+			log.Info(info.Name, " - Got update on state")
 			clients.messageOtherClients(&Message{"singlenode", info})
 		}
 

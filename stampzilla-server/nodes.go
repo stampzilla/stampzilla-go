@@ -32,8 +32,7 @@ func (n *Nodes) ByName(name string) *Node {
 	n.RLock()
 	defer n.RUnlock()
 	for _, node := range n.nodes {
-		//  TODO: change Id to Name (jonaz) <Fri 10 Oct 2014 04:29:23 PM CEST>
-		if node.Id == name {
+		if node.Name == name {
 			return node
 		}
 	}

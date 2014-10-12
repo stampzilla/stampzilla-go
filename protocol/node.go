@@ -3,7 +3,7 @@ package protocol
 import "encoding/json"
 
 type Node struct { /*{{{*/
-	Id       string
+	Name     string
 	Uuid     string
 	Actions  []*Action
 	Layout   []*Layout
@@ -17,7 +17,7 @@ type State interface {
 
 func NewNode(name string) *Node {
 	return &Node{
-		Id:      name,
+		Name:    name,
 		Uuid:    "",
 		Actions: []*Action{},
 		Layout:  []*Layout{}}
