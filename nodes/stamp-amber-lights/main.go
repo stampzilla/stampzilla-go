@@ -32,19 +32,12 @@ type SerialConnection struct {
 
 func init() {
 	// Load flags
-	var host string
-	var port string
 	var dev string
-	flag.StringVar(&host, "host", "localhost", "Stampzilla server hostname")
-	flag.StringVar(&port, "port", "8282", "Stampzilla server port")
 	flag.StringVar(&dev, "dev", "/dev/ttyACM0", "Arduino serial port")
 	flag.Parse()
 
 	//Setup Config
-	basenode.SetConfig(
-		&basenode.Config{
-			Host: host,
-			Port: port})
+	basenode.SetConfig( basenode.NewConfig() );
 
 	//Start communication with the server
 	recv := make(chan protocol.Command)
@@ -187,7 +180,7 @@ func (config *SerialConnection) connect() {
 			for {
 				n := strings.Index(incomming, ">")
 
-				if ( n == -1 ) {
+				if ( n < 2) {
 					break;
 				}
 
