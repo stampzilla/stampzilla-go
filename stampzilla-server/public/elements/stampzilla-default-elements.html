@@ -17,6 +17,7 @@
 <link rel="import" href="/bower_components/color-picker-element/dist/color-picker.html">
 <link rel="import" href="stampzilla-element-toggle.html">
 <link rel="import" href="stampzilla-element-text.html">
+<link rel="import" href="stampzilla-element-color-picker.html">
 
 <polymer-element name="stampzilla-default-elements" attributes="device elements wsSend devices" >
 	<template>
@@ -29,7 +30,6 @@
 			
 			<template if="{{ element.Type == 1 }}">
 				<div>BUTTON - {{element.Name}}</div>
-				<paper-toggle-button data-element="{{key}}" on-change={{toggleButtonChange}}></paper-toggle-button>
 			</template>
 
 			<template if="{{ element.Type == 2 }}">
@@ -42,7 +42,7 @@
 			</template>
 			<template if="{{ element.Type == 4 }}">
 				<div>COLOR PICKER - {{element.Name}}</div>
-                <color-picker on-colorselected="{{colorSelect}}"></paper-slider>
+				<stampzilla-element-color-picker element1="{{element}}" device="{{device}}" wsSend="{{wsSend}}"></stampzilla-element-toggle>
 			</template>
 		</template>
 	
@@ -73,23 +73,7 @@
 						}
 					}
 				},
-                toggleButtonChange: function(a,b,el) {
-					var element = this.elements[el.dataset.element];
-					console.log(element);
 
-					var cmd = {
-						type:'cmd',
-						to:this.device.Uuid,
-						data:element.Command
-					};
-					this.wsSend = cmd;
-					//WIHO THIS WORKS and turns on/off my lamp :D:D
-                },
-
-                colorSelect: function (e){
-                    console.log(e);
-                    console.log(e.detail.hex + ' (r=' + e.detail.rgb.r + ', g=' + e.detail.rgb.g + ', b=' + e.detail.rgb.b + ')');
-				},
 
 				ready: function(){
 
