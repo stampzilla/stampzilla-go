@@ -1,0 +1,74 @@
+<link rel="import" href="/bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="/bower_components/core-animated-pages/core-animated-pages.html">
+<link rel="import" href="/bower_components/core-animated-pages/transitions/slide-down.html">
+<link rel="import" href="/bower_components/core-animated-pages/transitions/slide-up.html">
+<link rel="import" href="/bower_components/core-animated-pages/transitions/slide-from-right.html">
+<link rel="import" href="/bower_components/font-roboto/roboto.html">
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/core-scaffold/core-scaffold.html">
+<link rel="import" href="/bower_components/core-header-panel/core-header-panel.html">
+<link rel="import" href="/bower_components/core-menu/core-menu.html">
+<link rel="import" href="/bower_components/core-item/core-item.html">
+<link rel="import" href="/bower_components/core-icon-button/core-icon-button.html">
+<link rel="import" href="/bower_components/core-toolbar/core-toolbar.html">
+<link rel="import" href="/bower_components/core-menu/core-submenu.html">
+<link rel="import" href="/bower_components/paper-toggle-button/paper-toggle-button.html">
+<link rel="import" href="/bower_components/paper-slider/paper-slider.html">
+<link rel="import" href="/bower_components/color-picker-element/dist/color-picker.html">
+
+<polymer-element name="stampzilla-element-text" attributes="device element1 wsSend" >
+	<template>
+		<!--<link rel="stylesheet" href="stampzilla-default-elements.css">-->
+		<div>SWITCH - {{element1.Name}}</div>
+		<div>{{state}}</div>
+	</template>
+	<script>
+		/* jshint newcap: false */
+		/*global Polymer */
+
+
+		(function() {
+			"use strict";
+
+			Polymer('stampzilla-element-text', {
+				element: {},
+				device: {},
+				state: false,
+				deviceChanged: function(){
+					if( this.device.State === undefined){
+						return;
+					}
+					console.log("device changed");
+					//console.log(this.device.State);
+					//console.log(this.element1.Feedback);
+					try{
+						this.state = eval("this.device.State."+this.element1.Feedback);
+					}catch(e){
+						if(e.message === 'Cannot read property \'State\' of undefined'){
+							return;
+						}
+						console.log(e);
+					}
+					//console.log(this.state);
+				},
+				ready: function(){
+
+                }
+			});
+
+
+			//{
+			//	Type: 1,
+			//	Name: "Example button",
+			//	Command: {
+			//		cmd: "set",
+			//		args: [
+			//			"1"
+			//		]
+			//	},
+			//	Feedback: "Devices[1].State"
+			//},
+
+		})();
+	</script>
+</polymer-element>

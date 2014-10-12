@@ -57,7 +57,16 @@ func main() {
 			Cmd:  "toggle",
 			Args: []string{"0186ff7d"},
 		},
-		Feedback: `Devices["0186ff7d"].State`,
+		Feedback: `Devices["0186ff7d"].On`,
+	})
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeText,
+		Name: "Lamp 0186ff7d power",
+		//Command: &protocol.Command{
+		//Cmd:  "toggle",
+		//Args: []string{"0186ff7d"},
+		//},
+		Feedback: `Devices["0186ff7d"].Power`,
 	})
 
 	//Setup state

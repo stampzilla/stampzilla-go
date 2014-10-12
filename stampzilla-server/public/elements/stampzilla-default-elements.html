@@ -15,22 +15,27 @@
 <link rel="import" href="/bower_components/paper-toggle-button/paper-toggle-button.html">
 <link rel="import" href="/bower_components/paper-slider/paper-slider.html">
 <link rel="import" href="/bower_components/color-picker-element/dist/color-picker.html">
-<link rel="import" href="x-websocket.html">
+<link rel="import" href="stampzilla-element-toggle.html">
+<link rel="import" href="stampzilla-element-text.html">
 
-<polymer-element name="stampzilla-default-elements" attributes="device elements wsSend" >
+<polymer-element name="stampzilla-default-elements" attributes="device elements wsSend devices" >
 	<template>
 		<link rel="stylesheet" href="stampzilla-default-elements.css">
 
 		<template repeat="{{ element,key in elements  }}">
 			<template if="{{ element.Type == 0 }}">
-				<div>TEXT - {{element.Name}}: </div>
-				<div>{{element.State}}</div>
+				<stampzilla-element-text element1="{{element}}" device="{{device}}" wsSend="{{wsSend}}"></stampzilla-element-toggle>
+			</template>
+			
+			<template if="{{ element.Type == 1 }}">
+				<div>BUTTON - {{element.Name}}</div>
+				<paper-toggle-button data-element="{{key}}" on-change={{toggleButtonChange}}></paper-toggle-button>
 			</template>
 
 			<template if="{{ element.Type == 2 }}">
-				<div>SWITCH - {{element.Name}}</div>
-				<paper-toggle-button data-element="{{key}}" on-change={{toggleButtonChange}}></paper-toggle-button>
+				<stampzilla-element-toggle element1="{{element}}" device="{{device}}" wsSend="{{wsSend}}"></stampzilla-element-toggle>
 			</template>
+
 			<template if="{{ element.Type == 3 }}">
 				<div>SLIDER - {{element.Name}}</div>
 				<paper-slider pin value="{{action.data.State.Dim}}"></paper-slider>
@@ -51,6 +56,23 @@
 			"use strict";
 
 			Polymer('stampzilla-default-elements', {
+                elements: [],
+				device: {},
+				devicesChanged: function(){
+
+					if( this.device.Uuid !== undefined && this.devices[this.getDeviceIndex(this.device.Uuid)] !== this.device){
+						console.log("devices changed in elements",this.devices);
+						this.device = this.devices[this.getDeviceIndex(this.device.Uuid)];
+					}
+
+				},
+				getDeviceIndex: function(uuid){
+					for(var index in this.devices) {
+						if (this.devices.hasOwnProperty(index) && this.devices[index].Uuid === uuid ) {
+							return index;
+						}
+					}
+				},
                 toggleButtonChange: function(a,b,el) {
 					var element = this.elements[el.dataset.element];
 					console.log(element);
@@ -69,9 +91,6 @@
                     console.log(e.detail.hex + ' (r=' + e.detail.rgb.r + ', g=' + e.detail.rgb.g + ', b=' + e.detail.rgb.b + ')');
 				},
 
-                enableUpdates: false,
-                elements: [],
-				device: {},
 				ready: function(){
 
                 }
