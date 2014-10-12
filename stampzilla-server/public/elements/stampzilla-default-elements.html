@@ -17,11 +17,11 @@
 <link rel="import" href="/bower_components/color-picker-element/dist/color-picker.html">
 <link rel="import" href="x-websocket.html">
 
-<polymer-element name="stampzilla-default-elements" attributes="layoutId devices selectedDevice elements" >
+<polymer-element name="stampzilla-default-elements" attributes="device elements wsSend" >
 	<template>
 		<link rel="stylesheet" href="stampzilla-default-elements.css">
 
-		<template repeat="{{ element in elements  }}">
+		<template repeat="{{ element,key in elements  }}">
 			<template if="{{ element.Type == 0 }}">
 				<div>TEXT - {{element.Name}}: </div>
 				<div>{{element.State}}</div>
@@ -29,7 +29,7 @@
 
 			<template if="{{ element.Type == 2 }}">
 				<div>SWITCH - {{element.Name}}</div>
-				<paper-toggle-button checked="{{action.data.State.On}}" data-action="{{action.layout.Action}}" on-change={{toggleButtonChange}}></paper-toggle-button>
+				<paper-toggle-button data-element="{{key}}" on-change={{toggleButtonChange}}></paper-toggle-button>
 			</template>
 			<template if="{{ element.Type == 3 }}">
 				<div>SLIDER - {{element.Name}}</div>
@@ -51,10 +51,19 @@
 			"use strict";
 
 			Polymer('stampzilla-default-elements', {
-                toggleButtonChange: function(e,a,b,c) {
-                    console.log(e,b);
-                    console.log(b.dataset['action']);
+                toggleButtonChange: function(a,b,el) {
+					var element = this.elements[el.dataset.element];
+					console.log(element);
+
+					var cmd = {
+						type:'cmd',
+						to:this.device.Uuid,
+						data:element.Command
+					};
+					this.wsSend = cmd;
+					//WIHO THIS WORKS and turns on/off my lamp :D:D
                 },
+
                 colorSelect: function (e){
                     console.log(e);
                     console.log(e.detail.hex + ' (r=' + e.detail.rgb.r + ', g=' + e.detail.rgb.g + ', b=' + e.detail.rgb.b + ')');
@@ -62,114 +71,24 @@
 
                 enableUpdates: false,
                 elements: [],
-				devices: [],
-                devicesChanged: function() {
-                    //console.log(this.devices);
-                    if ( !this.enableUpdates ) {
-                        console.log("Updates are disabled");
-                        return;
-                    }
-
-                    console.log(this);
-
-                    var arr = this.generateActions();
-        
-                    for(var key in arr) {
-                        if ( this.actions[key] == undefined || this.actions[key].prevState != arr[key].data.State ) {
-                            console.log("Updated: "+arr[key].data.Name);
-                            this.actions[key] = arr[key];
-                        }
-                    }
-
-                    for(var key in this.actions) {
-                        if ( arr[key] == undefined ) {
-                            delete this.actions[key];
-                        }
-                    }
-                },
-				layoutId: null,
-				actions: [],
-				selectedDevice: null,
-				selectedDeviceChanged: function(){
-                    this.enableUpdates = false;
-					if(this.selectedDevice === null){
-						return [];
-					}
-					
-					var object = this.devices[this.selectedDevice].Layout;
-
-                    // Create a list of all groups/tabs
-					var arr = [];
-					for(var index in object) {
-						if (object.hasOwnProperty(index)) {
-							if(arr.indexOf(object[index].Section) === -1){
-								arr.push(object[index].Section);
-							}
-						}
-					}
-					this.tabs = arr;
-				},
-				//since State is string in golang we must parse this here. 
-				parseTrueFalse: function(data){
-					if(data === 'false'){
-						return false;
-					}
-					return true;
-				},
+				device: {},
 				ready: function(){
 
-                },
-				layoutIdChanged: function(){ // (The selected tab is changed)
-                    this.actions = this.generateActions();
-                    this.enableUpdates = true;
-                },
-                generateActions: function() {
-					//console.log(this.selectedDevice);
-					//console.log(this.layoutId);
-					var layout = this.devices[this.selectedDevice].Layout[this.layoutId];
-
-					var devices = this.devices[this.selectedDevice].State[layout.Using];
-
-					var arr = [];
-
-					var featureIsMissing = false;
-					for(var index in devices) {
-						if (devices.hasOwnProperty(index)) {
-							featureIsMissing = false;
-							for(var index2 in layout.Filter) {
-								if (layout.Filter.hasOwnProperty(index2)) {
-									
-									if(devices[index].Features.indexOf(layout.Filter[index2]) === -1){
-										featureIsMissing = true;
-									}
-
-								}
-							}
-							if(!featureIsMissing){
-								var obj = {
-                                    data:devices[index],
-                                    prevState: devices[index].State,
-                                    layout:layout,
-                                };
-								//console.log(obj);
-								arr.push(obj);
-							}
-						}
-					}
-                    return arr;
-
-					//this.actions = arr;
-				},
-				objectToArray: function(object){
-					var arr = [];
-					for(var index in object) {
-						if (object.hasOwnProperty(index)) {
-							arr.push(object[index]);
-						}
-					}
-					return arr;
-				}
+                }
 			});
+
+
+			//{
+			//	Type: 1,
+			//	Name: "Example button",
+			//	Command: {
+			//		cmd: "set",
+			//		args: [
+			//			"1"
+			//		]
+			//	},
+			//	Feedback: "Devices[1].State"
+			//},
 
 		})();
 	</script>

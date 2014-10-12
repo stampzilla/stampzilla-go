@@ -50,6 +50,16 @@ func main() {
 	node.AddLayout("2", "slider", "dim", "Devices", []string{"dim"}, "Dimmers")
 	node.AddLayout("3", "slider", "dim", "Devices", []string{"dim"}, "Specials")
 
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeToggle,
+		Name: "Lamp 0186ff7d",
+		Command: &protocol.Command{
+			Cmd:  "toggle",
+			Args: []string{"0186ff7d"},
+		},
+		Feedback: `Devices["0186ff7d"].State`,
+	})
+
 	//Setup state
 	state = NewState()
 	state.Devices = readConfigFromFile()
@@ -81,14 +91,14 @@ func processCommand(cmd protocol.Command) {
 	device := state.DeviceByString(cmd.Args[0])
 	switch cmd.Cmd {
 	case "toggle":
-		device.Toggle()
+		device.CmdToggle()
 	case "on":
-		device.On()
+		device.CmdOn()
 	case "off":
-		device.Off()
+		device.CmdOff()
 	case "dim":
 		lvl, _ := strconv.Atoi(cmd.Args[1])
-		device.Dim(lvl)
+		device.CmdDim(lvl)
 	}
 }
 
@@ -115,7 +125,7 @@ func incomingPacket(p goenocean.Packet) {
 	var d *Device
 	if d = state.Device(p.SenderId()); d == nil {
 		//Add unknown device
-		d = state.AddDevice(p.SenderId(), "UNKNOWN", nil, "")
+		d = state.AddDevice(p.SenderId(), "UNKNOWN", nil, false)
 		saveDevicesToFile()
 		serverSendChannel <- node
 	}

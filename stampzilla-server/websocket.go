@@ -1,9 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
 
+	log "github.com/cihub/seelog"
 	"github.com/go-martini/martini"
 	"github.com/gorilla/websocket"
 )
@@ -13,6 +15,7 @@ var clients *Clients
 type Message struct {
 	Type string      `json:"type"`
 	Data interface{} `json:"data"`
+	To   string      `json:"to"`
 }
 type Clients struct {
 	sync.Mutex
@@ -32,11 +35,7 @@ func (r *Clients) appendClient(client *Client) {
 	r.Lock()
 	r.clients = append(r.clients, client)
 	r.Unlock()
-	clients.messageOtherClients(&Message{"all", nodes.All()})
-}
-
-func sendOnWs(p martini.Params) {
-	clients.messageOtherClients(&Message{p["action"], nil})
+	clients.messageOtherClients(&Message{Type: "all", Data: nodes.All()})
 }
 
 // Message all the other clients
@@ -88,6 +87,15 @@ func websocketRoute(params martini.Params, receiver <-chan *Message, sender chan
 		case msg := <-client.in:
 			//TODO implement command from websocket here. using same process as WebHandlerCommandToNode
 			fmt.Println("incoming message from webui on websocket", msg)
+			node := nodes.Search(msg.To)
+			if node != nil {
+				jsonToSend, err := json.Marshal(&msg.Data)
+				if err != nil {
+					log.Error(err)
+					continue
+				}
+				node.conn.Write(jsonToSend)
+			}
 		case <-client.done:
 			clients.removeClient(client)
 			fmt.Println("waitgroup DONE")

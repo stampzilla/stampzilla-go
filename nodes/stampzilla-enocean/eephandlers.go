@@ -45,7 +45,7 @@ func (h *handlerEepf60201) Off(d *Device) {
 	enoceanSend <- p
 }
 func (h *handlerEepf60201) Toggle(d *Device) {
-	if d.State == "ON" {
+	if d.On {
 		h.Off(d)
 	} else {
 		h.On(d)
@@ -98,7 +98,7 @@ func (h *handlerEepa53808) Off(d *Device) {
 	enoceanSend <- p
 }
 func (h *handlerEepa53808) Toggle(d *Device) {
-	if d.State == "ON" {
+	if d.On {
 		h.Off(d)
 	} else {
 		h.On(d)
@@ -143,11 +143,9 @@ func (h *handlerEepd20109) Process(d *Device, t goenocean.Telegram) {
 	fmt.Println("OUTPUTVALUE", eep.OutputValue())
 	if eep.CommandId() == 4 {
 		if eep.OutputValue() > 0 {
-			d.State = "ON"
-			//d.State = "ON"
+			d.On = true
 		} else {
-			//d.State = "OFF"
-			d.State = "OFF"
+			d.On = false
 		}
 	}
 

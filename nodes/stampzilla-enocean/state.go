@@ -32,8 +32,8 @@ func (s *State) DeviceByString(senderId string) *Device {
 	return nil
 }
 
-func (s *State) AddDevice(id [4]byte, name string, features []string, state string) *Device {
-	d := NewDevice(id, name, state, "", features)
+func (s *State) AddDevice(id [4]byte, name string, features []string, on bool) *Device {
+	d := NewDevice(id, name, on, "", features)
 	s.Lock()
 	defer s.Unlock()
 	s.Devices[d.IdString()] = d
@@ -52,8 +52,8 @@ func (s *State) GetState() interface{} {
 	return s
 }
 
-func NewDevice(id [4]byte, name, state, dtype string, features []string) *Device {
-	d := &Device{Name: name, State: state, Type: dtype}
+func NewDevice(id [4]byte, name string, on bool, dtype string, features []string) *Device {
+	d := &Device{Name: name, On: on, Type: dtype}
 	d.SetId(id)
 	return d
 }
@@ -61,7 +61,7 @@ func NewDevice(id [4]byte, name, state, dtype string, features []string) *Device
 type Device struct {
 	SenderId  string
 	Name      string
-	State     string
+	On        bool
 	Type      string
 	Features  []string
 	SendEEPs  []string
@@ -117,15 +117,15 @@ func (d *Device) GetPower() int64 {
 func (d *Device) handler() Handler {
 	return handlers.getHandler(d.SendEEPs[0])
 }
-func (d *Device) On() {
+func (d *Device) CmdOn() {
 	d.handler().On(d)
 }
-func (d *Device) Off() {
+func (d *Device) CmdOff() {
 	d.handler().Off(d)
 }
-func (d *Device) Toggle() {
+func (d *Device) CmdToggle() {
 	d.handler().Toggle(d)
 }
-func (d *Device) Dim(val int) {
+func (d *Device) CmdDim(val int) {
 	d.handler().Dim(val, d)
 }

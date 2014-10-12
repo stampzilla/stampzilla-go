@@ -48,7 +48,7 @@ func newClient(connection net.Conn) {
 					nodes.Delete(uuid)
 				}
 				//TODO be able to not send everything always. perhaps implement remove instead of all?
-				clients.messageOtherClients(&Message{"all", nodes.All()})
+				clients.messageOtherClients(&Message{Type: "all", Data: nodes.All()})
 				return
 			}
 			log.Warn("Not disconnect but error: ", err)
@@ -60,7 +60,7 @@ func newClient(connection net.Conn) {
 
 			nodes.Add(&info)
 			log.Info(info.Name, " - Got update on state")
-			clients.messageOtherClients(&Message{"singlenode", info})
+			clients.messageOtherClients(&Message{Type: "singlenode", Data: info})
 		}
 
 	}

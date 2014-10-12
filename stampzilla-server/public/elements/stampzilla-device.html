@@ -14,31 +14,34 @@
 <link rel="import" href="/bower_components/core-menu/core-submenu.html">
 <link rel="import" href="stampzilla-default-elements.html">
 
-<polymer-element name="stampzilla-device" attributes="selectedDevice devices" >
+<polymer-element name="stampzilla-device" attributes="selectedDevice devices wsSend" >
 	<template>
 		<link rel="stylesheet" href="stampzilla-device.css">
 		<paper-tabs selected="{{page}}" class="mainTabs" >
 			<template repeat="{{ tab in tabs  }}">
 				<paper-tab >{{tab.Section}}</paper-tab>
 			</template>
+			<paper-tab >Elements</paper-tab>
 		</paper-tabs>
 		
 		<core-animated-pages transitions="slide-from-right" selected="{{page}}" selectedindex="0" >
 			<template repeat="{{ tab,key in tabs  }}">
 				<section id="{{tab}}">
 					<div slide-from-right>
-						<template repeat="{{ layout in tab.Layouts }}">
-                        <stampzilla-default-elements layoutId="{{layout.index}}" elements={{device.Elements}} selectedDevice="{{selectedDevice}}" devices="{{devices}}"></stampilla-default-layout>
-						</template>
+						<!--<template repeat="{{ layout in tab.Layouts }}">-->
+                        <!--<stampzilla-default-elements layoutId="{{layout.index}}" elements={{device.Elements}} selectedDevice="{{selectedDevice}}" devices="{{devices}}"></stampilla-default-layout>-->
+						<!--</template>-->
 					</div>
 				</section>
 			</template>
+			<section id="elements">
+				<div slide-from-right>
+					<stampzilla-default-elements wsSend="{{wsSend}}" elements={{device.Elements}} device="{{device}}"></stampilla-default-layout>
+				</div>
+			</section>
 		</core-animated-pages>
 
 
-        <template repeat="{{ device in devices }}">
-            <stampzilla-default-elements elements={{device.Elements}} selectedDevice="{{selectedDevice}}" devices="{{devices}}"></stampilla-default-layout>
-        </template>
 	</template>
 	<script>
 		/* jshint newcap: false */
@@ -53,12 +56,15 @@
 				devices: [],
 				tabs: [],
 				page:0,
+				device : {},
 				selectedDeviceChanged: function(){
 					if(this.selectedDevice === null){
 						return [];
 					}
 					
 					var object = this.devices[this.selectedDevice].Layout;
+					this.device = this.devices[this.selectedDevice];
+
 					var arr = [];
 					var layouts = {};
 					for(var index in object) {

@@ -1,5 +1,5 @@
 <link rel="import" href="/bower_components/polymer/polymer.html">
-<polymer-element name="x-websocket" attributes="url json jsonSend jsonReceive message" constructor="XWebsocket">
+<polymer-element name="x-websocket" attributes="url json jsonSend jsonReceive message sendMessage" constructor="XWebsocket">
 	<template>
 		<style>
 			:host {
@@ -13,11 +13,11 @@
 		(function() {
 			'use strict';
 			Polymer("x-websocket", {
-				//messageChanged: function() {
-				//	console.log("message",this.message);
-				//	this.send(this.message);
-				//},
+				sendMessageChanged: function() {
+					this.send(this.sendMessage);
+				},
 				message: '',
+				sendMessage: '',
 				/**
 				 * Should both sent and received data be interpreted as json and encoded/decoded ? Defaults to false.
 				 * @public
@@ -53,6 +53,7 @@
 					if(this.json || this.jsonSend) {
 						data = JSON.stringify(data);
 					}
+					console.log("sending: ",data);
 					this._ws.send(data);
 				},
 				/**
