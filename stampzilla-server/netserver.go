@@ -47,8 +47,8 @@ func newClient(connection net.Conn) {
 				if uuid != "" {
 					nodes.Delete(uuid)
 				}
-				//TODO be able to not send everything always.
-				clients.messageOtherClients(&Message{"all", nodes})
+				//TODO be able to not send everything always. perhaps implement remove instead of all?
+				clients.messageOtherClients(&Message{"all", nodes.All()})
 				return
 			}
 			log.Warn("Not disconnect but error: ", err)
