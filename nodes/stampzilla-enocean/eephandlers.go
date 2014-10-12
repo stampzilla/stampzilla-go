@@ -124,9 +124,12 @@ type handlerEepa51201 struct { // {{{
 func (h *handlerEepa51201) Process(d *Device, t goenocean.Telegram) {
 	eep := goenocean.NewEepA51201()
 	eep.SetTelegram(t) //THIS IS COOL!
-	d.SetPower(eep.MeterReading())
 	fmt.Println("METERREADING:", eep.MeterReading(), eep.DataType())
-	d.PowerUnit = eep.DataType()
+	if eep.DataType() == "W" {
+		d.SetPowerW(eep.MeterReading())
+	} else {
+		d.SetPowerkWh(eep.MeterReading())
+	}
 	serverSendChannel <- node
 }
 
