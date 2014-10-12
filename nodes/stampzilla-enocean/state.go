@@ -59,15 +59,15 @@ func NewDevice(id [4]byte, name string, on bool, dtype string, features []string
 }
 
 type Device struct {
-	SenderId  string
-	Name      string
-	On        bool
-	Type      string
-	Features  []string
-	SendEEPs  []string
-	RecvEEPs  []string
-	Power     int64
-	PowerUnit string
+	SenderId string
+	Name     string
+	On       bool
+	Type     string
+	Features []string
+	SendEEPs []string
+	RecvEEPs []string
+	PowerW   int64
+	PowerkWh int64
 	sync.Mutex
 }
 
@@ -102,16 +102,27 @@ func (d *Device) SetId(senderId [4]byte) {
 
 }
 
-func (d *Device) SetPower(pwr int64) {
+func (d *Device) SetPowerW(pwr int64) {
 	d.Lock()
 	defer d.Unlock()
-	d.Power = pwr
+	d.PowerW = pwr
 }
 
-func (d *Device) GetPower() int64 {
+func (d *Device) GetPowerW() int64 {
 	d.Lock()
 	defer d.Unlock()
-	return d.Power
+	return d.PowerW
+}
+func (d *Device) SetPowerkWh(pwr int64) {
+	d.Lock()
+	defer d.Unlock()
+	d.PowerkWh = pwr
+}
+
+func (d *Device) GetPowerkWh() int64 {
+	d.Lock()
+	defer d.Unlock()
+	return d.PowerkWh
 }
 
 func (d *Device) handler() Handler {

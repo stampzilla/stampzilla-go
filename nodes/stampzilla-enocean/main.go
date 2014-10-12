@@ -66,7 +66,7 @@ func main() {
 		//Cmd:  "toggle",
 		//Args: []string{"0186ff7d"},
 		//},
-		Feedback: `Devices["0186ff7d"].Power`,
+		Feedback: `Devices["0186ff7d"].PowerW`,
 	})
 
 	//Setup state
