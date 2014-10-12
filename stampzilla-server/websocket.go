@@ -30,8 +30,8 @@ type Client struct {
 // Add a client to a room
 func (r *Clients) appendClient(client *Client) {
 	r.Lock()
-	defer r.Unlock()
 	r.clients = append(r.clients, client)
+	r.Unlock()
 	clients.messageOtherClients(&Message{"all", nodes.All()})
 }
 
