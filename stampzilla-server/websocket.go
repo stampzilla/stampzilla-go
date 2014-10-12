@@ -1,10 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"sync"
+
+	log "github.com/cihub/seelog"
 	"github.com/go-martini/martini"
 	"github.com/gorilla/websocket"
-	"sync"
 )
 
 var clients *Clients
@@ -12,6 +15,7 @@ var clients *Clients
 type Message struct {
 	Type string      `json:"type"`
 	Data interface{} `json:"data"`
+	To   string      `json:"to"`
 }
 type Clients struct {
 	sync.Mutex
@@ -30,25 +34,17 @@ type Client struct {
 func (r *Clients) appendClient(client *Client) {
 	r.Lock()
 	r.clients = append(r.clients, client)
-	for _, c := range r.clients {
-		if c != client {
-			c.out <- &Message{"status", "Joined this chat"}
-		}
-	}
 	r.Unlock()
-}
-
-func sendOnWs(p martini.Params) {
-	clients.messageOtherClients(&Message{p["action"], nil})
+	clients.messageOtherClients(&Message{Type: "all", Data: nodes.All()})
 }
 
 // Message all the other clients
 func (r *Clients) messageOtherClients(msg *Message) {
 	r.Lock()
+	defer r.Unlock()
 	for _, c := range r.clients {
 		c.out <- msg
 	}
-	defer r.Unlock()
 }
 
 // Remove a client
@@ -67,6 +63,7 @@ func (r *Clients) removeClient(client *Client) {
 func (r *Clients) disconnectAll() {
 	r.Lock()
 	defer r.Unlock()
+
 	for _, c := range r.clients {
 		c.disconnect <- websocket.CloseGoingAway
 	}
@@ -79,9 +76,6 @@ func websocketRoute(params martini.Params, receiver <-chan *Message, sender chan
 	client := &Client{params["clientname"], receiver, sender, done, err, disconnect}
 	clients.appendClient(client)
 
-	//doPeriodicalStuff()
-	clients.messageOtherClients(&Message{"all", Nodes})
-
 	// A single select can be used to do all the messaging
 	for {
 		select {
@@ -91,8 +85,17 @@ func websocketRoute(params martini.Params, receiver <-chan *Message, sender chan
 			// The socket connection is already long gone.
 			// Use the error for statistics etc
 		case msg := <-client.in:
-			//TODO handle request from websocket frontend here.
-			clients.messageOtherClients(msg)
+			//TODO implement command from websocket here. using same process as WebHandlerCommandToNode
+			fmt.Println("incoming message from webui on websocket", msg)
+			node := nodes.Search(msg.To)
+			if node != nil {
+				jsonToSend, err := json.Marshal(&msg.Data)
+				if err != nil {
+					log.Error(err)
+					continue
+				}
+				node.conn.Write(jsonToSend)
+			}
 		case <-client.done:
 			clients.removeClient(client)
 			fmt.Println("waitgroup DONE")

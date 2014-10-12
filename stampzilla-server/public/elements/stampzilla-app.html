@@ -20,7 +20,7 @@
 	<template>
 		<link rel="stylesheet" href="stampzilla-app.css">
 
-		<x-websocket json="true" url="ws://{{ wsLocation }}/socket" message="{{websocketMessage}}" ></x-websocket>
+		<x-websocket json="true" url="ws://{{ wsLocation }}/socket" message="{{websocketMessage}}" sendMessage="{{wsSend}}" ></x-websocket>
 		<core-scaffold id="core_scaffold">
 			<core-header-panel mode="seamed" id="core_header_panel" navigation flex>
 				<core-toolbar id="core_toolbar">
@@ -44,7 +44,7 @@
 			</core-header-panel>
 			<div id="div" tool>Stampzilla</div>
 
-			<stampzilla-device devices="{{devices}}" selectedDevice={{selectedDevice}}></stampzilla-device>
+			<stampzilla-device wsSend="{{wsSend}}" devices="{{devices}}" selectedDevice={{selectedDevice}}></stampzilla-device>
 
 		</core-scaffold>
 

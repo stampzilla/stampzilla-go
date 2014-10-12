@@ -1,0 +1,95 @@
+<link rel="import" href="/bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="/bower_components/core-animated-pages/core-animated-pages.html">
+<link rel="import" href="/bower_components/core-animated-pages/transitions/slide-down.html">
+<link rel="import" href="/bower_components/core-animated-pages/transitions/slide-up.html">
+<link rel="import" href="/bower_components/core-animated-pages/transitions/slide-from-right.html">
+<link rel="import" href="/bower_components/font-roboto/roboto.html">
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/core-scaffold/core-scaffold.html">
+<link rel="import" href="/bower_components/core-header-panel/core-header-panel.html">
+<link rel="import" href="/bower_components/core-menu/core-menu.html">
+<link rel="import" href="/bower_components/core-item/core-item.html">
+<link rel="import" href="/bower_components/core-icon-button/core-icon-button.html">
+<link rel="import" href="/bower_components/core-toolbar/core-toolbar.html">
+<link rel="import" href="/bower_components/core-menu/core-submenu.html">
+<link rel="import" href="/bower_components/paper-toggle-button/paper-toggle-button.html">
+<link rel="import" href="/bower_components/paper-slider/paper-slider.html">
+<link rel="import" href="/bower_components/color-picker-element/dist/color-picker.html">
+<link rel="import" href="x-websocket.html">
+
+<polymer-element name="stampzilla-default-elements" attributes="device elements wsSend" >
+	<template>
+		<link rel="stylesheet" href="stampzilla-default-elements.css">
+
+		<template repeat="{{ element,key in elements  }}">
+			<template if="{{ element.Type == 0 }}">
+				<div>TEXT - {{element.Name}}: </div>
+				<div>{{element.State}}</div>
+			</template>
+
+			<template if="{{ element.Type == 2 }}">
+				<div>SWITCH - {{element.Name}}</div>
+				<paper-toggle-button data-element="{{key}}" on-change={{toggleButtonChange}}></paper-toggle-button>
+			</template>
+			<template if="{{ element.Type == 3 }}">
+				<div>SLIDER - {{element.Name}}</div>
+				<paper-slider pin value="{{action.data.State.Dim}}"></paper-slider>
+			</template>
+			<template if="{{ element.Type == 4 }}">
+				<div>COLOR PICKER - {{element.Name}}</div>
+                <color-picker on-colorselected="{{colorSelect}}"></paper-slider>
+			</template>
+		</template>
+	
+	</template>
+	<script>
+		/* jshint newcap: false */
+		/*global Polymer */
+
+
+		(function() {
+			"use strict";
+
+			Polymer('stampzilla-default-elements', {
+                toggleButtonChange: function(a,b,el) {
+					var element = this.elements[el.dataset.element];
+					console.log(element);
+
+					var cmd = {
+						type:'cmd',
+						to:this.device.Uuid,
+						data:element.Command
+					};
+					this.wsSend = cmd;
+					//WIHO THIS WORKS and turns on/off my lamp :D:D
+                },
+
+                colorSelect: function (e){
+                    console.log(e);
+                    console.log(e.detail.hex + ' (r=' + e.detail.rgb.r + ', g=' + e.detail.rgb.g + ', b=' + e.detail.rgb.b + ')');
+				},
+
+                enableUpdates: false,
+                elements: [],
+				device: {},
+				ready: function(){
+
+                }
+			});
+
+
+			//{
+			//	Type: 1,
+			//	Name: "Example button",
+			//	Command: {
+			//		cmd: "set",
+			//		args: [
+			//			"1"
+			//		]
+			//	},
+			//	Feedback: "Devices[1].State"
+			//},
+
+		})();
+	</script>
+</polymer-element>

@@ -20,7 +20,7 @@
 
 		<core-menu valueattr="label" selectedindex="0" id="core_menu" theme="core-light-theme">
 			<template repeat="{{ device,key in devices  }}">
-				<core-item data-key="{{key}}" on-tap="{{selectDevice}}" label="{{ device.Id }}" icon="settings" id="core_item" horizontal center layout active></core-item>
+				<core-item data-key="{{key}}" on-tap="{{selectDevice}}" label="{{ device.Name }}" icon="settings" id="core_item" horizontal center layout active></core-item>
 			</template>
 		</core-menu>
 
@@ -47,11 +47,18 @@
 							//this.devices = this.websocketMessage.data;
 							break;
 						case 'singlenode':
+							var exists = false;
 					        for(var index in this.devices) {
-					            if (this.devices.hasOwnProperty(index) && this.devices[index].Id == this.websocketMessage.data.Id ) {
+					            if (this.devices.hasOwnProperty(index) && this.devices[index].Uuid === this.websocketMessage.data.Uuid ) {
 							        this.devices[index] = this.websocketMessage.data;
+									console.log("updating device");
+									exists = true;
                                 }
                             }
+							if(!exists){
+								this.devices.push(this.websocketMessage.data);
+								console.log("adding new device to this.devices");
+							}
 							break;
 					}
                     //console.log(this.devices);
