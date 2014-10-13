@@ -53,7 +53,7 @@ func sendWorker(connection net.Conn, send chan interface{}, quit chan bool) {
 
 			if a, ok := d.(*protocol.Node); ok {
 				a.Uuid = config.Uuid
-				ret, err = json.Marshal(a)
+				ret, err = json.Marshal(a.Node())
 			} else {
 				ret, err = json.Marshal(d)
 			}

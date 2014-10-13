@@ -115,7 +115,7 @@ func monitorState(connectionState chan int, send chan interface{}) {
 	for s := range connectionState {
 		switch s {
 		case basenode.ConnectionStateConnected:
-			send <- node
+			send <- node.Node()
 		case basenode.ConnectionStateDisconnected:
 		}
 	}
