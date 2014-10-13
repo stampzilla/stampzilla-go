@@ -25,6 +25,8 @@ func init() { // {{{
 	//Activate the config
 	basenode.SetConfig(config)
 
+	node = protocol.NewNode("simple")
+
 	//Create channels so we can communicate with the stampzilla-go server
 	serverSendChannel = make(chan interface{})
 	serverRecvChannel = make(chan protocol.Command)
@@ -51,7 +53,6 @@ func main() { /*{{{*/
 	log.Info("Starting SIMPLE node")
 
 	// Create new node description
-	node = protocol.NewNode("simple")
 
 	// Describe available actions
 	node.AddAction("set", "Set", []string{"Devices.Id"})
