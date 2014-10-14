@@ -29,6 +29,7 @@ func (l *Logic) listen(c chan interface{}) {
 
 func (l *Logic) ParseState(state interface{}) {
 	//TODO parse all nodes.State here and generate something like this:
+	// OR we dont use stateMap and only use rules Devices[2].On == true and parse it using jsonpath example below.
 	// statemap["Devices[1].State"] = "OFF"
 	// this might be usefull: http://play.golang.org/p/JQnry4s6KE
 	// http://blog.golang.org/json-and-go
