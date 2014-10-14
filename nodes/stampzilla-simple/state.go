@@ -23,8 +23,8 @@ func (s *State) Device(id [4]byte) *Device {
 	}
 	return nil
 }
-func (s *State) AddDevice(id, name string, features []string, state string) *Device {
-	d := NewDevice(id, name, state, "", features)
+func (s *State) AddDevice(id, name string, state string) *Device {
+	d := NewDevice(id, name, state, "")
 	s.Lock()
 	defer s.Unlock()
 	s.Devices[d.Id] = d
@@ -43,7 +43,7 @@ func (s *State) GetState() interface{} {
 	return s
 }
 
-func NewDevice(id, name, state, dtype string, features []string) *Device {
+func NewDevice(id, name, state, dtype string) *Device {
 	d := &Device{Name: name, State: state, Type: dtype}
 	d.SetId(id)
 	return d

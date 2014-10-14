@@ -108,6 +108,9 @@ func main() { /*{{{*/
 	state = NewState()
 	node.SetState(state)
 
+	state.AddDevice("1", "Dev1", "OFF")
+	state.AddDevice("2", "Dev2", "ON")
+
 	select {}
 } /*}}}*/
 
