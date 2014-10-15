@@ -55,7 +55,7 @@ type Logic struct {
 
 func NewLogic() *Logic {
 	l := &Logic{stateMap: make(map[string]string)}
-	l.re = regexp.MustCompile(`^([^\s\[][^\s\[]*)?(\[[0-9]+\])?$`)
+	l.re = regexp.MustCompile(`^([^\s\[][^\s\[]*)?(\[.*?([0-9]).*?\])?$`)
 	return l
 }
 
@@ -133,9 +133,9 @@ func (l *Logic) path(state string, jp string, t interface{}) error {
 		if ss[1] != "" {
 			v = v.(map[string]interface{})[ss[1]]
 		}
-		if ss[2] != "" {
-			ii, err := strconv.Atoi(ss[2][1 : len(ss[2])-1])
-			is := ss[2][1 : len(ss[2])-1]
+		if ss[3] != "" {
+			ii, err := strconv.Atoi(ss[3])
+			is := ss[3]
 			if err != nil {
 				return errors.New("invalid path2")
 			}

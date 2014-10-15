@@ -10,10 +10,10 @@ func TestParseRuleEnterExitActions(t *testing.T) {
 
 	logic := NewLogic()
 
-	//TODO fix so we can use Devices["1"]. Devices[1] works now!!
+	// both Devices["1"]. Devices[1] works now!!
 	conditions := []*ruleCondition{
-		&ruleCondition{"Devices[1].State", "==", "OFF"},
-		&ruleCondition{"Devices[2].State", "!=", "OFF"},
+		&ruleCondition{`Devices[1].State`, "==", "OFF"},
+		&ruleCondition{`Devices[2].State`, "!=", "OFF"},
 	}
 	enterActions := []*ruleAction{&ruleAction{&protocol.Command{"testEnterAction", nil}}}
 	exitActions := []*ruleAction{&ruleAction{&protocol.Command{"testExitAction", nil}}}
