@@ -1,25 +1,72 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
+type ruleCondition struct {
+	statePath  string
+	comparator string
+	value      string
+}
+
+type ruleAction struct {
+	commands *protocol.Command
+}
+
+type rule struct {
+	name       string
+	conditions []*ruleCondition
+	actions    []*ruleAction
+}
+
 type Logic struct {
-	stateMap map[string]string
-	rules    map[string]string
+	stateMap map[string]string // might not be needed
+	rules    []*rule
 	re       *regexp.Regexp
 	sync.RWMutex
 }
 
 func NewLogic() *Logic {
-	l := &Logic{stateMap: make(map[string]string), rules: make(map[string]string)}
-	l.re = regexp.MustCompile("^([^0-9\\s\\[][^\\s\\[]*)?(\\[[0-9]+\\])?$")
+	l := &Logic{stateMap: make(map[string]string)}
+	l.re = regexp.MustCompile(`^([^\s\[][^\s\[]*)?(\[[0-9]+\])?$`)
 	return l
+}
+
+func (l *Logic) AddRule(name string, cond []*ruleCondition, action []*ruleAction) {
+	r := &rule{name, cond, action}
+	l.Lock()
+	l.rules = append(l.rules, r)
+	l.Unlock()
+}
+func (l *Logic) ParseRules(states map[string]string) {
+	for _, rule := range l.rules {
+		l.parseRule(states, rule)
+	}
+}
+func (l *Logic) parseRule(s map[string]string, r *rule) {
+
+	for _, cond := range r.conditions {
+		fmt.Println(cond.statePath)
+		for _, state := range s {
+			var test string
+			err := l.path(state, cond.statePath, &test)
+			if err != nil {
+				fmt.Println(err)
+			}
+			fmt.Println("path output:", test)
+		}
+	}
+
 }
 
 func (l *Logic) ListenForChanges() chan interface{} {
@@ -36,20 +83,21 @@ func (l *Logic) listen(c chan interface{}) {
 	}
 }
 
-func (l *Logic) path(state interface{}, jp string, t interface{}) error {
+func (l *Logic) path(state string, jp string, t interface{}) error {
 	var v interface{}
-	// state should already be unmarshaled here which is done in newclient
-	//err := json.Unmarshal(]byte(b), &v)
-	//if err != nil {
-	//return err
-	//}
+	err := json.Unmarshal([]byte(state), &v)
+	if err != nil {
+		return err
+	}
 	if jp == "" {
 		return errors.New("invalid path")
 	}
 	for _, token := range strings.Split(jp, ".") {
 		sl := l.re.FindAllStringSubmatch(token, -1)
+		//fmt.Println("REGEXPtoken: ", token)
+		//fmt.Println("REGEXP: ", sl)
 		if len(sl) == 0 {
-			return errors.New("invalid path")
+			return errors.New("invalid path1")
 		}
 		ss := sl[0]
 		if ss[1] != "" {
@@ -58,13 +106,15 @@ func (l *Logic) path(state interface{}, jp string, t interface{}) error {
 		if ss[2] != "" {
 			i, err := strconv.Atoi(ss[2][1 : len(ss[2])-1])
 			if err != nil {
-				return errors.New("invalid path")
+				return errors.New("invalid path2")
 			}
 			v = v.([]interface{})[i]
 		}
 	}
 	rt := reflect.ValueOf(t).Elem()
+	//fmt.Println("RT:", rt)
 	rv := reflect.ValueOf(v)
+	//fmt.Println("RT:", rv)
 	rt.Set(rv)
 	return nil
 }
