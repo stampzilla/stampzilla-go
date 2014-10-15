@@ -19,6 +19,21 @@ type ruleCondition struct {
 	value      string
 }
 
+func (r *ruleCondition) Check(value string) bool {
+	switch r.comparator {
+	case "==":
+		if value == r.value {
+			return true
+		}
+	case "!=":
+		if value != r.value {
+			return true
+		}
+	}
+
+	return false
+}
+
 type ruleAction struct {
 	commands *protocol.Command
 }
@@ -50,23 +65,29 @@ func (l *Logic) AddRule(name string, cond []*ruleCondition, action []*ruleAction
 }
 func (l *Logic) ParseRules(states map[string]string) {
 	for _, rule := range l.rules {
-		l.parseRule(states, rule)
+		evaluation := l.parseRule(states, rule)
+		fmt.Println("ruleEvaluationResult:", evaluation)
+		// IF evaluation is true we can run our command here?
 	}
 }
-func (l *Logic) parseRule(s map[string]string, r *rule) {
-
+func (l *Logic) parseRule(s map[string]string, r *rule) bool {
 	for _, cond := range r.conditions {
 		fmt.Println(cond.statePath)
 		for _, state := range s {
-			var test string
-			err := l.path(state, cond.statePath, &test)
+			var value string
+			err := l.path(state, cond.statePath, &value)
 			if err != nil {
 				fmt.Println(err)
 			}
-			fmt.Println("path output:", test)
+
+			// All conditions must evaluate to true
+			if !cond.Check(value) {
+				return false
+			}
+			fmt.Println("path output:", value)
 		}
 	}
-
+	return true
 }
 
 func (l *Logic) ListenForChanges() chan interface{} {
@@ -94,8 +115,8 @@ func (l *Logic) path(state string, jp string, t interface{}) error {
 	}
 	for _, token := range strings.Split(jp, ".") {
 		sl := l.re.FindAllStringSubmatch(token, -1)
-		//fmt.Println("REGEXPtoken: ", token)
-		//fmt.Println("REGEXP: ", sl)
+		fmt.Println("REGEXPtoken: ", token)
+		fmt.Println("REGEXP: ", sl)
 		if len(sl) == 0 {
 			return errors.New("invalid path1")
 		}
@@ -104,15 +125,24 @@ func (l *Logic) path(state string, jp string, t interface{}) error {
 			v = v.(map[string]interface{})[ss[1]]
 		}
 		if ss[2] != "" {
-			i, err := strconv.Atoi(ss[2][1 : len(ss[2])-1])
+			ii, err := strconv.Atoi(ss[2][1 : len(ss[2])-1])
+			is := ss[2][1 : len(ss[2])-1]
 			if err != nil {
 				return errors.New("invalid path2")
 			}
-			v = v.([]interface{})[i]
+			switch v2 := v.(type) {
+			case []interface{}:
+				v = v2[ii]
+			case map[string]interface{}:
+				v = v2[is]
+			}
 		}
 	}
 	rt := reflect.ValueOf(t).Elem()
 	//fmt.Println("RT:", rt)
+	if v == nil { //value not found
+		return nil
+	}
 	rv := reflect.ValueOf(v)
 	//fmt.Println("RT:", rv)
 	rt.Set(rv)

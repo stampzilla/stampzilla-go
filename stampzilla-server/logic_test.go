@@ -10,7 +10,11 @@ func TestParseRuleState(t *testing.T) {
 
 	logic := NewLogic()
 
-	conditions := []*ruleCondition{&ruleCondition{"Devices.1.State", "==", "ON"}}
+	//TODO fix so we can use Devices["1"]. Devices[1] works now!!
+	conditions := []*ruleCondition{
+		&ruleCondition{"Devices[1].State", "==", "OFF"},
+		&ruleCondition{"Devices[2].State", "!=", "OFF"},
+	}
 	actions := []*ruleAction{&ruleAction{&protocol.Command{"testcommand", nil}}}
 	logic.AddRule("test rule 1", conditions, actions)
 
