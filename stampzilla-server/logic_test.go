@@ -15,8 +15,8 @@ func TestParseRuleEnterExitActions(t *testing.T) {
 		&ruleCondition{`Devices[1].State`, "==", "OFF"},
 		&ruleCondition{`Devices[2].State`, "!=", "OFF"},
 	}
-	enterActions := []*ruleAction{&ruleAction{&protocol.Command{"testEnterAction", nil}}}
-	exitActions := []*ruleAction{&ruleAction{&protocol.Command{"testExitAction", nil}}}
+	enterActions := []*ruleAction{&ruleAction{&protocol.Command{"testEnterAction", nil}, "uuid1"}}
+	exitActions := []*ruleAction{&ruleAction{&protocol.Command{"testExitAction", nil}, "uuid2"}}
 	logic.AddRule("test rule 1", conditions, enterActions, exitActions)
 
 	fakeStates := make(map[string]string)

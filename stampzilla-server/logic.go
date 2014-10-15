@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
@@ -35,7 +36,24 @@ func (r *ruleCondition) Check(value string) bool {
 }
 
 type ruleAction struct {
-	commands *protocol.Command
+	command *protocol.Command
+	uuid    string
+}
+
+func (ra *ruleAction) RunCommand() {
+	fmt.Println("Running command", ra.command)
+	if nodes == nil {
+		return
+	}
+	node := nodes.Search(ra.uuid)
+	if node != nil {
+		jsonToSend, err := json.Marshal(&ra.command)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		node.conn.Write(jsonToSend)
+	}
 }
 
 type rule struct {
@@ -44,6 +62,29 @@ type rule struct {
 	enterActions []*ruleAction
 	exitActions  []*ruleAction
 	condState    bool
+	sync.RWMutex
+}
+
+func (r *rule) CondState() bool {
+	r.RLock()
+	defer r.RUnlock()
+	return r.condState
+}
+
+func (r *rule) SetCondState(cond bool) {
+	r.RLock()
+	r.condState = cond
+	r.RUnlock()
+}
+func (r *rule) RunEnter() {
+	for _, a := range r.enterActions {
+		a.RunCommand()
+	}
+}
+func (r *rule) RunExit() {
+	for _, a := range r.exitActions {
+		a.RunCommand()
+	}
 }
 
 type Logic struct {
@@ -60,7 +101,13 @@ func NewLogic() *Logic {
 }
 
 func (l *Logic) AddRule(name string, conds []*ruleCondition, enteractions []*ruleAction, exitactions []*ruleAction) {
-	r := &rule{name, conds, enteractions, exitactions, false}
+	r := &rule{
+		name:         name,
+		conditions:   conds,
+		enterActions: enteractions,
+		exitActions:  exitactions,
+		condState:    false,
+	}
 	l.Lock()
 	l.rules = append(l.rules, r)
 	l.Unlock()
@@ -69,13 +116,13 @@ func (l *Logic) ParseRules(states map[string]string) {
 	for _, rule := range l.rules {
 		evaluation := l.parseRule(states, rule)
 		fmt.Println("ruleEvaluationResult:", evaluation)
-		if evaluation != rule.condState {
+		if evaluation != rule.CondState() {
 			rule.condState = evaluation
 			if evaluation {
-				fmt.Println("Running Enter actions")
+				rule.RunEnter()
 				continue
 			}
-			fmt.Println("Running Exit actions")
+			rule.RunExit()
 		}
 	}
 }
@@ -86,7 +133,7 @@ func (l *Logic) parseRule(s map[string]string, r *rule) bool {
 			var value string
 			err := l.path(state, cond.statePath, &value)
 			if err != nil {
-				fmt.Println(err)
+				log.Error(err)
 			}
 
 			// All conditions must evaluate to true
@@ -124,8 +171,8 @@ func (l *Logic) path(state string, jp string, t interface{}) error {
 	}
 	for _, token := range strings.Split(jp, ".") {
 		sl := l.re.FindAllStringSubmatch(token, -1)
-		fmt.Println("REGEXPtoken: ", token)
-		fmt.Println("REGEXP: ", sl)
+		//fmt.Println("REGEXPtoken: ", token)
+		//fmt.Println("REGEXP: ", sl)
 		if len(sl) == 0 {
 			return errors.New("invalid path1")
 		}
