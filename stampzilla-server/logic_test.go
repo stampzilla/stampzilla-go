@@ -15,8 +15,9 @@ func TestParseRuleState(t *testing.T) {
 		&ruleCondition{"Devices[1].State", "==", "OFF"},
 		&ruleCondition{"Devices[2].State", "!=", "OFF"},
 	}
-	actions := []*ruleAction{&ruleAction{&protocol.Command{"testcommand", nil}}}
-	logic.AddRule("test rule 1", conditions, actions)
+	enterActions := []*ruleAction{&ruleAction{&protocol.Command{"testEnterAction", nil}}}
+	exitActions := []*ruleAction{&ruleAction{&protocol.Command{"testExitAction", nil}}}
+	logic.AddRule("test rule 1", conditions, enterActions, exitActions)
 
 	state := `
 		{

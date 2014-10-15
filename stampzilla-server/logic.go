@@ -39,9 +39,11 @@ type ruleAction struct {
 }
 
 type rule struct {
-	name       string
-	conditions []*ruleCondition
-	actions    []*ruleAction
+	name         string
+	conditions   []*ruleCondition
+	enterActions []*ruleAction
+	exitActions  []*ruleAction
+	condState    bool
 }
 
 type Logic struct {
@@ -57,8 +59,8 @@ func NewLogic() *Logic {
 	return l
 }
 
-func (l *Logic) AddRule(name string, cond []*ruleCondition, action []*ruleAction) {
-	r := &rule{name, cond, action}
+func (l *Logic) AddRule(name string, conds []*ruleCondition, enteractions []*ruleAction, exitactions []*ruleAction) {
+	r := &rule{name, conds, enteractions, exitactions, false}
 	l.Lock()
 	l.rules = append(l.rules, r)
 	l.Unlock()
@@ -67,7 +69,13 @@ func (l *Logic) ParseRules(states map[string]string) {
 	for _, rule := range l.rules {
 		evaluation := l.parseRule(states, rule)
 		fmt.Println("ruleEvaluationResult:", evaluation)
-		// IF evaluation is true we can run our command here?
+		if evaluation != rule.condState {
+			if evaluation {
+				fmt.Println("Running Enter actions")
+				continue
+			}
+			fmt.Println("Running Exit actions")
+		}
 	}
 }
 func (l *Logic) parseRule(s map[string]string, r *rule) bool {
