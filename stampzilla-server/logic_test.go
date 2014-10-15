@@ -6,7 +6,7 @@ import (
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
-func TestParseRuleState(t *testing.T) {
+func TestParseRuleEnterExitActions(t *testing.T) {
 
 	logic := NewLogic()
 
@@ -18,6 +18,8 @@ func TestParseRuleState(t *testing.T) {
 	enterActions := []*ruleAction{&ruleAction{&protocol.Command{"testEnterAction", nil}}}
 	exitActions := []*ruleAction{&ruleAction{&protocol.Command{"testExitAction", nil}}}
 	logic.AddRule("test rule 1", conditions, enterActions, exitActions)
+
+	fakeStates := make(map[string]string)
 
 	state := `
 		{
@@ -37,8 +39,28 @@ func TestParseRuleState(t *testing.T) {
 			}
 		}
 	`
+	fakeStates["uuidasdfasdf"] = state
 
-	fakeStates := make(map[string]string)
+	logic.ParseRules(fakeStates)
+
+	state = `
+		{
+			"Devices": {
+				"1": {
+					"Id": "1",
+					"Name": "Dev1",
+					"State": "OFF",
+					"Type": ""
+				},
+				"2": {
+					"Id": "2",
+					"Name": "Dev2",
+					"State": "OFF",
+					"Type": ""
+				}
+			}
+		}
+	`
 	fakeStates["uuidasdfasdf"] = state
 
 	logic.ParseRules(fakeStates)

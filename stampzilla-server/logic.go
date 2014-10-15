@@ -70,6 +70,7 @@ func (l *Logic) ParseRules(states map[string]string) {
 		evaluation := l.parseRule(states, rule)
 		fmt.Println("ruleEvaluationResult:", evaluation)
 		if evaluation != rule.condState {
+			rule.condState = evaluation
 			if evaluation {
 				fmt.Println("Running Enter actions")
 				continue
