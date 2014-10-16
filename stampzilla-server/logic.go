@@ -14,10 +14,18 @@ import (
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
+type RuleCondition interface {
+	Check(string) bool
+	StatePath() string
+}
 type ruleCondition struct {
 	statePath  string
 	comparator string
 	value      string
+}
+
+func (r *ruleCondition) StatePath() string {
+	return r.statePath
 }
 
 func (r *ruleCondition) Check(value string) bool {
@@ -63,7 +71,7 @@ type RuleAction interface {
 
 type rule struct {
 	name         string
-	conditions   []*ruleCondition
+	conditions   []RuleCondition
 	enterActions []RuleAction
 	exitActions  []RuleAction
 	condState    bool
@@ -91,6 +99,22 @@ func (r *rule) RunExit() {
 		a.RunCommand()
 	}
 }
+func (r *rule) AddExitAction(a RuleAction) {
+	r.Lock()
+	r.exitActions = append(r.exitActions, a)
+	r.Unlock()
+
+}
+func (r *rule) AddEnterAction(a RuleAction) {
+	r.Lock()
+	r.enterActions = append(r.enterActions, a)
+	r.Unlock()
+}
+func (r *rule) AddCondition(a RuleCondition) {
+	r.Lock()
+	r.conditions = append(r.conditions, a)
+	r.Unlock()
+}
 
 type Logic struct {
 	stateMap map[string]string // might not be needed
@@ -105,21 +129,22 @@ func NewLogic() *Logic {
 	return l
 }
 
-func (l *Logic) AddRule(name string, conds []*ruleCondition, enteractions []RuleAction, exitactions []RuleAction) {
+func (l *Logic) AddRule(name string) *rule {
 	r := &rule{
-		name:         name,
-		conditions:   conds,
-		enterActions: enteractions,
-		exitActions:  exitactions,
-		condState:    false,
+		name: name,
+		//conditions:   conds,
+		//enterActions: enteractions,
+		//exitActions:  exitactions,
+		condState: false,
 	}
 	l.Lock()
+	defer l.Unlock()
 	l.rules = append(l.rules, r)
-	l.Unlock()
+	return r
 }
-func (l *Logic) ParseRules(states map[string]string) {
+func (l *Logic) ParseRules() {
 	for _, rule := range l.rules {
-		evaluation := l.parseRule(states, rule)
+		evaluation := l.parseRule(rule)
 		fmt.Println("ruleEvaluationResult:", evaluation)
 		if evaluation != rule.CondState() {
 			rule.condState = evaluation
@@ -131,12 +156,12 @@ func (l *Logic) ParseRules(states map[string]string) {
 		}
 	}
 }
-func (l *Logic) parseRule(s map[string]string, r *rule) bool {
+func (l *Logic) parseRule(r *rule) bool {
 	for _, cond := range r.conditions {
-		fmt.Println(cond.statePath)
-		for _, state := range s {
+		fmt.Println(cond.StatePath())
+		for _, state := range l.stateMap {
 			var value string
-			err := l.path(state, cond.statePath, &value)
+			err := l.path(state, cond.StatePath(), &value)
 			if err != nil {
 				log.Error(err)
 			}
@@ -151,17 +176,24 @@ func (l *Logic) parseRule(s map[string]string, r *rule) bool {
 	return true
 }
 
-func (l *Logic) ListenForChanges() chan interface{} {
+func (l *Logic) ListenForChanges(uuid string) chan string {
 	//TODO maybe this should be a buffered channel so we dont block on send in netStart/newClient
-	c := make(chan interface{})
-	go l.listen(c)
+	c := make(chan string)
+	go l.listen(uuid, c)
 	return c
 }
 
 // listen will run in a own goroutine and listen to incoming state changes and Parse them
-func (l *Logic) listen(c chan interface{}) {
-	for state := range c {
-		l.ParseState(state)
+func (l *Logic) listen(uuid string, c chan string) {
+	for {
+		select {
+		case state, open := <-c:
+			if !open {
+				return
+			}
+			l.SetState(uuid, state)
+			l.ParseRules()
+		}
 	}
 }
 
@@ -183,7 +215,10 @@ func (l *Logic) path(state string, jp string, t interface{}) error {
 		}
 		ss := sl[0]
 		if ss[1] != "" {
-			v = v.(map[string]interface{})[ss[1]]
+			switch v1 := v.(type) {
+			case map[string]interface{}:
+				v = v1[ss[1]]
+			}
 		}
 		if ss[3] != "" {
 			ii, err := strconv.Atoi(ss[3])
@@ -210,12 +245,10 @@ func (l *Logic) path(state string, jp string, t interface{}) error {
 	return nil
 }
 
-func (l *Logic) ParseState(state interface{}) {
-	//TODO parse all nodes.State here and generate something like this:
-	// OR we dont use stateMap and only use rules Devices[2].On == true and parse it using jsonpath example below.
-	// statemap["Devices[1].State"] = "OFF"
-	// this might be usefull: http://play.golang.org/p/JQnry4s6KE
-	// http://blog.golang.org/json-and-go
+func (l *Logic) SetState(uuid, jsonData string) {
+	l.Lock()
+	l.stateMap[uuid] = jsonData
+	l.Unlock()
 }
 
 /*

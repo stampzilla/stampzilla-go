@@ -7,6 +7,7 @@ import (
 	"net"
 
 	log "github.com/cihub/seelog"
+	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
 func netStart(port string) {
@@ -16,6 +17,15 @@ func netStart(port string) {
 		return
 	}
 
+	logic := NewLogic()
+	rule := logic.AddRule("test rule 1")
+
+	rule.AddEnterAction(&ruleAction{&protocol.Command{"testEnterAction", nil}, "uuid1", nil})
+	rule.AddExitAction(&ruleAction{&protocol.Command{"testExitAction", nil}, "uuid2", nil})
+
+	rule.AddCondition(&ruleCondition{`Devices.0186ff7d.Name`, "==", "UNKNOWN"})
+	rule.AddCondition(&ruleCondition{`Devices[2].State`, "!=", "OFF"})
+
 	go func() {
 		for {
 			fd, err := l.Accept()
@@ -24,16 +34,17 @@ func netStart(port string) {
 				return
 			}
 
-			go newClient(fd)
+			go newClient(logic, fd)
 		}
 	}()
 }
 
-func newClient(connection net.Conn) {
+func newClient(logic *Logic, connection net.Conn) {
 	// Recive data
 	log.Info("New client connected")
 	name := ""
 	uuid := ""
+	var logicChannel chan string
 	for {
 		reader := bufio.NewReader(connection)
 		decoder := json.NewDecoder(reader)
@@ -46,6 +57,7 @@ func newClient(connection net.Conn) {
 				log.Info(name, " - Client disconnected")
 				if uuid != "" {
 					nodes.Delete(uuid)
+					close(logicChannel)
 				}
 				//TODO be able to not send everything always. perhaps implement remove instead of all?
 				clients.messageOtherClients(&Message{Type: "all", Data: nodes.All()})
@@ -58,9 +70,17 @@ func newClient(connection net.Conn) {
 			uuid = info.Uuid
 			info.conn = connection
 
+			if logicChannel == nil {
+				logicChannel = logic.ListenForChanges(uuid)
+			}
+
 			nodes.Add(&info)
 			log.Info(info.Name, " - Got update on state")
 			clients.messageOtherClients(&Message{Type: "singlenode", Data: info})
+			//Send to logic for evaluation
+
+			state, _ := json.Marshal(info.State)
+			logicChannel <- string(state)
 		}
 
 	}
