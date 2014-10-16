@@ -38,14 +38,15 @@ func (r *ruleCondition) Check(value string) bool {
 type ruleAction struct {
 	command *protocol.Command
 	uuid    string
+	nodes   *Nodes
 }
 
 func (ra *ruleAction) RunCommand() {
 	fmt.Println("Running command", ra.command)
-	if nodes == nil {
+	if ra.nodes == nil {
 		return
 	}
-	node := nodes.Search(ra.uuid)
+	node := ra.nodes.Search(ra.uuid)
 	if node != nil {
 		jsonToSend, err := json.Marshal(&ra.command)
 		if err != nil {
@@ -56,11 +57,15 @@ func (ra *ruleAction) RunCommand() {
 	}
 }
 
+type RuleAction interface {
+	RunCommand()
+}
+
 type rule struct {
 	name         string
 	conditions   []*ruleCondition
-	enterActions []*ruleAction
-	exitActions  []*ruleAction
+	enterActions []RuleAction
+	exitActions  []RuleAction
 	condState    bool
 	sync.RWMutex
 }
@@ -100,7 +105,7 @@ func NewLogic() *Logic {
 	return l
 }
 
-func (l *Logic) AddRule(name string, conds []*ruleCondition, enteractions []*ruleAction, exitactions []*ruleAction) {
+func (l *Logic) AddRule(name string, conds []*ruleCondition, enteractions []RuleAction, exitactions []RuleAction) {
 	r := &rule{
 		name:         name,
 		conditions:   conds,
