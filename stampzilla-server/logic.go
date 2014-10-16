@@ -166,11 +166,11 @@ func (l *Logic) parseRule(r *rule) bool {
 				log.Error(err)
 			}
 
+			fmt.Println("path output:", value)
 			// All conditions must evaluate to true
 			if !cond.Check(value) {
 				return false
 			}
-			fmt.Println("path output:", value)
 		}
 	}
 	return true
@@ -240,8 +240,19 @@ func (l *Logic) path(state string, jp string, t interface{}) error {
 		return nil
 	}
 	rv := reflect.ValueOf(v)
-	//fmt.Println("RT:", rv)
-	rt.Set(rv)
+	switch vv := v.(type) {
+	case bool:
+		//this doesnt work yet!
+		if vv {
+			t = "true"
+			return nil
+		}
+		//rt.Set("false")
+		t = "false"
+		fmt.Println("ITS A BOOL")
+	case string:
+		rt.Set(rv)
+	}
 	return nil
 }
 

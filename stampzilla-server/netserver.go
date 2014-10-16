@@ -23,7 +23,7 @@ func netStart(port string) {
 	rule.AddEnterAction(&ruleAction{&protocol.Command{"testEnterAction", nil}, "uuid1", nil})
 	rule.AddExitAction(&ruleAction{&protocol.Command{"testExitAction", nil}, "uuid2", nil})
 
-	rule.AddCondition(&ruleCondition{`Devices.0186ff7d.Name`, "==", "UNKNOWN"})
+	rule.AddCondition(&ruleCondition{`Devices.0186ff7d.On`, "==", "true"})
 	rule.AddCondition(&ruleCondition{`Devices[2].State`, "!=", "OFF"})
 
 	go func() {
