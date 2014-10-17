@@ -8,38 +8,40 @@ import (
 
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/protocol"
+	"github.com/stampzilla/stampzilla-go/stampzilla-server/logic"
+	serverprotocol "github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
 )
 
 func netStart(port string) {
-	l, err := net.Listen("tcp", ":"+port)
+	listen, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		fmt.Println("listen error", err)
 		return
 	}
 
-	logic := NewLogic()
-	rule := logic.AddRule("test rule 1")
+	l := logic.NewLogic()
+	rule := l.AddRule("test rule 1")
 
-	rule.AddEnterAction(&ruleAction{&protocol.Command{"testEnterAction", nil}, "uuid1", nil})
-	rule.AddExitAction(&ruleAction{&protocol.Command{"testExitAction", nil}, "uuid2", nil})
+	rule.AddEnterAction(logic.NewRuleAction(&protocol.Command{"testEnterAction", nil}, "uuid1", nil))
+	rule.AddExitAction(logic.NewRuleAction(&protocol.Command{"testExitAction", nil}, "uuid2", nil))
 
-	rule.AddCondition(&ruleCondition{`Devices.0186ff7d.On`, "==", "true"})
-	rule.AddCondition(&ruleCondition{`Devices[2].State`, "!=", "OFF"})
+	rule.AddCondition(logic.NewRuleCondition(`Devices.0186ff7d.On`, "==", true))
+	rule.AddCondition(logic.NewRuleCondition(`Devices[2].State`, "!=", "OFF"))
 
 	go func() {
 		for {
-			fd, err := l.Accept()
+			fd, err := listen.Accept()
 			if err != nil {
 				fmt.Println("accept error", err)
 				return
 			}
 
-			go newClient(logic, fd)
+			go newClient(l, fd)
 		}
 	}()
 }
 
-func newClient(logic *Logic, connection net.Conn) {
+func newClient(logic *logic.Logic, connection net.Conn) {
 	// Recive data
 	log.Info("New client connected")
 	name := ""
@@ -48,7 +50,7 @@ func newClient(logic *Logic, connection net.Conn) {
 	for {
 		reader := bufio.NewReader(connection)
 		decoder := json.NewDecoder(reader)
-		var info Node
+		var info serverprotocol.Node
 		err := decoder.Decode(&info)
 
 		//err = json.Unmarshal(data, &cmd)
@@ -68,7 +70,7 @@ func newClient(logic *Logic, connection net.Conn) {
 		} else {
 			name = info.Name
 			uuid = info.Uuid
-			info.conn = connection
+			info.SetConn(connection)
 
 			if logicChannel == nil {
 				logicChannel = logic.ListenForChanges(uuid)

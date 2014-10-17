@@ -4,11 +4,14 @@ import (
 	"flag"
 
 	log "github.com/cihub/seelog"
+	"github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
 )
 
 var netPort string
 var webPort string
 var webRoot string
+
+var nodes *protocol.Nodes
 
 func main() {
 
@@ -38,7 +41,7 @@ func main() {
 		log.ReplaceLogger(logger)
 	}
 
-	nodes = NewNodes()
+	nodes = protocol.NewNodes()
 
 	log.Info("Starting NET (:" + netPort + ")")
 	netStart(netPort)

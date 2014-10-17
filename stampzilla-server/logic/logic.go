@@ -1,4 +1,4 @@
-package main
+package logic
 
 import (
 	"encoding/json"
@@ -11,6 +11,7 @@ import (
 
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/protocol"
+	serverprotocol "github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
 )
 
 type RuleCondition interface {
@@ -21,6 +22,10 @@ type ruleCondition struct {
 	StatePath_ string      `json:"statePath"`
 	Comparator string      `json:"comparator"`
 	Value      interface{} `json:"value"`
+}
+
+func NewRuleCondition(path, comp string, val interface{}) RuleCondition {
+	return &ruleCondition{path, comp, val}
 }
 
 func (r *ruleCondition) StatePath() string {
@@ -55,7 +60,11 @@ func (r *ruleCondition) Check(value interface{}) bool {
 type ruleAction struct {
 	Command *protocol.Command
 	Uuid    string
-	Nodes   *Nodes
+	Nodes   *serverprotocol.Nodes
+}
+
+func NewRuleAction(cmd *protocol.Command, uuid string, nodes *serverprotocol.Nodes) RuleAction {
+	return &ruleAction{cmd, uuid, nodes}
 }
 
 func (ra *ruleAction) RunCommand() {
@@ -70,7 +79,7 @@ func (ra *ruleAction) RunCommand() {
 			log.Error(err)
 			return
 		}
-		node.conn.Write(jsonToSend)
+		node.Conn().Write(jsonToSend)
 	}
 }
 

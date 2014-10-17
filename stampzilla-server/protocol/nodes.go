@@ -1,4 +1,4 @@
-package main
+package protocol
 
 import (
 	"net"
@@ -14,6 +14,18 @@ type Node struct {
 	protocol.Node
 	conn net.Conn
 	wait chan bool
+	sync.RWMutex
+}
+
+func (n *Node) Conn() net.Conn {
+	n.Lock()
+	defer n.Unlock()
+	return n.conn
+}
+func (n *Node) SetConn(conn net.Conn) {
+	n.Lock()
+	n.conn = conn
+	n.Unlock()
 }
 
 //  TODO: write tests for Nodes struct (jonaz) <Fri 10 Oct 2014 04:31:22 PM CEST>
@@ -42,7 +54,7 @@ func (n *Nodes) Search(nameoruuid string) *Node {
 	if n := n.ByName(nameoruuid); n != nil {
 		return n
 	}
-	if n := nodes.ByUuid(nameoruuid); n != nil {
+	if n := n.ByUuid(nameoruuid); n != nil {
 		return n
 	}
 	return nil

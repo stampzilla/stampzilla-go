@@ -37,7 +37,7 @@ func WebHandlerCommandToNode(enc encoder.Encoder, params martini.Params, r *http
 		return 404, []byte("Node not found")
 	}
 
-	node.conn.Write(requestJsonPut)
+	node.Conn().Write(requestJsonPut)
 	return 200, encoder.Must(enc.Encode(protocol.Command{Cmd: "testresponse"}))
 }
 

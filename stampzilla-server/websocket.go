@@ -94,7 +94,7 @@ func websocketRoute(params martini.Params, receiver <-chan *Message, sender chan
 					log.Error(err)
 					continue
 				}
-				node.conn.Write(jsonToSend)
+				node.Conn().Write(jsonToSend)
 			}
 		case <-client.done:
 			clients.removeClient(client)
