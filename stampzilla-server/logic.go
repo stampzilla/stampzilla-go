@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -15,48 +14,58 @@ import (
 )
 
 type RuleCondition interface {
-	Check(string) bool
+	Check(interface{}) bool
 	StatePath() string
 }
 type ruleCondition struct {
-	statePath  string
-	comparator string
-	value      string
+	StatePath_ string      `json:"statePath"`
+	Comparator string      `json:"comparator"`
+	Value      interface{} `json:"value"`
 }
 
 func (r *ruleCondition) StatePath() string {
-	return r.statePath
+	return r.StatePath_
 }
 
-func (r *ruleCondition) Check(value string) bool {
-	switch r.comparator {
+func (r *ruleCondition) Check(value interface{}) bool {
+	switch r.Comparator {
 	case "==":
-		if value == r.value {
+		if value == r.Value {
 			return true
 		}
 	case "!=":
-		if value != r.value {
+		if value != r.Value {
 			return true
 		}
+	case "<":
+		//TODO here we need to do type assertsion so that we can only compare int and float i think!
+		//if value < r.Value {
+		//return true
+		//}
+	case ">":
+		//TODO here we need to do type assertsion so that we can only compare int and float i think!
+		//if value < r.Value {
+		//return true
+		//}
 	}
 
 	return false
 }
 
 type ruleAction struct {
-	command *protocol.Command
-	uuid    string
-	nodes   *Nodes
+	Command *protocol.Command
+	Uuid    string
+	Nodes   *Nodes
 }
 
 func (ra *ruleAction) RunCommand() {
-	fmt.Println("Running command", ra.command)
-	if ra.nodes == nil {
+	fmt.Println("Running command", ra.Command)
+	if ra.Nodes == nil {
 		return
 	}
-	node := ra.nodes.Search(ra.uuid)
+	node := ra.Nodes.Search(ra.Uuid)
 	if node != nil {
-		jsonToSend, err := json.Marshal(&ra.command)
+		jsonToSend, err := json.Marshal(&ra.Command)
 		if err != nil {
 			log.Error(err)
 			return
@@ -67,6 +76,17 @@ func (ra *ruleAction) RunCommand() {
 
 type RuleAction interface {
 	RunCommand()
+}
+
+type Rule interface {
+	CondState() bool
+	SetCondState(bool)
+	RunEnter()
+	RunExit()
+	AddExitAction(RuleAction)
+	AddEnterAction(RuleAction)
+	AddCondition(RuleCondition)
+	Conditions() []RuleCondition
 }
 
 type rule struct {
@@ -82,6 +102,11 @@ func (r *rule) CondState() bool {
 	r.RLock()
 	defer r.RUnlock()
 	return r.condState
+}
+func (r *rule) Conditions() []RuleCondition {
+	r.RLock()
+	defer r.RUnlock()
+	return r.conditions
 }
 
 func (r *rule) SetCondState(cond bool) {
@@ -103,7 +128,6 @@ func (r *rule) AddExitAction(a RuleAction) {
 	r.Lock()
 	r.exitActions = append(r.exitActions, a)
 	r.Unlock()
-
 }
 func (r *rule) AddEnterAction(a RuleAction) {
 	r.Lock()
@@ -117,37 +141,36 @@ func (r *rule) AddCondition(a RuleCondition) {
 }
 
 type Logic struct {
-	stateMap map[string]string // might not be needed
-	rules    []*rule
-	re       *regexp.Regexp
+	states map[string]string
+	rules  []Rule
+	re     *regexp.Regexp
 	sync.RWMutex
 }
 
 func NewLogic() *Logic {
-	l := &Logic{stateMap: make(map[string]string)}
+	l := &Logic{states: make(map[string]string)}
 	l.re = regexp.MustCompile(`^([^\s\[][^\s\[]*)?(\[.*?([0-9]).*?\])?$`)
 	return l
 }
 
-func (l *Logic) AddRule(name string) *rule {
-	r := &rule{
-		name: name,
-		//conditions:   conds,
-		//enterActions: enteractions,
-		//exitActions:  exitactions,
-		condState: false,
-	}
+func (l *Logic) States() map[string]string {
+	l.RLock()
+	defer l.RUnlock()
+	return l.states
+}
+func (l *Logic) AddRule(name string) Rule {
+	r := &rule{name: name}
 	l.Lock()
 	defer l.Unlock()
 	l.rules = append(l.rules, r)
 	return r
 }
-func (l *Logic) ParseRules() {
+func (l *Logic) EvaluateRules() {
 	for _, rule := range l.rules {
-		evaluation := l.parseRule(rule)
+		evaluation := l.evaluateRule(rule)
 		fmt.Println("ruleEvaluationResult:", evaluation)
 		if evaluation != rule.CondState() {
-			rule.condState = evaluation
+			rule.SetCondState(evaluation)
 			if evaluation {
 				rule.RunEnter()
 				continue
@@ -156,12 +179,12 @@ func (l *Logic) ParseRules() {
 		}
 	}
 }
-func (l *Logic) parseRule(r *rule) bool {
-	for _, cond := range r.conditions {
+func (l *Logic) evaluateRule(r Rule) bool {
+	for _, cond := range r.Conditions() {
 		fmt.Println(cond.StatePath())
-		for _, state := range l.stateMap {
-			var value string
-			err := l.path(state, cond.StatePath(), &value)
+		for _, state := range l.States() {
+			//var value string
+			value, err := l.path(state, cond.StatePath())
 			if err != nil {
 				log.Error(err)
 			}
@@ -177,7 +200,6 @@ func (l *Logic) parseRule(r *rule) bool {
 }
 
 func (l *Logic) ListenForChanges(uuid string) chan string {
-	//TODO maybe this should be a buffered channel so we dont block on send in netStart/newClient
 	c := make(chan string)
 	go l.listen(uuid, c)
 	return c
@@ -192,26 +214,26 @@ func (l *Logic) listen(uuid string, c chan string) {
 				return
 			}
 			l.SetState(uuid, state)
-			l.ParseRules()
+			l.EvaluateRules()
 		}
 	}
 }
 
-func (l *Logic) path(state string, jp string, t interface{}) error {
+func (l *Logic) path(state string, jp string) (interface{}, error) {
 	var v interface{}
 	err := json.Unmarshal([]byte(state), &v)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if jp == "" {
-		return errors.New("invalid path")
+		return nil, errors.New("invalid path")
 	}
 	for _, token := range strings.Split(jp, ".") {
 		sl := l.re.FindAllStringSubmatch(token, -1)
 		//fmt.Println("REGEXPtoken: ", token)
 		//fmt.Println("REGEXP: ", sl)
 		if len(sl) == 0 {
-			return errors.New("invalid path1")
+			return nil, errors.New("invalid path1")
 		}
 		ss := sl[0]
 		if ss[1] != "" {
@@ -224,7 +246,7 @@ func (l *Logic) path(state string, jp string, t interface{}) error {
 			ii, err := strconv.Atoi(ss[3])
 			is := ss[3]
 			if err != nil {
-				return errors.New("invalid path2")
+				return nil, errors.New("invalid path2")
 			}
 			switch v2 := v.(type) {
 			case []interface{}:
@@ -234,31 +256,31 @@ func (l *Logic) path(state string, jp string, t interface{}) error {
 			}
 		}
 	}
-	rt := reflect.ValueOf(t).Elem()
-	//fmt.Println("RT:", rt)
-	if v == nil { //value not found
-		return nil
-	}
-	rv := reflect.ValueOf(v)
-	switch vv := v.(type) {
-	case bool:
-		//this doesnt work yet!
-		if vv {
-			t = "true"
-			return nil
-		}
-		//rt.Set("false")
-		t = "false"
-		fmt.Println("ITS A BOOL")
-	case string:
-		rt.Set(rv)
-	}
-	return nil
+	return v, nil
+	//rt := reflect.ValueOf(t).Elem()
+	////fmt.Println("RT:", rt)
+	//if v == nil { //value not found
+	//return nil, nil
+	//}
+	//rv := reflect.ValueOf(v)
+	//switch vv := v.(type) {
+	//case bool:
+	////this doesnt work yet!
+	//if vv {
+	//t = "true"
+	//return nil, nil
+	//}
+	////rt.Set("false")
+	//t = "false"
+	//fmt.Println("ITS A BOOL")
+	//case string:
+	//rt.Set(rv)
+	//}
 }
 
 func (l *Logic) SetState(uuid, jsonData string) {
 	l.Lock()
-	l.stateMap[uuid] = jsonData
+	l.states[uuid] = jsonData
 	l.Unlock()
 }
 

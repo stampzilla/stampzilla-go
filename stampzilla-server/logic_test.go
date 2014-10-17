@@ -1,10 +1,22 @@
 package main
 
 import (
+	"fmt"
 	"testing"
-
-	"github.com/stampzilla/stampzilla-go/protocol"
 )
+
+type ruleActionStub struct {
+	actionCount *int
+}
+
+func (ra *ruleActionStub) RunCommand() {
+	fmt.Println("RuleActionStubRAN")
+	*ra.actionCount++
+}
+
+func NewRuleActionStub(actionCount *int) *ruleActionStub {
+	return &ruleActionStub{actionCount}
+}
 
 func TestParseRuleEnterExitActions(t *testing.T) {
 
@@ -12,13 +24,17 @@ func TestParseRuleEnterExitActions(t *testing.T) {
 
 	rule := logic.AddRule("test rule 1")
 
-	rule.AddEnterAction(&ruleAction{&protocol.Command{"testEnterAction", nil}, "uuid1", nil})
-	rule.AddExitAction(&ruleAction{&protocol.Command{"testExitAction", nil}, "uuid2", nil})
+	//rule.AddEnterAction(&ruleAction{&protocol.Command{"testEnterAction", nil}, "uuid1", nil})
+	//rule.AddExitAction(&ruleAction{&protocol.Command{"testExitAction", nil}, "uuid2", nil})
 
-	rule.AddCondition(&ruleCondition{`Devices[1].State`, "==", "OFF"})
+	actionRunCount := 0
+	action := NewRuleActionStub(&actionRunCount)
+	rule.AddEnterAction(action)
+	rule.AddExitAction(action)
+
+	rule.AddCondition(&ruleCondition{`Devices[1].State`, "==", true})
 	rule.AddCondition(&ruleCondition{`Devices[2].State`, "!=", "OFF"})
-
-	fakeStates := make(map[string]string)
+	//rule.AddCondition(&ruleCondition{`Devices[3].State`, "!=", "OFF"})
 
 	state := `
 		{
@@ -26,7 +42,7 @@ func TestParseRuleEnterExitActions(t *testing.T) {
 				"1": {
 					"Id": "1",
 					"Name": "Dev1",
-					"State": "OFF",
+					"State": true,
 					"Type": ""
 				},
 				"2": {
@@ -38,9 +54,9 @@ func TestParseRuleEnterExitActions(t *testing.T) {
 			}
 		}
 	`
-	fakeStates["uuidasdfasdf"] = state
 
-	logic.ParseRules(fakeStates)
+	logic.SetState("uuidasdfasdf", state)
+	logic.EvaluateRules()
 
 	state = `
 		{
@@ -60,9 +76,12 @@ func TestParseRuleEnterExitActions(t *testing.T) {
 			}
 		}
 	`
-	fakeStates["uuidasdfasdf"] = state
+	logic.SetState("uuidasdfasdf", state)
+	logic.EvaluateRules()
 
-	logic.ParseRules(fakeStates)
-
-	//t.Errorf("OutputValue wrong expected: %s got %s", 55, p.OutputValue())
+	fmt.Println(actionRunCount)
+	if actionRunCount == 2 {
+		return
+	}
+	t.Errorf("actionRunCount wrong expected: %s got %s", 2, actionRunCount)
 }
