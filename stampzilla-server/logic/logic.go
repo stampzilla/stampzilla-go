@@ -1,9 +1,11 @@
 package logic
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -13,6 +15,8 @@ import (
 	"github.com/stampzilla/stampzilla-go/protocol"
 	serverprotocol "github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
 )
+
+var nodes *serverprotocol.Nodes
 
 type RuleCondition interface {
 	Check(interface{}) bool
@@ -58,21 +62,20 @@ func (r *ruleCondition) Check(value interface{}) bool {
 }
 
 type ruleAction struct {
-	Command *protocol.Command
-	Uuid    string
-	Nodes   *serverprotocol.Nodes
+	Command *protocol.Command `json:"command"`
+	Uuid    string            `json:"uuid"`
 }
 
-func NewRuleAction(cmd *protocol.Command, uuid string, nodes *serverprotocol.Nodes) RuleAction {
-	return &ruleAction{cmd, uuid, nodes}
+func NewRuleAction(cmd *protocol.Command, uuid string) RuleAction {
+	return &ruleAction{cmd, uuid}
 }
 
 func (ra *ruleAction) RunCommand() {
 	fmt.Println("Running command", ra.Command)
-	if ra.Nodes == nil {
+	if nodes == nil {
 		return
 	}
-	node := ra.Nodes.Search(ra.Uuid)
+	node := nodes.Search(ra.Uuid)
 	if node != nil {
 		jsonToSend, err := json.Marshal(&ra.Command)
 		if err != nil {
@@ -99,11 +102,11 @@ type Rule interface {
 }
 
 type rule struct {
-	name         string
-	conditions   []RuleCondition
-	enterActions []RuleAction
-	exitActions  []RuleAction
-	condState    bool
+	Name          string          `json:"name"`
+	Conditions_   []RuleCondition `json:"conditions"`
+	EnterActions_ []RuleAction    `json:"enterActions"`
+	ExitActions_  []RuleAction    `json:"exitActions"`
+	condState     bool
 	sync.RWMutex
 }
 
@@ -115,7 +118,7 @@ func (r *rule) CondState() bool {
 func (r *rule) Conditions() []RuleCondition {
 	r.RLock()
 	defer r.RUnlock()
-	return r.conditions
+	return r.Conditions_
 }
 
 func (r *rule) SetCondState(cond bool) {
@@ -124,34 +127,34 @@ func (r *rule) SetCondState(cond bool) {
 	r.RUnlock()
 }
 func (r *rule) RunEnter() {
-	for _, a := range r.enterActions {
+	for _, a := range r.EnterActions_ {
 		a.RunCommand()
 	}
 }
 func (r *rule) RunExit() {
-	for _, a := range r.exitActions {
+	for _, a := range r.ExitActions_ {
 		a.RunCommand()
 	}
 }
 func (r *rule) AddExitAction(a RuleAction) {
 	r.Lock()
-	r.exitActions = append(r.exitActions, a)
+	r.ExitActions_ = append(r.ExitActions_, a)
 	r.Unlock()
 }
 func (r *rule) AddEnterAction(a RuleAction) {
 	r.Lock()
-	r.enterActions = append(r.enterActions, a)
+	r.EnterActions_ = append(r.EnterActions_, a)
 	r.Unlock()
 }
 func (r *rule) AddCondition(a RuleCondition) {
 	r.Lock()
-	r.conditions = append(r.conditions, a)
+	r.Conditions_ = append(r.Conditions_, a)
 	r.Unlock()
 }
 
 type Logic struct {
 	states map[string]string
-	rules  []Rule
+	Rules  []Rule
 	re     *regexp.Regexp
 	sync.RWMutex
 }
@@ -168,14 +171,14 @@ func (l *Logic) States() map[string]string {
 	return l.states
 }
 func (l *Logic) AddRule(name string) Rule {
-	r := &rule{name: name}
+	r := &rule{Name: name}
 	l.Lock()
 	defer l.Unlock()
-	l.rules = append(l.rules, r)
+	l.Rules = append(l.Rules, r)
 	return r
 }
 func (l *Logic) EvaluateRules() {
-	for _, rule := range l.rules {
+	for _, rule := range l.Rules {
 		evaluation := l.evaluateRule(rule)
 		fmt.Println("ruleEvaluationResult:", evaluation)
 		if evaluation != rule.CondState() {
@@ -266,49 +269,46 @@ func (l *Logic) path(state string, jp string) (interface{}, error) {
 		}
 	}
 	return v, nil
-	//rt := reflect.ValueOf(t).Elem()
-	////fmt.Println("RT:", rt)
-	//if v == nil { //value not found
-	//return nil, nil
-	//}
-	//rv := reflect.ValueOf(v)
-	//switch vv := v.(type) {
-	//case bool:
-	////this doesnt work yet!
-	//if vv {
-	//t = "true"
-	//return nil, nil
-	//}
-	////rt.Set("false")
-	//t = "false"
-	//fmt.Println("ITS A BOOL")
-	//case string:
-	//rt.Set(rv)
-	//}
 }
 
+func (l *Logic) SetNodes(n *serverprotocol.Nodes) {
+	nodes = n
+}
 func (l *Logic) SetState(uuid, jsonData string) {
 	l.Lock()
 	l.states[uuid] = jsonData
 	l.Unlock()
 }
 
-/*
-Example of state:
-State: {
-	Devices: {
-		1: {
-			Id: "1",
-			Name: "Dev1",
-			State: "OFF",
-			Type: ""
-		},
-		2: {
-			Id: "2",
-			Name: "Dev2",
-			State: "ON",
-			Type: ""
-		}
+func (l *Logic) SaveRulesToFile(path string) {
+	configFile, err := os.Create(path)
+	if err != nil {
+		log.Error("creating config file", err.Error())
 	}
+	var out bytes.Buffer
+	b, err := json.MarshalIndent(l.Rules, "", "\t")
+	if err != nil {
+		log.Error("error marshal json", err)
+	}
+	json.Indent(&out, b, "", "\t")
+	out.WriteTo(configFile)
 }
-*/
+
+func (l *Logic) RestoreRulesFromFile(path string) {
+	//TODO finish this. We have to implement UnmarshalJSON([]byte) error on all our interfaces
+	// in order for json Deocode to work.
+	configFile, err := os.Open(path)
+	if err != nil {
+		log.Error("opening config file", err.Error())
+	}
+
+	var rules []*rule
+	jsonParser := json.NewDecoder(configFile)
+	if err = jsonParser.Decode(&rules); err != nil {
+		log.Error("parsing config file", err.Error())
+	}
+
+	log.Debug(rules)
+	//l.Rules = rules.(Rule)
+
+}

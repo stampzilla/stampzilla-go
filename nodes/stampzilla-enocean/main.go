@@ -97,6 +97,11 @@ func serverRecv(recv chan protocol.Command) {
 
 func processCommand(cmd protocol.Command) {
 	log.Debug("INCOMING COMMAND", cmd)
+	if len(cmd.Args) == 0 {
+		log.Error("Missing device ID in arguments")
+		return
+	}
+
 	device := state.DeviceByString(cmd.Args[0])
 	switch cmd.Cmd {
 	case "toggle":
