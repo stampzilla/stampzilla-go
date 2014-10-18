@@ -3,6 +3,8 @@ package logic
 import "sync"
 
 type Rule interface {
+	Uuid() string
+	SetUuid(string)
 	CondState() bool
 	SetCondState(bool)
 	RunEnter()
@@ -11,8 +13,6 @@ type Rule interface {
 	AddEnterAction(RuleAction)
 	AddCondition(RuleCondition)
 	Conditions() []RuleCondition
-	Uuid() string
-	SetUuid(string)
 }
 
 type rule struct {
