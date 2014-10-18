@@ -18,49 +18,6 @@ import (
 
 var nodes *serverprotocol.Nodes
 
-type RuleCondition interface {
-	Check(interface{}) bool
-	StatePath() string
-}
-type ruleCondition struct {
-	StatePath_ string      `json:"statePath"`
-	Comparator string      `json:"comparator"`
-	Value      interface{} `json:"value"`
-}
-
-func NewRuleCondition(path, comp string, val interface{}) RuleCondition {
-	return &ruleCondition{path, comp, val}
-}
-
-func (r *ruleCondition) StatePath() string {
-	return r.StatePath_
-}
-
-func (r *ruleCondition) Check(value interface{}) bool {
-	switch r.Comparator {
-	case "==":
-		if value == r.Value {
-			return true
-		}
-	case "!=":
-		if value != r.Value {
-			return true
-		}
-	case "<":
-		//TODO here we need to do type assertsion so that we can only compare int and float i think!
-		//if value < r.Value {
-		//return true
-		//}
-	case ">":
-		//TODO here we need to do type assertsion so that we can only compare int and float i think!
-		//if value < r.Value {
-		//return true
-		//}
-	}
-
-	return false
-}
-
 type ruleAction struct {
 	Command *protocol.Command `json:"command"`
 	Uuid    string            `json:"uuid"`
@@ -300,8 +257,6 @@ func (l *Logic) SaveRulesToFile(path string) {
 }
 
 func (l *Logic) RestoreRulesFromFile(path string) {
-	//TODO finish this. We have to implement UnmarshalJSON([]byte) error on all our interfaces
-	// in order for json Deocode to work.
 	configFile, err := os.Open(path)
 	if err != nil {
 		log.Error("opening config file", err.Error())
@@ -332,5 +287,4 @@ func (l *Logic) RestoreRulesFromFile(path string) {
 			newRule.AddExitAction(newExtiAction)
 		}
 	}
-
 }
