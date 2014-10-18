@@ -21,6 +21,7 @@ var nodes *serverprotocol.Nodes
 type RuleCondition interface {
 	Check(interface{}) bool
 	StatePath() string
+	UnmarshalJSON([]byte) error
 }
 type ruleCondition struct {
 	StatePath_ string      `json:"statePath"`
@@ -31,7 +32,14 @@ type ruleCondition struct {
 func NewRuleCondition(path, comp string, val interface{}) RuleCondition {
 	return &ruleCondition{path, comp, val}
 }
-
+func (r *ruleCondition) UnmarshalJSON(b []byte) (err error) {
+	type rtype ruleCondition //To avoid recursion
+	rb := rtype{}
+	if err = json.Unmarshal(b, &rb); err == nil {
+		*r = ruleCondition(rb)
+	}
+	return
+}
 func (r *ruleCondition) StatePath() string {
 	return r.StatePath_
 }
@@ -99,6 +107,7 @@ type Rule interface {
 	AddEnterAction(RuleAction)
 	AddCondition(RuleCondition)
 	Conditions() []RuleCondition
+	UnmarshalJSON([]byte) error
 }
 
 type rule struct {
@@ -108,6 +117,15 @@ type rule struct {
 	ExitActions_  []RuleAction    `json:"exitActions"`
 	condState     bool
 	sync.RWMutex
+}
+
+func (r *rule) UnmarshalJSON(b []byte) (err error) {
+	type rtype rule //To avoid recursion
+	rb := rtype{}
+	if err = json.Unmarshal(b, &rb); err == nil {
+		*r = rule(rb)
+	}
+	return
 }
 
 func (r *rule) CondState() bool {
@@ -154,7 +172,7 @@ func (r *rule) AddCondition(a RuleCondition) {
 
 type Logic struct {
 	states map[string]string
-	Rules  []Rule
+	Rules_ []Rule
 	re     *regexp.Regexp
 	sync.RWMutex
 }
@@ -174,11 +192,11 @@ func (l *Logic) AddRule(name string) Rule {
 	r := &rule{Name: name}
 	l.Lock()
 	defer l.Unlock()
-	l.Rules = append(l.Rules, r)
+	l.Rules_ = append(l.Rules_, r)
 	return r
 }
 func (l *Logic) EvaluateRules() {
-	for _, rule := range l.Rules {
+	for _, rule := range l.Rules() {
 		evaluation := l.evaluateRule(rule)
 		fmt.Println("ruleEvaluationResult:", evaluation)
 		if evaluation != rule.CondState() {
@@ -279,6 +297,11 @@ func (l *Logic) SetState(uuid, jsonData string) {
 	l.states[uuid] = jsonData
 	l.Unlock()
 }
+func (l *Logic) Rules() []Rule {
+	l.RLock()
+	defer l.RUnlock()
+	return l.Rules_
+}
 
 func (l *Logic) SaveRulesToFile(path string) {
 	configFile, err := os.Create(path)
@@ -302,13 +325,30 @@ func (l *Logic) RestoreRulesFromFile(path string) {
 		log.Error("opening config file", err.Error())
 	}
 
-	var rules []*rule
-	jsonParser := json.NewDecoder(configFile)
-	if err = jsonParser.Decode(&rules); err != nil {
-		log.Error("parsing config file", err.Error())
+	type local_rule struct {
+		Name         string           `json:"name"`
+		Conditions_  []*ruleCondition `json:"conditions"`
+		EnterActions []*ruleAction    `json:"enterActions"`
+		ExitActions  []*ruleAction    `json:"exitActions"`
 	}
 
-	log.Debug(rules)
-	//l.Rules = rules.(Rule)
+	var rules []*local_rule
+	jsonParser := json.NewDecoder(configFile)
+	if err = jsonParser.Decode(&rules); err != nil {
+		log.Error(err)
+	}
+
+	for _, rule := range rules {
+		newRule := l.AddRule(rule.Name)
+		for _, newCond := range rule.Conditions_ {
+			newRule.AddCondition(newCond)
+		}
+		for _, newEnterAction := range rule.EnterActions {
+			newRule.AddEnterAction(newEnterAction)
+		}
+		for _, newExtiAction := range rule.ExitActions {
+			newRule.AddExitAction(newExtiAction)
+		}
+	}
 
 }

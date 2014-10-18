@@ -4,6 +4,7 @@ import (
 	"flag"
 
 	log "github.com/cihub/seelog"
+	"github.com/stampzilla/stampzilla-go/stampzilla-server/logic"
 	"github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
 )
 
@@ -12,6 +13,7 @@ var webPort string
 var webRoot string
 
 var nodes *protocol.Nodes
+var logicHandler *logic.Logic
 
 func main() {
 
@@ -21,6 +23,7 @@ func main() {
 	flag.Parse()
 
 	clients = newClients()
+	logicHandler = logic.NewLogic()
 
 	// Load logger
 	logger, err := log.LoggerFromConfigAsFile("logconfig.xml")

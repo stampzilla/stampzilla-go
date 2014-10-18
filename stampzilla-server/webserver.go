@@ -32,6 +32,9 @@ func webStart(port, root string) {
 	m.Get("/api/nodes", WebHandlerGetNodes)
 	m.Get("/api/node/:id", WebHandlerGetNode)
 	m.Put("/api/node/:id/cmd", WebHandlerCommandToNode)
+
+	//Rules
+	m.Get("/api/rules", WebHandlerGetRules)
 	//m.Post("/api/node/:id/state", PostNodeState)
 	//m.Get("/api/users/:id", GetUser)
 

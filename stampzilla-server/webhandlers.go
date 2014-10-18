@@ -41,6 +41,10 @@ func WebHandlerCommandToNode(enc encoder.Encoder, params martini.Params, r *http
 	return 200, encoder.Must(enc.Encode(protocol.Command{Cmd: "testresponse"}))
 }
 
+func WebHandlerGetRules() (int, []byte) {
+	return 200, encoder.Must(json.Marshal(logicHandler.Rules()))
+}
+
 //type Command struct {
 //Cmd  string
 //Args []string

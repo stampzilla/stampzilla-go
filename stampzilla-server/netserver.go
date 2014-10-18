@@ -18,8 +18,7 @@ func netStart(port string) {
 		return
 	}
 
-	l := logic.NewLogic()
-	l.SetNodes(nodes)
+	logicHandler.SetNodes(nodes)
 	//rule := l.AddRule("test rule 1")
 	//rule.AddEnterAction(logic.NewRuleAction(&protocol.Command{"testar", []string{"0186ff7d"}}, "enocean"))
 	//rule.AddExitAction(logic.NewRuleAction(&protocol.Command{"testar", []string{"0186ff7d"}}, "enocean"))
@@ -27,7 +26,7 @@ func netStart(port string) {
 	//rule.AddCondition(logic.NewRuleCondition(`Devices[2].State`, "!=", "OFF"))
 
 	//TODO see logic.go
-	l.RestoreRulesFromFile("rules.json")
+	logicHandler.RestoreRulesFromFile("rules.json")
 
 	go func() {
 		for {
@@ -37,7 +36,7 @@ func netStart(port string) {
 				return
 			}
 
-			go newClient(l, fd)
+			go newClient(logicHandler, fd)
 		}
 	}()
 }
