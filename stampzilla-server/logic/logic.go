@@ -21,7 +21,6 @@ var nodes *serverprotocol.Nodes
 type RuleCondition interface {
 	Check(interface{}) bool
 	StatePath() string
-	UnmarshalJSON([]byte) error
 }
 type ruleCondition struct {
 	StatePath_ string      `json:"statePath"`
@@ -32,14 +31,7 @@ type ruleCondition struct {
 func NewRuleCondition(path, comp string, val interface{}) RuleCondition {
 	return &ruleCondition{path, comp, val}
 }
-func (r *ruleCondition) UnmarshalJSON(b []byte) (err error) {
-	type rtype ruleCondition //To avoid recursion
-	rb := rtype{}
-	if err = json.Unmarshal(b, &rb); err == nil {
-		*r = ruleCondition(rb)
-	}
-	return
-}
+
 func (r *ruleCondition) StatePath() string {
 	return r.StatePath_
 }
@@ -107,7 +99,6 @@ type Rule interface {
 	AddEnterAction(RuleAction)
 	AddCondition(RuleCondition)
 	Conditions() []RuleCondition
-	UnmarshalJSON([]byte) error
 }
 
 type rule struct {
@@ -117,15 +108,6 @@ type rule struct {
 	ExitActions_  []RuleAction    `json:"exitActions"`
 	condState     bool
 	sync.RWMutex
-}
-
-func (r *rule) UnmarshalJSON(b []byte) (err error) {
-	type rtype rule //To avoid recursion
-	rb := rtype{}
-	if err = json.Unmarshal(b, &rb); err == nil {
-		*r = rule(rb)
-	}
-	return
 }
 
 func (r *rule) CondState() bool {
