@@ -25,7 +25,6 @@ func netStart(port string) {
 	//rule.AddCondition(logic.NewRuleCondition(`Devices.0186ff7d.On`, "==", true))
 	//rule.AddCondition(logic.NewRuleCondition(`Devices[2].State`, "!=", "OFF"))
 
-	//TODO see logic.go
 	logicHandler.RestoreRulesFromFile("rules.json")
 
 	go func() {
