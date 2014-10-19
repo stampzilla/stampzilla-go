@@ -72,7 +72,7 @@ func (r *Clients) disconnectAll() {
 func newClients() *Clients {
 	return &Clients{sync.Mutex{}, make([]*Client, 0)}
 }
-func websocketRoute(params martini.Params, receiver <-chan *Message, sender chan<- *Message, done <-chan bool, disconnect chan<- int, err <-chan error) (int, string) {
+func (clients *Clients) websocketRoute(params martini.Params, receiver <-chan *Message, sender chan<- *Message, done <-chan bool, disconnect chan<- int, err <-chan error) (int, string) {
 	client := &Client{params["clientname"], receiver, sender, done, err, disconnect}
 	clients.appendClient(client)
 

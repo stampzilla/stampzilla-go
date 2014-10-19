@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"encoding/json"
-	"fmt"
 	"net"
 
 	log "github.com/cihub/seelog"
@@ -11,36 +10,39 @@ import (
 	serverprotocol "github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
 )
 
-func netStart(port string) {
-	listen, err := net.Listen("tcp", ":"+port)
+type NodeServer struct {
+	//TODO change port to config struct!
+	Port      string                `inject:""`
+	Logic     *logic.Logic          `inject:""`
+	Nodes     *serverprotocol.Nodes `inject:""`
+	WsClients *Clients              `inject:""`
+}
+
+func NewNodeServer() *NodeServer {
+	return &NodeServer{}
+}
+
+func (ns *NodeServer) Start() {
+	listen, err := net.Listen("tcp", ":"+ns.Port)
 	if err != nil {
-		fmt.Println("listen error", err)
+		log.Error("listen error", err)
 		return
 	}
-
-	logicHandler.SetNodes(nodes)
-	//rule := l.AddRule("test rule 1")
-	//rule.AddEnterAction(logic.NewRuleAction(&protocol.Command{"testar", []string{"0186ff7d"}}, "enocean"))
-	//rule.AddExitAction(logic.NewRuleAction(&protocol.Command{"testar", []string{"0186ff7d"}}, "enocean"))
-	//rule.AddCondition(logic.NewRuleCondition(`Devices.0186ff7d.On`, "==", true))
-	//rule.AddCondition(logic.NewRuleCondition(`Devices[2].State`, "!=", "OFF"))
-
-	logicHandler.RestoreRulesFromFile("rules.json")
 
 	go func() {
 		for {
 			fd, err := listen.Accept()
 			if err != nil {
-				fmt.Println("accept error", err)
+				log.Error("accept error", err)
 				return
 			}
 
-			go newClient(logicHandler, fd)
+			go ns.newNodeConnection(fd)
 		}
 	}()
 }
 
-func newClient(logic *logic.Logic, connection net.Conn) {
+func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 	// Recive data
 	log.Info("New client connected")
 	name := ""
@@ -52,16 +54,15 @@ func newClient(logic *logic.Logic, connection net.Conn) {
 		var info serverprotocol.Node
 		err := decoder.Decode(&info)
 
-		//err = json.Unmarshal(data, &cmd)
 		if err != nil {
 			if err.Error() == "EOF" {
 				log.Info(name, " - Client disconnected")
 				if uuid != "" {
-					nodes.Delete(uuid)
+					ns.Nodes.Delete(uuid)
 					close(logicChannel)
 				}
 				//TODO be able to not send everything always. perhaps implement remove instead of all?
-				clients.messageOtherClients(&Message{Type: "all", Data: nodes.All()})
+				ns.WsClients.messageOtherClients(&Message{Type: "all", Data: ns.Nodes.All()})
 				return
 			}
 			log.Warn("Not disconnect but error: ", err)
@@ -72,14 +73,14 @@ func newClient(logic *logic.Logic, connection net.Conn) {
 			info.SetConn(connection)
 
 			if logicChannel == nil {
-				logicChannel = logic.ListenForChanges(uuid)
+				logicChannel = ns.Logic.ListenForChanges(uuid)
 			}
 
-			nodes.Add(&info)
+			ns.Nodes.Add(&info)
 			log.Info(info.Name, " - Got update on state")
-			clients.messageOtherClients(&Message{Type: "singlenode", Data: info})
-			//Send to logic for evaluation
+			ns.WsClients.messageOtherClients(&Message{Type: "singlenode", Data: info})
 
+			//Send to logic for evaluation
 			state, _ := json.Marshal(info.State)
 			logicChannel <- string(state)
 		}

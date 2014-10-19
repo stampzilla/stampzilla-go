@@ -4,6 +4,7 @@ import (
 	"flag"
 
 	log "github.com/cihub/seelog"
+	fbinject "github.com/facebookgo/inject"
 	"github.com/stampzilla/stampzilla-go/stampzilla-server/logic"
 	"github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
 )
@@ -21,9 +22,6 @@ func main() {
 	flag.StringVar(&webPort, "web-port", "8080", "Webserver port")
 	flag.StringVar(&webRoot, "web-root", "public", "Webserver root")
 	flag.Parse()
-
-	clients = newClients()
-	logicHandler = logic.NewLogic()
 
 	// Load logger
 	logger, err := log.LoggerFromConfigAsFile("logconfig.xml")
@@ -46,10 +44,30 @@ func main() {
 
 	nodes = protocol.NewNodes()
 
-	log.Info("Starting NET (:" + netPort + ")")
-	netStart(netPort)
+	//Start websocket
+	clients = newClients()
+
+	//Start logic
+	logicHandler = logic.NewLogic()
+	logicHandler.SetNodes(nodes)
+	logicHandler.RestoreRulesFromFile("rules.json")
+
+	// Start NodeServer and provide dependencies
+	log.Info("Starting NodeServer (:" + netPort + ")")
+	nodeServer := NewNodeServer()
+	nodeServer.Port = netPort
+	inject(clients, logicHandler, nodes, nodeServer)
+
+	nodeServer.Start()
 
 	log.Info("Starting WEB (:" + webPort + " in " + webRoot + ")")
 	webStart(webPort, webRoot)
 
+}
+
+func inject(values ...interface{}) {
+	err := fbinject.Populate(values...)
+	if err != nil {
+		panic(err)
+	}
 }

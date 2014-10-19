@@ -28,7 +28,7 @@ func webStart(port, root string) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	})
 
-	m.Get("/socket", sockets.JSON(Message{}), websocketRoute)
+	m.Get("/socket", sockets.JSON(Message{}), clients.websocketRoute)
 	m.Get("/api/nodes", WebHandlerGetNodes)
 	m.Get("/api/node/:id", WebHandlerGetNode)
 	m.Put("/api/node/:id/cmd", WebHandlerCommandToNode)
