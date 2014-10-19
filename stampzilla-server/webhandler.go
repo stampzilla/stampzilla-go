@@ -18,10 +18,6 @@ type WebHandler struct {
 	Nodes *serverprotocol.Nodes `inject:""`
 }
 
-func NewWebHandler() *WebHandler {
-	return &WebHandler{}
-}
-
 func (wh *WebHandler) GetNodes(enc encoder.Encoder) (int, []byte) {
 	return 200, encoder.Must(json.Marshal(wh.Nodes.All()))
 }
