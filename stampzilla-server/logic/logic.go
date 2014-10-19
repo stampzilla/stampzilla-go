@@ -17,13 +17,12 @@ import (
 	serverprotocol "github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
 )
 
-var nodes *serverprotocol.Nodes
-
 type Logic struct {
 	states map[string]string
 	Rules_ []Rule
 	re     *regexp.Regexp
 	sync.RWMutex
+	Nodes *serverprotocol.Nodes `inject:""`
 }
 
 func NewLogic() *Logic {
@@ -37,9 +36,6 @@ func (l *Logic) States() map[string]string {
 	defer l.RUnlock()
 	return l.states
 }
-func (l *Logic) SetNodes(n *serverprotocol.Nodes) {
-	nodes = n
-}
 func (l *Logic) SetState(uuid, jsonData string) {
 	l.Lock()
 	l.states[uuid] = jsonData
@@ -51,7 +47,7 @@ func (l *Logic) Rules() []Rule {
 	return l.Rules_
 }
 func (l *Logic) AddRule(name string) Rule {
-	r := &rule{Name: name, Uuid_: uuid.New()}
+	r := &rule{Name: name, Uuid_: uuid.New(), nodes: l.Nodes}
 	l.Lock()
 	defer l.Unlock()
 	l.Rules_ = append(l.Rules_, r)

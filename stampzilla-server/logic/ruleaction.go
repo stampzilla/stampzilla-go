@@ -6,6 +6,7 @@ import (
 
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/protocol"
+	serverprotocol "github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
 )
 
 type RuleAction interface {
@@ -14,17 +15,18 @@ type RuleAction interface {
 type ruleAction struct {
 	Command *protocol.Command `json:"command"`
 	Uuid    string            `json:"uuid"`
+	nodes   *serverprotocol.Nodes
 }
 
 func NewRuleAction(cmd *protocol.Command, uuid string) RuleAction {
-	return &ruleAction{cmd, uuid}
+	return &ruleAction{Command: cmd, Uuid: uuid}
 }
 func (ra *ruleAction) RunCommand() {
 	fmt.Println("Running command", ra.Command)
-	if nodes == nil {
+	if ra.nodes == nil {
 		return
 	}
-	node := nodes.Search(ra.Uuid)
+	node := ra.nodes.Search(ra.Uuid)
 	if node != nil {
 		jsonToSend, err := json.Marshal(&ra.Command)
 		if err != nil {

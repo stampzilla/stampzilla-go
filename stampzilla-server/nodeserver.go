@@ -29,6 +29,8 @@ func (ns *NodeServer) Start() {
 		return
 	}
 
+	ns.Logic.RestoreRulesFromFile("rules.json")
+
 	go func() {
 		for {
 			fd, err := listen.Accept()

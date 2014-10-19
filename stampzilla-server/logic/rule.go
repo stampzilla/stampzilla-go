@@ -1,6 +1,10 @@
 package logic
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
+)
 
 type Rule interface {
 	Uuid() string
@@ -23,6 +27,7 @@ type rule struct {
 	ExitActions_  []RuleAction    `json:"exitActions"`
 	condState     bool
 	sync.RWMutex
+	nodes *protocol.Nodes
 }
 
 func (r *rule) Uuid() string {
@@ -61,11 +66,17 @@ func (r *rule) RunExit() {
 	}
 }
 func (r *rule) AddExitAction(a RuleAction) {
+	if a, ok := a.(*ruleAction); ok {
+		a.nodes = r.nodes
+	}
 	r.Lock()
 	r.ExitActions_ = append(r.ExitActions_, a)
 	r.Unlock()
 }
 func (r *rule) AddEnterAction(a RuleAction) {
+	if a, ok := a.(*ruleAction); ok {
+		a.nodes = r.nodes
+	}
 	r.Lock()
 	r.EnterActions_ = append(r.EnterActions_, a)
 	r.Unlock()

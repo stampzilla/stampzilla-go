@@ -4,7 +4,7 @@ import (
 	"flag"
 
 	log "github.com/cihub/seelog"
-	fbinject "github.com/facebookgo/inject"
+	"github.com/facebookgo/inject"
 	"github.com/stampzilla/stampzilla-go/stampzilla-server/logic"
 	"github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
 )
@@ -37,35 +37,20 @@ func main() {
             </formats>
         </seelog>`
 
-		logger, _ := log.LoggerFromConfigAsBytes([]byte(testConfig))
-		log.ReplaceLogger(logger)
-	} else {
-		log.ReplaceLogger(logger)
+		logger, _ = log.LoggerFromConfigAsBytes([]byte(testConfig))
 	}
+	log.ReplaceLogger(logger)
 
 	nodes := protocol.NewNodes()
-
-	//Start websocket
-	clients := newClients()
-
-	//Start logic
 	logic := logic.NewLogic()
-	logic.SetNodes(nodes)
-	logic.RestoreRulesFromFile("rules.json")
-
-	// Start Servers and provide dependencies
 	webServer := NewWebServer()
 	nodeServer := NewNodeServer()
-	webHandler := NewWebHandler()
-	inject(config, clients, logic, nodes, nodeServer, webHandler, webServer)
 
-	nodeServer.Start()
-	webServer.Start()
-}
-
-func inject(values ...interface{}) {
-	err := fbinject.Populate(values...)
+	inject.Populate(config, nodes, logic, nodeServer, webServer)
 	if err != nil {
 		panic(err)
 	}
+
+	nodeServer.Start()
+	webServer.Start()
 }
