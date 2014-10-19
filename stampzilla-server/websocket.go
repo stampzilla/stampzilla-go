@@ -8,9 +8,8 @@ import (
 	log "github.com/cihub/seelog"
 	"github.com/go-martini/martini"
 	"github.com/gorilla/websocket"
+	serverprotocol "github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
 )
-
-var clients *Clients
 
 type Message struct {
 	Type string      `json:"type"`
@@ -20,6 +19,7 @@ type Message struct {
 type Clients struct {
 	sync.Mutex
 	clients []*Client
+	Nodes   *serverprotocol.Nodes `inject:""`
 }
 type Client struct {
 	Name       string
@@ -35,7 +35,7 @@ func (r *Clients) appendClient(client *Client) {
 	r.Lock()
 	r.clients = append(r.clients, client)
 	r.Unlock()
-	clients.messageOtherClients(&Message{Type: "all", Data: nodes.All()})
+	r.messageOtherClients(&Message{Type: "all", Data: r.Nodes.All()})
 }
 
 // Message all the other clients
@@ -70,7 +70,7 @@ func (r *Clients) disconnectAll() {
 }
 
 func newClients() *Clients {
-	return &Clients{sync.Mutex{}, make([]*Client, 0)}
+	return &Clients{sync.Mutex{}, make([]*Client, 0), nil}
 }
 func (clients *Clients) websocketRoute(params martini.Params, receiver <-chan *Message, sender chan<- *Message, done <-chan bool, disconnect chan<- int, err <-chan error) (int, string) {
 	client := &Client{params["clientname"], receiver, sender, done, err, disconnect}
@@ -87,7 +87,7 @@ func (clients *Clients) websocketRoute(params martini.Params, receiver <-chan *M
 		case msg := <-client.in:
 			//TODO implement command from websocket here. using same process as WebHandlerCommandToNode
 			fmt.Println("incoming message from webui on websocket", msg)
-			node := nodes.Search(msg.To)
+			node := clients.Nodes.Search(msg.To)
 			if node != nil {
 				jsonToSend, err := json.Marshal(&msg.Data)
 				if err != nil {

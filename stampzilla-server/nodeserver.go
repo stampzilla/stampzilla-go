@@ -11,8 +11,7 @@ import (
 )
 
 type NodeServer struct {
-	//TODO change port to config struct!
-	Port      string                `inject:""`
+	Config    *ServerConfig         `inject:""`
 	Logic     *logic.Logic          `inject:""`
 	Nodes     *serverprotocol.Nodes `inject:""`
 	WsClients *Clients              `inject:""`
@@ -23,7 +22,8 @@ func NewNodeServer() *NodeServer {
 }
 
 func (ns *NodeServer) Start() {
-	listen, err := net.Listen("tcp", ":"+ns.Port)
+	log.Info("Starting NodeServer (:" + ns.Config.NodePort + ")")
+	listen, err := net.Listen("tcp", ":"+ns.Config.NodePort)
 	if err != nil {
 		log.Error("listen error", err)
 		return

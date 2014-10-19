@@ -7,18 +7,33 @@ import (
 	log "github.com/cihub/seelog"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/encoder"
+	"github.com/stampzilla/stampzilla-go/stampzilla-server/logic"
+	serverprotocol "github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
 )
 
 // Webserver that serves static files
 
-func webStart(port, root string) {
+type WebServer struct {
+	Config     *ServerConfig         `inject:""`
+	Logic      *logic.Logic          `inject:""`
+	Nodes      *serverprotocol.Nodes `inject:""`
+	WsClients  *Clients              `inject:""`
+	WebHandler *WebHandler           `inject:""`
+}
+
+func NewWebServer() *WebServer {
+	return &WebServer{}
+}
+
+func (ws *WebServer) Start() {
+	log.Info("Starting WEB (:" + ws.Config.WebPort + " in " + ws.Config.WebRoot + ")")
 
 	//m := martini.Classic()
 	r := martini.NewRouter()
 	ma := martini.New()
 	ma.Use(martini.Logger())
 	ma.Use(martini.Recovery())
-	ma.Use(martini.Static(root))
+	ma.Use(martini.Static(ws.Config.WebRoot))
 	ma.MapTo(r, (*martini.Routes)(nil))
 	ma.Action(r.Handle)
 	m := &martini.ClassicMartini{ma, r}
@@ -28,16 +43,15 @@ func webStart(port, root string) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	})
 
-	m.Get("/socket", sockets.JSON(Message{}), clients.websocketRoute)
-	m.Get("/api/nodes", WebHandlerGetNodes)
-	m.Get("/api/node/:id", WebHandlerGetNode)
-	m.Put("/api/node/:id/cmd", WebHandlerCommandToNode)
+	m.Get("/socket", sockets.JSON(Message{}), ws.WsClients.websocketRoute)
+
+	//Nodes
+	m.Get("/api/nodes", ws.WebHandler.GetNodes)
+	m.Get("/api/node/:id", ws.WebHandler.GetNode)
+	m.Put("/api/node/:id/cmd", ws.WebHandler.CommandToNode)
 
 	//Rules
-	m.Get("/api/rules", WebHandlerGetRules)
-	//m.Post("/api/node/:id/state", PostNodeState)
-	//m.Get("/api/users/:id", GetUser)
+	m.Get("/api/rules", ws.WebHandler.GetRules)
 
-	//go http.ListenAndServe(":"+port, nil)
-	log.Critical(http.ListenAndServe(":"+port, m))
+	log.Critical(http.ListenAndServe(":"+ws.Config.WebPort, m))
 }

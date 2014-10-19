@@ -9,18 +9,19 @@ import (
 	"github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
 )
 
-var netPort string
-var webPort string
-var webRoot string
-
-var nodes *protocol.Nodes
-var logicHandler *logic.Logic
+type ServerConfig struct {
+	NodePort string
+	WebPort  string
+	WebRoot  string
+}
 
 func main() {
 
-	flag.StringVar(&netPort, "net-port", "8282", "Stampzilla server port")
-	flag.StringVar(&webPort, "web-port", "8080", "Webserver port")
-	flag.StringVar(&webRoot, "web-root", "public", "Webserver root")
+	config := &ServerConfig{}
+
+	flag.StringVar(&config.NodePort, "node-port", "8282", "Stampzilla NodeServer port")
+	flag.StringVar(&config.WebPort, "web-port", "8080", "Webserver port")
+	flag.StringVar(&config.WebRoot, "web-root", "public", "Webserver root")
 	flag.Parse()
 
 	// Load logger
@@ -42,27 +43,24 @@ func main() {
 		log.ReplaceLogger(logger)
 	}
 
-	nodes = protocol.NewNodes()
+	nodes := protocol.NewNodes()
 
 	//Start websocket
-	clients = newClients()
+	clients := newClients()
 
 	//Start logic
-	logicHandler = logic.NewLogic()
-	logicHandler.SetNodes(nodes)
-	logicHandler.RestoreRulesFromFile("rules.json")
+	logic := logic.NewLogic()
+	logic.SetNodes(nodes)
+	logic.RestoreRulesFromFile("rules.json")
 
-	// Start NodeServer and provide dependencies
-	log.Info("Starting NodeServer (:" + netPort + ")")
+	// Start Servers and provide dependencies
+	webServer := NewWebServer()
 	nodeServer := NewNodeServer()
-	nodeServer.Port = netPort
-	inject(clients, logicHandler, nodes, nodeServer)
+	webHandler := NewWebHandler()
+	inject(config, clients, logic, nodes, nodeServer, webHandler, webServer)
 
 	nodeServer.Start()
-
-	log.Info("Starting WEB (:" + webPort + " in " + webRoot + ")")
-	webStart(webPort, webRoot)
-
+	webServer.Start()
 }
 
 func inject(values ...interface{}) {
