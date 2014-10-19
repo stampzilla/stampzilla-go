@@ -74,6 +74,11 @@ func main() {
 	state.Devices = readConfigFromFile()
 	node.SetState(state)
 
+	elementGenerator := &ElementGenerator{}
+	elementGenerator.State = state
+	elementGenerator.Node = node
+	elementGenerator.Run()
+
 	setupEnoceanCommunication()
 }
 

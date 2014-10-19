@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/jonaz/goenocean"
+	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
 type baseHandler struct { // {{{
@@ -23,7 +24,15 @@ func (h *baseHandler) Dim(lvl int, d *Device) {
 }
 func (h *baseHandler) Process(d *Device, t goenocean.Telegram) {
 	//NOOP
-} // }}}
+}
+func (h *baseHandler) SendElements(d *Device) []*protocol.Element {
+	return nil
+}
+func (h *baseHandler) ReceiveElements(d *Device) []*protocol.Element {
+	return nil
+}
+
+// }}}
 
 //Handler for profile f60201
 type handlerEepf60201 struct { // {{{
@@ -112,6 +121,25 @@ func (h *handlerEepa53808) Learn(d *Device) {
 	// OMG THIS WORKS :D:D
 	fmt.Printf("Sending learn: % x\n", p.Encode())
 	enoceanSend <- p
+}
+
+func (h *handlerEepa53808) SendElements(d *Device) []*protocol.Element {
+	var els []*protocol.Element
+
+	// TOGGLE
+	el := &protocol.Element{}
+	el.Type = protocol.ElementTypeToggle
+	el.Name = d.Name
+	el.Command = &protocol.Command{
+		Cmd:  "toggle",
+		Args: []string{d.IdString()},
+	}
+	el.Feedback = `Devices["` + d.IdString() + `"].On`
+	els = append(els, el)
+
+	//TODO also generate Off and On here
+
+	return els
 }
 
 // }}}

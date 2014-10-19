@@ -1,6 +1,9 @@
 package main
 
-import "github.com/jonaz/goenocean"
+import (
+	"github.com/jonaz/goenocean"
+	"github.com/stampzilla/stampzilla-go/protocol"
+)
 
 var handlers *eepHandlers
 
@@ -13,6 +16,8 @@ type Handler interface {
 	Toggle(*Device)
 	Dim(int, *Device)
 	Process(*Device, goenocean.Telegram)
+	SendElements(*Device) []*protocol.Element
+	ReceiveElements(*Device) []*protocol.Element
 }
 
 func (h *eepHandlers) getHandler(t string) Handler {
