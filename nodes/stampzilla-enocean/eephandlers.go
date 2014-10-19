@@ -19,6 +19,9 @@ func (h *baseHandler) Off(d *Device) {
 func (h *baseHandler) Toggle(d *Device) {
 	//NOOP
 }
+func (h *baseHandler) Learn(d *Device) {
+	//NOOP
+}
 func (h *baseHandler) Dim(lvl int, d *Device) {
 	//NOOP
 }
@@ -129,7 +132,7 @@ func (h *handlerEepa53808) SendElements(d *Device) []*protocol.Element {
 	// TOGGLE
 	el := &protocol.Element{}
 	el.Type = protocol.ElementTypeToggle
-	el.Name = d.Name
+	el.Name = d.Name + " Toggle"
 	el.Command = &protocol.Command{
 		Cmd:  "toggle",
 		Args: []string{d.IdString()},
@@ -137,7 +140,38 @@ func (h *handlerEepa53808) SendElements(d *Device) []*protocol.Element {
 	el.Feedback = `Devices["` + d.IdString() + `"].On`
 	els = append(els, el)
 
-	//TODO also generate Off and On here
+	// ON
+	el = &protocol.Element{}
+	el.Type = protocol.ElementTypeButton
+	el.Name = d.Name + " On"
+	el.Command = &protocol.Command{
+		Cmd:  "on",
+		Args: []string{d.IdString()},
+	}
+	el.Feedback = `Devices["` + d.IdString() + `"].On`
+	els = append(els, el)
+
+	// OFF
+	el = &protocol.Element{}
+	el.Type = protocol.ElementTypeButton
+	el.Name = d.Name + " Off"
+	el.Command = &protocol.Command{
+		Cmd:  "off",
+		Args: []string{d.IdString()},
+	}
+	el.Feedback = `Devices["` + d.IdString() + `"].On`
+	els = append(els, el)
+
+	// Learn
+	el = &protocol.Element{}
+	el.Type = protocol.ElementTypeButton
+	el.Name = d.Name + " Learn"
+	el.Command = &protocol.Command{
+		Cmd:  "learn",
+		Args: []string{d.IdString()},
+	}
+	el.Feedback = `Devices["` + d.IdString() + `"].On`
+	els = append(els, el)
 
 	return els
 }
@@ -160,6 +194,25 @@ func (h *handlerEepa51201) Process(d *Device, t goenocean.Telegram) {
 	}
 	serverSendChannel <- node
 }
+func (h *handlerEepa51201) ReceiveElements(d *Device) []*protocol.Element {
+	var els []*protocol.Element
+
+	// PowerW
+	el := &protocol.Element{}
+	el.Type = protocol.ElementTypeText
+	el.Name = d.Name + " PowerW"
+	el.Feedback = `Devices["` + d.IdString() + `"].PowerW`
+	els = append(els, el)
+
+	// PowerkWh
+	el = &protocol.Element{}
+	el.Type = protocol.ElementTypeText
+	el.Name = d.Name + " PowerkWh"
+	el.Feedback = `Devices["` + d.IdString() + `"].PowerkWh`
+	els = append(els, el)
+
+	return els
+}
 
 // }}}
 
@@ -173,7 +226,9 @@ func (h *handlerEepd20109) Process(d *Device, t goenocean.Telegram) {
 	eep.SetTelegram(t) //THIS IS COOL!
 	fmt.Println("OUTPUTVALUE", eep.OutputValue())
 	if eep.CommandId() == 4 {
-		if eep.OutputValue() > 0 {
+		value := eep.OutputValue()
+		d.Dim = int64(value)
+		if value > 0 {
 			d.On = true
 		} else {
 			d.On = false

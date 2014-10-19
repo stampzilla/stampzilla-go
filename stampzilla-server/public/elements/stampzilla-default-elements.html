@@ -18,6 +18,7 @@
 <link rel="import" href="stampzilla-element-toggle.html">
 <link rel="import" href="stampzilla-element-text.html">
 <link rel="import" href="stampzilla-element-color-picker.html">
+<link rel="import" href="stampzilla-element-button.html">
 
 <polymer-element name="stampzilla-default-elements" attributes="device elements wsSend devices" >
 	<template>
@@ -29,7 +30,7 @@
 			</template>
 			
 			<template if="{{ element.Type == 1 }}">
-				<div>BUTTON - {{element.Name}}</div>
+				<stampzilla-element-button element1="{{element}}" device="{{device}}" wsSend="{{wsSend}}"></stampzilla-element-button>
 			</template>
 
 			<template if="{{ element.Type == 2 }}">

@@ -118,6 +118,8 @@ func processCommand(cmd protocol.Command) {
 	case "dim":
 		lvl, _ := strconv.Atoi(cmd.Args[1])
 		device.CmdDim(lvl)
+	case "learn":
+		device.CmdLearn()
 	}
 }
 

@@ -12,16 +12,26 @@
 <link rel="import" href="/bower_components/core-icon-button/core-icon-button.html">
 <link rel="import" href="/bower_components/core-toolbar/core-toolbar.html">
 <link rel="import" href="/bower_components/core-menu/core-submenu.html">
-<link rel="import" href="/bower_components/paper-toggle-button/paper-toggle-button.html">
-<link rel="import" href="/bower_components/paper-slider/paper-slider.html">
-<link rel="import" href="/bower_components/color-picker-element/dist/color-picker.html">
+<link rel="import" href="/bower_components/paper-button/paper-button.html">
 
-<polymer-element name="stampzilla-element-toggle" attributes="device element1 wsSend" >
+<polymer-element name="stampzilla-element-button" attributes="device element1 wsSend" >
 	<template>
 		<!--<link rel="stylesheet" href="stampzilla-default-elements.css">-->
+		<style>
+
+			paper-button.colored {
+				color: #4285f4;
+			}
+
+			paper-button[raised].colored {
+				background: #4285f4;
+				color: #fff;
+			}
+
+		</style>
 
 		<div>SWITCH - {{element1.Name}}</div>
-		<paper-toggle-button checked="{{state}}" on-change={{toggleButtonChange}}></paper-toggle-button>
+		<paper-button on-tap="{{runCommand}}" raised="" class="colored" role="button" tabindex="0" >{{element1.Name}}</paper-button>
 
 	</template>
 	<script>
@@ -32,38 +42,16 @@
 		(function() {
 			"use strict";
 
-			Polymer('stampzilla-element-toggle', {
+			Polymer('stampzilla-element-button', {
 				element: {},
 				device: {},
-				state: false,
-				deviceChanged: function(){
-					if( this.device.State === undefined){
-						return;
-					}
-					console.log("device changed");
-					//console.log(this.device.State);
-					//console.log(this.element1.Feedback);
-					try{
-						this.state = eval("this.device.State."+this.element1.Feedback);
-					}catch(e){
-						if(e.message === 'Cannot read property \'State\' of undefined'){
-							return;
-						}
-						console.log(e);
-					}
-					//console.log(this.state);
-				},
-				elementChanged: function(){
-					console.log("element changed",this.element);
-				},
-                toggleButtonChange: function() {
+                runCommand: function() {
 					var cmd = {
 						type:'cmd',
 						to:this.device.Uuid,
 						data:this.element1.Command
 					};
 					this.wsSend = cmd;
-					//WIHO THIS WORKS and turns on/off my lamp :D:D
                 },
 
 				ready: function(){

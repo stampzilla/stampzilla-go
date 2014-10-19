@@ -27,15 +27,10 @@ func (e *ElementGenerator) device(d *Device) []*protocol.Element {
 		handler := handlers.getHandler(name)
 		elements = append(elements, handler.SendElements(d)...)
 	}
+	for _, name := range d.RecvEEPs {
+		handler := handlers.getHandler(name)
+		elements = append(elements, handler.ReceiveElements(d)...)
+	}
 
 	return elements
-}
-
-func (e *ElementGenerator) stringInSlice(a string, list []string) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-	return false
 }

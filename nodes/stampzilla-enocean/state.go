@@ -68,6 +68,7 @@ type Device struct {
 	RecvEEPs []string
 	PowerW   int64
 	PowerkWh int64
+	Dim      int64
 	sync.Mutex
 }
 
@@ -139,4 +140,7 @@ func (d *Device) CmdToggle() {
 }
 func (d *Device) CmdDim(val int) {
 	d.handler().Dim(val, d)
+}
+func (d *Device) CmdLearn() {
+	d.handler().Learn(d)
 }

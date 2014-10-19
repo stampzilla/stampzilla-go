@@ -14,6 +14,7 @@ type Handler interface {
 	On(*Device)
 	Off(*Device)
 	Toggle(*Device)
+	Learn(*Device)
 	Dim(int, *Device)
 	Process(*Device, goenocean.Telegram)
 	SendElements(*Device) []*protocol.Element
