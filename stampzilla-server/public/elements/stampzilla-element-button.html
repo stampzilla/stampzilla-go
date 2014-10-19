@@ -31,7 +31,7 @@
 		</style>
 
 		<div>SWITCH - {{element1.Name}}</div>
-		<paper-button on-tap="{{runCommand}}" raised="" class="colored" role="button" tabindex="0" >{{element1.Name}}</paper-button>
+		<paper-button on-tap="{{runCommand}}" raised="" class="{{buttonClass}}" role="button" tabindex="0" >{{element1.Name}}</paper-button>
 
 	</template>
 	<script>
@@ -45,6 +45,27 @@
 			Polymer('stampzilla-element-button', {
 				element: {},
 				device: {},
+				buttonClass: "colored",
+				deviceChanged: function(){
+					if( this.device.State === undefined){
+						return;
+					}
+					try{
+						this.state = eval("this.device.State."+this.element1.Feedback);
+
+					}catch(e){
+						if(e.message === 'Cannot read property \'State\' of undefined'){
+							return;
+						}
+						console.log(e);
+					}
+
+					if(this.state){
+						this.buttonClass = "colored";
+						return;
+					}
+					this.buttonClass = "";
+				},
                 runCommand: function() {
 					var cmd = {
 						type:'cmd',
