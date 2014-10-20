@@ -87,6 +87,55 @@ func (h *handlerEepf60201) Process(d *Device, t goenocean.Telegram) {
 		//serverSendChannel <- node
 	}
 }
+func (h *handlerEepf60201) SendElements(d *Device) []*protocol.Element {
+	var els []*protocol.Element
+
+	// TOGGLE
+	el := &protocol.Element{}
+	el.Type = protocol.ElementTypeToggle
+	el.Name = d.Name + " Toggle"
+	el.Command = &protocol.Command{
+		Cmd:  "toggle",
+		Args: []string{d.IdString()},
+	}
+	el.Feedback = `Devices["` + d.IdString() + `"].On`
+	els = append(els, el)
+
+	// ON
+	el = &protocol.Element{}
+	el.Type = protocol.ElementTypeButton
+	el.Name = d.Name + " On"
+	el.Command = &protocol.Command{
+		Cmd:  "on",
+		Args: []string{d.IdString()},
+	}
+	el.Feedback = `Devices["` + d.IdString() + `"].On`
+	els = append(els, el)
+
+	// OFF
+	el = &protocol.Element{}
+	el.Type = protocol.ElementTypeButton
+	el.Name = d.Name + " Off"
+	el.Command = &protocol.Command{
+		Cmd:  "off",
+		Args: []string{d.IdString()},
+	}
+	el.Feedback = `Devices["` + d.IdString() + `"].On`
+	els = append(els, el)
+
+	// Learn
+	el = &protocol.Element{}
+	el.Type = protocol.ElementTypeButton
+	el.Name = d.Name + " Learn"
+	el.Command = &protocol.Command{
+		Cmd:  "learn",
+		Args: []string{d.IdString()},
+	}
+	el.Feedback = `Devices["` + d.IdString() + `"].On`
+	els = append(els, el)
+
+	return els
+}
 
 // }}}
 
@@ -100,6 +149,8 @@ func (h *handlerEepa53808) On(d *Device) {
 	p.SetDestinationId(d.Id())
 	p.SetCommand(2)
 	p.SetDimValue(255)
+	p.SetSwitchingCommand(1)
+	fmt.Printf("Sending ON: % x\n", p.Encode())
 	enoceanSend <- p
 }
 func (h *handlerEepa53808) Off(d *Device) {
@@ -107,6 +158,8 @@ func (h *handlerEepa53808) Off(d *Device) {
 	p.SetDestinationId(d.Id())
 	p.SetCommand(2)
 	p.SetDimValue(0)
+	p.SetSwitchingCommand(0)
+	fmt.Printf("Sending OFF: % x\n", p.Encode())
 	enoceanSend <- p
 }
 func (h *handlerEepa53808) Toggle(d *Device) {
@@ -124,6 +177,17 @@ func (h *handlerEepa53808) Learn(d *Device) {
 	// OMG THIS WORKS :D:D
 	fmt.Printf("Sending learn: % x\n", p.Encode())
 	enoceanSend <- p
+
+	//Simple learn. Set learn bit to false and send
+	p1 := goenocean.NewEepA53808()
+	tmp := p1.TelegramData()
+	tmp[3] &^= 0x08
+	tmp[3] |= (0 << 3) & 0x08
+	p1.SetTelegramData(tmp)
+	p1.SetCommand(2)
+	fmt.Printf("Sending learn simple: % x\n", p1.Encode())
+	enoceanSend <- p1
+
 }
 
 func (h *handlerEepa53808) SendElements(d *Device) []*protocol.Element {
