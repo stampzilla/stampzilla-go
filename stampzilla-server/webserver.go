@@ -7,18 +7,14 @@ import (
 	log "github.com/cihub/seelog"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/encoder"
-	"github.com/stampzilla/stampzilla-go/stampzilla-server/logic"
-	serverprotocol "github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
 )
 
 // Webserver that serves static files
 
 type WebServer struct {
-	Config     *ServerConfig         `inject:""`
-	Logic      *logic.Logic          `inject:""`
-	Nodes      *serverprotocol.Nodes `inject:""`
-	WsClients  *Clients              `inject:""`
-	WebHandler *WebHandler           `inject:""`
+	Config     *ServerConfig `inject:""`
+	WsClients  *Clients      `inject:""`
+	WebHandler *WebHandler   `inject:""`
 }
 
 func NewWebServer() *WebServer {
