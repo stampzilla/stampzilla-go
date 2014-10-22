@@ -79,6 +79,8 @@ func main() {
 	elementGenerator.Node = node
 	elementGenerator.Run()
 
+	checkDuplicateSenderIds()
+
 	setupEnoceanCommunication()
 }
 
@@ -98,6 +100,21 @@ func serverRecv(recv chan protocol.Command) {
 		processCommand(d)
 	}
 
+}
+
+func checkDuplicateSenderIds() {
+	for _, d := range state.Devices {
+		id1 := d.Id()[3] & 0x7f
+		for _, d1 := range state.Devices {
+			if d.Id() == d1.Id() {
+				continue
+			}
+			id2 := d1.Id()[3] & 0x7f
+			if id2 == id1 {
+				log.Error("DUPLICATE ID FOUND when generating senderIds for eltako devices")
+			}
+		}
+	}
 }
 
 func processCommand(cmd protocol.Command) {
@@ -130,11 +147,26 @@ func setupEnoceanCommunication() {
 	recv := make(chan goenocean.Packet)
 	goenocean.Serial(enoceanSend, recv)
 
+	getIDBase()
 	reciever(recv)
 }
 
+func getIDBase() {
+	p := goenocean.NewPacket()
+	p.SetPacketType(goenocean.PacketTypeCommonCommand)
+	p.SetData([]byte{0x08})
+	enoceanSend <- p
+}
+
+var usb300SenderId [4]byte
+
 func reciever(recv chan goenocean.Packet) {
 	for p := range recv {
+		if p.PacketType() == goenocean.PacketTypeResponse && len(p.Data()) == 5 {
+			copy(usb300SenderId[:], p.Data()[1:4])
+			log.Debugf("senderid: % x", usb300SenderId)
+			continue
+		}
 		if p.SenderId() != [4]byte{0, 0, 0, 0} {
 			incomingPacket(p)
 		}
