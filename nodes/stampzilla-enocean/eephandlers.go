@@ -123,18 +123,36 @@ func (h *handlerEepf60201) SendElements(d *Device) []*protocol.Element {
 	el.Feedback = `Devices["` + d.IdString() + `"].On`
 	els = append(els, el)
 
-	// Learn
-	el = &protocol.Element{}
-	el.Type = protocol.ElementTypeButton
-	el.Name = d.Name + " Learn"
-	el.Command = &protocol.Command{
-		Cmd:  "learn",
-		Args: []string{d.IdString()},
-	}
-	el.Feedback = `Devices["` + d.IdString() + `"].On`
-	els = append(els, el)
-
 	return els
+}
+
+// }}}
+
+//Handler for profile f60201eltako
+type handlerEepf60201eltako struct { // {{{
+	handlerEepf60201
+}
+
+func (h *handlerEepf60201eltako) Process(d *Device, t goenocean.Telegram) {
+	if t, ok := t.(goenocean.TelegramRps); ok {
+		eep := goenocean.NewEepF60201()
+		eep.SetTelegram(t)
+
+		if eep.R1B0() && d.On { //OFF
+			d.On = false
+			serverSendChannel <- node
+		}
+		if eep.R1B1() && !d.On { //OFF
+			d.On = true
+			serverSendChannel <- node
+		}
+		fmt.Println("R1A0", eep.R1A0())
+		fmt.Println("R1A1", eep.R1A1())
+		fmt.Println("R1B0", eep.R1B0())
+		fmt.Println("R1B1", eep.R1B1())
+		fmt.Println("R2B0", eep.R2B0())
+		fmt.Println("R2B1", eep.R2B1())
+	}
 }
 
 // }}}
@@ -238,6 +256,55 @@ func (h *handlerEepa53808) SendElements(d *Device) []*protocol.Element {
 	els = append(els, el)
 
 	return els
+}
+
+// }}}
+
+//Handler for profile a53808eltako
+type handlerEepa53808eltako struct { // {{{
+	handlerEepa53808
+}
+
+// 255 seems to work for on so we can keep the on and off from embedded class.
+//func (h *handlerEepa53808eltako) On(d *Device) {
+//p := goenocean.NewEepA53808()
+//p.SetDestinationId(d.Id())
+//p.SetCommand(2)
+//p.SetDimValue(255)
+//p.SetSwitchingCommand(1)
+//fmt.Printf("Sending ON: % x\n", p.Encode())
+//enoceanSend <- p
+//}
+//func (h *handlerEepa53808eltako) Off(d *Device) {
+//p := goenocean.NewEepA53808()
+//p.SetDestinationId(d.Id())
+//p.SetCommand(2)
+//p.SetDimValue(0)
+//p.SetSwitchingCommand(0)
+//fmt.Printf("Sending OFF: % x\n", p.Encode())
+//enoceanSend <- p
+//}
+
+func (h *handlerEepa53808eltako) Dim(lvl int, d *Device) {
+	p := goenocean.NewEepA53808()
+	p.SetDestinationId(d.Id())
+	p.SetCommand(2)
+	p.SetDimValue(uint8(lvl))
+	p.SetSwitchingCommand(1)
+	fmt.Printf("Sending DIM: % x\n", p.Encode())
+	enoceanSend <- p
+}
+func (h *handlerEepa53808eltako) Process(d *Device, t goenocean.Telegram) {
+	eep := goenocean.NewEepA53808()
+	eep.SetTelegram(t) //THIS IS COOL!
+	fmt.Println("DIMVALUE:", eep.DimValue())
+	fmt.Println("SW command STATUS:", eep.SwitchingCommand())
+	//if eep.DataType() == "W" {
+	//d.SetPowerW(eep.MeterReading())
+	//} else {
+	//d.SetPowerkWh(eep.MeterReading())
+	//}
+	//serverSendChannel <- node
 }
 
 // }}}

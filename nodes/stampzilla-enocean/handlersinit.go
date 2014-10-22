@@ -31,7 +31,9 @@ func (h *eepHandlers) getHandler(t string) Handler {
 func init() {
 	handlers = &eepHandlers{make(map[string]Handler)}
 	handlers.handlers["a53808"] = &handlerEepa53808{}
+	handlers.handlers["a53808eltako"] = &handlerEepa53808eltako{}
 	handlers.handlers["d20109"] = &handlerEepd20109{}
 	handlers.handlers["a51201"] = &handlerEepa51201{}
 	handlers.handlers["f60201"] = &handlerEepf60201{}
+	handlers.handlers["f60201eltako"] = &handlerEepf60201eltako{}
 }
