@@ -19,31 +19,30 @@
 <link rel="import" href="stampzilla-element-text.html">
 <link rel="import" href="stampzilla-element-color-picker.html">
 <link rel="import" href="stampzilla-element-button.html">
+<link rel="import" href="stampzilla-element-slider.html">
 
-<polymer-element name="stampzilla-default-elements" attributes="device elements wsSend devices" >
+<polymer-element name="stampzilla-default-elements" attributes="device elements devices" >
 	<template>
 		<link rel="stylesheet" href="stampzilla-default-elements.css">
 
 		<template repeat="{{ element,key in elements  }}">
 			<template if="{{ element.Type == 0 }}">
-				<stampzilla-element-text element1="{{element}}" device="{{device}}" wsSend="{{wsSend}}"></stampzilla-element-toggle>
+				<stampzilla-element-text element1="{{element}}" device="{{device}}"></stampzilla-element-toggle>
 			</template>
 			
 			<template if="{{ element.Type == 1 }}">
-				<stampzilla-element-button element1="{{element}}" device="{{device}}" wsSend="{{wsSend}}"></stampzilla-element-button>
+				<stampzilla-element-button element1="{{element}}" device="{{device}}"></stampzilla-element-button>
 			</template>
 
 			<template if="{{ element.Type == 2 }}">
-				<stampzilla-element-toggle element1="{{element}}" device="{{device}}" wsSend="{{wsSend}}"></stampzilla-element-toggle>
+				<stampzilla-element-toggle element1="{{element}}" device="{{device}}"></stampzilla-element-toggle>
 			</template>
 
 			<template if="{{ element.Type == 3 }}">
-				<div>SLIDER - {{element.Name}}</div>
-				<paper-slider pin value="{{action.data.State.Dim}}"></paper-slider>
+				<stampzilla-element-slider element1="{{element}}" device="{{device}}"></stampzilla-element-slider>
 			</template>
 			<template if="{{ element.Type == 4 }}">
-				<div>COLOR PICKER - {{element.Name}}</div>
-				<stampzilla-element-color-picker element1="{{element}}" device="{{device}}" wsSend="{{wsSend}}"></stampzilla-element-toggle>
+				<stampzilla-element-color-picker element1="{{element}}" device="{{device}}"></stampzilla-element-toggle>
 			</template>
 		</template>
 	

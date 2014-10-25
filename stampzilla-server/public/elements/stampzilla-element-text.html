@@ -14,13 +14,31 @@
 <link rel="import" href="/bower_components/core-menu/core-submenu.html">
 <link rel="import" href="/bower_components/paper-toggle-button/paper-toggle-button.html">
 <link rel="import" href="/bower_components/paper-slider/paper-slider.html">
+<link rel="import" href="/bower_components/paper-shadow/paper-shadow.html">
 <link rel="import" href="/bower_components/color-picker-element/dist/color-picker.html">
 
-<polymer-element name="stampzilla-element-text" attributes="device element1 wsSend" >
+<polymer-element name="stampzilla-element-text" attributes="device element1" >
 	<template>
 		<!--<link rel="stylesheet" href="stampzilla-default-elements.css">-->
-		<div>SWITCH - {{element1.Name}}</div>
-		<div>{{state}}</div>
+
+		<style>
+			.card {
+				margin:10px;
+			}
+
+			.card div {
+				padding:10px;
+			}
+		</style>
+
+		<div horizontal layout class="card">
+			<paper-shadow z="1"></paper-shadow>
+			<div style="width:200px;">
+				{{state}}
+			</div>
+			<div flex>{{element1.Name}}</div>
+			<div>TEXT</div>
+		</div>
 	</template>
 	<script>
 		/* jshint newcap: false */

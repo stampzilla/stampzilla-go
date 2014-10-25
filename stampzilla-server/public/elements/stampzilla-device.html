@@ -14,7 +14,7 @@
 <link rel="import" href="/bower_components/core-menu/core-submenu.html">
 <link rel="import" href="stampzilla-default-elements.html">
 
-<polymer-element name="stampzilla-device" attributes="selectedDevice devices wsSend" >
+<polymer-element name="stampzilla-device" attributes="selectedDevice devices" >
 	<template>
 		<link rel="stylesheet" href="stampzilla-device.css">
 		<paper-tabs selected="{{page}}" class="mainTabs" >
@@ -36,7 +36,7 @@
 			</template>
 			<section id="elements">
 				<div slide-from-right>
-					<stampzilla-default-elements devices="{{devices}}" wsSend="{{wsSend}}" elements={{device.Elements}} device="{{device}}"></stampilla-default-layout>
+					<stampzilla-default-elements devices="{{devices}}" elements={{device.Elements}} device="{{device}}"></stampilla-default-layout>
 				</div>
 			</section>
 		</core-animated-pages>

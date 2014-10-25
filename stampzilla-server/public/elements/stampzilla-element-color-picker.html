@@ -15,12 +15,28 @@
 <link rel="import" href="/bower_components/paper-slider/paper-slider.html">
 <link rel="import" href="/bower_components/color-picker-element/dist/color-picker.html">
 
-<polymer-element name="stampzilla-element-color-picker" attributes="device element1 wsSend" >
+<polymer-element name="stampzilla-element-color-picker" attributes="device element1" >
 	<template>
 		<!--<link rel="stylesheet" href="stampzilla-default-elements.css">-->
 
-		<div>SWITCH - {{element1.Name}}</div>
-		<color-picker on-colorselected="{{colorSelected}}"></paper-slider>
+		<style>
+			.card {
+				margin:10px;
+			}
+
+			.card div {
+				padding:10px;
+			}
+		</style>
+
+		<div horizontal layout class="card">
+			<paper-shadow z="1"></paper-shadow>
+			<div style="width:200px;">
+				<color-picker on-colorselected="{{colorSelected}}" width="200" height="200"></paper-slider>
+			</div>
+			<div flex>{{element1.Name}}</div>
+			<div>COLORPICKER</div>
+		</div>
 	</template>
 	<script>
 		/* jshint newcap: false */
@@ -67,7 +83,7 @@
 						to:this.device.Uuid,
 						data:this.element1.Command
 					};
-					this.wsSend = cmd;
+					this.fire('stampzilla-send-to-server', cmd);
 
                    // console.log(e.detail.hex + ' (r=' + e.detail.rgb.r + ', g=' + e.detail.rgb.g + ', b=' + e.detail.rgb.b + ')');
 				},

@@ -21,7 +21,8 @@
 		<link rel="stylesheet" href="stampzilla-app.css">
 
 		<x-websocket json="true" url="ws://{{ wsLocation }}/socket" message="{{websocketMessage}}" sendMessage="{{wsSend}}" ></x-websocket>
-		<core-scaffold id="core_scaffold">
+
+		<core-scaffold id="core_scaffold" on-stampzilla-send-to-server="{{sendCommand}}">
 			<core-header-panel mode="seamed" id="core_header_panel" navigation flex>
 				<core-toolbar id="core_toolbar">
 					<paper-tabs class="bottom fit" selected="{{page}}">
@@ -44,7 +45,7 @@
 			</core-header-panel>
 			<div id="div" tool>Stampzilla</div>
 
-			<stampzilla-device wsSend="{{wsSend}}" devices="{{devices}}" selectedDevice={{selectedDevice}}></stampzilla-device>
+			<stampzilla-device devices="{{devices}}" selectedDevice={{selectedDevice}}></stampzilla-device>
 
 		</core-scaffold>
 
@@ -66,7 +67,9 @@
 					this.showmenu = (this.showmenu) ? 0:1;
 				},
 				ready: function(){
-
+				},
+				sendCommand: function(e) {
+					this.wsSend = e.detail;
 				}
 			});
 

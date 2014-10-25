@@ -14,7 +14,7 @@
 <link rel="import" href="/bower_components/core-menu/core-submenu.html">
 <link rel="import" href="/bower_components/paper-button/paper-button.html">
 
-<polymer-element name="stampzilla-element-button" attributes="device element1 wsSend" >
+<polymer-element name="stampzilla-element-button" attributes="device element1" >
 	<template>
 		<!--<link rel="stylesheet" href="stampzilla-default-elements.css">-->
 		<style>
@@ -27,11 +27,23 @@
 				background: #4285f4;
 				color: #fff;
 			}
+			.card {
+				margin:10px;
+			}
 
+			.card div {
+				padding:10px;
+			}
 		</style>
 
-		<div>SWITCH - {{element1.Name}}</div>
-		<paper-button on-tap="{{runCommand}}" raised="" class="{{buttonClass}}" role="button" tabindex="0" >{{element1.Name}}</paper-button>
+		<div horizontal layout class="card">
+			<paper-shadow z="1"></paper-shadow>
+			<div style="width:200px;">
+				<paper-button on-tap="{{runCommand}}" raised="" class="{{buttonClass}}" role="button" tabindex="0" >{{element1.Name}}</paper-button>
+			</div>
+			<div flex>{{element1.Name}}</div>
+			<div>BUTTON</div>
+		</div>
 
 	</template>
 	<script>
@@ -72,7 +84,7 @@
 						to:this.device.Uuid,
 						data:this.element1.Command
 					};
-					this.wsSend = cmd;
+					this.fire('stampzilla-send-to-server', cmd);
                 },
 
 				ready: function(){
