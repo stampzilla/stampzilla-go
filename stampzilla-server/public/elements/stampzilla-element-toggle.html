@@ -70,7 +70,11 @@
 				elementChanged: function(){
 					console.log("element changed",this.element);
 				},
-                toggleButtonChange: function() {
+                toggleButtonChange: function(e) {
+					this.element1.Command.params = [
+						this.state+"",
+					]
+					console.log(e);
 					var cmd = {
 						type:'cmd',
 						to:this.device.Uuid,
