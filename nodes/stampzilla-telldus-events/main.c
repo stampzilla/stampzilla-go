@@ -26,9 +26,10 @@ void unregisterCallbacks() {
 	tdClose();
 }
 
-void updateDevices( ) {
+int updateDevices() {
     int intNumberOfDevices = tdGetNumberOfDevices();
     int i;
+
     for (i = 0; i < intNumberOfDevices; i++) {
         int id = tdGetDeviceId( i );
         char *name = tdGetName( id );
@@ -41,4 +42,6 @@ void updateDevices( ) {
 
         tdReleaseString(name);
     }
+
+	return intNumberOfDevices;
 }

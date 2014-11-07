@@ -3,10 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	log "github.com/cihub/seelog"
-	"github.com/stampzilla/stampzilla-go/protocol"
 	"strconv"
 	"unsafe"
+
+	log "github.com/cihub/seelog"
+	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
 /*
@@ -16,7 +17,7 @@ import (
 
 extern void registerCallbacks();
 extern void unregisterCallbacks();
-extern void updateDevices();
+extern int updateDevices();
 
 */
 import "C"
@@ -54,12 +55,25 @@ func main() {
 	node.AddAction("dim", "Dim", []string{"Devices.Id", "value"})
 
 	// Describe available layouts
-	node.AddLayout("1", "switch", "toggle", "Devices", []string{"on"}, "Switches")
-	node.AddLayout("2", "slider", "dim", "Devices", []string{"dim"}, "Dimmers")
-	node.AddLayout("3", "slider", "dim", "Devices", []string{"dim"}, "Specials")
+	//node.AddLayout("1", "switch", "toggle", "Devices", []string{"on"}, "Switches")
+	//node.AddLayout("2", "slider", "dim", "Devices", []string{"dim"}, "Dimmers")
+	//node.AddLayout("3", "slider", "dim", "Devices", []string{"dim"}, "Specials")
 
 	// Add devices
-	C.updateDevices()
+	cnt := C.updateDevices()
+	log.Info("Updated devices (", cnt, " in total)")
+
+	for _, dev := range state.Devices {
+		node.AddElement(&protocol.Element{
+			Type: protocol.ElementTypeToggle,
+			Name: dev.Name,
+			Command: &protocol.Command{
+				Cmd:  "toggle",
+				Args: []string{dev.Id},
+			},
+			Feedback: `Devices[` + dev.Id + `].On`,
+		})
+	}
 
 	// Start the connection
 	go connection(host, port, node)
@@ -151,8 +165,8 @@ func newDevice(id int, name *C.char, methods, s int, value *C.char) {
 	}
 	if s&C.TELLSTICK_DIM != 0 {
 		var currentState = C.GoString(value)
-		level, _ := strconv.ParseUint(currentState,10,16);
-		state.AddDevice(strconv.Itoa(id), C.GoString(name), features, DeviceState{On: level>0, Dim: int(level)})
+		level, _ := strconv.ParseUint(currentState, 10, 16)
+		state.AddDevice(strconv.Itoa(id), C.GoString(name), features, DeviceState{On: level > 0, Dim: int(level)})
 	}
 
 }
