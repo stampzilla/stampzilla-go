@@ -99,8 +99,13 @@ func (c *Chromecast) listen(entriesCh chan *mdns.ServiceEntry) {
 								connection.Connect()
 
 								media := controllers.NewMediaController(client, "receiver-123", app.TransportId)
-								response, err := media.GetStatus(time.Second * 1)
-								spew.Dump("Media response", response, err)
+								go func() {
+									msg := <-media.Incoming
+									spew.Dump("Media response", msg)
+								}()
+
+								media.GetStatus(time.Second * 1)
+
 							}
 						}
 					}
