@@ -12,8 +12,8 @@ type task struct {
 	Name     string       `json:"name"`
 	Uuid_    string       `json:"uuid"`
 	Actions  []RuleAction `json:"actions"`
-	CronId   int
-	CronWhen string
+	cronId   int
+	CronWhen string `json:"when"`
 	sync.RWMutex
 	nodes *protocol.Nodes
 	cron  *cron.Cron
@@ -50,7 +50,7 @@ func (t *task) Schedule(when string) {
 	var err error
 	t.Lock()
 	t.CronWhen = when
-	t.CronId, err = t.cron.AddJob(when, t)
+	t.cronId, err = t.cron.AddJob(when, t)
 	if err != nil {
 		log.Error(err)
 	}

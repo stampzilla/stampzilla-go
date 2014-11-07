@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"sync"
@@ -8,13 +9,14 @@ import (
 	"code.google.com/p/go-uuid/uuid"
 	log "github.com/cihub/seelog"
 	"github.com/elgs/cron"
-	"github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
+	"github.com/stampzilla/stampzilla-go/protocol"
+	serverprotocol "github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
 )
 
 // Schedular that schedule ruleActions
 type Scheduler struct {
 	tasks []*task
-	Nodes *protocol.Nodes `inject:""`
+	Nodes *serverprotocol.Nodes `inject:""`
 	Cron  *cron.Cron
 	sync.RWMutex
 }
@@ -52,12 +54,35 @@ func (s *Scheduler) RemoveTask(uuid string) error {
 	defer s.Unlock()
 	for i, task := range s.tasks {
 		if task.Uuid() == uuid {
-			s.Cron.RemoveFunc(task.CronId)
+			s.Cron.RemoveFunc(task.cronId)
 			s.tasks = append(s.tasks[:i], s.tasks[i+1:]...)
 			return nil
 		}
 	}
 	return nil
+}
+func (s *Scheduler) CreateExampleFile() {
+	task := s.AddTask("Test1")
+	cmd := &protocol.Command{Cmd: "testCMD"}
+	action := NewRuleAction(cmd, "simple")
+	task.AddAction(action)
+	task.Schedule("0 * * * * *")
+
+	s.saveToFile()
+}
+
+func (s *Scheduler) saveToFile() {
+	configFile, err := os.Create("schedule.json")
+	if err != nil {
+		log.Error("creating config file", err.Error())
+	}
+	var out bytes.Buffer
+	b, err := json.Marshal(s.tasks)
+	if err != nil {
+		log.Error("error marshal json", err)
+	}
+	json.Indent(&out, b, "", "\t")
+	out.WriteTo(configFile)
 }
 
 func (s *Scheduler) loadFromFile() {
@@ -66,13 +91,14 @@ func (s *Scheduler) loadFromFile() {
 	configFile, err := os.Open("schedule.json")
 	if err != nil {
 		log.Error("opening config file", err.Error())
+		return
 	}
 
 	type local_tasks struct {
 		Name     string        `json:"name"`
 		Uuid     string        `json:"uuid"`
 		Actions  []*ruleAction `json:"actions"`
-		CronWhen string
+		CronWhen string        `json:"when"`
 	}
 
 	var tasks []*local_tasks

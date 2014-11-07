@@ -42,15 +42,19 @@ func main() {
 	log.ReplaceLogger(logger)
 
 	nodes := protocol.NewNodes()
-	logic := logic.NewLogic()
+	l := logic.NewLogic()
+	scheduler := logic.NewScheduler()
+	//scheduler.CreateExampleFile()
+	//return
 	webServer := NewWebServer()
 	nodeServer := NewNodeServer()
 
-	inject.Populate(config, nodes, logic, nodeServer, webServer)
+	inject.Populate(config, nodes, l, nodeServer, webServer, scheduler)
 	if err != nil {
 		panic(err)
 	}
 
 	nodeServer.Start()
+	scheduler.Start()
 	webServer.Start()
 }

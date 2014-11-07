@@ -153,7 +153,7 @@ func (l *Logic) SaveRulesToFile(path string) {
 		log.Error("creating config file", err.Error())
 	}
 	var out bytes.Buffer
-	b, err := json.MarshalIndent(l.Rules, "", "\t")
+	b, err := json.Marshal(l.Rules)
 	if err != nil {
 		log.Error("error marshal json", err)
 	}
