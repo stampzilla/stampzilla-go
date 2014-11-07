@@ -39,9 +39,11 @@ func (r *task) Uuid() string {
 }
 
 func (t *task) Run() {
+	t.RLock()
 	for _, action := range t.Actions {
 		action.RunCommand()
 	}
+	t.RUnlock()
 }
 
 func (t *task) Schedule(when string) {

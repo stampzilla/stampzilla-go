@@ -41,14 +41,15 @@ func (s *Scheduler) AddTask(name string) Task {
 	if err != nil {
 		log.Error(err)
 	}
+	s.Lock()
 	s.tasks = append(s.tasks, task)
+	s.Unlock()
 	return task
 }
 
 func (s *Scheduler) RemoveTask(uuid string) error {
-	s.RLock()
-	defer s.RUnlock()
-	//Get the task
+	s.Lock()
+	defer s.Unlock()
 	for i, task := range s.tasks {
 		if task.Uuid() == uuid {
 			s.Cron.RemoveFunc(task.CronId)
@@ -56,7 +57,6 @@ func (s *Scheduler) RemoveTask(uuid string) error {
 			return nil
 		}
 	}
-	//no task found!
 	return nil
 }
 
