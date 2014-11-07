@@ -95,17 +95,42 @@ func (c *Chromecast) listen(entriesCh chan *mdns.ServiceEntry) {
 							if namespace.Name == "urn:x-cast:com.google.cast.media" {
 								log.Info("FOUND urn:x-cast:com.google.cast.media, trying to get status")
 
-								connection := controllers.NewConnectionController(client, "sender-0", app.TransportId)
-								connection.Connect()
-
-								media := controllers.NewMediaController(client, "receiver-123", app.TransportId)
 								go func() {
-									msg := <-media.Incoming
-									spew.Dump("Media response", msg)
+									connection := controllers.NewConnectionController(client, "sender-0", app.TransportId)
+									connection.Connect()
+
+									media := controllers.NewMediaController(client, "receiver-0", app.TransportId)
+									go func() {
+										for {
+											select {
+											case msg := <-media.Incoming:
+												spew.Dump("Media response", msg)
+											}
+										}
+									}()
+
+									media.GetStatus(time.Second * 1)
 								}()
+							}
 
-								media.GetStatus(time.Second * 1)
+							if namespace.Name == "urn:x-cast:plex" {
+								log.Info("FOUND urn:x-cast:plex, trying to get status")
+								go func() {
+									connection := controllers.NewConnectionController(client, "sender-0", app.TransportId)
+									connection.Connect()
 
+									media := controllers.NewPlexController(client, "receiver-0", app.TransportId)
+									go func() {
+										for {
+											select {
+											case msg := <-media.Incoming:
+												spew.Dump("Media response", msg)
+											}
+										}
+									}()
+
+									media.GetStatus(time.Second * 1)
+								}()
 							}
 						}
 					}
