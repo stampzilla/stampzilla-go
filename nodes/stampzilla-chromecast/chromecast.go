@@ -73,18 +73,18 @@ func (c *Chromecast) listen(entriesCh chan *mdns.ServiceEntry) {
 
 		//_ = controllers.NewHeartbeatController(client, "Tr@n$p0rt-0", "Tr@n$p0rt-0")
 
-		heartbeat := controllers.NewHeartbeatController(client, "sender-0", "receiver-0")
+		heartbeat := controllers.NewHeartbeatController(client, "sender-3", "receiver-0")
 		heartbeat.Start()
 
-		connection := controllers.NewConnectionController(client, "sender-0", "receiver-0")
+		connection := controllers.NewConnectionController(client, "sender-3", "receiver-0")
 		connection.Connect()
 
-		receiver := controllers.NewReceiverController(client, "sender-0", "receiver-0")
+		receiver := controllers.NewReceiverController(client, "sender-3", "receiver-0")
 		response, err := receiver.GetStatus(time.Second * 5)
 
 		spew.Dump("Status response", response, err)
 
-		media := controllers.NewMediaController(client, "sender-0", "receiver-0")
+		media := controllers.NewMediaController(client, "sender-3", "receiver-1")
 		response, err = media.GetStatus(time.Second * 5)
 		spew.Dump("Media response", response, err)
 	}
