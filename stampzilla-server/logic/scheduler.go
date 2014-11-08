@@ -15,7 +15,7 @@ import (
 
 // Schedular that schedule ruleActions
 type Scheduler struct {
-	tasks []*task
+	tasks []Task
 	Nodes *serverprotocol.Nodes `inject:""`
 	Cron  *cron.Cron
 	sync.RWMutex
@@ -32,6 +32,12 @@ func (s *Scheduler) Start() {
 
 	s.loadFromFile()
 	s.Cron.Start()
+}
+
+func (s *Scheduler) Tasks() []Task {
+	s.RLock()
+	defer s.RUnlock()
+	return s.tasks
 }
 
 func (s *Scheduler) AddTask(name string) Task {
@@ -54,7 +60,7 @@ func (s *Scheduler) RemoveTask(uuid string) error {
 	defer s.Unlock()
 	for i, task := range s.tasks {
 		if task.Uuid() == uuid {
-			s.Cron.RemoveFunc(task.cronId)
+			s.Cron.RemoveFunc(task.CronId())
 			s.tasks = append(s.tasks[:i], s.tasks[i+1:]...)
 			return nil
 		}

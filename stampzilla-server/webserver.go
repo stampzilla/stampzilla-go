@@ -50,5 +50,8 @@ func (ws *WebServer) Start() {
 	//Rules
 	m.Get("/api/rules", ws.WebHandler.GetRules)
 
+	//Schedule
+	m.Get("/api/schedule", ws.WebHandler.GetScheduleTasks)
+
 	log.Critical(http.ListenAndServe(":"+ws.Config.WebPort, m))
 }

@@ -23,6 +23,7 @@ type Task interface {
 	cron.Job
 	SetUuid(string)
 	Uuid() string
+	CronId() int
 	AddAction(a RuleAction)
 	Schedule(string)
 }
@@ -36,6 +37,11 @@ func (r *task) Uuid() string {
 	r.RLock()
 	defer r.RUnlock()
 	return r.Uuid_
+}
+func (r *task) CronId() int {
+	r.RLock()
+	defer r.RUnlock()
+	return r.cronId
 }
 
 func (t *task) Run() {

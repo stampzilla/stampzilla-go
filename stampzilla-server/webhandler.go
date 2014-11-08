@@ -14,8 +14,9 @@ import (
 )
 
 type WebHandler struct {
-	Logic *logic.Logic          `inject:""`
-	Nodes *serverprotocol.Nodes `inject:""`
+	Logic     *logic.Logic          `inject:""`
+	Scheduler *logic.Scheduler      `inject:""`
+	Nodes     *serverprotocol.Nodes `inject:""`
 }
 
 func (wh *WebHandler) GetNodes(enc encoder.Encoder) (int, []byte) {
@@ -72,4 +73,8 @@ func (wh *WebHandler) CommandToNodeGet(enc encoder.Encoder, params martini.Param
 
 func (wh *WebHandler) GetRules() (int, []byte) {
 	return 200, encoder.Must(json.Marshal(wh.Logic.Rules()))
+}
+
+func (wh *WebHandler) GetScheduleTasks() (int, []byte) {
+	return 200, encoder.Must(json.Marshal(wh.Scheduler.Tasks()))
 }
