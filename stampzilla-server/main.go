@@ -7,6 +7,7 @@ import (
 	"github.com/facebookgo/inject"
 	"github.com/stampzilla/stampzilla-go/stampzilla-server/logic"
 	"github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
+	"github.com/stampzilla/stampzilla-go/stampzilla-server/websocket"
 )
 
 type ServerConfig struct {
@@ -48,13 +49,16 @@ func main() {
 	//return
 	webServer := NewWebServer()
 	nodeServer := NewNodeServer()
+	wsrouter := websocket.NewRouter()
+	wsHandler := &WebsocketHandler{}
 
-	inject.Populate(config, nodes, l, nodeServer, webServer, scheduler)
+	inject.Populate(config, nodes, l, nodeServer, webServer, scheduler, wsrouter, wsHandler)
 	if err != nil {
 		panic(err)
 	}
 
-	nodeServer.Start()
-	scheduler.Start()
-	webServer.Start()
+	nodeServer.Start() //start the tcp socket server connecting to nodes
+	scheduler.Start()  //start the cron scheduler
+	wsHandler.Start()  //initialize websocket router
+	webServer.Start()  //start the webserver
 }

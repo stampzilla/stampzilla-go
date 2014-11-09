@@ -7,14 +7,15 @@ import (
 	log "github.com/cihub/seelog"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/encoder"
+	"github.com/stampzilla/stampzilla-go/stampzilla-server/websocket"
 )
 
 // Webserver that serves static files
 
 type WebServer struct {
-	Config     *ServerConfig `inject:""`
-	WsClients  *Clients      `inject:""`
-	WebHandler *WebHandler   `inject:""`
+	Config     *ServerConfig      `inject:""`
+	WsClients  *websocket.Clients `inject:""`
+	WebHandler *WebHandler        `inject:""`
 }
 
 func NewWebServer() *WebServer {
@@ -39,7 +40,7 @@ func (ws *WebServer) Start() {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	})
 
-	m.Get("/socket", sockets.JSON(Message{}), ws.WsClients.websocketRoute)
+	m.Get("/socket", sockets.JSON(websocket.Message{}), ws.WsClients.WebsocketRoute)
 
 	//Nodes
 	m.Get("/api/nodes", ws.WebHandler.GetNodes)
