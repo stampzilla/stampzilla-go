@@ -1,8 +1,6 @@
 package websocket
 
-import (
-	log "github.com/cihub/seelog"
-)
+import "errors"
 
 type Router struct {
 	callbacks map[string]func(*Message)
@@ -18,10 +16,10 @@ func (w Router) AddRoute(route string, handler func(*Message)) {
 	w.callbacks[route] = handler
 }
 
-func (w Router) Run(msg *Message) {
+func (w Router) Run(msg *Message) error {
 	if cb, ok := w.callbacks[msg.Type]; ok {
 		cb(msg)
-		return
+		return nil
 	}
-	log.Error("Undefined websocket route: ", msg.Type)
+	return errors.New("Undefined websocket route: " + msg.Type)
 }
