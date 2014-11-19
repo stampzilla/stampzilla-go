@@ -4,6 +4,8 @@ import (
 	//"github.com/bjeanes/go-lifx"
 
 	"flag"
+	"strconv"
+	"strings"
 	"time"
 
 	log "github.com/cihub/seelog"
@@ -106,11 +108,11 @@ func monitorLampCollection(lights *client.LightCollection) {
 
 			serverSendChannel <- node.Node()
 
-			log.Warn("Added")
+			log.Warn("Added: ", s.Lamp.Id())
 		case client.LampUpdated:
-			log.Warn("Changed")
+			log.Warn("Changed: ", s.Lamp.Id())
 		case client.LampRemoved:
-			log.Warn("Removed")
+			log.Warn("Removed: ", s.Lamp.Id())
 		}
 	}
 }
@@ -137,6 +139,10 @@ func serverRecv(recv chan protocol.Command) {
 func processCommand(cmd protocol.Command) {
 	log.Info("Incoming command from server:", cmd)
 
+	if len(cmd.Args) < 1 {
+		return
+	}
+
 	lamp, err := lifxClient.Lights.GetById(cmd.Args[0])
 	if err != nil {
 		log.Error(err)
@@ -145,12 +151,42 @@ func processCommand(cmd protocol.Command) {
 
 	switch cmd.Cmd {
 	case "set":
-		switch cmd.Params[0] {
-		case "true":
-			lamp.TurnOn()
-		case "false":
-			lamp.TurnOff()
+		lamp.TurnOn()
+		if len(cmd.Args) > 1 {
+			if strings.Index(cmd.Args[1], "#") != 0 {
+				cmd.Args[1] = "#" + cmd.Args[1]
+			}
+
+			c, err := colorful.Hex(cmd.Args[1])
+			if err != nil {
+				log.Error("Failed to decode color: ", err)
+				return
+			}
+
+			h, s, v := c.Hsv()
+
+			if len(cmd.Args) > 2 {
+				duration, err := strconv.Atoi(cmd.Args[2])
+				if err == nil {
+					if len(cmd.Args) > 3 {
+						kelvin, err := strconv.Atoi(cmd.Args[3])
+						if err == nil {
+							lamp.SetState(h, s, v, uint32(duration), uint32(kelvin))
+							return
+						}
+					}
+					lamp.SetState(h, s, v, uint32(duration), 6500)
+					return
+				}
+				log.Error("Failed to decode duration: ", err)
+			}
+
+			lamp.SetState(h, s, v, 1000, 6500)
 		}
+	case "on":
+		lamp.TurnOn()
+	case "off":
+		lamp.TurnOff()
 	case "color":
 		c, err := colorful.Hex(cmd.Params[0])
 		if err != nil {
@@ -160,6 +196,6 @@ func processCommand(cmd protocol.Command) {
 
 		h, s, v := c.Hsv()
 
-		lamp.SetState(h, s, v)
+		lamp.SetState(h, s, v, 1000, 6500)
 	}
 }

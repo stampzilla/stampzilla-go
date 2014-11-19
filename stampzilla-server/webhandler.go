@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	log "github.com/cihub/seelog"
 	"github.com/go-martini/martini"
@@ -58,8 +59,9 @@ func (wh *WebHandler) CommandToNodeGet(enc encoder.Encoder, params martini.Param
 
 	log.Info("Sending command to:", params["id"])
 
-	//TODO explode _1 on / and generate set attr aswell
-	cmd := protocol.Command{Cmd: params["_1"]}
+	// Split on / to add arguments
+	p := strings.Split(params["_1"], "/")
+	cmd := protocol.Command{Cmd: p[0], Args: p[1:]}
 
 	jsonCmd, err := json.Marshal(cmd)
 	if err != nil {
