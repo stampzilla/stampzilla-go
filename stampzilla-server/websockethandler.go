@@ -11,8 +11,16 @@ import (
 type WebsocketHandler struct {
 	//Logic     *logic.Logic          `inject:""`
 	//Scheduler *logic.Scheduler      `inject:""`
-	Nodes  *serverprotocol.Nodes `inject:""`
-	Router *websocket.Router     `inject:""`
+	Nodes   *serverprotocol.Nodes `inject:""`
+	Router  *websocket.Router     `inject:""`
+	Clients *websocket.Clients    `inject:""`
+}
+
+func (wh *WebsocketHandler) Start() {
+
+	// cmd
+	wh.Router.AddRoute("cmd", wh.RunCommand)
+
 }
 
 func (wh *WebsocketHandler) RunCommand(msg *websocket.Message) {
@@ -26,9 +34,10 @@ func (wh *WebsocketHandler) RunCommand(msg *websocket.Message) {
 		node.Conn().Write(jsonToSend)
 	}
 }
-func (wh *WebsocketHandler) Start() {
 
-	// cmd
-	wh.Router.AddRoute("cmd", wh.RunCommand)
-
+func (wh *WebsocketHandler) SendAllNodes() {
+	wh.Clients.SendToAll(&websocket.Message{Type: "all", Data: wh.Nodes.All()})
+}
+func (wh *WebsocketHandler) SendSingleNode(uuid string) {
+	wh.Clients.SendToAll(&websocket.Message{Type: "singlenode", Data: wh.Nodes.ByUuid(uuid)})
 }

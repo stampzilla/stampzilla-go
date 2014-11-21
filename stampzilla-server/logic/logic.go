@@ -151,6 +151,7 @@ func (l *Logic) SaveRulesToFile(path string) {
 	configFile, err := os.Create(path)
 	if err != nil {
 		log.Error("creating config file", err.Error())
+		return
 	}
 	var out bytes.Buffer
 	b, err := json.Marshal(l.Rules)
@@ -165,6 +166,7 @@ func (l *Logic) RestoreRulesFromFile(path string) {
 	configFile, err := os.Open(path)
 	if err != nil {
 		log.Error("opening config file", err.Error())
+		return
 	}
 
 	type local_rule struct {

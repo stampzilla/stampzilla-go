@@ -8,14 +8,13 @@ import (
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/stampzilla-server/logic"
 	serverprotocol "github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
-	"github.com/stampzilla/stampzilla-go/stampzilla-server/websocket"
 )
 
 type NodeServer struct {
-	Config    *ServerConfig         `inject:""`
-	Logic     *logic.Logic          `inject:""`
-	Nodes     *serverprotocol.Nodes `inject:""`
-	WsClients *websocket.Clients    `inject:""`
+	Config           *ServerConfig         `inject:""`
+	Logic            *logic.Logic          `inject:""`
+	Nodes            *serverprotocol.Nodes `inject:""`
+	WebsocketHandler *WebsocketHandler     `inject:""`
 }
 
 func NewNodeServer() *NodeServer {
@@ -65,7 +64,7 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 					close(logicChannel)
 				}
 				//TODO be able to not send everything always. perhaps implement remove instead of all?
-				ns.WsClients.SendToAll(&websocket.Message{Type: "all", Data: ns.Nodes.All()})
+				ns.WebsocketHandler.SendAllNodes()
 				return
 			}
 			log.Warn("Not disconnect but error: ", err)
@@ -81,7 +80,7 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 
 			ns.Nodes.Add(&info)
 			log.Info(info.Name, " - Got update on state")
-			ns.WsClients.SendToAll(&websocket.Message{Type: "singlenode", Data: info})
+			ns.WebsocketHandler.SendSingleNode(uuid)
 
 			//Send to logic for evaluation
 			state, _ := json.Marshal(info.State)
