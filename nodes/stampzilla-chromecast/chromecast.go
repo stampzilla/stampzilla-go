@@ -1,45 +1,27 @@
 package main
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
-	log "github.com/cihub/seelog"
-	"github.com/davecgh/go-spew/spew"
-	"github.com/jonaz/go-castv2"
-	"github.com/jonaz/go-castv2/controllers"
 	"github.com/jonaz/mdns"
 )
 
-type device struct {
-	name string
-}
-type devices struct {
-	devices []*device
-}
-
-func (d *devices) Add(name string) {
-	newDevice := &device{name}
-	d.devices = append(d.devices, newDevice)
-}
-
-func (d *devices) Get(name string) *device {
-	for _, device := range d.devices {
-		if name == device.name {
-			return device
-		}
-	}
-	return nil
-}
-
 type Chromecast struct {
-	devices *devices
+	Events  chan *Event `json:"-"`
+	Devices *Devices
+}
+
+type Event struct {
+	Name string
+	Args []string
 }
 
 func NewChromecast() *Chromecast {
-	c := &Chromecast{}
-	c.devices = &devices{}
+	c := &Chromecast{
+		Events: make(chan *Event, 10),
+	}
+	c.Devices = &Devices{}
 	return c
 }
 
@@ -52,95 +34,19 @@ func (c *Chromecast) Listen() {
 func (c *Chromecast) listen(entriesCh chan *mdns.ServiceEntry) {
 	// Make a channel for results and start listening
 	for entry := range entriesCh {
-
+		// Only match chromecasts
 		if !strings.Contains(entry.Name, "_googlecast._tcp") {
-			return
+			continue
 		}
 
-		if device := c.devices.Get(entry.Host); device != nil {
-			return
+		// Ignore devices that already are initiated
+		if device := c.Devices.GetByName(entry.Host); device != nil {
+			continue
 		}
 
-		c.devices.Add(entry.Host)
-
-		fmt.Printf("Got new chromecast: %#v\n", entry)
-
-		client, err := castv2.NewClient(entry.Addr, entry.Port)
-
-		if err != nil {
-			log.Error("Failed to connect to chromecast %s", entry.Addr)
-		}
-
-		//_ = controllers.NewHeartbeatController(client, "Tr@n$p0rt-0", "Tr@n$p0rt-0")
-
-		heartbeat := controllers.NewHeartbeatController(client, "sender-0", "receiver-0")
-		heartbeat.Start()
-
-		connection := controllers.NewConnectionController(client, "sender-0", "receiver-0")
-		connection.Connect()
-
-		receiver := controllers.NewReceiverController(client, "sender-0", "receiver-0")
-		go func() {
-			for {
-				select {
-				case msg := <-receiver.Incoming:
-					if receiver.Incoming == nil {
-						return
-					}
-
-					spew.Dump("Status response", msg)
-
-					for _, app := range msg.Status.Applications {
-						for _, namespace := range app.Namespaces {
-							if namespace.Name == "urn:x-cast:com.google.cast.media" {
-								log.Info("FOUND urn:x-cast:com.google.cast.media, trying to get status")
-
-								go func() {
-									connection := controllers.NewConnectionController(client, "sender-0", app.TransportId)
-									connection.Connect()
-
-									media := controllers.NewMediaController(client, "receiver-0", app.TransportId)
-									go func() {
-										for {
-											select {
-											case msg := <-media.Incoming:
-												spew.Dump("Media response", msg)
-											}
-										}
-									}()
-
-									media.GetStatus(time.Second * 1)
-								}()
-							}
-
-							if namespace.Name == "urn:x-cast:plex" {
-								log.Info("FOUND urn:x-cast:plex, trying to get status")
-								go func() {
-									connection := controllers.NewConnectionController(client, "sender-0", app.TransportId)
-									connection.Connect()
-
-									media := controllers.NewPlexController(client, "receiver-0", app.TransportId)
-									go func() {
-										for {
-											select {
-											case msg := <-media.Incoming:
-												spew.Dump("Media response", msg)
-											}
-										}
-									}()
-
-									media.GetStatus(time.Second * 1)
-								}()
-							}
-						}
-					}
-				}
-			}
-		}()
-
-		receiver.GetStatus(time.Second * 1)
+		// Add the new device
+		c.Devices.AddMdnsEntry(entry, c.Events)
 	}
-
 }
 
 func (c *Chromecast) mdnsPeridicalFetcher(entriesCh chan *mdns.ServiceEntry) {

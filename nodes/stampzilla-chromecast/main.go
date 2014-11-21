@@ -17,7 +17,7 @@ func main() { /*{{{*/
 	}
 	log.ReplaceLogger(logger)
 
-	log.Info("Starting SIMPLE node")
+	log.Info("Starting CHROMECAST node")
 
 	// Parse all commandline arguments, host and port parameters are added in the basenode init function
 	flag.Parse()
@@ -43,62 +43,39 @@ func main() { /*{{{*/
 	// This worker recives all incomming commands
 	go serverRecv(serverRecvChannel)
 
-	// Create new node description
-
-	node.AddElement(&protocol.Element{
-		Type: protocol.ElementTypeText,
-		Name: "Example text",
-		Command: &protocol.Command{
-			Cmd:  "set",
-			Args: []string{"1"},
-		},
-		Feedback: "Devices[0].State",
-	})
-	node.AddElement(&protocol.Element{
-		Type: protocol.ElementTypeButton,
-		Name: "Example button",
-		Command: &protocol.Command{
-			Cmd:  "set",
-			Args: []string{"1"},
-		},
-		Feedback: "Devices[1].State",
-	})
-	node.AddElement(&protocol.Element{
-		Type: protocol.ElementTypeToggle,
-		Name: "Example toggle",
-		Command: &protocol.Command{
-			Cmd:  "set",
-			Args: []string{"1"},
-		},
-		Feedback: "Devices[2].State",
-	})
-	node.AddElement(&protocol.Element{
-		Type: protocol.ElementTypeSlider,
-		Name: "Example slider",
-		Command: &protocol.Command{
-			Cmd:  "set",
-			Args: []string{"1"},
-		},
-		Feedback: "Devices[3].State",
-	})
-	node.AddElement(&protocol.Element{
-		Type: protocol.ElementTypeColorPicker,
-		Name: "Example color picker",
-		Command: &protocol.Command{
-			Cmd:  "set",
-			Args: []string{"1"},
-		},
-		Feedback: "Devices[4].State",
-	})
-
-	state := NewState()
-	node.SetState(state)
-
-	state.AddDevice("1", "Dev1", "OFF")
-	state.AddDevice("2", "Dev2", "ON")
-
 	//Start chromecast monitoring
 	chromecast := NewChromecast()
+	node.SetState(chromecast.Devices)
+
+	go func() {
+		for {
+			event := <-chromecast.Events
+			if chromecast.Events == nil {
+				return
+			}
+
+			log.Warn("EVENT: ", event.Name)
+			switch event.Name {
+			case "Added":
+				dev := chromecast.Devices.Get(event.Args[0])
+
+				node.AddElement(&protocol.Element{
+					Type: protocol.ElementTypeText,
+					Name: dev.Name,
+					Command: &protocol.Command{
+						Cmd:  "toggle",
+						Args: []string{dev.Id},
+					},
+					Feedback: `Devices["` + dev.Id + `"].PrimaryApp`,
+				})
+			case "Updated":
+				serverSendChannel <- node.Node()
+			default:
+				log.Warn("Unknown event: ", event.Name)
+			}
+		}
+	}()
+
 	chromecast.Listen()
 
 	select {}
