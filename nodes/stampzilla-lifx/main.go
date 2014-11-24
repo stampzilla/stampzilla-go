@@ -50,13 +50,6 @@ func init() { // {{{
 
 // MAIN - This is run when the init function is done
 func main() { /*{{{*/
-	// Load logger
-	logger, err := log.LoggerFromConfigAsFile("../logconfig.xml")
-	if err != nil {
-		panic(err)
-	}
-	log.ReplaceLogger(logger)
-
 	// Create new node description
 
 	state = NewState()

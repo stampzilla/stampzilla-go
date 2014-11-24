@@ -10,13 +10,6 @@ import (
 
 // MAIN - This is run when the init function is done
 func main() { /*{{{*/
-	// Load logger
-	logger, err := log.LoggerFromConfigAsFile("../logconfig.xml")
-	if err != nil {
-		panic(err)
-	}
-	log.ReplaceLogger(logger)
-
 	log.Info("Starting CHROMECAST node")
 
 	// Parse all commandline arguments, host and port parameters are added in the basenode init function
