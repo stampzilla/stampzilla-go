@@ -44,13 +44,13 @@ func init() { // {{{
 // MAIN - This is run when the init function is done
 func main() { /*{{{*/
 	// Load logger
-	logger, err := log.LoggerFromConfigAsFile("../logconfig.xml")
-	if err != nil {
-		panic(err)
-	}
-	log.ReplaceLogger(logger)
+	//logger, err := log.LoggerFromConfigAsFile("../logconfig.xml")
+	//if err != nil {
+	//panic(err)
+	//}
+	//log.ReplaceLogger(logger)
 
-	log.Info("Starting SIMPLE node")
+	//log.Info("Starting SIMPLE node")
 
 	// Create new node description
 

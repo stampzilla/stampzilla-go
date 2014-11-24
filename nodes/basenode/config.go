@@ -41,7 +41,39 @@ func SetConfig(c *Config) {
 	// Load logger
 	logger, err := log.LoggerFromConfigAsFile("../logconfig.xml")
 	if err != nil {
-		panic(err)
+		testConfig := `
+			<seelog type="sync" asyncinterval="1000" minlevel="trace">
+				<outputs>
+					<filter levels="trace">
+						<console formatid="colored-trace"/>
+					</filter>
+					<filter levels="debug">
+						<console formatid="colored-debug"/>
+					</filter>
+					<filter levels="info">
+						<console formatid="colored-info"/>
+					</filter>
+					<filter levels="warn">
+						<console formatid="colored-warn"/>
+					</filter>
+					<filter levels="error">
+						<console formatid="colored-error"/>
+					</filter>
+					<filter levels="critical">
+						<console formatid="colored-critical"/>
+					</filter>
+				</outputs>
+				<formats>
+					<format id="colored-trace"  format="%Time %EscM(40)%Level%EscM(49) - %File:%Line - %Msg%n%EscM(0)"/>
+					<format id="colored-debug"  format="%Time %EscM(45)%Level%EscM(49) - %File:%Line - %Msg%n%EscM(0)"/>
+					<format id="colored-info"  format="%Time %EscM(46)%Level%EscM(49) - %File:%Line - %Msg%n%EscM(0)"/>
+					<format id="colored-warn"  format="%Time %EscM(43)%Level%EscM(49) - %File:%Line - %Msg%n%EscM(0)"/>
+					<format id="colored-error"  format="%Time %EscM(41)%Level%EscM(49) - %File:%Line - %Msg%n%EscM(0)"/>
+					<format id="colored-critical"  format="%Time %EscM(41)%Level%EscM(49) - %File:%Line - %Msg%n%EscM(0)"/>
+				</formats>
+			</seelog>`
+
+		logger, _ = log.LoggerFromConfigAsBytes([]byte(testConfig))
 	}
 	log.ReplaceLogger(logger)
 
