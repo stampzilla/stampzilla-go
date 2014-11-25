@@ -11,24 +11,25 @@ import (
 	"github.com/codegangsta/cli"
 )
 
-type taskHandler struct {
+type processHandler struct {
+	Processes []*Process
 }
 
-func (t *taskHandler) Start(c *cli.Context) {
+func (t *processHandler) Start(c *cli.Context) {
 	what := c.Args().First()
 	if what != "" {
 		t.start(what)
 	}
 }
 
-func (t *taskHandler) Stop(c *cli.Context) {
+func (t *processHandler) Stop(c *cli.Context) {
 	what := c.Args().First()
 	if what != "" {
 		t.stop(what)
 	}
 }
 
-func (t *taskHandler) stop(app string) {
+func (t *processHandler) stop(app string) {
 	log.Println("Stopping: stampzilla-" + app)
 	pid, err := ioutil.ReadFile("/var/spool/stampzilla/" + app + ".pid")
 	if err != nil {
@@ -50,7 +51,7 @@ func (t *taskHandler) stop(app string) {
 
 }
 
-func (t *taskHandler) start(app string) {
+func (t *processHandler) start(app string) {
 	log.Println("Starting: stampzilla-" + app)
 	cmd := "nohup stampzilla-" + app + " > /var/log/stampzilla/" + app + " 2>&1 & echo $! > /var/spool/stampzilla/" + app + ".pid"
 	run("sh", "-c", cmd)

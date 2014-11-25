@@ -12,7 +12,7 @@ func main() {
 	app.Version = "0.0.1"
 	app.Usage = "Manage stampzilla on the command line"
 
-	handler := &taskHandler{}
+	handler := &processHandler{}
 
 	app.Commands = []cli.Command{
 		{
@@ -26,11 +26,25 @@ func main() {
 			Action: handler.Stop,
 		},
 		{
-			Name:      "complete",
-			ShortName: "c",
-			Usage:     "complete a task on the list",
+			Name:  "status",
+			Usage: "show process status",
 			Action: func(c *cli.Context) {
-				println("completed task: ", c.Args().First())
+				println("status")
+			},
+		},
+		{
+			Name:      "install",
+			ShortName: "i",
+			Usage:     "installs all stampzilla nodes and the server.",
+			Action: func(c *cli.Context) {
+				println("completed ", c.Args().First())
+				println("u flag ", c.Bool("u"))
+			},
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "u",
+					Usage: "Do upgrade",
+				},
 			},
 		},
 	}
