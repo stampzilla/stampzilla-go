@@ -1,6 +1,11 @@
 package main
 
-import "os"
+import (
+	"fmt"
+	"log"
+	"os"
+	"os/exec"
+)
 
 type Process struct {
 	Name     string
@@ -10,7 +15,61 @@ type Process struct {
 	Logfile  string
 	Respawn  int
 	Pid      int
-	Status   string
+	Status   *ProcessStatus
 	process  *os.Process
 	respawns int
+}
+
+type ProcessStatus struct {
+	Running bool
+	CPU     string
+	Memory  string
+}
+
+func (p *Process) start() {
+
+	if p.Pidfile.read() != 0 {
+		fmt.Println("Process " + p.Name + " already running!")
+		return
+	}
+
+	shbin, err := exec.LookPath("sh")
+	if err != nil {
+		fmt.Printf("LookPath Error: %s", err)
+	}
+	nohupbin, err := exec.LookPath("nohup")
+	if err != nil {
+		fmt.Printf("LookPath Error: %s", err)
+	}
+
+	log.Println("Starting: " + p.Command)
+	cmd := nohupbin + " $GOPATH/bin/" + p.Command + " > /var/log/stampzilla/" + p.Command + " 2>&1 & echo $! > " + p.Pidfile.String()
+
+	//run("sh", "-c", cmd)
+
+	out, err := run("sudo", "-E", "-u", "stampzilla", "-H", shbin, "-c", cmd)
+	if err != nil {
+		fmt.Println(out)
+		fmt.Println(err)
+	}
+}
+
+func (p *Process) stop() {
+	log.Println("Stopping: ", p.Command)
+	pid := p.Pidfile.read()
+	if pid == 0 {
+		log.Println("pid file not found! Process not running?")
+		return
+	}
+	process, err := os.FindProcess(pid)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	err = process.Kill()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	p.Pidfile.delete()
 }

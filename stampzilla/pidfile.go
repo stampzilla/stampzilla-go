@@ -4,9 +4,14 @@ import (
 	"io/ioutil"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type PidFile string
+
+func (f *PidFile) String() string {
+	return string(*f)
+}
 
 //Read the pidfile.
 func (f *PidFile) read() int {
@@ -14,7 +19,8 @@ func (f *PidFile) read() int {
 	if err != nil {
 		return 0
 	}
-	pid, err := strconv.ParseInt(string(data), 0, 32)
+	pidString := strings.Trim(string(data), "\n")
+	pid, err := strconv.ParseInt(string(pidString), 0, 32)
 	if err != nil {
 		return 0
 	}

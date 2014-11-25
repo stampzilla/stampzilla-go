@@ -26,20 +26,21 @@ func main() {
 			Action: handler.Stop,
 		},
 		{
-			Name:  "status",
-			Usage: "show process status",
-			Action: func(c *cli.Context) {
-				println("status")
-			},
+			Name:      "status",
+			ShortName: "st",
+			Usage:     "show process status",
+			Action:    handler.Status,
+		},
+		{
+			Name:   "debug",
+			Usage:  "Start one process and get stdout and stderr print on console.",
+			Action: handler.Debug,
 		},
 		{
 			Name:      "install",
 			ShortName: "i",
 			Usage:     "installs all stampzilla nodes and the server.",
-			Action: func(c *cli.Context) {
-				println("completed ", c.Args().First())
-				println("u flag ", c.Bool("u"))
-			},
+			Action:    handler.Install,
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:  "u",
