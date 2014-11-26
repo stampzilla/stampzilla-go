@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"os"
 
 	log "github.com/cihub/seelog"
 	"github.com/facebookgo/inject"
@@ -24,6 +25,10 @@ func main() {
 	flag.StringVar(&config.WebPort, "web-port", "8080", "Webserver port")
 	flag.StringVar(&config.WebRoot, "web-root", "public", "Webserver root")
 	flag.Parse()
+
+	if val := os.Getenv("STAMPZILLA_WEBROOT"); val != "" {
+		config.WebRoot = val
+	}
 
 	// Load logger
 	logger, err := log.LoggerFromConfigAsFile("logconfig.xml")

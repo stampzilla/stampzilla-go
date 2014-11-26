@@ -48,6 +48,7 @@ func (t *processHandler) Install(c *cli.Context) {
 
 	//TODO
 	// create default /etc/stampzilla.conf if it does not exist
+	// do a bower install in public folder
 
 }
 
@@ -216,7 +217,10 @@ func (t *processHandler) Debug(c *cli.Context) {
 	toRun := "$GOPATH/bin/stampzilla-" + what
 	cmd := exec.Command("sudo", "-E", "-u", "stampzilla", "-H", shbin, "-c", toRun)
 	//out, err := run("sudo", "-E", "-u", "stampzilla", "-H", shbin, "-c", cmd)
-	cmd.Env = []string{"GOPATH=/home/stampzilla/go"}
+	cmd.Env = []string{
+		"GOPATH=/home/stampzilla/go",
+		"STAMPZILLA_WEBROOT=/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/stampzilla-server/public",
+	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Run()
@@ -302,7 +306,10 @@ func run(head string, parts ...string) (string, error) { // {{{
 	}
 	cmd := exec.Command(head, parts...)
 	//cmd.Env = []string{"GOPATH=$HOME/go", "PATH=$PATH:$GOPATH/bin"}
-	cmd.Env = []string{"GOPATH=/home/stampzilla/go"}
+	cmd.Env = []string{
+		"GOPATH=/home/stampzilla/go",
+		"STAMPZILLA_WEBROOT=/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/stampzilla-server/public",
+	}
 	out, err = cmd.CombinedOutput()
 	if err != nil {
 		return string(out), err
