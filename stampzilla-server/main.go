@@ -52,7 +52,7 @@ func main() {
 	wsrouter := websocket.NewRouter()
 	wsHandler := &WebsocketHandler{}
 
-	inject.Populate(config, nodes, l, nodeServer, webServer, scheduler, wsrouter, wsHandler)
+	err = inject.Populate(config, nodes, l, nodeServer, webServer, scheduler, wsrouter, wsHandler)
 	if err != nil {
 		panic(err)
 	}
