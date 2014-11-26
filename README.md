@@ -3,7 +3,9 @@ stampzilla-go [![Build Status](https://travis-ci.org/stampzilla/stampzilla-go.sv
 
 New version of this awesome homeautomation software written in Go and javascript with Polymer and webcomponents. 
 
-After clone install go deps by going to source folder and running
+Installation
 ```bash
-go get
+go get github.com/stampzilla/stampzilla-go/stampzilla
+sudo stampzilla install
 ```
+This creates a stampzilla user. checksout the code in stampzilla user home folder and creates some required folders. 
