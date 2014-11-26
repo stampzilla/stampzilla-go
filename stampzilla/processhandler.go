@@ -25,6 +25,13 @@ func (t *processHandler) Install(c *cli.Context) {
 		fmt.Println("Updating stampzilla")
 	} else {
 		fmt.Println("Installing stampzilla")
+
+		// Create required user and folders
+		t.createUser("stampzilla")
+		t.createDirAsUser("/var/spool/stampzilla", "stampzilla")
+		t.createDirAsUser("/var/spool/stampzilla/config", "stampzilla")
+		t.createDirAsUser("/var/log/stampzilla", "stampzilla")
+		t.createDirAsUser("/home/stampzilla/go", "stampzilla")
 	}
 
 	//Install all
@@ -40,16 +47,31 @@ func (t *processHandler) Install(c *cli.Context) {
 		return
 	}
 
-	// Create required user and folders
-	t.createUser("stampzilla")
-	t.createDirAsUser("/var/spool/stampzilla", "stampzilla")
-	t.createDirAsUser("/var/log/stampzilla", "stampzilla")
-	t.createDirAsUser("/home/stampzilla/go", "stampzilla")
+	t.bowerInstall()
 
 	//TODO
 	// create default /etc/stampzilla.conf if it does not exist
-	// do a bower install in public folder
+}
 
+func (t *processHandler) bowerInstall() {
+	if _, err := exec.LookPath("bower"); err != nil {
+		fmt.Println("Missing bower executable. Install with: npm install -g bower")
+		os.Exit(0)
+	}
+
+	fmt.Print("bower install in public folder... ")
+	shbin, err := exec.LookPath("sh")
+	if err != nil {
+		fmt.Printf("LookPath Error: %s", err)
+		return
+	}
+
+	toRun := "cd /home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/stampzilla-server/public && bower install"
+	out, err := run("sudo", "-E", "-u", "stampzilla", "-H", shbin, "-c", toRun)
+	if err != nil {
+		fmt.Println("ERROR", err, out)
+	}
+	fmt.Println("DONE")
 }
 
 func (t *processHandler) createUser(username string) {
@@ -141,6 +163,11 @@ func (t *processHandler) goGet(url string, update bool) {
 func (t *processHandler) Start(c *cli.Context) {
 	requireRoot()
 
+	config := &Config{}
+	config.SaveToFile("/etc/stampzilla.conf")
+
+	return
+
 	what := c.Args().First()
 	if what != "" {
 		for _, what := range c.Args() {
@@ -160,7 +187,7 @@ func (t *processHandler) Start(c *cli.Context) {
 			autostart:[
 				{
 					name: "simple",
-					config: "/path/to/config/dir",
+					config: "/path/to/config/dir", //default to /var/spool/stampzilla/config/stampzilla-xxxx
 				},
 			]
 		}
@@ -302,7 +329,7 @@ func run(head string, parts ...string) (string, error) { // {{{
 
 	head, err = exec.LookPath(head)
 	if err != nil {
-		fmt.Printf("LookPath Error: %s", err)
+		return "", err
 	}
 	cmd := exec.Command(head, parts...)
 	//cmd.Env = []string{"GOPATH=$HOME/go", "PATH=$PATH:$GOPATH/bin"}
