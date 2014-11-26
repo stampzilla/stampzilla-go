@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -18,6 +19,8 @@ type processHandler struct {
 }
 
 func (t *processHandler) Install(c *cli.Context) {
+	requireRoot()
+
 	if c.Bool("u") {
 		fmt.Println("Updating stampzilla")
 	} else {
@@ -37,31 +40,30 @@ func (t *processHandler) Install(c *cli.Context) {
 		return
 	}
 
-	//TODO
-	// create /var/spool/stampzilla/
-	// create /var/log/stampzilla/
-	// create stampzilla user if it does not exist
-	// run with this instead: sudo -u stampzilla -H GOPATH='$HOME/go' PATH='$GOPATH/bin' sh -c stampzilla-simple
-	// create default /etc/stampzilla.conf if it does not exist
-	// go get all the nodes and server. if -u is present only do this with -u and then return.(DONE)
+	// Create required user and folders
+	t.createUser("stampzilla")
+	t.createDirAsUser("/var/spool/stampzilla", "stampzilla")
+	t.createDirAsUser("/var/log/stampzilla", "stampzilla")
+	t.createDirAsUser("/home/stampzilla/go", "stampzilla")
 
-	//should do this as root and should do the install into this user?
-	//t.createUser("stampzilla")
+	//TODO
+	// create default /etc/stampzilla.conf if it does not exist
 
 }
 
 func (t *processHandler) createUser(username string) {
+	fmt.Print("Creating user " + username + "... ")
 	if t.userExists(username) {
-		fmt.Println("User " + username + " already exists.")
+		fmt.Println("already exists!")
 		return
 	}
 
 	out, err := run("useradd", "-m", "-r", "-s", "/bin/false", username)
 	if err != nil {
-		fmt.Print(err)
+		fmt.Println("ERROR", err, out)
+		return
 	}
-	fmt.Println(out)
-	return
+	fmt.Println("DONE")
 }
 
 func (t *processHandler) userExists(username string) bool {
@@ -71,10 +73,49 @@ func (t *processHandler) userExists(username string) bool {
 	}
 	return true
 }
+
+func (t *processHandler) createDirAsUser(directory string, username string) {
+	fmt.Print("Creating directory " + directory + "... ")
+
+	if _, err := os.Stat(directory); os.IsNotExist(err) {
+		err := os.MkdirAll(directory, 0777)
+		if err != nil {
+			fmt.Println("ERROR", err)
+			return
+		}
+	} else {
+		fmt.Print("Already exists... Fixing permissions... ")
+	}
+
+	u, err := user.Lookup(username)
+	if err != nil {
+		fmt.Println("ERROR", err)
+		return
+	}
+
+	uid, err := strconv.Atoi(u.Uid)
+	if err != nil {
+		fmt.Println("ERROR", err)
+		return
+	}
+	gid, err := strconv.Atoi(u.Gid)
+	if err != nil {
+		fmt.Println("ERROR", err)
+		return
+	}
+
+	err = os.Chown(directory, uid, gid)
+	if err != nil {
+		fmt.Println("ERROR", err)
+		return
+	}
+
+	fmt.Println("DONE")
+}
 func (t *processHandler) goGet(url string, update bool) {
 	var out string
 	var err error
-	fmt.Print(filepath.Base(url) + "... ")
+	fmt.Print("go get " + filepath.Base(url) + "... ")
 
 	gobin, err := exec.LookPath("go")
 	if err != nil {
@@ -94,9 +135,11 @@ func (t *processHandler) goGet(url string, update bool) {
 		return
 	}
 	fmt.Println("DONE")
-	fmt.Println(out)
+	//fmt.Println(out)
 }
 func (t *processHandler) Start(c *cli.Context) {
+	requireRoot()
+
 	what := c.Args().First()
 	if what != "" {
 		for _, what := range c.Args() {
@@ -125,6 +168,8 @@ func (t *processHandler) Start(c *cli.Context) {
 }
 
 func (t *processHandler) Stop(c *cli.Context) {
+	requireRoot()
+
 	what := c.Args().First()
 	if what != "" {
 		for _, what := range c.Args() {
@@ -160,8 +205,18 @@ func (t *processHandler) Status(c *cli.Context) {
 }
 
 func (t *processHandler) Debug(c *cli.Context) {
+	requireRoot()
+
 	what := c.Args().First()
-	cmd := exec.Command("stampzilla-" + what)
+	//out, err := run("sudo", "-E", "-u", "stampzilla", "-H", shbin, "-c", cmd)
+	shbin, err := exec.LookPath("sh")
+	if err != nil {
+		fmt.Printf("LookPath Error: %s", err)
+	}
+	toRun := "$GOPATH/bin/stampzilla-" + what
+	cmd := exec.Command("sudo", "-E", "-u", "stampzilla", "-H", shbin, "-c", toRun)
+	//out, err := run("sudo", "-E", "-u", "stampzilla", "-H", shbin, "-c", cmd)
+	cmd.Env = []string{"GOPATH=/home/stampzilla/go"}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Run()
@@ -222,7 +277,7 @@ func (t *processHandler) getRunningProcesses() []*Process {
 			//fmt.Println("MEM", p[8])
 			//process := &Process{Name: p[len(p)-1], Command: p[len(p)-1]}
 			//fmt.Printf("%#v\n", pslineslice)
-			process.Name = pslineslice[len(pslineslice)-1]
+			process.Name = filepath.Base(pslineslice[len(pslineslice)-1])
 			process.Command = pslineslice[len(pslineslice)-1]
 			process.Status = &ProcessStatus{true, pslineslice[2], pslineslice[3]}
 		}
@@ -253,4 +308,10 @@ func run(head string, parts ...string) (string, error) { // {{{
 		return string(out), err
 	}
 	return string(out), nil
+}                    // }}}
+func requireRoot() { // {{{
+	if os.Getuid() != 0 {
+		fmt.Println("You must be root to run this")
+		os.Exit(0)
+	}
 } // }}}
