@@ -3,15 +3,37 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"io/ioutil"
 	"os"
+	"strings"
 )
 
 type Autostart struct {
 	Name   string `json:"name"`
-	config string `json:"config"`
+	Config string `json:"config"`
 }
 type Config struct {
-	Autostart []Autostart `json:"autostart"`
+	Autostart []*Autostart `json:"autostart"`
+}
+
+func (c *Config) generateDefault() error {
+	nodes, err := ioutil.ReadDir("/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/")
+	if err != nil {
+		return err
+	}
+
+	config := &Config{}
+	for _, node := range nodes {
+		if !strings.Contains(node.Name(), "stampzilla-") {
+			continue
+		}
+		name := strings.Replace(node.Name(), "stampzilla-", "", 1)
+		autostart := &Autostart{Name: name, Config: "/var/spool/stampzilla/config/" + node.Name()}
+		config.Autostart = append(config.Autostart, autostart)
+	}
+
+	*c = *config
+	return nil
 }
 
 func (c *Config) SaveToFile(filepath string) error {
@@ -29,8 +51,8 @@ func (c *Config) SaveToFile(filepath string) error {
 	out.WriteTo(configFile)
 	return nil
 }
-func (c *Config) readConfigFromFile() error {
-	configFile, err := os.Open("config.json")
+func (c *Config) readConfigFromFile(filepath string) error {
+	configFile, err := os.Open(filepath)
 	if err != nil {
 		return err
 	}
@@ -41,6 +63,6 @@ func (c *Config) readConfigFromFile() error {
 		return err
 	}
 
-	c = config
+	*c = *config
 	return nil
 }

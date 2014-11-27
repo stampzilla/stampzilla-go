@@ -55,7 +55,7 @@ func (p *Process) start() {
 }
 
 func (p *Process) stop() {
-	log.Println("Stopping: ", p.Command)
+	log.Println("Stopping:", p.Name)
 	pid := p.Pidfile.read()
 	if pid == 0 {
 		log.Println("pid file not found! Process not running?")
