@@ -58,36 +58,33 @@ func (t *processHandler) Install(c *cli.Context) {
 func (t *processHandler) Start(c *cli.Context) {
 	requireRoot()
 
+	config := &Config{}
+	config.readConfigFromFile("/etc/stampzilla.conf")
+
 	what := c.Args().First()
 	if what != "" {
 		for _, what := range c.Args() {
-			process := &Process{
-				Pidfile: PidFile("/var/spool/stampzilla/" + what + ".pid"),
-				Name:    "stampzilla-" + what,
-				Command: "stampzilla-" + what,
-			}
-			process.start()
+			t.start(what, config)
 		}
 		return
 	}
 
-	config := &Config{}
-	config.readConfigFromFile("/etc/stampzilla.conf")
-	fmt.Println(config)
-
-	//TODO start all configured in our /etc/stampzilla.conf json file
-	// example:
-	/*
-		{
-			autostart:[
-				{
-					name: "simple",
-					config: "/path/to/config/dir", //default to /var/spool/stampzilla/config/stampzilla-xxxx
-				},
-			]
-		}
-	*/
-
+	for _, d := range config.GetAutostartingNodes() {
+		t.start(d.Name, config)
+	}
+}
+func (t *processHandler) start(what string, config *Config) {
+	cdir := ""
+	if dir := config.GetConfigForNode(what); dir != nil {
+		cdir = dir.Config
+	}
+	process := &Process{
+		Pidfile: PidFile("/var/spool/stampzilla/" + what + ".pid"),
+		Name:    "stampzilla-" + what,
+		Command: "stampzilla-" + what,
+		ConfDir: cdir,
+	}
+	process.start()
 }
 
 func (t *processHandler) Stop(c *cli.Context) {
@@ -103,6 +100,7 @@ func (t *processHandler) Stop(c *cli.Context) {
 			}
 			process.stop()
 		}
+		return
 	}
 
 	//stop all running stampzilla processes
@@ -136,7 +134,15 @@ func (t *processHandler) Debug(c *cli.Context) {
 	if err != nil {
 		fmt.Printf("LookPath Error: %s", err)
 	}
-	toRun := "$GOPATH/bin/stampzilla-" + what
+	config := &Config{}
+	config.readConfigFromFile("/etc/stampzilla.conf")
+	chdircmd := ""
+	if dir := config.GetConfigForNode(what); dir != nil {
+		i := &Installer{}
+		i.createDirAsUser(dir.Config, "stampzilla")
+		chdircmd = " cd " + dir.Config + "; "
+	}
+	toRun := chdircmd + "$GOPATH/bin/stampzilla-" + what
 	cmd := exec.Command("sudo", "-E", "-u", "stampzilla", "-H", shbin, "-c", toRun)
 	//out, err := run("sudo", "-E", "-u", "stampzilla", "-H", shbin, "-c", cmd)
 	cmd.Env = []string{
