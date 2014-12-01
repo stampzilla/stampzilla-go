@@ -8,14 +8,32 @@ import (
 	"strings"
 )
 
-type Autostart struct {
-	Name   string `json:"name"`
-	Config string `json:"config"`
+type Daemon struct {
+	Name      string `json:"name"`
+	Config    string `json:"config"`
+	Autostart bool   `json:"autostart"`
 }
 type Config struct {
-	Autostart []*Autostart `json:"autostart"`
+	Daemons []*Daemon `json:"daemons"`
 }
 
+func (c *Config) GetConfigForNode(name string) *Daemon {
+	for _, d := range c.Daemons {
+		if d.Name == name {
+			return d
+		}
+	}
+	return nil
+}
+func (c *Config) GetAutostartingNodes() []*Daemon {
+	var daemons []*Daemon
+	for _, d := range c.Daemons {
+		if d.Autostart == true {
+			daemons = append(daemons, d)
+		}
+	}
+	return daemons
+}
 func (c *Config) generateDefault() error {
 	nodes, err := ioutil.ReadDir("/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/")
 	if err != nil {
@@ -28,10 +46,13 @@ func (c *Config) generateDefault() error {
 			continue
 		}
 		name := strings.Replace(node.Name(), "stampzilla-", "", 1)
-		autostart := &Autostart{Name: name, Config: "/var/spool/stampzilla/config/" + node.Name()}
-		config.Autostart = append(config.Autostart, autostart)
+		autostart := &Daemon{Name: name, Config: "/var/spool/stampzilla/config/" + node.Name(), Autostart: true}
+		config.Daemons = append(config.Daemons, autostart)
 	}
 
+	// Add server since it is not present in the nodes directory.
+	autostart := &Daemon{Name: "server", Config: "/var/spool/stampzilla/config/stampzilla-server", Autostart: true}
+	config.Daemons = append(config.Daemons, autostart)
 	*c = *config
 	return nil
 }

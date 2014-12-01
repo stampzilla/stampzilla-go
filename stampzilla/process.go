@@ -13,6 +13,7 @@ type Process struct {
 	Args     []string
 	Pidfile  PidFile
 	Logfile  string
+	ConfDir  string
 	Respawn  int
 	Pid      int
 	Status   *ProcessStatus
@@ -42,8 +43,15 @@ func (p *Process) start() {
 		fmt.Printf("LookPath Error: %s", err)
 	}
 
+	chdircmd := ""
+	if p.ConfDir != "" {
+		i := &Installer{}
+		i.createDirAsUser(p.ConfDir, "stampzilla")
+		chdircmd = " cd " + p.ConfDir + "; "
+	}
+
 	log.Println("Starting: " + p.Command)
-	cmd := nohupbin + " $GOPATH/bin/" + p.Command + " > /var/log/stampzilla/" + p.Command + " 2>&1 & echo $! > " + p.Pidfile.String()
+	cmd := chdircmd + nohupbin + " $GOPATH/bin/" + p.Command + " > /var/log/stampzilla/" + p.Command + " 2>&1 & echo $! > " + p.Pidfile.String()
 
 	//run("sh", "-c", cmd)
 

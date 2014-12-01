@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/codegangsta/cli"
+	"github.com/facebookgo/inject"
 )
 
 func main() {
@@ -12,35 +13,39 @@ func main() {
 	app.Version = "0.0.1"
 	app.Usage = "Manage stampzilla on the command line"
 
-	handler := &processHandler{}
+	cliHandler := &cliHandler{}
+	err := inject.Populate(cliHandler)
+	if err != nil {
+		panic(err)
+	}
 
 	app.Commands = []cli.Command{
 		{
 			Name:   "start",
 			Usage:  "start processes",
-			Action: handler.Start,
+			Action: cliHandler.Start,
 		},
 		{
 			Name:   "stop",
 			Usage:  "start processes",
-			Action: handler.Stop,
+			Action: cliHandler.Stop,
 		},
 		{
 			Name:      "status",
 			ShortName: "st",
 			Usage:     "show process status",
-			Action:    handler.Status,
+			Action:    cliHandler.Status,
 		},
 		{
 			Name:   "debug",
 			Usage:  "Start one process and get stdout and stderr print on console.",
-			Action: handler.Debug,
+			Action: cliHandler.Debug,
 		},
 		{
 			Name:      "install",
 			ShortName: "i",
 			Usage:     "installs all stampzilla nodes and the server.",
-			Action:    handler.Install,
+			Action:    cliHandler.Install,
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:  "u",
