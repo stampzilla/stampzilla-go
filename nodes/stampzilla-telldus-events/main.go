@@ -36,6 +36,7 @@ func main() {
 
 	//Get a config with the correct parameters
 	config := basenode.NewConfig()
+	basenode.SetConfig(config)
 
 	// Load flags
 	//var host string
@@ -83,8 +84,9 @@ func main() {
 	//go connection(host, port, node)
 
 	//Create channels so we can communicate with the stampzilla-go server
-	serverSendChannel = make(chan interface{})
-	serverRecvChannel = make(chan protocol.Command)
+	serverSendChannel := make(chan interface{})
+	serverRecvChannel := make(chan protocol.Command)
+	connectionState := basenode.Connect(serverSendChannel, serverRecvChannel)
 	go monitorState(connectionState, serverSendChannel)
 
 	// This worker recives all incomming commands
