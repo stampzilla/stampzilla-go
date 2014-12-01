@@ -24,6 +24,7 @@ func NewRuleAction(cmd *protocol.Command, uuid string) RuleAction {
 func (ra *ruleAction) RunCommand() {
 	fmt.Println("Running command", ra.Command)
 	if ra.nodes == nil {
+		fmt.Println("ra.nodes is nil!")
 		return
 	}
 	node := ra.nodes.Search(ra.Uuid)
