@@ -31,6 +31,12 @@ func main() {
 			Action: cliHandler.Stop,
 		},
 		{
+			Name:      "restart",
+			ShortName: "r",
+			Usage:     "restart processes",
+			Action:    cliHandler.Restart,
+		},
+		{
 			Name:      "status",
 			ShortName: "st",
 			Usage:     "show process status",
