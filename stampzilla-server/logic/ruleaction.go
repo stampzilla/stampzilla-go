@@ -22,7 +22,7 @@ func NewRuleAction(cmd *protocol.Command, uuid string) RuleAction {
 	return &ruleAction{Command: cmd, Uuid: uuid}
 }
 func (ra *ruleAction) RunCommand() {
-	fmt.Println("Running command", ra.Command)
+	fmt.Println("Running command", ra.Command,"to",ra.Uuid)
 	if ra.nodes == nil {
 		fmt.Println("ra.nodes is nil!")
 		return
