@@ -7,6 +7,7 @@ import (
 	"unsafe"
 
 	log "github.com/cihub/seelog"
+	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
@@ -27,17 +28,20 @@ var state *State = &State{[]*Device{}, make(map[string]*Sensor, 0)}
 
 func main() {
 	// Load logger
-	logger, err := log.LoggerFromConfigAsFile("../logconfig.xml")
-	if err != nil {
-		panic(err)
-	}
-	log.ReplaceLogger(logger)
+	//logger, err := log.LoggerFromConfigAsFile("../logconfig.xml")
+	//if err != nil {
+	//panic(err)
+	//}
+	//log.ReplaceLogger(logger)
+
+	//Get a config with the correct parameters
+	config := basenode.NewConfig()
 
 	// Load flags
-	var host string
-	var port string
-	flag.StringVar(&host, "host", "localhost", "Stampzilla server hostname")
-	flag.StringVar(&port, "port", "8282", "Stampzilla server port")
+	//var host string
+	//var port string
+	//flag.StringVar(&host, "host", "localhost", "Stampzilla server hostname")
+	//flag.StringVar(&port, "port", "8282", "Stampzilla server port")
 	flag.Parse()
 
 	log.Info("Starting TELLDUS-events node")
@@ -76,9 +80,35 @@ func main() {
 	}
 
 	// Start the connection
-	go connection(host, port, node)
+	//go connection(host, port, node)
+
+	//Create channels so we can communicate with the stampzilla-go server
+	serverSendChannel = make(chan interface{})
+	serverRecvChannel = make(chan protocol.Command)
+	go monitorState(connectionState, serverSendChannel)
+
+	// This worker recives all incomming commands
+	go serverRecv(serverRecvChannel)
 
 	select {}
+}
+
+// WORKER that monitors the current connection state
+func monitorState(connectionState chan int, send chan interface{}) {
+	for s := range connectionState {
+		switch s {
+		case basenode.ConnectionStateConnected:
+			send <- node.Node()
+		case basenode.ConnectionStateDisconnected:
+		}
+	}
+}
+
+// WORKER that recives all incomming commands
+func serverRecv(recv chan protocol.Command) {
+	for d := range recv {
+		processCommand(d)
+	}
 }
 
 func processCommand(cmd protocol.Command) {

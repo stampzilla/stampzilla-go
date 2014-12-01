@@ -119,11 +119,13 @@ func (t *Installer) goGet(url string, update bool) {
 	//fmt.Printf("LookPath Error: %s", err)
 	//return
 	//}
+	out, err = run("sudo", "-E", "-u", "stampzilla", "-H", "/usr/bin/env")
+	fmt.Println(out)
+	return
 	if update {
 		//out, err = run("go", "get", "-u", url)
 		out, err = run("sudo", "-E", "-u", "stampzilla", "-H", gobin, "get", "-u", url)
 	} else {
-		//out, err = run("sudo", "-E", "-u", "stampzilla", "-H", "/usr/bin/env")
 		out, err = run("sudo", "-E", "-u", "stampzilla", "-H", gobin, "get", url)
 		//out, err = run("go", "get", url)
 	}
