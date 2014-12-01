@@ -107,6 +107,10 @@ func (t *cliHandler) Stop(c *cli.Context) {
 		p.stop()
 	}
 }
+func (t *cliHandler) Restart(c *cli.Context) {
+	t.Stop(c)
+	t.Start(c)
+}
 func (t *cliHandler) Status(c *cli.Context) {
 	processes := t.getRunningProcesses()
 	if len(processes) == 0 {
