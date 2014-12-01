@@ -114,17 +114,17 @@ func (t *Installer) goGet(url string, update bool) {
 	if err != nil {
 		fmt.Printf("LookPath Error: %s", err)
 	}
-	shbin, err := exec.LookPath("sh")
-	if err != nil {
-		fmt.Printf("LookPath Error: %s", err)
-		return
-	}
+	//shbin, err := exec.LookPath("sh")
+	//if err != nil {
+	//fmt.Printf("LookPath Error: %s", err)
+	//return
+	//}
 	if update {
 		//out, err = run("go", "get", "-u", url)
-		out, err = run("sudo", "-E", "-u", "stampzilla", "-H", shbin, "-c", gobin, "get", "-u", url)
+		out, err = run("sudo", "-E", "-u", "stampzilla", "-H", gobin, "get", "-u", url)
 	} else {
 		//out, err = run("sudo", "-E", "-u", "stampzilla", "-H", "/usr/bin/env")
-		out, err = run("sudo", "-E", "-u", "stampzilla", "-H", shbin, "-c", gobin, "get", url)
+		out, err = run("sudo", "-E", "-u", "stampzilla", "-H", gobin, "get", url)
 		//out, err = run("go", "get", url)
 	}
 	if err != nil {
