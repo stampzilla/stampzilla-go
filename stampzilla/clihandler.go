@@ -13,14 +13,13 @@ import (
 	"github.com/codegangsta/cli"
 )
 
-type processHandler struct {
-	Processes []*Process
+type cliHandler struct {
+	Config    *Config    `inject:""`
+	Installer *Installer `inject:""`
 }
 
-func (t *processHandler) Install(c *cli.Context) {
+func (t *cliHandler) Install(c *cli.Context) {
 	requireRoot()
-
-	i := &Installer{}
 
 	if c.Bool("u") {
 		fmt.Println("Updating stampzilla")
@@ -28,54 +27,53 @@ func (t *processHandler) Install(c *cli.Context) {
 		fmt.Println("Installing stampzilla")
 
 		// Create required user and folders
-		i.createUser("stampzilla")
-		i.createDirAsUser("/var/spool/stampzilla", "stampzilla")
-		i.createDirAsUser("/var/spool/stampzilla/config", "stampzilla")
-		i.createDirAsUser("/var/log/stampzilla", "stampzilla")
-		i.createDirAsUser("/home/stampzilla/go", "stampzilla")
-		i.config()
+		t.Installer.createUser("stampzilla")
+		t.Installer.createDirAsUser("/var/spool/stampzilla", "stampzilla")
+		t.Installer.createDirAsUser("/var/spool/stampzilla/config", "stampzilla")
+		t.Installer.createDirAsUser("/var/log/stampzilla", "stampzilla")
+		t.Installer.createDirAsUser("/home/stampzilla/go", "stampzilla")
+		t.Installer.config()
 	}
 
 	//Install all
-	i.goGet("github.com/stampzilla/stampzilla-go/stampzilla-server", c.Bool("u"))
-	i.goGet("github.com/stampzilla/stampzilla-go/nodes/stampzilla-chromecast", c.Bool("u"))
-	i.goGet("github.com/stampzilla/stampzilla-go/nodes/stampzilla-enocean", c.Bool("u"))
-	i.goGet("github.com/stampzilla/stampzilla-go/nodes/stampzilla-lifx", c.Bool("u"))
-	i.goGet("github.com/stampzilla/stampzilla-go/nodes/stampzilla-simple", c.Bool("u"))
-	i.goGet("github.com/stampzilla/stampzilla-go/nodes/stampzilla-stamp-amber-lights", c.Bool("u"))
-	i.goGet("github.com/stampzilla/stampzilla-go/nodes/stampzilla-telldus", c.Bool("u"))
+	t.Installer.goGet("github.com/stampzilla/stampzilla-go/stampzilla-server", c.Bool("u"))
+	t.Installer.goGet("github.com/stampzilla/stampzilla-go/nodes/stampzilla-chromecast", c.Bool("u"))
+	t.Installer.goGet("github.com/stampzilla/stampzilla-go/nodes/stampzilla-enocean", c.Bool("u"))
+	t.Installer.goGet("github.com/stampzilla/stampzilla-go/nodes/stampzilla-lifx", c.Bool("u"))
+	t.Installer.goGet("github.com/stampzilla/stampzilla-go/nodes/stampzilla-simple", c.Bool("u"))
+	t.Installer.goGet("github.com/stampzilla/stampzilla-go/nodes/stampzilla-stamp-amber-lights", c.Bool("u"))
+	t.Installer.goGet("github.com/stampzilla/stampzilla-go/nodes/stampzilla-telldus", c.Bool("u"))
 	//t.goGet("github.com/stampzilla/stampzilla-go/nodes/stampzilla-telldus-events", c.Bool("u")) // #include <telldus-core.h> ERROR
 	if c.Bool("u") { //Update only. do nothing more!
 		return
 	}
 
-	i.bower()
+	t.Installer.bower()
 
 	//TODO
 	// create default /etc/stampzilla.conf if it does not exist
 }
 
-func (t *processHandler) Start(c *cli.Context) {
+func (t *cliHandler) Start(c *cli.Context) {
 	requireRoot()
 
-	config := &Config{}
-	config.readConfigFromFile("/etc/stampzilla.conf")
+	t.Config.readConfigFromFile("/etc/stampzilla.conf")
 
 	what := c.Args().First()
 	if what != "" {
 		for _, what := range c.Args() {
-			t.start(what, config)
+			t.start(what)
 		}
 		return
 	}
 
-	for _, d := range config.GetAutostartingNodes() {
-		t.start(d.Name, config)
+	for _, d := range t.Config.GetAutostartingNodes() {
+		t.start(d.Name)
 	}
 }
-func (t *processHandler) start(what string, config *Config) {
+func (t *cliHandler) start(what string) {
 	cdir := ""
-	if dir := config.GetConfigForNode(what); dir != nil {
+	if dir := t.Config.GetConfigForNode(what); dir != nil {
 		cdir = dir.Config
 	}
 	process := &Process{
@@ -87,7 +85,7 @@ func (t *processHandler) start(what string, config *Config) {
 	process.start()
 }
 
-func (t *processHandler) Stop(c *cli.Context) {
+func (t *cliHandler) Stop(c *cli.Context) {
 	requireRoot()
 
 	what := c.Args().First()
@@ -109,7 +107,7 @@ func (t *processHandler) Stop(c *cli.Context) {
 		p.stop()
 	}
 }
-func (t *processHandler) Status(c *cli.Context) {
+func (t *cliHandler) Status(c *cli.Context) {
 	processes := t.getRunningProcesses()
 	if len(processes) == 0 {
 		fmt.Println("No stampzilla processes are running.")
@@ -125,7 +123,7 @@ func (t *processHandler) Status(c *cli.Context) {
 	w.Flush()
 }
 
-func (t *processHandler) Debug(c *cli.Context) {
+func (t *cliHandler) Debug(c *cli.Context) {
 	requireRoot()
 
 	what := c.Args().First()
@@ -134,10 +132,9 @@ func (t *processHandler) Debug(c *cli.Context) {
 	if err != nil {
 		fmt.Printf("LookPath Error: %s", err)
 	}
-	config := &Config{}
-	config.readConfigFromFile("/etc/stampzilla.conf")
+	t.Config.readConfigFromFile("/etc/stampzilla.conf")
 	chdircmd := ""
-	if dir := config.GetConfigForNode(what); dir != nil {
+	if dir := t.Config.GetConfigForNode(what); dir != nil {
 		i := &Installer{}
 		i.createDirAsUser(dir.Config, "stampzilla")
 		chdircmd = " cd " + dir.Config + "; "
@@ -154,13 +151,13 @@ func (t *processHandler) Debug(c *cli.Context) {
 	cmd.Run()
 }
 
-func (t *processHandler) getRunningProcesses() []*Process {
+func (t *cliHandler) getRunningProcesses() []*Process {
 	var processes []*Process
 
 	pidFiles, err := ioutil.ReadDir("/var/spool/stampzilla")
 	if err != nil {
-		fmt.Println(err)
-		return nil
+		fmt.Println("/var/spool/stampzilla does not exist. Have you run stampzilla install ?")
+		os.Exit(1)
 	}
 
 	for _, file := range pidFiles {
@@ -250,6 +247,6 @@ func run(head string, parts ...string) (string, error) { // {{{
 func requireRoot() { // {{{
 	if os.Getuid() != 0 {
 		fmt.Println("You must be root to run this")
-		os.Exit(0)
+		os.Exit(1)
 	}
 } // }}}
