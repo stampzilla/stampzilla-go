@@ -1,0 +1,66 @@
+{
+	"0186ff7d": {
+		"SenderId": "0186ff7d",
+		"Name": "Smartplug",
+		"On": false,
+		"Type": "",
+		"Features": null,
+		"SendEEPs": [
+			"a53808"
+		],
+		"RecvEEPs": [
+			"a51201",
+			"d20109"
+		],
+		"PowerW": 0,
+		"PowerkWh": 0,
+		"Dim": 0
+	},
+	"018d7492": {
+		"SenderId": "018d7492",
+		"Name": "FUD",
+		"On": false,
+		"Type": "",
+		"Features": null,
+		"SendEEPs": [
+			"a53808eltako"
+		],
+		"RecvEEPs": [
+			"f60201eltako",
+			"a53808eltako"
+		],
+		"PowerW": 0,
+		"PowerkWh": 0,
+		"Dim": 0
+	},
+	"018df8bd": {
+		"SenderId": "018df8bd",
+		"Name": "FSR61-230v",
+		"On": false,
+		"Type": "",
+		"Features": null,
+		"SendEEPs": [
+			"f60201"
+		],
+		"RecvEEPs": [
+			"f60201"
+		],
+		"PowerW": 0,
+		"PowerkWh": 0,
+		"Dim": 0
+	},
+	"fefe749b": {
+		"SenderId": "fefe749b",
+		"Name": "Knapp1",
+		"On": false,
+		"Type": "",
+		"Features": null,
+		"SendEEPs": null,
+		"RecvEEPs": [
+			"f60201"
+		],
+		"PowerW": 0,
+		"PowerkWh": 0,
+		"Dim": 0
+	}
+}
