@@ -27,7 +27,7 @@ func (t *Installer) config() {
 func (t *Installer) bower() {
 	if _, err := exec.LookPath("bower"); err != nil {
 		fmt.Println("Missing bower executable. Install with: npm install -g bower")
-		os.Exit(0)
+		os.Exit(1)
 	}
 
 	fmt.Print("bower install in public folder... ")
