@@ -50,7 +50,7 @@ func main() {
 	defer C.unregisterCallbacks()
 
 	// Create new node description
-	node = protocol.NewNode("tellstick-event")
+	node = protocol.NewNode("telldus-events")
 	node.SetState(state)
 
 	// Describe available actions
