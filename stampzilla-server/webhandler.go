@@ -21,7 +21,12 @@ type WebHandler struct {
 }
 
 func (wh *WebHandler) GetNodes(enc encoder.Encoder) (int, []byte) {
-	return 200, encoder.Must(json.Marshal(wh.Nodes.All()))
+	//return 200, encoder.Must(json.Marshal(wh.Nodes.All()))
+	jsonRet, err := json.Marshal(wh.Nodes.All())
+	if err != nil {
+		return 500, []byte(err.Error())
+	}
+	return 200, jsonRet
 }
 
 func (wh *WebHandler) GetNode(params martini.Params) (int, []byte) {
