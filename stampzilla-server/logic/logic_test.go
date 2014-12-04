@@ -32,8 +32,8 @@ func TestParseRuleEnterExitActions(t *testing.T) {
 	rule.AddEnterAction(action)
 	rule.AddExitAction(action)
 
-	rule.AddCondition(&ruleCondition{`Devices[1].State`, "==", true})
-	rule.AddCondition(&ruleCondition{`Devices[2].State`, "!=", "OFF"})
+	rule.AddCondition(&ruleCondition{`Devices[1].State`, "==", true, "uuid1234"})
+	rule.AddCondition(&ruleCondition{`Devices[2].State`, "!=", "OFF", "uuid1234"})
 	//rule.AddCondition(&ruleCondition{`Devices[3].State`, "!=", "OFF"})
 
 	state := `
@@ -55,7 +55,7 @@ func TestParseRuleEnterExitActions(t *testing.T) {
 		}
 	`
 
-	logic.SetState("uuidasdfasdf", state)
+	logic.SetState("uuid1234", state)
 	logic.EvaluateRules()
 
 	state = `
@@ -76,7 +76,7 @@ func TestParseRuleEnterExitActions(t *testing.T) {
 			}
 		}
 	`
-	logic.SetState("uuidasdfasdf", state)
+	logic.SetState("uuid1234", state)
 	logic.EvaluateRules()
 
 	fmt.Println(actionRunCount)

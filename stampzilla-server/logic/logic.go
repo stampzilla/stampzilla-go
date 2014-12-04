@@ -36,6 +36,14 @@ func (l *Logic) States() map[string]string {
 	defer l.RUnlock()
 	return l.states
 }
+func (l *Logic) GetStateByUuid(uuid string) string {
+	l.RLock()
+	defer l.RUnlock()
+	if state, ok := l.states[uuid]; ok {
+		return state
+	}
+	return ""
+}
 func (l *Logic) SetState(uuid, jsonData string) {
 	l.Lock()
 	l.states[uuid] = jsonData
@@ -70,8 +78,10 @@ func (l *Logic) EvaluateRules() {
 func (l *Logic) evaluateRule(r Rule) bool {
 	for _, cond := range r.Conditions() {
 		fmt.Println(cond.StatePath())
-		for _, state := range l.States() {
-			//var value string
+		//for _, state := range l.States() {
+		//var value string
+		if state := l.GetStateByUuid(cond.Uuid()); state != "" {
+
 			value, err := l.path(state, cond.StatePath())
 			if err != nil {
 				log.Error(err)
