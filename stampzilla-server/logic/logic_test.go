@@ -79,6 +79,10 @@ func TestParseRuleEnterExitActions(t *testing.T) {
 	logic.SetState("uuid1234", state)
 	logic.EvaluateRules()
 
+	if len(logic.States()) != 1 {
+		t.Errorf("length of logic.States should be 1. got: %s", len(logic.States()))
+	}
+
 	fmt.Println(actionRunCount)
 	if actionRunCount == 2 {
 		return
