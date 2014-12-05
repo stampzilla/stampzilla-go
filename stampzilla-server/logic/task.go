@@ -9,7 +9,7 @@ import (
 )
 
 type task struct {
-	Name     string       `json:"name"`
+	Name_    string       `json:"name"`
 	Uuid_    string       `json:"uuid"`
 	Actions  []RuleAction `json:"actions"`
 	cronId   int
@@ -23,6 +23,7 @@ type Task interface {
 	cron.Job
 	SetUuid(string)
 	Uuid() string
+	Name() string
 	CronId() int
 	AddAction(a RuleAction)
 	Schedule(string)
@@ -37,6 +38,11 @@ func (r *task) Uuid() string {
 	r.RLock()
 	defer r.RUnlock()
 	return r.Uuid_
+}
+func (r *task) Name() string {
+	r.RLock()
+	defer r.RUnlock()
+	return r.Name_
 }
 func (r *task) CronId() int {
 	r.RLock()

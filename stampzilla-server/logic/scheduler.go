@@ -30,7 +30,7 @@ func NewScheduler() *Scheduler {
 func (s *Scheduler) Start() {
 	log.Info("Starting Scheduler")
 
-	s.loadFromFile()
+	s.loadFromFile("schedule.json")
 	s.Cron.Start()
 }
 
@@ -43,7 +43,7 @@ func (s *Scheduler) Tasks() []Task {
 func (s *Scheduler) AddTask(name string) Task {
 	var err error
 
-	task := &task{Name: name, Uuid_: uuid.New()}
+	task := &task{Name_: name, Uuid_: uuid.New()}
 	task.nodes = s.Nodes
 	task.cron = s.Cron
 	if err != nil {
@@ -74,11 +74,11 @@ func (s *Scheduler) CreateExampleFile() {
 	task.AddAction(action)
 	task.Schedule("0 * * * * *")
 
-	s.saveToFile()
+	s.saveToFile("schedule.json")
 }
 
-func (s *Scheduler) saveToFile() {
-	configFile, err := os.Create("schedule.json")
+func (s *Scheduler) saveToFile(filepath string) {
+	configFile, err := os.Create(filepath)
 	if err != nil {
 		log.Error("creating config file", err.Error())
 	}
@@ -91,10 +91,10 @@ func (s *Scheduler) saveToFile() {
 	out.WriteTo(configFile)
 }
 
-func (s *Scheduler) loadFromFile() {
+func (s *Scheduler) loadFromFile(filepath string) {
 	log.Info("Loading schedule from json file")
 
-	configFile, err := os.Open("schedule.json")
+	configFile, err := os.Open(filepath)
 	if err != nil {
 		log.Error("opening config file", err.Error())
 		return
