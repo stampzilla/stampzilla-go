@@ -2,7 +2,6 @@ package logic
 
 import (
 	"encoding/json"
-	"fmt"
 
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/protocol"
@@ -22,18 +21,22 @@ func NewRuleAction(cmd *protocol.Command, uuid string) RuleAction {
 	return &ruleAction{Command: cmd, Uuid: uuid}
 }
 func (ra *ruleAction) RunCommand() {
-	log.Info("Running command", ra.Command,"to",ra.Uuid)
 	if ra.nodes == nil {
-		fmt.Println("ra.nodes is nil!")
+		log.Warn("Node ", ra.Uuid, " - No nodes connected when tried to send: ", ra.Command)
 		return
 	}
 	node := ra.nodes.Search(ra.Uuid)
 	if node != nil {
 		jsonToSend, err := json.Marshal(&ra.Command)
 		if err != nil {
+			log.Warn("Node ", ra.Uuid, " - Failed to marshal command: ", ra.Command)
 			log.Error(err)
 			return
 		}
+
+		log.Info("Running command ", ra.Command, " to ", ra.Uuid)
 		node.Conn().Write(jsonToSend)
+	} else {
+		log.Warn("Node ", ra.Uuid, " not found :/,  lost command", ra.Command)
 	}
 }
