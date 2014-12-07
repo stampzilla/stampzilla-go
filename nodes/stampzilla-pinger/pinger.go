@@ -1,0 +1,85 @@
+package main
+
+import (
+	"net"
+	"sync"
+	"time"
+
+	"github.com/tatsushid/go-fastping"
+)
+
+type Target struct {
+	Name   string
+	Ip     string
+	Online bool
+	Lag    string
+
+	shutdown chan bool
+	waiting  bool
+	sync.Mutex
+}
+
+func (t *Target) start() {
+	go t.worker()
+}
+
+func (t *Target) stop() {
+	select {
+	case <-t.shutdown:
+	default:
+		if t.shutdown != nil {
+			close(t.shutdown)
+		}
+	}
+}
+
+func (t *Target) worker() error {
+	t.shutdown = make(chan bool)
+
+	ra, err := net.ResolveIPAddr("ip4:icmp", t.Ip)
+	if err != nil {
+		return err
+	}
+
+	p := fastping.NewPinger()
+	p.MaxRTT = time.Second - (time.Millisecond * 100)
+	p.AddIPAddr(ra)
+
+	p.OnRecv = func(addr *net.IPAddr, rtt time.Duration) {
+		//fmt.Printf("IP Addr: %s receive, RTT: %v\n", addr.String(), rtt)
+		if !t.Online {
+			t.Lock()
+			t.waiting = false
+			t.Online = true
+			t.Lag = rtt.String()
+			t.Unlock()
+
+			serverSendChannel <- node.Node()
+		}
+	}
+
+	p.OnIdle = func() {
+		if t.waiting && t.Online {
+			t.Lock()
+			t.Online = false
+			t.Lag = ""
+			t.Unlock()
+
+			serverSendChannel <- node.Node()
+		}
+	}
+
+	for {
+		t.Lock()
+		t.waiting = true
+		t.Unlock()
+
+		err = p.Run()
+		if err != nil {
+			return err
+		}
+		<-time.After(time.Second)
+	}
+
+	return nil
+}
