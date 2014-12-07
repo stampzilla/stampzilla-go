@@ -116,7 +116,8 @@ func (d *Device) Worker() {
 		for {
 			select {
 			case msg := <-receiver.Incoming:
-				if receiver.Incoming == nil {
+				if msg == nil {
+					log.Warn("ReciverController shutdown")
 					return
 				}
 
