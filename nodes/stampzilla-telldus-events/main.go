@@ -118,7 +118,7 @@ func processCommand(cmd protocol.Command) {
 
 	i, err := strconv.Atoi(cmd.Args[0])
 	if err != nil {
-		log.Error(err)
+		log.Error("Failed to decode arg[0] to int", err, cmd.Args[0])
 		return
 	}
 
