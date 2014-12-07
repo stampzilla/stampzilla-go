@@ -47,15 +47,15 @@ func (t *Target) worker() error {
 
 	p.OnRecv = func(addr *net.IPAddr, rtt time.Duration) {
 		//fmt.Printf("IP Addr: %s receive, RTT: %v\n", addr.String(), rtt)
+		t.Lock()
+		t.waiting = false
 		if !t.Online {
-			t.Lock()
-			t.waiting = false
 			t.Online = true
 			t.Lag = rtt.String()
-			t.Unlock()
 
 			serverSendChannel <- node.Node()
 		}
+		t.Unlock()
 	}
 
 	p.OnIdle = func() {

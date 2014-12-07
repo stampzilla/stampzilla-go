@@ -24,18 +24,18 @@ func (s TargetState) GetState() interface{} {
 }
 
 func (s *TargetState) Add(t *Target) {
-	s.Targets[t.Ip] = t
+	s.Targets[t.Name] = t
 
 	node.AddElement(&protocol.Element{
 		Type:     protocol.ElementTypeText,
 		Name:     t.Name,
-		Feedback: `Targets["` + t.Ip + `"].Online`,
+		Feedback: `Targets["` + t.Name + `"].Online`,
 	})
 
 	node.AddElement(&protocol.Element{
 		Type:     protocol.ElementTypeText,
 		Name:     t.Name,
-		Feedback: `Targets["` + t.Ip + `"].Lag`,
+		Feedback: `Targets["` + t.Name + `"].Lag`,
 	})
 }
 
@@ -77,7 +77,7 @@ func main() { /*{{{*/
 	node.SetState(state)
 
 	t := &Target{
-		Name: "Stamps workstation",
+		Name: "stamps",
 		Ip:   "10.21.10.148",
 	}
 
