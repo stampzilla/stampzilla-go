@@ -79,7 +79,7 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 			}
 
 			ns.Nodes.Add(&info)
-			log.Info(info.Name, " - Got update on state")
+			log.Info(info.Uuid, " - ", info.Name, " - Got update on state")
 			ns.WebsocketHandler.SendSingleNode(uuid)
 
 			//Send to logic for evaluation
