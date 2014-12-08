@@ -51,10 +51,10 @@ func (n *Nodes) ByName(name string) *Node {
 	return nil
 }
 func (n *Nodes) Search(nameoruuid string) *Node {
-	if n := n.ByName(nameoruuid); n != nil {
+	if n := n.ByUuid(nameoruuid); n != nil {
 		return n
 	}
-	if n := n.ByUuid(nameoruuid); n != nil {
+	if n := n.ByName(nameoruuid); n != nil {
 		return n
 	}
 	return nil
