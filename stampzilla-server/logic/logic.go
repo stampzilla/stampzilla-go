@@ -76,22 +76,24 @@ func (l *Logic) EvaluateRules() {
 	}
 }
 func (l *Logic) evaluateRule(r Rule) bool {
+	var state string
 	for _, cond := range r.Conditions() {
 		fmt.Println(cond.StatePath())
 		//for _, state := range l.States() {
 		//var value string
-		if state := l.GetStateByUuid(cond.Uuid()); state != "" {
+		if state = l.GetStateByUuid(cond.Uuid()); state == "" {
+			return false
+		}
 
-			value, err := l.path(state, cond.StatePath())
-			if err != nil {
-				log.Error(err)
-			}
+		value, err := l.path(state, cond.StatePath())
+		if err != nil {
+			log.Error(err)
+		}
 
-			fmt.Println("path output:", value)
-			// All conditions must evaluate to true
-			if !cond.Check(value) {
-				return false
-			}
+		fmt.Println("path output:", value)
+		// All conditions must evaluate to true
+		if !cond.Check(value) {
+			return false
 		}
 	}
 	return true
