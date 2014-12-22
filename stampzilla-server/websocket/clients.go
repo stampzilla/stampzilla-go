@@ -6,7 +6,6 @@ import (
 
 	"github.com/go-martini/martini"
 	"github.com/gorilla/websocket"
-	serverprotocol "github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
 )
 
 type Message struct {
@@ -17,8 +16,7 @@ type Message struct {
 type Clients struct {
 	sync.Mutex
 	clients []*Client
-	Nodes   *serverprotocol.Nodes `inject:""`
-	Router  *Router               `inject:""`
+	Router  *Router `inject:""`
 }
 type Client struct {
 	Name       string
@@ -34,7 +32,11 @@ func (r *Clients) appendClient(client *Client) {
 	r.Lock()
 	r.clients = append(r.clients, client)
 	r.Unlock()
-	r.SendToAll(&Message{Type: "all", Data: r.Nodes.All()})
+
+	msgs := r.Router.RunOnClientConnectHandlers()
+	for _, msg := range msgs {
+		client.out <- msg
+	}
 }
 
 // Message all the other clients
@@ -69,7 +71,7 @@ func (r *Clients) disconnectAll() {
 }
 
 func newClients() *Clients {
-	return &Clients{sync.Mutex{}, make([]*Client, 0), nil, nil}
+	return &Clients{sync.Mutex{}, make([]*Client, 0), nil}
 }
 func (clients *Clients) WebsocketRoute(params martini.Params, receiver <-chan *Message, sender chan<- *Message, done <-chan bool, disconnect chan<- int, err <-chan error) (int, string) {
 	client := &Client{params["clientname"], receiver, sender, done, err, disconnect}
