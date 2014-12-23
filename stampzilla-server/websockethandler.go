@@ -23,7 +23,7 @@ func (wh *WebsocketHandler) Start() {
 	wh.Router.AddRoute("cmd", wh.RunCommand)
 
 	wh.Router.AddClientConnectHandler(func() *websocket.Message {
-		return &websocket.Message{Type: "all", Data: wh.Nodes.All()}
+		return &websocket.Message{Type: "all", Data: wh.jsonRawMessage(wh.Nodes.All())}
 	})
 
 }
@@ -37,21 +37,35 @@ func (wh *WebsocketHandler) jsonDecode(str string) *websocket.Message {
 	}
 	return msg
 }
-func (wh *WebsocketHandler) SchedulerRemoveTask(str string) {
-	msg := wh.jsonDecode(str)
-	if str, ok := msg.Data.(string); ok {
-		log.Info("Removing scheduled task ", str)
-		if err := wh.Scheduler.RemoveTask(str); err != nil {
-			log.Error(err)
-			return
-		}
-		wh.Clients.SendToAll(&websocket.Message{Type: "scheduleall", Data: wh.Scheduler.Tasks()})
+func (wh *WebsocketHandler) jsonRawMessage(data interface{}) json.RawMessage {
+	msg, err := json.Marshal(data)
+	if err != nil {
+		log.Error(err)
+		return nil
 	}
+	return msg
+}
+func (wh *WebsocketHandler) SchedulerRemoveTask(msg *websocket.Message) {
+	type Task struct {
+		Uuid string `json:"uuid"`
+	}
+	task := &Task{}
+	err := json.Unmarshal(msg.Data, task)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	log.Info("Removing scheduled task ", task.Uuid)
+	if err := wh.Scheduler.RemoveTask(task.Uuid); err != nil {
+		log.Error(err)
+		return
+	}
+	wh.Clients.SendToAll(&websocket.Message{Type: "scheduleall", Data: wh.jsonRawMessage(wh.Scheduler.Tasks())})
 }
 
 func (wh *WebsocketHandler) SchedulerEditTask(msg *websocket.Message) {
-
-	wh.Clients.SendToAll(&websocket.Message{Type: "scheduleall", Data: wh.Scheduler.Tasks()})
+	wh.Clients.SendToAll(&websocket.Message{Type: "scheduleall", Data: wh.jsonRawMessage(wh.Scheduler.Tasks())})
 }
 func (wh *WebsocketHandler) SchedulerAddTask(msg string) {
 
@@ -82,8 +96,8 @@ func (wh *WebsocketHandler) SchedulerAddTask(msg string) {
 
 	//wh.Clients.SendToAll(&websocket.Message{Type: "scheduleall", Data: wh.Scheduler.Tasks()})
 }
-func (wh *WebsocketHandler) RunCommand(str string) {
-	msg := wh.jsonDecode(str)
+func (wh *WebsocketHandler) RunCommand(msg *websocket.Message) {
+	//msg := wh.jsonDecode(str)
 	node := wh.Nodes.Search(msg.To)
 	if node != nil {
 		jsonToSend, err := json.Marshal(&msg.Data)
@@ -96,8 +110,8 @@ func (wh *WebsocketHandler) RunCommand(str string) {
 }
 
 func (wh *WebsocketHandler) SendAllNodes() {
-	wh.Clients.SendToAll(&websocket.Message{Type: "all", Data: wh.Nodes.All()})
+	wh.Clients.SendToAll(&websocket.Message{Type: "all", Data: wh.jsonRawMessage(wh.Nodes.All())})
 }
 func (wh *WebsocketHandler) SendSingleNode(uuid string) {
-	wh.Clients.SendToAll(&websocket.Message{Type: "singlenode", Data: wh.Nodes.ByUuid(uuid)})
+	wh.Clients.SendToAll(&websocket.Message{Type: "singlenode", Data: wh.jsonRawMessage(wh.Nodes.ByUuid(uuid))})
 }
