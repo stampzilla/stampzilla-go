@@ -1,19 +1,22 @@
 package websocket
 
-import "errors"
+import (
+	"encoding/json"
+	"errors"
+)
 
 type Router struct {
-	callbacks       map[string]func(*Message)
+	callbacks       map[string]func(string)
 	onClientConnect []func() *Message
 }
 
 func NewRouter() *Router {
 	r := &Router{}
-	r.callbacks = make(map[string]func(*Message))
+	r.callbacks = make(map[string]func(string))
 	return r
 }
 
-func (w *Router) AddRoute(route string, handler func(*Message)) {
+func (w *Router) AddRoute(route string, handler func(string)) {
 	w.callbacks[route] = handler
 }
 func (w *Router) AddClientConnectHandler(handler func() *Message) {
@@ -27,9 +30,16 @@ func (w *Router) RunOnClientConnectHandlers() []*Message {
 	}
 	return msg
 }
-func (w *Router) Run(msg *Message) error {
+func (w *Router) Run(str string) error {
+
+	var msg *Message
+	err := json.Unmarshal([]byte(str), &msg)
+	if err != nil {
+		return err
+	}
+
 	if cb, ok := w.callbacks[msg.Type]; ok {
-		cb(msg)
+		cb(str)
 		return nil
 	}
 	return errors.New("Undefined websocket route: " + msg.Type)

@@ -1,9 +1,11 @@
 package websocket
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
 
+	log "github.com/cihub/seelog"
 	"github.com/go-martini/martini"
 	"github.com/gorilla/websocket"
 )
@@ -20,8 +22,8 @@ type Clients struct {
 }
 type Client struct {
 	Name       string
-	in         <-chan *Message
-	out        chan<- *Message
+	in         <-chan string
+	out        chan<- string
 	done       <-chan bool
 	err        <-chan error
 	disconnect chan<- int
@@ -35,16 +37,35 @@ func (r *Clients) appendClient(client *Client) {
 
 	msgs := r.Router.RunOnClientConnectHandlers()
 	for _, msg := range msgs {
-		client.out <- msg
+		str, err := json.Marshal(msg)
+		if err != nil {
+			log.Error(err)
+		}
+		client.out <- string(str)
 	}
 }
 
 // Message all the other clients
-func (r *Clients) SendToAll(msg *Message) {
+func (r *Clients) SendToAll(msg interface{}) {
+
+	var str string
+	switch t := msg.(type) {
+	case string:
+		str = t
+	case *Message:
+		out, err := json.Marshal(t)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		str = string(out)
+
+	}
+
 	r.Lock()
 	defer r.Unlock()
 	for _, c := range r.clients {
-		c.out <- msg
+		c.out <- str
 	}
 }
 
@@ -73,7 +94,7 @@ func (r *Clients) disconnectAll() {
 func newClients() *Clients {
 	return &Clients{sync.Mutex{}, make([]*Client, 0), nil}
 }
-func (clients *Clients) WebsocketRoute(params martini.Params, receiver <-chan *Message, sender chan<- *Message, done <-chan bool, disconnect chan<- int, err <-chan error) (int, string) {
+func (clients *Clients) WebsocketRoute(params martini.Params, receiver <-chan string, sender chan<- string, done <-chan bool, disconnect chan<- int, err <-chan error) (int, string) {
 	client := &Client{params["clientname"], receiver, sender, done, err, disconnect}
 	clients.appendClient(client)
 

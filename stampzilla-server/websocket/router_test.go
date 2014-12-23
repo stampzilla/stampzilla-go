@@ -1,17 +1,23 @@
 package websocket
 
-import "testing"
+import (
+	"encoding/json"
+	"testing"
+)
 
 func TestRouterAddRoute(t *testing.T) {
 
-	handler := func(msg *Message) {
+	handler := func(msg string) {
 	}
 
 	r := NewRouter()
 	r.AddRoute("cmd", handler)
 
-	msg := &Message{Type: "cmd"}
-	if r.Run(msg) == nil {
+	str, err := json.Marshal(&Message{Type: "cmd"})
+	if err != nil {
+		t.Error(err)
+	}
+	if r.Run(string(str)) == nil {
 		return
 	}
 	t.Error("Route handle for cmd not found")

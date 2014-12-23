@@ -40,7 +40,7 @@ func (ws *WebServer) Start() {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	})
 
-	m.Get("/socket", sockets.JSON(websocket.Message{}), ws.WsClients.WebsocketRoute)
+	m.Get("/socket", sockets.Messages(), ws.WsClients.WebsocketRoute)
 
 	//Nodes
 	m.Get("/api/nodes", ws.WebHandler.GetNodes)
