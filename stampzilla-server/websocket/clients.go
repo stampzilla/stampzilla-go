@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	log "github.com/cihub/seelog"
 	"github.com/go-martini/martini"
 	"github.com/gorilla/websocket"
 )
@@ -41,21 +42,14 @@ func (r *Clients) appendClient(client *Client) {
 }
 
 // Message all the other clients
-func (r *Clients) SendToAll(msg *Message) {
+func (r *Clients) SendToAll(t string, data interface{}) {
 
-	//var str string
-	//switch t := msg.(type) {
-	//case string:
-	//str = t
-	//case *Message:
-	//out, err := json.Marshal(t)
-	//if err != nil {
-	//log.Error(err)
-	//return
-	//}
-	//str = string(out)
-
-	//}
+	out, err := json.Marshal(data)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	msg := &Message{Type: t, Data: out}
 
 	r.Lock()
 	defer r.Unlock()
