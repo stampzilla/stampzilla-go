@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
@@ -44,24 +45,28 @@ func TestSchedulerCalculateSun(t *testing.T) {
 	task := &task{Name_: "Test", Uuid_: uuid.New()}
 
 	when = task.CalculateSun("* sunset sunset * * *")
+	fmt.Println("sunset:", when)
 	s := strings.Split(when, " ")
 	if s[1] != strconv.Itoa(sunset.Minute()) || s[2] != strconv.Itoa(sunset.Hour()) {
 		t.Errorf("Sunset does not match %s %s", s[1], sunset.Minute())
 	}
 
 	when = task.CalculateSun("* sunrise sunrise * * *")
+	fmt.Println("sunrise:", when)
 	s = strings.Split(when, " ")
 	if s[1] != strconv.Itoa(sunrise.Minute()) || s[2] != strconv.Itoa(sunrise.Hour()) {
 		t.Errorf("Sunrise does not match %s %s", s[1], sunrise.Minute())
 	}
 
 	when = task.CalculateSun("* dawn dawn * * *")
+	fmt.Println("dawn:", when)
 	s = strings.Split(when, " ")
 	if s[1] != strconv.Itoa(dawn.Minute()) || s[2] != strconv.Itoa(dawn.Hour()) {
 		t.Errorf("Dawn does not match %s %s", s[1], dawn.Minute())
 	}
 
 	when = task.CalculateSun("* dusk dusk * * *")
+	fmt.Println("dusk:", when)
 	s = strings.Split(when, " ")
 	if s[1] != strconv.Itoa(dusk.Minute()) || s[2] != strconv.Itoa(dusk.Hour()) {
 		t.Errorf("Dusk does not match %s %s", s[1], dusk.Minute())
