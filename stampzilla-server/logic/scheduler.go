@@ -8,7 +8,7 @@ import (
 
 	"code.google.com/p/go-uuid/uuid"
 	log "github.com/cihub/seelog"
-	"github.com/elgs/cron"
+	"github.com/jonaz/cron"
 	"github.com/stampzilla/stampzilla-go/protocol"
 	serverprotocol "github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
 )

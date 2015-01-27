@@ -1,10 +1,14 @@
 package logic
 
 import (
+	"strconv"
+	"strings"
 	"sync"
+	"time"
 
 	log "github.com/cihub/seelog"
-	"github.com/elgs/cron"
+	"github.com/jonaz/astrotime"
+	"github.com/jonaz/cron"
 	"github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
 )
 
@@ -55,6 +59,7 @@ func (t *task) Run() {
 	for _, action := range t.Actions {
 		action.RunCommand()
 	}
+	//TODO reschedule here if IsSunBased by running Cron.RemoveFunc(task.CronId() and then t.Schedule(t.CronWhen) again
 	t.RUnlock()
 }
 
@@ -62,6 +67,9 @@ func (t *task) Schedule(when string) {
 	var err error
 	t.Lock()
 	t.CronWhen = when
+
+	when = t.CalculateSun(when)
+
 	t.cronId, err = t.cron.AddJob(when, t)
 	if err != nil {
 		log.Error(err)
@@ -76,4 +84,46 @@ func (r *task) AddAction(a RuleAction) {
 	r.Lock()
 	r.Actions = append(r.Actions, a)
 	r.Unlock()
+}
+
+func (t *task) IsSunBased(when string) string {
+	codes := []string{
+		"sunset",
+		"sunrise",
+		"dusk",
+		"dawn",
+	}
+
+	for _, v := range codes {
+		if strings.Contains(when, v) {
+			return v
+		}
+	}
+	return ""
+}
+
+func (t *task) CalculateSun(when string) string {
+	what := ""
+	if what = t.IsSunBased(when); what == "" {
+		return when
+	}
+
+	t1 := t.GetSunTime(what)
+	when = strings.Replace(when, what+" "+what, strconv.Itoa(t1.Minute())+" "+strconv.Itoa(t1.Hour()), 1)
+	return when
+}
+func (t *task) GetSunTime(what string) time.Time {
+
+	var t1 time.Time
+	switch what {
+	case "sunset":
+		t1 = astrotime.NextSunset(time.Now(), float64(56.878333), float64(14.809167))
+	case "sunrise":
+		t1 = astrotime.NextSunrise(time.Now(), float64(56.878333), float64(14.809167))
+	case "dusk":
+		t1 = astrotime.NextDusk(time.Now(), float64(56.878333), float64(14.809167), astrotime.CIVIL_DUSK)
+	case "dawn":
+		t1 = astrotime.NextDawn(time.Now(), float64(56.878333), float64(14.809167), astrotime.CIVIL_DAWN)
+	}
+	return t1
 }
