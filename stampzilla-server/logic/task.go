@@ -55,12 +55,20 @@ func (r *task) CronId() int {
 }
 
 func (t *task) Run() {
-	t.RLock()
+	t.Lock()
 	for _, action := range t.Actions {
 		action.RunCommand()
 	}
-	//TODO reschedule here if IsSunBased by running Cron.RemoveFunc(task.CronId() and then t.Schedule(t.CronWhen) again
-	t.RUnlock()
+
+	if t.IsSunBased(t.CronWhen) != "" {
+		t.reschedule()
+	}
+	t.Unlock()
+}
+
+func (t *task) reschedule() {
+	t.cron.RemoveFunc(t.CronId())
+	t.Schedule(t.CronWhen)
 }
 
 func (t *task) Schedule(when string) {
