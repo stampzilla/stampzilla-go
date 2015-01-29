@@ -19,8 +19,9 @@ type task struct {
 	cronId   int
 	CronWhen string `json:"when"`
 	sync.RWMutex
-	nodes *protocol.Nodes
-	cron  *cron.Cron
+	nodes     *protocol.Nodes
+	cron      *cron.Cron
+	entryTime time.Time
 }
 
 type Task interface {
@@ -68,6 +69,14 @@ func (t *task) Run() {
 
 func (t *task) reschedule() {
 	log.Debug("Rescheduling rule", t.CronWhen)
+
+	for _, v := range t.cron.Entries() {
+		if v.Id == t.CronId() {
+			t.entryTime = v.Schedule.Next(time.Now().Local())
+			break
+		}
+	}
+
 	t.cron.RemoveFunc(t.CronId())
 	t.Schedule(t.CronWhen)
 }
@@ -123,16 +132,21 @@ func (t *task) CalculateSun(when string) string {
 }
 func (t *task) GetSunTime(what string) time.Time {
 
+	now := time.Now()
+	if !t.entryTime.IsZero() {
+		now = t.entryTime
+	}
+
 	var t1 time.Time
 	switch what {
 	case "sunset":
-		t1 = astrotime.NextSunset(time.Now(), float64(56.878333), float64(14.809167))
+		t1 = astrotime.NextSunset(now, float64(56.878333), float64(14.809167))
 	case "sunrise":
-		t1 = astrotime.NextSunrise(time.Now(), float64(56.878333), float64(14.809167))
+		t1 = astrotime.NextSunrise(now, float64(56.878333), float64(14.809167))
 	case "dusk":
-		t1 = astrotime.NextDusk(time.Now(), float64(56.878333), float64(14.809167), astrotime.CIVIL_DUSK)
+		t1 = astrotime.NextDusk(now, float64(56.878333), float64(14.809167), astrotime.CIVIL_DUSK)
 	case "dawn":
-		t1 = astrotime.NextDawn(time.Now(), float64(56.878333), float64(14.809167), astrotime.CIVIL_DAWN)
+		t1 = astrotime.NextDawn(now, float64(56.878333), float64(14.809167), astrotime.CIVIL_DAWN)
 	}
 	return t1
 }
