@@ -1,13 +1,11 @@
 package logic
 
 import (
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	log "github.com/cihub/seelog"
-	"github.com/jonaz/astrotime"
 	"github.com/jonaz/cron"
 	"github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
 )
@@ -62,32 +60,12 @@ func (t *task) Run() {
 	}
 	t.RUnlock()
 
-	if t.IsSunBased(t.CronWhen) != "" {
-		t.reschedule()
-	}
-}
-
-func (t *task) reschedule() {
-	log.Debug("Rescheduling rule", t.CronWhen)
-
-	for _, v := range t.cron.Entries() {
-		if v.Id == t.CronId() {
-			t.entryTime = v.Schedule.Next(time.Now().Local())
-			log.Debug("Setting t.entryTime to ", t.entryTime)
-			break
-		}
-	}
-
-	t.cron.RemoveFunc(t.CronId())
-	t.Schedule(t.CronWhen)
 }
 
 func (t *task) Schedule(when string) {
 	var err error
 	t.Lock()
 	t.CronWhen = when
-
-	when = t.CalculateSun(when)
 
 	t.cronId, err = t.cron.AddJob(when, t)
 	if err != nil {
@@ -119,35 +97,4 @@ func (t *task) IsSunBased(when string) string {
 		}
 	}
 	return ""
-}
-
-func (t *task) CalculateSun(when string) string {
-	what := ""
-	if what = t.IsSunBased(when); what == "" {
-		return when
-	}
-
-	t1 := t.GetSunTime(what)
-	when = strings.Replace(when, what+" "+what, strconv.Itoa(t1.Minute())+" "+strconv.Itoa(t1.Hour()), 1)
-	return when
-}
-func (t *task) GetSunTime(what string) time.Time {
-
-	now := time.Now()
-	if !t.entryTime.IsZero() {
-		now = t.entryTime
-	}
-
-	var t1 time.Time
-	switch what {
-	case "sunset":
-		t1 = astrotime.NextSunset(now, float64(56.878333), float64(14.809167))
-	case "sunrise":
-		t1 = astrotime.NextSunrise(now, float64(56.878333), float64(14.809167))
-	case "dusk":
-		t1 = astrotime.NextDusk(now, float64(56.878333), float64(14.809167), astrotime.CIVIL_DUSK)
-	case "dawn":
-		t1 = astrotime.NextDawn(now, float64(56.878333), float64(14.809167), astrotime.CIVIL_DAWN)
-	}
-	return t1
 }

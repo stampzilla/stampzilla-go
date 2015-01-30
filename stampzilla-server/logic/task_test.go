@@ -1,15 +1,6 @@
 package logic
 
-import (
-	"strconv"
-	"strings"
-	"testing"
-	"time"
-
-	"github.com/jonaz/astrotime"
-
-	"code.google.com/p/go-uuid/uuid"
-)
+import "testing"
 
 func TestTaskSetUuid(t *testing.T) {
 	task := &task{}
@@ -32,44 +23,4 @@ func TestTaskRunAndAddActions(t *testing.T) {
 		return
 	}
 	t.Errorf("actionRunCount wrong expected: %d got %d", 4, actionRunCount)
-}
-func TestSchedulerCalculateSun(t *testing.T) {
-
-	sunset := astrotime.NextSunset(time.Now(), float64(56.878333), float64(14.809167))
-	sunrise := astrotime.NextSunrise(time.Now(), float64(56.878333), float64(14.809167))
-	dusk := astrotime.NextDusk(time.Now(), float64(56.878333), float64(14.809167), astrotime.CIVIL_DUSK)
-	dawn := astrotime.NextDawn(time.Now(), float64(56.878333), float64(14.809167), astrotime.CIVIL_DAWN)
-
-	when := ""
-	task := &task{Name_: "Test", Uuid_: uuid.New()}
-
-	when = task.CalculateSun("* sunset sunset * * *")
-	t.Log("sunset:", when)
-	s := strings.Split(when, " ")
-	if s[1] != strconv.Itoa(sunset.Minute()) || s[2] != strconv.Itoa(sunset.Hour()) {
-		t.Errorf("Sunset does not match %s %s", s[1], sunset.Minute())
-	}
-
-	when = task.CalculateSun("* sunrise sunrise * * *")
-	t.Log("sunrise:", when)
-	s = strings.Split(when, " ")
-	if s[1] != strconv.Itoa(sunrise.Minute()) || s[2] != strconv.Itoa(sunrise.Hour()) {
-		t.Errorf("Sunrise does not match %s %s", s[1], sunrise.Minute())
-	}
-
-	when = task.CalculateSun("* dawn dawn * * *")
-	t.Log("dawn:", when)
-	s = strings.Split(when, " ")
-	if s[1] != strconv.Itoa(dawn.Minute()) || s[2] != strconv.Itoa(dawn.Hour()) {
-		t.Errorf("Dawn does not match %s %s", s[1], dawn.Minute())
-	}
-
-	when = task.CalculateSun("* dusk dusk * * *")
-	t.Log("dusk:", when)
-	s = strings.Split(when, " ")
-	if s[1] != strconv.Itoa(dusk.Minute()) || s[2] != strconv.Itoa(dusk.Hour()) {
-		t.Errorf("Dusk does not match %s %s", s[1], dusk.Minute())
-	}
-
-	//t.Errorf("actionRunCount wrong expected cron to have ran 4 times got %d", actionRunCount)
 }
