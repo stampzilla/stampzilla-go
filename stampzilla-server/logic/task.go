@@ -73,6 +73,7 @@ func (t *task) reschedule() {
 	for _, v := range t.cron.Entries() {
 		if v.Id == t.CronId() {
 			t.entryTime = v.Schedule.Next(time.Now().Local())
+			log.Debug("Setting t.entryTime to ", t.entryTime)
 			break
 		}
 	}
