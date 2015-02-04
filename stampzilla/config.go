@@ -46,13 +46,13 @@ func (c *Config) generateDefault() error {
 			continue
 		}
 		name := strings.Replace(node.Name(), "stampzilla-", "", 1)
-		autostart := &Daemon{Name: name, Config: "/var/spool/stampzilla/config/" + node.Name(), Autostart: true}
+		autostart := &Daemon{Name: name, Config: "/var/spool/stampzilla/config/" + node.Name(), Autostart: false}
 		config.Daemons = append(config.Daemons, autostart)
 	}
 
 	// Add server since it is not present in the nodes directory.
-	autostart := &Daemon{Name: "server", Config: "/var/spool/stampzilla/config/stampzilla-server", Autostart: true}
-	config.Daemons = append(config.Daemons, autostart)
+	//autostart := &Daemon{Name: "server", Config: "/var/spool/stampzilla/config/stampzilla-server", Autostart: false}
+	//config.Daemons = append(config.Daemons, autostart)
 	*c = *config
 	return nil
 }

@@ -6,8 +6,8 @@ import (
 	"net"
 
 	log "github.com/cihub/seelog"
-	"github.com/stampzilla/stampzilla-go/stampzilla-server/logic"
-	serverprotocol "github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/logic"
+	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 )
 
 type NodeServer struct {

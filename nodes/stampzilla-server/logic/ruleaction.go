@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 
 	log "github.com/cihub/seelog"
+	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 	"github.com/stampzilla/stampzilla-go/protocol"
-	serverprotocol "github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
 )
 
 type RuleAction interface {

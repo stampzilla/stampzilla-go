@@ -9,8 +9,8 @@ import (
 	"code.google.com/p/go-uuid/uuid"
 	log "github.com/cihub/seelog"
 	"github.com/jonaz/cron"
+	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 	"github.com/stampzilla/stampzilla-go/protocol"
-	serverprotocol "github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
 )
 
 // Schedular that schedule ruleActions

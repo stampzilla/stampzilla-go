@@ -71,13 +71,13 @@ func (p *Process) stop() {
 	}
 	process, err := os.FindProcess(pid)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("os.FindProcess(): ", err)
 		return
 	}
+
 	err = process.Kill()
 	if err != nil {
-		fmt.Println(err)
-		return
+		fmt.Println("process.Kill(): ", err)
 	}
 	p.Pidfile.delete()
 }

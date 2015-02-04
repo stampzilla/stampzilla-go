@@ -35,23 +35,42 @@ func (t *cliHandler) Install(c *cli.Context) {
 		t.Installer.config()
 	}
 
-	//Install all
-	t.Installer.goGet("github.com/stampzilla/stampzilla-go/stampzilla-server", c.Bool("u"))
-	t.Installer.goGet("github.com/stampzilla/stampzilla-go/nodes/stampzilla-chromecast", c.Bool("u"))
-	t.Installer.goGet("github.com/stampzilla/stampzilla-go/nodes/stampzilla-enocean", c.Bool("u"))
-	t.Installer.goGet("github.com/stampzilla/stampzilla-go/nodes/stampzilla-lifx", c.Bool("u"))
-	t.Installer.goGet("github.com/stampzilla/stampzilla-go/nodes/stampzilla-simple", c.Bool("u"))
-	t.Installer.goGet("github.com/stampzilla/stampzilla-go/nodes/stampzilla-stamp-amber-lights", c.Bool("u"))
-	t.Installer.goGet("github.com/stampzilla/stampzilla-go/nodes/stampzilla-telldus", c.Bool("u"))
-	//t.goGet("github.com/stampzilla/stampzilla-go/nodes/stampzilla-telldus-events", c.Bool("u")) // #include <telldus-core.h> ERROR
-	if c.Bool("u") { //Update only. do nothing more!
+	nodes, err := ioutil.ReadDir("/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/")
+	if err != nil {
+		fmt.Println(err)
 		return
 	}
 
-	t.Installer.bower()
+	for _, node := range nodes {
+		if !strings.Contains(node.Name(), "stampzilla-") {
+			continue
+		}
 
-	//TODO
-	// create default /etc/stampzilla.conf if it does not exist
+		if len(c.Args()) == 0 && node.Name() == "stampzilla-telldus-events" {
+			continue
+		}
+
+		if len(c.Args()) != 0 && !t.findNodeInArgs(c, node.Name()) {
+			continue
+		}
+
+		t.Installer.goGet("github.com/stampzilla/stampzilla-go/nodes/"+node.Name(), c.Bool("u"))
+
+		if node.Name() == "stampzilla-server" && !c.Bool("u") {
+			t.Installer.bower()
+		}
+	}
+
+	return
+}
+
+func (t *cliHandler) findNodeInArgs(c *cli.Context, node string) bool {
+	for _, requestedNode := range c.Args() {
+		if node == "stampzilla-"+requestedNode {
+			return true
+		}
+	}
+	return false
 }
 
 func (t *cliHandler) Start(c *cli.Context) {
@@ -121,7 +140,12 @@ func (t *cliHandler) Status(c *cli.Context) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 8, 0, '\t', 0)
 	fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", "Name", "Pid", "CPU", "Memory")
 	for _, p := range processes {
-		fmt.Fprintf(w, "%s\t%d\t%s\t%s\n", p.Name, p.Pid, p.Status.CPU, p.Status.Memory)
+		if p.Status != nil {
+			fmt.Fprintf(w, "%s\t%d\t%s\t%s\n", p.Name, p.Pid, p.Status.CPU, p.Status.Memory)
+			continue
+		}
+
+		fmt.Fprintf(w, "%s\t%d\t(DIED)\n", p.Name, p.Pid)
 	}
 
 	w.Flush()
@@ -148,7 +172,7 @@ func (t *cliHandler) Debug(c *cli.Context) {
 	//out, err := run("sudo", "-E", "-u", "stampzilla", "-H", shbin, "-c", cmd)
 	cmd.Env = []string{
 		"GOPATH=/home/stampzilla/go",
-		"STAMPZILLA_WEBROOT=/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/stampzilla-server/public",
+		"STAMPZILLA_WEBROOT=/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/public",
 	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -172,6 +196,7 @@ func (t *cliHandler) getRunningProcesses() []*Process {
 		pid := pidFile.read()
 		process := &Process{Pid: pid}
 		process.Pidfile = pidFile
+		process.Name = file.Name()
 		processes = append(processes, process)
 	}
 
@@ -222,7 +247,11 @@ func (t *cliHandler) getRunningProcesses() []*Process {
 	//remove not found processes from the list.
 	for index, p := range processes {
 		if p.Name == "" {
-			processes = processes[:index+copy(processes[index:], processes[index+1:])]
+			if len(processes) > index+1 {
+				processes = append(processes[:index], processes[index+1:]...)
+			} else {
+				processes = processes[:index]
+			}
 		}
 	}
 	return processes
@@ -240,7 +269,7 @@ func run(head string, parts ...string) (string, error) { // {{{
 	//cmd.Env = []string{"GOPATH=$HOME/go", "PATH=$PATH:$GOPATH/bin"}
 	cmd.Env = []string{
 		"GOPATH=/home/stampzilla/go",
-		"STAMPZILLA_WEBROOT=/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/stampzilla-server/public",
+		"STAMPZILLA_WEBROOT=/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/public",
 	}
 	out, err = cmd.CombinedOutput()
 	if err != nil {

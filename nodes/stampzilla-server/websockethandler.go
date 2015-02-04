@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 
 	log "github.com/cihub/seelog"
-	"github.com/stampzilla/stampzilla-go/stampzilla-server/logic"
-	serverprotocol "github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
-	"github.com/stampzilla/stampzilla-go/stampzilla-server/websocket"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/logic"
+	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
 )
 
 type WebsocketHandler struct {

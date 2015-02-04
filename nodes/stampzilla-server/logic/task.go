@@ -7,7 +7,7 @@ import (
 
 	log "github.com/cihub/seelog"
 	"github.com/jonaz/cron"
-	"github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 )
 
 type task struct {

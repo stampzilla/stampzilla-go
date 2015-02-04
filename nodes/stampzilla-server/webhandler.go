@@ -9,9 +9,9 @@ import (
 	log "github.com/cihub/seelog"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/encoder"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/logic"
+	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 	"github.com/stampzilla/stampzilla-go/protocol"
-	"github.com/stampzilla/stampzilla-go/stampzilla-server/logic"
-	serverprotocol "github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
 )
 
 type WebHandler struct {

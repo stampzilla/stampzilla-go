@@ -3,7 +3,7 @@ package logic
 import (
 	"sync"
 
-	"github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 )
 
 type Rule interface {

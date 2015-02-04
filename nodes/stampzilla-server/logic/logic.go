@@ -14,7 +14,7 @@ import (
 	"code.google.com/p/go-uuid/uuid"
 
 	log "github.com/cihub/seelog"
-	serverprotocol "github.com/stampzilla/stampzilla-go/stampzilla-server/protocol"
+	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 )
 
 type Logic struct {
