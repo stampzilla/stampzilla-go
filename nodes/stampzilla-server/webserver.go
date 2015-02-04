@@ -44,9 +44,9 @@ func (ws *WebServer) Start() {
 
 	//Nodes
 	m.Get("/api/nodes", ws.WebHandler.GetNodes)
-	m.Get("/api/node/:id", ws.WebHandler.GetNode)
-	m.Put("/api/node/:id/cmd", ws.WebHandler.CommandToNodePut)
-	m.Get("/api/node/:id/cmd/**", ws.WebHandler.CommandToNodeGet)
+	m.Get("/api/nodes/:id", ws.WebHandler.GetNode)
+	m.Put("/api/nodes/:id/cmd", ws.WebHandler.CommandToNodePut)
+	m.Get("/api/nodes/:id/cmd/**", ws.WebHandler.CommandToNodeGet)
 
 	//Rules
 	m.Get("/api/rules", ws.WebHandler.GetRules)
