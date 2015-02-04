@@ -37,7 +37,7 @@ func (t *Installer) bower() {
 		return
 	}
 
-	toRun := "cd /home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/stampzilla-server/public && bower install"
+	toRun := "cd /home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/public && bower install"
 	out, err := run("sudo", "-E", "-u", "stampzilla", "-H", shbin, "-c", toRun)
 	if err != nil {
 		fmt.Println("ERROR", err, out)
