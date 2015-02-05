@@ -26,6 +26,7 @@ import "C"
 
 var node *protocol.Node
 var state *State = &State{[]*Device{}, make(map[string]*Sensor, 0)}
+var serverConnection *basenode.Connection
 
 func main() {
 	// Load logger
@@ -84,11 +85,11 @@ func main() {
 	// Start the connection
 	//go connection(host, port, node)
 
-	connection := basenode.Connect()
-	go monitorState(connection)
+	serverConnection = basenode.Connect()
+	go monitorState(serverConnection)
 
 	// This worker recives all incomming commands
-	go serverRecv(connection)
+	go serverRecv(serverConnection)
 
 	select {}
 }
@@ -109,9 +110,7 @@ func serverRecv(connection *basenode.Connection) {
 	for d := range connection.Receive {
 		if err := processCommand(d); err != nil {
 			log.Error(err)
-			continue
 		}
-		connection.Send <- node.Node()
 	}
 }
 
@@ -220,6 +219,15 @@ func sensorEvent(protocol, model *C.char, sensorId, dataType int, value *C.char)
 //export deviceEvent
 func deviceEvent(deviceId, method int, data *C.char, callbackId int, context unsafe.Pointer) {
 	log.Debugf("DeviceEVENT %d\t%d\t:%s\n", deviceId, method, C.GoString(data))
+	device := state.GetDevice(strconv.Itoa(deviceId))
+	if method&C.TELLSTICK_TURNON != 0 {
+		device.State.On = true
+		serverConnection.Send <- node.Node()
+	}
+	if method&C.TELLSTICK_TURNOFF != 0 {
+		device.State.On = false
+		serverConnection.Send <- node.Node()
+	}
 }
 
 //export deviceChangeEvent

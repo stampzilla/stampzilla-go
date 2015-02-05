@@ -11,6 +11,16 @@ func (s *State) AddDevice(id, name string, features []string, state DeviceState)
 	s.Devices = append(s.Devices, d)
 }
 
+func (s *State) GetDevice(id string) *Device {
+	for _, v := range s.Devices {
+		if v.Id == id {
+			return v
+		}
+
+	}
+	return nil
+}
+
 func (s *State) GetState() interface{} {
 	return s
 }
