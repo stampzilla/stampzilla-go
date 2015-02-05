@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"flag"
+	"fmt"
 	"strconv"
 	"unsafe"
 
@@ -82,44 +84,44 @@ func main() {
 	// Start the connection
 	//go connection(host, port, node)
 
-	//Create channels so we can communicate with the stampzilla-go server
-	serverSendChannel := make(chan interface{})
-	serverRecvChannel := make(chan protocol.Command)
-	connectionState := basenode.Connect(serverSendChannel, serverRecvChannel)
-	go monitorState(connectionState, serverSendChannel)
+	connection := basenode.Connect()
+	go monitorState(connection)
 
 	// This worker recives all incomming commands
-	go serverRecv(serverRecvChannel)
+	go serverRecv(connection)
 
 	select {}
 }
 
 // WORKER that monitors the current connection state
-func monitorState(connectionState chan int, send chan interface{}) {
-	for s := range connectionState {
+func monitorState(connection *basenode.Connection) {
+	for s := range connection.State {
 		switch s {
 		case basenode.ConnectionStateConnected:
-			send <- node.Node()
+			connection.Send <- node.Node()
 		case basenode.ConnectionStateDisconnected:
 		}
 	}
 }
 
 // WORKER that recives all incomming commands
-func serverRecv(recv chan protocol.Command) {
-	for d := range recv {
-		processCommand(d)
+func serverRecv(connection *basenode.Connection) {
+	for d := range connection.Receive {
+		if err := processCommand(d); err != nil {
+			log.Error(err)
+			continue
+		}
+		connection.Send <- node.Node()
 	}
 }
 
-func processCommand(cmd protocol.Command) {
+func processCommand(cmd protocol.Command) error {
 	var result C.int = C.TELLSTICK_ERROR_UNKNOWN
 	var id C.int = 0
 
 	i, err := strconv.Atoi(cmd.Args[0])
 	if err != nil {
-		log.Error("Failed to decode arg[0] to int", err, cmd.Args[0])
-		return
+		return fmt.Errorf("Failed to decode arg[0] to int %s %s", err, cmd.Args[0])
 	}
 
 	id = C.int(i)
@@ -150,9 +152,11 @@ func processCommand(cmd protocol.Command) {
 
 	if result != C.TELLSTICK_SUCCESS {
 		var errorString *C.char = C.tdGetErrorString(result)
-		log.Error(C.GoString(errorString))
 		C.tdReleaseString(errorString)
+		return errors.New(C.GoString(errorString))
 	}
+
+	return nil
 }
 
 //export newDevice
