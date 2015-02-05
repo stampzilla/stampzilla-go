@@ -1,22 +1,19 @@
 package main
 
 type State struct { /*{{{*/
-	Devices []*Device
+	Devices map[string]*Device
 	Sensors map[string]*Sensor
 } /*}}}*/
 
 func (s *State) AddDevice(id, name string, features []string, state DeviceState) {
 	d := NewDevice(id, name, state, "", features)
 
-	s.Devices = append(s.Devices, d)
+	s.Devices[id] = d
 }
 
 func (s *State) GetDevice(id string) *Device {
-	for _, v := range s.Devices {
-		if v.Id == id {
-			return v
-		}
-
+	if d, ok := s.Devices[id]; ok {
+		return d
 	}
 	return nil
 }

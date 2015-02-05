@@ -25,7 +25,7 @@ extern int updateDevices();
 import "C"
 
 var node *protocol.Node
-var state *State = &State{[]*Device{}, make(map[string]*Sensor, 0)}
+var state *State = &State{make(map[string]*Device), make(map[string]*Sensor, 0)}
 var serverConnection *basenode.Connection
 
 func main() {
@@ -78,7 +78,7 @@ func main() {
 				Cmd:  "toggle",
 				Args: []string{dev.Id},
 			},
-			Feedback: `Devices[` + dev.Id + `].On`,
+			Feedback: `Devices[` + dev.Id + `].State.On`,
 		})
 	}
 
