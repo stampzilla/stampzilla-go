@@ -23,18 +23,14 @@ func main() { /*{{{*/
 
 	node := protocol.NewNode("chromecast")
 
-	//Create channels so we can communicate with the stampzilla-go server
-	serverSendChannel := make(chan interface{})
-	serverRecvChannel := make(chan protocol.Command)
-
 	//Start communication with the server
-	connectionState := basenode.Connect(serverSendChannel, serverRecvChannel)
+	connection := basenode.Connect()
 
 	// Thit worker keeps track on our connection state, if we are connected or not
-	go monitorState(node, connectionState, serverSendChannel)
+	go monitorState(node, connection)
 
 	// This worker recives all incomming commands
-	go serverRecv(serverRecvChannel)
+	go serverRecv(connection.Receive)
 
 	//Start chromecast monitoring
 	chromecast := NewChromecast()
@@ -62,7 +58,7 @@ func main() { /*{{{*/
 					Feedback: `Devices["` + dev.Id + `"].PrimaryApp`,
 				})
 			case "Updated":
-				serverSendChannel <- node.Node()
+				connection.Send <- node.Node()
 			default:
 				log.Warn("Unknown event: ", event.Name)
 			}
@@ -75,11 +71,11 @@ func main() { /*{{{*/
 } /*}}}*/
 
 // WORKER that monitors the current connection state
-func monitorState(node *protocol.Node, connectionState chan int, send chan interface{}) {
-	for s := range connectionState {
+func monitorState(node *protocol.Node, connection *basenode.Connection) {
+	for s := range connection.State {
 		switch s {
 		case basenode.ConnectionStateConnected:
-			send <- node.Node()
+			connection.Send <- node.Node()
 		case basenode.ConnectionStateDisconnected:
 		}
 	}

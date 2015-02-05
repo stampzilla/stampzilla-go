@@ -16,12 +16,12 @@ import (
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
-var node *protocol.Node
 var state *State
-var serverSendChannel chan interface{}
-var serverRecvChannel chan protocol.Command
 
-func init() {
+func main() {
+
+	node := protocol.NewNode("enocean")
+
 	flag.Parse()
 
 	//Setup Config
@@ -29,17 +29,12 @@ func init() {
 	basenode.SetConfig(config)
 
 	//Start communication with the server
-	serverSendChannel = make(chan interface{})
-	serverRecvChannel = make(chan protocol.Command)
-	connectionState := basenode.Connect(serverSendChannel, serverRecvChannel)
-	go monitorState(connectionState, serverSendChannel)
-	go serverRecv(serverRecvChannel)
+	//serverSendChannel = make(chan interface{})
+	//serverRecvChannel = make(chan protocol.Command)
+	connection := basenode.Connect()
+	go monitorState(node, connection)
+	go serverRecv(connection)
 
-}
-
-func main() {
-
-	node = protocol.NewNode("enocean")
 	// Describe available actions
 	node.AddAction("set", "Set", []string{"Devices.Id"})
 	node.AddAction("toggle", "Toggle", []string{"Devices.Id"})
@@ -81,22 +76,22 @@ func main() {
 
 	checkDuplicateSenderIds()
 
-	setupEnoceanCommunication()
+	setupEnoceanCommunication(node, connection)
 }
 
-func monitorState(connectionState chan int, send chan interface{}) {
-	for s := range connectionState {
+func monitorState(node *protocol.Node, connection *basenode.Connection) {
+	for s := range connection.State {
 		switch s {
 		case basenode.ConnectionStateConnected:
-			send <- node
+			connection.Send <- node
 		case basenode.ConnectionStateDisconnected:
 		}
 	}
 }
 
-func serverRecv(recv chan protocol.Command) {
+func serverRecv(connection *basenode.Connection) {
 
-	for d := range recv {
+	for d := range connection.Receive {
 		processCommand(d)
 	}
 
@@ -142,13 +137,14 @@ func processCommand(cmd protocol.Command) {
 
 var enoceanSend chan goenocean.Encoder
 
-func setupEnoceanCommunication() {
+func setupEnoceanCommunication(node *protocol.Node, connection *basenode.Connection) {
+
 	enoceanSend = make(chan goenocean.Encoder)
 	recv := make(chan goenocean.Packet)
 	goenocean.Serial(enoceanSend, recv)
 
 	getIDBase()
-	reciever(recv)
+	reciever(node, connection, recv)
 }
 
 func getIDBase() {
@@ -160,7 +156,7 @@ func getIDBase() {
 
 var usb300SenderId [4]byte
 
-func reciever(recv chan goenocean.Packet) {
+func reciever(node *protocol.Node, connection *basenode.Connection, recv chan goenocean.Packet) {
 	for p := range recv {
 		if p.PacketType() == goenocean.PacketTypeResponse && len(p.Data()) == 5 {
 			copy(usb300SenderId[:], p.Data()[1:4])
@@ -168,19 +164,19 @@ func reciever(recv chan goenocean.Packet) {
 			continue
 		}
 		if p.SenderId() != [4]byte{0, 0, 0, 0} {
-			incomingPacket(p)
+			incomingPacket(node, connection, p)
 		}
 	}
 }
 
-func incomingPacket(p goenocean.Packet) {
+func incomingPacket(node *protocol.Node, connection *basenode.Connection, p goenocean.Packet) {
 
 	var d *Device
 	if d = state.Device(p.SenderId()); d == nil {
 		//Add unknown device
 		d = state.AddDevice(p.SenderId(), "UNKNOWN", nil, false)
 		saveDevicesToFile()
-		serverSendChannel <- node
+		connection.Send <- node
 	}
 
 	if t, ok := p.(goenocean.Telegram); ok {
@@ -191,6 +187,8 @@ func incomingPacket(p goenocean.Packet) {
 
 			if h := handlers.getHandler(deviceEep); h != nil {
 				h.Process(d, t)
+				//TODO add return bool in process and to send depending on that!
+				connection.Send <- node
 				return
 			}
 		}

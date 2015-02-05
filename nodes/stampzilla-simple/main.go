@@ -8,14 +8,10 @@ import (
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
-// GLOBAL VARS
-var node *protocol.Node
-var state *State
-var serverSendChannel chan interface{}
-var serverRecvChannel chan protocol.Command
+// MAIN - This is run when the init function is done
+func main() { /*{{{*/
+	log.Info("Starting SIMPLE node")
 
-// INIT - The first function to run
-func init() { // {{{
 	// Parse all commandline arguments, host and port parameters are added in the basenode init function
 	flag.Parse()
 
@@ -25,26 +21,16 @@ func init() { // {{{
 	//Activate the config
 	basenode.SetConfig(config)
 
-	node = protocol.NewNode("simple")
-
-	//Create channels so we can communicate with the stampzilla-go server
-	serverSendChannel = make(chan interface{})
-	serverRecvChannel = make(chan protocol.Command)
+	node := protocol.NewNode("simple")
 
 	//Start communication with the server
-	connectionState := basenode.Connect(serverSendChannel, serverRecvChannel)
+	connection := basenode.Connect()
 
 	// Thit worker keeps track on our connection state, if we are connected or not
-	go monitorState(connectionState, serverSendChannel)
+	go monitorState(node, connection)
 
 	// This worker recives all incomming commands
-	go serverRecv(serverRecvChannel)
-} // }}}
-
-// MAIN - This is run when the init function is done
-func main() { /*{{{*/
-	log.Info("Starting SIMPLE node")
-	// Create new node description
+	go serverRecv(connection.Receive)
 
 	// Describe available actions
 	node.AddAction("set", "Set", []string{"Devices.Id"})
@@ -97,7 +83,7 @@ func main() { /*{{{*/
 		Feedback: "Devices[4].State",
 	})
 
-	state = NewState()
+	state := NewState()
 	node.SetState(state)
 
 	state.AddDevice("1", "Dev1", "OFF")
@@ -107,11 +93,11 @@ func main() { /*{{{*/
 } /*}}}*/
 
 // WORKER that monitors the current connection state
-func monitorState(connectionState chan int, send chan interface{}) {
-	for s := range connectionState {
+func monitorState(node *protocol.Node, connection *basenode.Connection) {
+	for s := range connection.State {
 		switch s {
 		case basenode.ConnectionStateConnected:
-			send <- node.Node()
+			connection.Send <- node.Node()
 		case basenode.ConnectionStateDisconnected:
 		}
 	}

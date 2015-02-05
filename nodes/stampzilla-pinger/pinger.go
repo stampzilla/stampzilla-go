@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/tatsushid/go-fastping"
 )
 
@@ -19,8 +20,8 @@ type Target struct {
 	sync.Mutex
 }
 
-func (t *Target) start() {
-	go t.worker()
+func (t *Target) start(connection *basenode.Connection) {
+	go t.worker(connection)
 }
 
 func (t *Target) stop() {
@@ -33,7 +34,7 @@ func (t *Target) stop() {
 	}
 }
 
-func (t *Target) worker() error {
+func (t *Target) worker(connection *basenode.Connection) error {
 	t.shutdown = make(chan bool)
 
 	ra, err := net.ResolveIPAddr("ip4:icmp", t.Ip)
@@ -53,7 +54,7 @@ func (t *Target) worker() error {
 			t.Online = true
 			t.Lag = rtt.String()
 
-			serverSendChannel <- node.Node()
+			connection.Send <- node.Node()
 		}
 		t.Unlock()
 	}
@@ -65,7 +66,7 @@ func (t *Target) worker() error {
 			t.Lag = ""
 			t.Unlock()
 
-			serverSendChannel <- node.Node()
+			connection.Send <- node.Node()
 		}
 	}
 

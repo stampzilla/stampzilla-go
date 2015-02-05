@@ -145,7 +145,8 @@ func (h *handlerEepf60201eltako) Process(d *Device, t goenocean.Telegram) {
 		if eep.R1B1() { //OFF
 			d.On = false
 		}
-		serverSendChannel <- node
+		//serverSendChannel <- node
+		//h.SendUpdateToServer()
 	}
 }
 
@@ -316,7 +317,8 @@ func (h *handlerEepa53808eltako) Process(d *Device, t goenocean.Telegram) {
 		d.On = false
 	}
 	d.Dim = int64(eep.DimValue())
-	serverSendChannel <- node
+	//serverSendChannel <- node
+	//h.SendUpdateToServer()
 }
 func (h *handlerEepa53808eltako) Learn(d *Device) {
 	p := goenocean.NewTelegram4bsLearn()
@@ -354,7 +356,8 @@ func (h *handlerEepa51201) Process(d *Device, t goenocean.Telegram) {
 	} else {
 		d.SetPowerkWh(eep.MeterReading())
 	}
-	serverSendChannel <- node
+	//serverSendChannel <- node
+	//h.SendUpdateToServer()
 }
 func (h *handlerEepa51201) ReceiveElements(d *Device) []*protocol.Element {
 	var els []*protocol.Element
@@ -398,7 +401,8 @@ func (h *handlerEepd20109) Process(d *Device, t goenocean.Telegram) {
 	}
 
 	//TODO only send update if our values have accually changed
-	serverSendChannel <- node
+	//serverSendChannel <- node
+	//h.SendUpdateToServer()
 }
 
 // }}}
