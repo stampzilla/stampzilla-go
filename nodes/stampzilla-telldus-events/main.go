@@ -229,14 +229,18 @@ func deviceEvent(deviceId, method int, data *C.char, callbackId int, context uns
 		serverConnection.Send <- node.Node()
 	}
 	if method&C.TELLSTICK_DIM != 0 {
-		level, _ := strconv.ParseUint(C.GoString(data), 10, 16)
+		level, err := strconv.ParseUint(C.GoString(data), 10, 16)
+		if err != nil {
+			log.Error(err)
+			return
+		}
 		if level == 0 {
 			device.State.On = false
 		}
 		if level > 0 {
-			device.State.Dim = int(level)
 			device.State.On = true
 		}
+		device.State.Dim = int(level)
 		serverConnection.Send <- node.Node()
 	}
 }
