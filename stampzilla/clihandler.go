@@ -179,6 +179,13 @@ func (t *cliHandler) Debug(c *cli.Context) {
 	cmd.Run()
 }
 
+func (t *cliHandler) Log(c *cli.Context) {
+	cmd := exec.Command("tail", "-f", "/var/log/stampzilla/stampzilla-"+c.Args().First())
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Run()
+}
+
 func (t *cliHandler) getRunningProcesses() []*Process {
 	var processes []*Process
 
