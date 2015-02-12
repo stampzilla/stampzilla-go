@@ -214,7 +214,6 @@ func sensorEvent(protocol, model *C.char, sensorId, dataType int, value *C.char)
 	} else if dataType == C.TELLSTICK_HUMIDITY {
 		log.Debugf("Humidity:\t%s%%\n", C.GoString(value))
 	}
-	C.tdReleaseString(model)
 }
 
 //export deviceEvent
@@ -244,7 +243,6 @@ func deviceEvent(deviceId, method int, data *C.char, callbackId int, context uns
 		device.State.Dim = int(level)
 		serverConnection.Send <- node.Node()
 	}
-	C.tdReleaseString(data)
 }
 
 //export deviceChangeEvent
@@ -255,5 +253,4 @@ func deviceChangeEvent(deviceId, changeEvent, changeType, callbackId int, contex
 //export rawDeviceEvent
 func rawDeviceEvent(data *C.char, controllerId, callbackId int, context unsafe.Pointer) {
 	log.Debugf("rawDeviceEVENT (%d):%s\n", controllerId, C.GoString(data))
-	C.tdReleaseString(data)
 }
