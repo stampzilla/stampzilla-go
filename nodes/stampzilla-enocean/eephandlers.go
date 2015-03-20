@@ -262,8 +262,11 @@ type handlerEepa53808eltako struct { // {{{
 
 func (h *handlerEepa53808eltako) generateSenderId(d *Device) [4]byte {
 	senderId := usb300SenderId
-	id := d.Id()[3]
-	senderId[3] = id & 0x7f
+	//id := d.Id()[3]
+	//senderId[3] = id & 0x7f
+
+	senderId[3] = byte(d.UniqueId)
+
 	fmt.Printf("Sending with ID:% x\n", senderId)
 	return senderId
 }

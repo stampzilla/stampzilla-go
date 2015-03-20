@@ -60,6 +60,7 @@ func NewDevice(id [4]byte, name string, on bool, dtype string, features []string
 
 type Device struct {
 	SenderId string
+	UniqueId int64
 	Name     string
 	On       bool
 	Type     string
