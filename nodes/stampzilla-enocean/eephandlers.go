@@ -57,7 +57,7 @@ func (h *handlerEepf60201) Off(d *Device) {
 	enoceanSend <- p
 }
 func (h *handlerEepf60201) Toggle(d *Device) {
-	if d.On {
+	if d.On() {
 		h.Off(d)
 	} else {
 		h.On(d)
@@ -140,10 +140,10 @@ func (h *handlerEepf60201eltako) Process(d *Device, t goenocean.Telegram) {
 
 		//i know this is backwards... eltako is!
 		if eep.R1B0() { //ON
-			d.On = true
+			d.SetOn(true)
 		}
 		if eep.R1B1() { //OFF
-			d.On = false
+			d.SetOn(false)
 		}
 		//serverSendChannel <- node
 		//h.SendUpdateToServer()
@@ -176,7 +176,7 @@ func (h *handlerEepa53808) Off(d *Device) {
 	enoceanSend <- p
 }
 func (h *handlerEepa53808) Toggle(d *Device) {
-	if d.On {
+	if d.On() {
 		h.Off(d)
 	} else {
 		h.On(d)
@@ -271,7 +271,7 @@ func (h *handlerEepa53808eltako) generateSenderId(d *Device) [4]byte {
 	return senderId
 }
 func (h *handlerEepa53808eltako) Toggle(d *Device) {
-	if d.On {
+	if d.On() {
 		h.Off(d)
 	} else {
 		h.On(d)
@@ -314,10 +314,10 @@ func (h *handlerEepa53808eltako) Process(d *Device, t goenocean.Telegram) {
 	fmt.Println("DIMVALUE:", eep.DimValue())
 	fmt.Println("SW command STATUS:", eep.SwitchingCommand())
 	if eep.SwitchingCommand() == 1 {
-		d.On = true
+		d.SetOn(true)
 	}
 	if eep.SwitchingCommand() == 0 {
-		d.On = false
+		d.SetOn(false)
 	}
 	d.Dim = int64(eep.DimValue())
 	//serverSendChannel <- node
@@ -397,9 +397,9 @@ func (h *handlerEepd20109) Process(d *Device, t goenocean.Telegram) {
 		value := eep.OutputValue()
 		d.Dim = int64(value)
 		if value > 0 {
-			d.On = true
+			d.SetOn(true)
 		} else {
-			d.On = false
+			d.SetOn(false)
 		}
 	}
 
