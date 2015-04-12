@@ -98,6 +98,7 @@ func (config *SerialConnection) connect(connection *basenode.Connection) {
 	go func() {
 		var incomming string = ""
 		var updateInhibit bool = false
+		var changed bool = false
 
 		for {
 			buf := make([]byte, 128)
@@ -110,7 +111,6 @@ func (config *SerialConnection) connect(connection *basenode.Connection) {
 
 			incomming += string(buf[:n])
 
-			// try to process
 			for {
 				n := strings.Index(incomming, "\r")
 
@@ -120,30 +120,43 @@ func (config *SerialConnection) connect(connection *basenode.Connection) {
 
 				msg := strings.TrimSpace(incomming[:n])
 				incomming = incomming[n+1:]
+				//log.Info(msg)
 
-				//pkgs := strings.Split(msg, "|")
-				//if len(pkgs) > 3 {
-				////state.Sensors["temp1"].State = pkgs[0] + " C"
-				////state.Sensors["temp2"].State = pkgs[3] + " C"
-				////state.Sensors["press"].State = pkgs[2] + " hPa"
-
-				//log.Info("IN: ", pkgs)
-
-				//connection.Send <- node.Node()
-				//continue;
-
-				//}
-
-				//log.Warn("Invalid pacakge: ", msg)
-
-				value, err := strconv.ParseFloat(msg, 32)
-				if err != nil {
+				values := strings.Split(msg, "|")
+				if len(values) != 3 {
 					continue
 				}
 
+				value, err := strconv.ParseFloat(values[0], 32)
+				if err != nil {
+					continue
+				}
+				if float32(value) != state.WaterTemperature {
+					changed = true
+				}
 				state.WaterTemperature = float32(value)
 
-				if !updateInhibit {
+				value, err = strconv.ParseFloat(values[1], 32)
+				if err != nil {
+					continue
+				}
+				if state.Filling != (value > 0) {
+					changed = true
+
+				}
+				state.Filling = value > 0
+
+				value, err = strconv.ParseFloat(values[2], 32)
+				if err != nil {
+					continue
+				}
+				if state.Cooling != float32(value) {
+					changed = true
+				}
+				state.Cooling = float32(value)
+
+				if !updateInhibit && changed {
+					changed = false
 					connection.Send <- node.Node()
 					updateInhibit = true
 					//log.Warn("Invalid pacakge: ", msg)

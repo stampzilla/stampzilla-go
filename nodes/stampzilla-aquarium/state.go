@@ -2,6 +2,7 @@ package main
 
 type State struct { /*{{{*/
 	WaterTemperature float32
+	Cooling          float32
 	Filling          bool
 	WaterLevelOk     bool
 
