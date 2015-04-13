@@ -12,9 +12,10 @@ import (
 )
 
 type ServerConfig struct {
-	NodePort string
-	WebPort  string
-	WebRoot  string
+	NodePort      string
+	WebPort       string
+	WebRoot       string
+	ElasticSearch string
 }
 
 func main() {
@@ -24,6 +25,7 @@ func main() {
 	flag.StringVar(&config.NodePort, "node-port", "8282", "Stampzilla NodeServer port")
 	flag.StringVar(&config.WebPort, "web-port", "8080", "Webserver port")
 	flag.StringVar(&config.WebRoot, "web-root", "public", "Webserver root")
+	flag.StringVar(&config.ElasticSearch, "elasticsearch", "", "Address to an ElasticSearch host. Ex: http://hostname:9200/test/test")
 	flag.Parse()
 
 	if val := os.Getenv("STAMPZILLA_WEBROOT"); val != "" {
@@ -68,9 +70,11 @@ func main() {
 	}
 	log.ReplaceLogger(logger)
 
+	services := make([]interface{}, 0)
+
 	nodes := protocol.NewNodes()
-	l := logic.NewLogic()
 	scheduler := logic.NewScheduler()
+	logic := logic.NewLogic()
 	//scheduler.CreateExampleFile()
 	//return
 	webServer := NewWebServer()
@@ -78,7 +82,15 @@ func main() {
 	wsrouter := websocket.NewRouter()
 	wsHandler := &WebsocketHandler{}
 
-	err = inject.Populate(config, nodes, l, nodeServer, webServer, scheduler, wsrouter, wsHandler)
+	services = append(services, config, nodes, logic, scheduler, webServer, nodeServer, wsrouter, wsHandler)
+
+	if config.ElasticSearch != "" {
+		es := NewElasticSearch()
+		services = append(services, es)
+		es.Start()
+	}
+
+	err = inject.Populate(services...)
 	if err != nil {
 		panic(err)
 	}

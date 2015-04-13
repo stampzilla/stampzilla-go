@@ -15,6 +15,7 @@ type NodeServer struct {
 	Logic            *logic.Logic          `inject:""`
 	Nodes            *serverprotocol.Nodes `inject:""`
 	WebsocketHandler *WebsocketHandler     `inject:""`
+	ElasticSearch    *ElasticSearch        `inject:""`
 }
 
 func NewNodeServer() *NodeServer {
@@ -85,6 +86,15 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 			//Send to logic for evaluation
 			state, _ := json.Marshal(info.State)
 			logicChannel <- string(state)
+
+			// Try to send an update to elasticsearch
+			if ns.ElasticSearch.StateUpdates != nil {
+				select {
+				case ns.ElasticSearch.StateUpdates <- &info: // Successfully deliverd to es
+				default: // Failed to deliver to es
+					log.Warn("Failed to update ElasticSearch")
+				}
+			}
 		}
 
 	}
