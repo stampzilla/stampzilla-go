@@ -16,32 +16,44 @@ const (
 	ConnectionStateDisconnected = 0
 )
 
-func Connect(send chan interface{}, recv chan protocol.Command) chan int {
-	connectionState := make(chan int)
+type Connection struct {
+	Send    chan interface{}
+	Receive chan protocol.Command
+	State   chan int
+}
+
+func Connect() *Connection {
+
+	connection := &Connection{
+		Send:    make(chan interface{}),
+		Receive: make(chan protocol.Command),
+		State:   make(chan int),
+	}
+
 	go func() {
 		for {
 			quit := make(chan bool)
 			log.Info("Connection to ", config.Host, ":", config.Port)
-			connection, err := net.Dial("tcp", net.JoinHostPort(config.Host, config.Port))
+			tcpConnection, err := net.Dial("tcp", net.JoinHostPort(config.Host, config.Port))
 			if err != nil {
 				log.Error("Failed connection: ", err)
 				<-time.After(time.Second)
 				continue
 			}
 
-			connectionState <- ConnectionStateConnected
+			connection.State <- ConnectionStateConnected
 			log.Trace("Connected")
-			go sendWorker(connection, send, quit)
+			go sendWorker(tcpConnection, connection.Send, quit)
 
-			connectionWorker(connection, recv)
+			connectionWorker(tcpConnection, connection.Receive)
 			close(quit)
-			connectionState <- ConnectionStateDisconnected
+			connection.State <- ConnectionStateDisconnected
 
 			log.Warn("Lost connection, reconnecting")
 			<-time.After(time.Second)
 		}
 	}()
-	return connectionState
+	return connection
 }
 
 func sendWorker(connection net.Conn, send chan interface{}, quit chan bool) {

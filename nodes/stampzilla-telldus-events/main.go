@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"flag"
+	"fmt"
 	"strconv"
 	"unsafe"
 
@@ -23,7 +25,8 @@ extern int updateDevices();
 import "C"
 
 var node *protocol.Node
-var state *State = &State{[]*Device{}, make(map[string]*Sensor, 0)}
+var state *State = &State{make(map[string]*Device), make(map[string]*Sensor, 0)}
+var serverConnection *basenode.Connection
 
 func main() {
 	// Load logger
@@ -75,51 +78,49 @@ func main() {
 				Cmd:  "toggle",
 				Args: []string{dev.Id},
 			},
-			Feedback: `Devices[` + dev.Id + `].On`,
+			Feedback: `Devices[` + dev.Id + `].State.On`,
 		})
 	}
 
 	// Start the connection
 	//go connection(host, port, node)
 
-	//Create channels so we can communicate with the stampzilla-go server
-	serverSendChannel := make(chan interface{})
-	serverRecvChannel := make(chan protocol.Command)
-	connectionState := basenode.Connect(serverSendChannel, serverRecvChannel)
-	go monitorState(connectionState, serverSendChannel)
+	serverConnection = basenode.Connect()
+	go monitorState(serverConnection)
 
 	// This worker recives all incomming commands
-	go serverRecv(serverRecvChannel)
+	go serverRecv(serverConnection)
 
 	select {}
 }
 
 // WORKER that monitors the current connection state
-func monitorState(connectionState chan int, send chan interface{}) {
-	for s := range connectionState {
+func monitorState(connection *basenode.Connection) {
+	for s := range connection.State {
 		switch s {
 		case basenode.ConnectionStateConnected:
-			send <- node.Node()
+			connection.Send <- node.Node()
 		case basenode.ConnectionStateDisconnected:
 		}
 	}
 }
 
 // WORKER that recives all incomming commands
-func serverRecv(recv chan protocol.Command) {
-	for d := range recv {
-		processCommand(d)
+func serverRecv(connection *basenode.Connection) {
+	for d := range connection.Receive {
+		if err := processCommand(d); err != nil {
+			log.Error(err)
+		}
 	}
 }
 
-func processCommand(cmd protocol.Command) {
+func processCommand(cmd protocol.Command) error {
 	var result C.int = C.TELLSTICK_ERROR_UNKNOWN
 	var id C.int = 0
 
 	i, err := strconv.Atoi(cmd.Args[0])
 	if err != nil {
-		log.Error("Failed to decode arg[0] to int", err, cmd.Args[0])
-		return
+		return fmt.Errorf("Failed to decode arg[0] to int %s %s", err, cmd.Args[0])
 	}
 
 	id = C.int(i)
@@ -150,9 +151,11 @@ func processCommand(cmd protocol.Command) {
 
 	if result != C.TELLSTICK_SUCCESS {
 		var errorString *C.char = C.tdGetErrorString(result)
-		log.Error(C.GoString(errorString))
 		C.tdReleaseString(errorString)
+		return errors.New(C.GoString(errorString))
 	}
+
+	return nil
 }
 
 //export newDevice
@@ -216,6 +219,30 @@ func sensorEvent(protocol, model *C.char, sensorId, dataType int, value *C.char)
 //export deviceEvent
 func deviceEvent(deviceId, method int, data *C.char, callbackId int, context unsafe.Pointer) {
 	log.Debugf("DeviceEVENT %d\t%d\t:%s\n", deviceId, method, C.GoString(data))
+	device := state.GetDevice(strconv.Itoa(deviceId))
+	if method&C.TELLSTICK_TURNON != 0 {
+		device.State.On = true
+		serverConnection.Send <- node.Node()
+	}
+	if method&C.TELLSTICK_TURNOFF != 0 {
+		device.State.On = false
+		serverConnection.Send <- node.Node()
+	}
+	if method&C.TELLSTICK_DIM != 0 {
+		level, err := strconv.ParseUint(C.GoString(data), 10, 16)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		if level == 0 {
+			device.State.On = false
+		}
+		if level > 0 {
+			device.State.On = true
+		}
+		device.State.Dim = int(level)
+		serverConnection.Send <- node.Node()
+	}
 }
 
 //export deviceChangeEvent

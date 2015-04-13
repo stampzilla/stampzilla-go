@@ -48,6 +48,12 @@ func main() {
 			Action: cliHandler.Debug,
 		},
 		{
+			Name:      "log",
+			ShortName: "l",
+			Usage:     "Tail the log of the supplied process",
+			Action:    cliHandler.Log,
+		},
+		{
 			Name:      "install",
 			ShortName: "i",
 			Usage:     "installs all stampzilla nodes and the server.",

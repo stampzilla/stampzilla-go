@@ -25,7 +25,8 @@ func (t *Installer) config() {
 }
 
 func (t *Installer) bower() {
-	if _, err := exec.LookPath("bower"); err != nil {
+	bower, err := exec.LookPath("bower")
+	if err != nil {
 		fmt.Println("Missing bower executable. Install with: npm install -g bower")
 		os.Exit(1)
 	}
@@ -37,7 +38,7 @@ func (t *Installer) bower() {
 		return
 	}
 
-	toRun := "cd /home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/public && bower install"
+	toRun := "cd /home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/public && " + bower + " install"
 	out, err := run("sudo", "-E", "-u", "stampzilla", "-H", shbin, "-c", toRun)
 	if err != nil {
 		fmt.Println("ERROR", err, out)

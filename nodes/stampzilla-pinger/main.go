@@ -12,12 +12,11 @@ import (
 var node *protocol.Node
 
 type TargetState struct {
-	Targets map[string]*Target
+	Targets    map[string]*Target
+	connection *basenode.Connection
 }
 
 var state TargetState
-var serverSendChannel chan interface{}
-var serverRecvChannel chan protocol.Command
 
 func (s TargetState) GetState() interface{} {
 	return s
@@ -37,10 +36,14 @@ func (s *TargetState) Add(t *Target) {
 		Name:     t.Name,
 		Feedback: `Targets["` + t.Name + `"].Lag`,
 	})
+
+	t.start(s.connection)
 }
 
-// INIT - The first function to run
-func init() { // {{{
+// MAIN - This is run when the init function is done
+func main() { /*{{{*/
+	log.Info("Starting PINGER node")
+	// Create new node description
 	// Parse all commandline arguments, host and port parameters are added in the basenode init function
 	flag.Parse()
 
@@ -52,27 +55,18 @@ func init() { // {{{
 
 	node = protocol.NewNode("pinger")
 
-	//Create channels so we can communicate with the stampzilla-go server
-	serverSendChannel = make(chan interface{})
-	serverRecvChannel = make(chan protocol.Command)
-
 	//Start communication with the server
-	connectionState := basenode.Connect(serverSendChannel, serverRecvChannel)
+	connection := basenode.Connect()
 
 	// Thit worker keeps track on our connection state, if we are connected or not
-	go monitorState(connectionState, serverSendChannel)
+	go monitorState(connection)
 
 	// This worker recives all incomming commands
-	go serverRecv(serverRecvChannel)
-} // }}}
-
-// MAIN - This is run when the init function is done
-func main() { /*{{{*/
-	log.Info("Starting PINGER node")
-	// Create new node description
+	go serverRecv(connection.Receive)
 
 	state = TargetState{
-		Targets: make(map[string]*Target),
+		Targets:    make(map[string]*Target),
+		connection: connection,
 	}
 	node.SetState(state)
 
@@ -81,19 +75,17 @@ func main() { /*{{{*/
 		Ip:   "10.21.10.148",
 	}
 
-	t.start()
-
 	state.Add(t)
 
 	select {}
 } /*}}}*/
 
 // WORKER that monitors the current connection state
-func monitorState(connectionState chan int, send chan interface{}) {
-	for s := range connectionState {
+func monitorState(connection *basenode.Connection) {
+	for s := range connection.State {
 		switch s {
 		case basenode.ConnectionStateConnected:
-			send <- node.Node()
+			connection.Send <- node.Node()
 		case basenode.ConnectionStateDisconnected:
 		}
 	}

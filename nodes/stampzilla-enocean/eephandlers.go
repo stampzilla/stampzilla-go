@@ -57,7 +57,7 @@ func (h *handlerEepf60201) Off(d *Device) {
 	enoceanSend <- p
 }
 func (h *handlerEepf60201) Toggle(d *Device) {
-	if d.On {
+	if d.On() {
 		h.Off(d)
 	} else {
 		h.On(d)
@@ -140,12 +140,13 @@ func (h *handlerEepf60201eltako) Process(d *Device, t goenocean.Telegram) {
 
 		//i know this is backwards... eltako is!
 		if eep.R1B0() { //ON
-			d.On = true
+			d.SetOn(true)
 		}
 		if eep.R1B1() { //OFF
-			d.On = false
+			d.SetOn(false)
 		}
-		serverSendChannel <- node
+		//serverSendChannel <- node
+		//h.SendUpdateToServer()
 	}
 }
 
@@ -175,7 +176,7 @@ func (h *handlerEepa53808) Off(d *Device) {
 	enoceanSend <- p
 }
 func (h *handlerEepa53808) Toggle(d *Device) {
-	if d.On {
+	if d.On() {
 		h.Off(d)
 	} else {
 		h.On(d)
@@ -261,13 +262,16 @@ type handlerEepa53808eltako struct { // {{{
 
 func (h *handlerEepa53808eltako) generateSenderId(d *Device) [4]byte {
 	senderId := usb300SenderId
-	id := d.Id()[3]
-	senderId[3] = id & 0x7f
+	//id := d.Id()[3]
+	//senderId[3] = id & 0x7f
+
+	senderId[3] = byte(d.UniqueId)
+
 	fmt.Printf("Sending with ID:% x\n", senderId)
 	return senderId
 }
 func (h *handlerEepa53808eltako) Toggle(d *Device) {
-	if d.On {
+	if d.On() {
 		h.Off(d)
 	} else {
 		h.On(d)
@@ -310,13 +314,14 @@ func (h *handlerEepa53808eltako) Process(d *Device, t goenocean.Telegram) {
 	fmt.Println("DIMVALUE:", eep.DimValue())
 	fmt.Println("SW command STATUS:", eep.SwitchingCommand())
 	if eep.SwitchingCommand() == 1 {
-		d.On = true
+		d.SetOn(true)
 	}
 	if eep.SwitchingCommand() == 0 {
-		d.On = false
+		d.SetOn(false)
 	}
 	d.Dim = int64(eep.DimValue())
-	serverSendChannel <- node
+	//serverSendChannel <- node
+	//h.SendUpdateToServer()
 }
 func (h *handlerEepa53808eltako) Learn(d *Device) {
 	p := goenocean.NewTelegram4bsLearn()
@@ -354,7 +359,8 @@ func (h *handlerEepa51201) Process(d *Device, t goenocean.Telegram) {
 	} else {
 		d.SetPowerkWh(eep.MeterReading())
 	}
-	serverSendChannel <- node
+	//serverSendChannel <- node
+	//h.SendUpdateToServer()
 }
 func (h *handlerEepa51201) ReceiveElements(d *Device) []*protocol.Element {
 	var els []*protocol.Element
@@ -391,14 +397,15 @@ func (h *handlerEepd20109) Process(d *Device, t goenocean.Telegram) {
 		value := eep.OutputValue()
 		d.Dim = int64(value)
 		if value > 0 {
-			d.On = true
+			d.SetOn(true)
 		} else {
-			d.On = false
+			d.SetOn(false)
 		}
 	}
 
 	//TODO only send update if our values have accually changed
-	serverSendChannel <- node
+	//serverSendChannel <- node
+	//h.SendUpdateToServer()
 }
 
 // }}}

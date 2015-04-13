@@ -37,6 +37,11 @@ func (t *cliHandler) Install(c *cli.Context) {
 
 	nodes, err := ioutil.ReadDir("/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/")
 	if err != nil {
+		fmt.Println("Found no nodes. installing stampzilla cli first!")
+		t.Installer.goGet("github.com/stampzilla/stampzilla-go/stampzilla", c.Bool("u"))
+	}
+	nodes, err = ioutil.ReadDir("/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/")
+	if err != nil {
 		fmt.Println(err)
 		return
 	}
@@ -174,6 +179,13 @@ func (t *cliHandler) Debug(c *cli.Context) {
 		"GOPATH=/home/stampzilla/go",
 		"STAMPZILLA_WEBROOT=/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/public",
 	}
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Run()
+}
+
+func (t *cliHandler) Log(c *cli.Context) {
+	cmd := exec.Command("tail", "-f", "/var/log/stampzilla/stampzilla-"+c.Args().First())
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Run()
