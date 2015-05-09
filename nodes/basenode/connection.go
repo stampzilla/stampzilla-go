@@ -25,8 +25,8 @@ type Connection struct {
 func Connect() *Connection {
 
 	connection := &Connection{
-		Send:    make(chan interface{}),
-		Receive: make(chan protocol.Command),
+		Send:    make(chan interface{}, 100),
+		Receive: make(chan protocol.Command, 100),
 		State:   make(chan int),
 	}
 
