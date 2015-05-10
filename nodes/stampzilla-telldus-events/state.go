@@ -1,8 +1,10 @@
 package main
 
+import "strconv"
+
 type State struct { /*{{{*/
 	Devices map[string]*Device
-	Sensors map[int]*Sensor
+	Sensors map[string]*Sensor
 } /*}}}*/
 
 func (s *State) AddDevice(id, name string, features []string, state DeviceState) {
@@ -12,11 +14,11 @@ func (s *State) AddDevice(id, name string, features []string, state DeviceState)
 
 func (s *State) AddSensor(id int, name string) *Sensor {
 	d := NewSensor(id, name)
-	s.Sensors[id] = d
+	s.Sensors[strconv.Itoa(id)] = d
 	return d
 }
 func (s *State) GetSensor(id int) *Sensor {
-	if sens, ok := s.Sensors[id]; ok {
+	if sens, ok := s.Sensors[strconv.Itoa(id)]; ok {
 		return sens
 	}
 	return nil
