@@ -1,11 +1,12 @@
 package main
 
 type Sensor struct { /*{{{*/
-	Id       string
+	Id       int
 	Name     string
-	State    string
+	Temp     float64
+	Humidity float64
 } /*}}}*/
 
-func NewSensor(id, name, state string) *Sensor {
-	return &Sensor{id, name, state}
+func NewSensor(id int, name string) *Sensor {
+	return &Sensor{Id: id, Name: name}
 }
