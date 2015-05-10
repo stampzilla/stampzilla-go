@@ -218,10 +218,12 @@ func sensorEvent(protocol, model *C.char, sensorId, dataType int, value *C.char)
 		t, _ := strconv.ParseFloat(C.GoString(value), 64)
 		log.Debugf("Temperature:\t%s\n", t)
 		s.Temp = t
+		serverConnection.Send <- node.Node()
 	} else if dataType == C.TELLSTICK_HUMIDITY {
 		h, _ := strconv.ParseFloat(C.GoString(value), 64)
 		log.Debugf("Humidity:\t%s%%\n", h)
 		s.Humidity = h
+		serverConnection.Send <- node.Node()
 	}
 }
 
