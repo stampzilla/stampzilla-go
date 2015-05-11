@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"net"
 
@@ -52,8 +51,7 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 	uuid := ""
 	var logicChannel chan string
 	for {
-		reader := bufio.NewReader(connection)
-		decoder := json.NewDecoder(reader)
+		decoder := json.NewDecoder(connection)
 		var info serverprotocol.Node
 		err := decoder.Decode(&info)
 
