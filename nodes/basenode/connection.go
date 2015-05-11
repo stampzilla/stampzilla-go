@@ -80,9 +80,9 @@ func sendWorker(connection net.Conn, send chan interface{}, quit chan bool) {
 }
 
 func connectionWorker(connection net.Conn, recv chan protocol.Command) {
-	var cmd protocol.Command
 	// Recive data
 	for {
+		var cmd protocol.Command
 		decoder := json.NewDecoder(connection)
 		err := decoder.Decode(&cmd)
 
