@@ -1,7 +1,6 @@
 package basenode
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -81,16 +80,15 @@ func sendWorker(connection net.Conn, send chan interface{}, quit chan bool) {
 }
 
 func connectionWorker(connection net.Conn, recv chan protocol.Command) {
+	var cmd protocol.Command
 	// Recive data
 	for {
-		reader := bufio.NewReader(connection)
-		decoder := json.NewDecoder(reader)
-		var cmd protocol.Command
+		decoder := json.NewDecoder(connection)
 		err := decoder.Decode(&cmd)
 
-		//err = json.Unmarshal(data, &cmd)
 		if err != nil {
 			if err.Error() == "EOF" {
+				log.Error("EOF:", err)
 				return
 			}
 			log.Warn(err)
