@@ -107,14 +107,31 @@ func monitorState(connection *basenode.Connection) {
 
 // WORKER that recives all incomming commands
 func serverRecv(connection *basenode.Connection) {
+	send := processCommandWorker()
 	for d := range connection.Receive {
-		if err := processCommand(d); err != nil {
-			log.Error(err)
-		}
+		send <- d
+		//if err := processCommand(d); err != nil {
+		//log.Error(err)
+		//}
 	}
 }
 
+func processCommandWorker() chan protocol.Command {
+	var send = make(chan protocol.Command, 100)
+
+	go func() {
+		for c := range send {
+			if err := processCommand(c); err != nil {
+				log.Error(err)
+			}
+		}
+	}()
+
+	return send
+}
+
 func processCommand(cmd protocol.Command) error {
+	log.Debug("Processing command", cmd)
 	var result C.int = C.TELLSTICK_ERROR_UNKNOWN
 	var id C.int = 0
 
