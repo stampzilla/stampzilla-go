@@ -57,21 +57,20 @@ func Connect() *Connection {
 
 func sendWorker(connection net.Conn, send chan interface{}, quit chan bool) {
 	var err error
-	var ret []byte
+	encoder := json.NewEncoder(connection)
 	for {
 		select {
 		case d := <-send:
 
 			if a, ok := d.(*protocol.Node); ok {
 				a.Uuid = config.Uuid
-				ret, err = json.Marshal(a.Node())
+				err = encoder.Encode(a.Node())
 			} else {
-				ret, err = json.Marshal(d)
+				err = encoder.Encode(d)
 			}
 			if err != nil {
-				fmt.Println("Error marshal json", err)
+				fmt.Println("Error encoder.Encode: ", err)
 			}
-			fmt.Fprintf(connection, string(ret))
 		case <-quit:
 			return
 
@@ -81,9 +80,9 @@ func sendWorker(connection net.Conn, send chan interface{}, quit chan bool) {
 
 func connectionWorker(connection net.Conn, recv chan protocol.Command) {
 	// Recive data
+	decoder := json.NewDecoder(connection)
 	for {
 		var cmd protocol.Command
-		decoder := json.NewDecoder(connection)
 		err := decoder.Decode(&cmd)
 
 		if err != nil {

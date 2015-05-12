@@ -96,7 +96,7 @@ func (wh *WebsocketHandler) RunCommand(msg *websocket.Message) {
 			log.Error(err)
 			return
 		}
-		node.Conn().Write(jsonToSend)
+		node.Write(jsonToSend)
 	}
 }
 

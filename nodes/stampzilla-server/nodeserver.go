@@ -50,10 +50,11 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 	name := ""
 	uuid := ""
 	var logicChannel chan string
+	decoder := json.NewDecoder(connection)
+	//encoder := json.NewEncoder(os.Stdout)
 	for {
-		decoder := json.NewDecoder(connection)
-		var info serverprotocol.Node
-		err := decoder.Decode(&info)
+		var node serverprotocol.Node
+		err := decoder.Decode(&node)
 
 		if err != nil {
 			if err.Error() == "EOF" {
@@ -69,26 +70,32 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 			log.Warn("Not disconnect but error: ", err)
 			//return here?
 		} else {
-			name = info.Name
-			uuid = info.Uuid
-			info.SetConn(connection)
+			name = node.Name
+			uuid = node.Uuid
 
 			if logicChannel == nil {
 				logicChannel = ns.Logic.ListenForChanges(uuid)
 			}
 
-			ns.Nodes.Add(&info)
-			log.Info(info.Uuid, " - ", info.Name, " - Got update on state")
+			existingNode := ns.Nodes.ByUuid(uuid)
+			if existingNode == nil {
+				ns.Nodes.Add(&node)
+				//node.SetJsonEncoder(encoder)
+				node.SetConn(connection)
+			} else {
+				existingNode.State = node.State
+			}
+			log.Info(node.Uuid, " - ", node.Name, " - Got update on state")
 			ns.WebsocketHandler.SendSingleNode(uuid)
 
 			//Send to logic for evaluation
-			state, _ := json.Marshal(info.State)
+			state, _ := json.Marshal(node.State)
 			logicChannel <- string(state)
 
 			// Try to send an update to elasticsearch
 			if ns.ElasticSearch.StateUpdates != nil {
 				select {
-				case ns.ElasticSearch.StateUpdates <- &info: // Successfully deliverd to es
+				case ns.ElasticSearch.StateUpdates <- &node: // Successfully deliverd to es
 				default: // Failed to deliver to es
 					log.Warn("Failed to update ElasticSearch")
 				}
