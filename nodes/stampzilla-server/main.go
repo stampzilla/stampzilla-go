@@ -12,10 +12,17 @@ import (
 )
 
 type ServerConfig struct {
-	NodePort      string
-	WebPort       string
-	WebRoot       string
-	ElasticSearch string
+	NodePort         string
+	WebPort          string
+	WebRoot          string
+	ElasticSearch    string
+	InfluxDbServer   string
+	InfluxDbUser     string
+	InfluxDbPassword string
+}
+
+type Startable interface {
+	Start()
 }
 
 func main() {
@@ -26,6 +33,9 @@ func main() {
 	flag.StringVar(&config.WebPort, "web-port", "8080", "Webserver port")
 	flag.StringVar(&config.WebRoot, "web-root", "public", "Webserver root")
 	flag.StringVar(&config.ElasticSearch, "elasticsearch", "", "Address to an ElasticSearch host. Ex: http://hostname:9200/test/test")
+	flag.StringVar(&config.InfluxDbServer, "influxdbserver", "", "Address to an InfluxDb host. Ex: http://localhost:8086")
+	flag.StringVar(&config.InfluxDbUser, "influxdbuser", "", "InfluxDb user. ")
+	flag.StringVar(&config.InfluxDbPassword, "influxdbpassword", "", "InfluxDb password. ")
 	flag.Parse()
 
 	if val := os.Getenv("STAMPZILLA_WEBROOT"); val != "" {
@@ -82,21 +92,25 @@ func main() {
 	wsrouter := websocket.NewRouter()
 	wsHandler := &WebsocketHandler{}
 
-	services = append(services, config, nodes, logic, scheduler, webServer, nodeServer, wsrouter, wsHandler)
-
 	if config.ElasticSearch != "" {
 		es := NewElasticSearch()
 		services = append(services, es)
-		es.Start()
+	}
+	if config.InfluxDbServer != "" {
+		i := NewInfluxDb()
+		services = append(services, i)
 	}
 
+	//Note. webServer must be started last since its blocking.
+	services = append(services, config, nodes, logic, scheduler, nodeServer, wsrouter, wsHandler, webServer)
 	err = inject.Populate(services...)
 	if err != nil {
 		panic(err)
 	}
 
-	nodeServer.Start() //start the tcp socket server connecting to nodes
-	scheduler.Start()  //start the cron scheduler
-	wsHandler.Start()  //initialize websocket router
-	webServer.Start()  //start the webserver
+	for _, s := range services {
+		if s, ok := s.(Startable); ok {
+			s.Start()
+		}
+	}
 }
