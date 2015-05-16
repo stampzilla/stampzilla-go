@@ -76,6 +76,10 @@ func flatten(inputJSON map[string]interface{}, lkey string, flattened *map[strin
 	for rkey, value := range inputJSON {
 		key := lkey + "_" + rkey
 
+		if value == nil {
+			continue
+		}
+
 		if structs.IsStruct(value) {
 			//fmt.Println("Its a struct: ", value)
 			value = structs.Map(value)

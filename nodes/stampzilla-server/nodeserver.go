@@ -95,6 +95,7 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 			logicChannel <- string(state)
 
 			//Send to metrics
+			//TODO make this a buffered channel so we dont have to wait for the logging to complete before continueing.
 			ns.Metrics.Update(node)
 
 			// Try to send an update to elasticsearch
