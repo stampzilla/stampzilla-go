@@ -55,5 +55,7 @@ func (ws *WebServer) Start() {
 	m.Get("/api/schedule", ws.WebHandler.GetScheduleTasks)
 	m.Get("/api/schedule/entries", ws.WebHandler.GetScheduleEntries)
 
-	log.Critical(http.ListenAndServe(":"+ws.Config.WebPort, m))
+	go func() {
+		log.Critical(http.ListenAndServe(":"+ws.Config.WebPort, m))
+	}()
 }

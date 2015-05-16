@@ -14,19 +14,16 @@ import (
 type InfluxDb struct {
 	Config *ServerConfig         `inject:""`
 	Nodes  *serverprotocol.Nodes `inject:""`
-
-	StateUpdates chan *serverprotocol.Node // JSON encoded state updates from the
+	conn   *client.Client
 }
 
 func NewInfluxDb() *InfluxDb {
-	return &InfluxDb{
-		StateUpdates: make(chan *serverprotocol.Node, 20),
-	}
+	return &InfluxDb{}
 }
 
 func (i *InfluxDb) Connect() *client.Client {
 
-	u, err := url.Parse(fmt.Sprintf("http://%s", i.Config.InfluxDbServer))
+	u, err := url.Parse(fmt.Sprintf("http://%s:8086", i.Config.InfluxDbServer))
 	if err != nil {
 		log.Error(err)
 	}
@@ -52,38 +49,32 @@ func (i *InfluxDb) Connect() *client.Client {
 }
 
 func (self *InfluxDb) Start() {
-	conn := self.Connect()
-	go self.Worker(conn)
+	self.conn = self.Connect()
 }
 
-func (self *InfluxDb) Worker(conn *client.Client) {
-	for {
-		select {
-		case update := <-self.StateUpdates:
-			self.send(conn, update)
-		}
-	}
-}
-
-func (self *InfluxDb) send(conn *client.Client, update *serverprotocol.Node) {
+func (self *InfluxDb) Log(key, value string) {
 	var pts = make([]client.Point, 1)
+	log.Info("Logging: ", key, value)
 	pts[0] = client.Point{
-		Name: "shapes",
-		Tags: map[string]string{
-			"color": "test",
-			"shape": "test",
-		},
+		Name: key,
+		//Tags: map[string]string{
+		//"color": "test",
+		//"shape": "test",
+		//},
 		Fields: map[string]interface{}{
-			"value": 10,
+			"value": value,
 		},
-		Time:      time.Now(),
-		Precision: "s",
+		Time: time.Now(),
+		//Precision: "s",
 	}
 
 	bps := client.BatchPoints{
 		Points:   pts,
 		Database: "stampzilla",
 	}
-	conn.Write(bps)
+	_, err := self.conn.Write(bps)
+	if err != nil {
+		log.Error(err)
+	}
 
 }

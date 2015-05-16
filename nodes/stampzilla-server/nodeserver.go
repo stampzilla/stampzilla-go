@@ -6,6 +6,7 @@ import (
 
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/logic"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/metrics"
 	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 )
 
@@ -15,6 +16,7 @@ type NodeServer struct {
 	Nodes            *serverprotocol.Nodes `inject:""`
 	WebsocketHandler *WebsocketHandler     `inject:""`
 	ElasticSearch    *ElasticSearch        `inject:""`
+	Metrics          *metrics.Metrics      `inject:""`
 }
 
 func NewNodeServer() *NodeServer {
@@ -91,6 +93,9 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 			//Send to logic for evaluation
 			state, _ := json.Marshal(node.State)
 			logicChannel <- string(state)
+
+			//Send to metrics
+			ns.Metrics.Update(node)
 
 			// Try to send an update to elasticsearch
 			if ns.ElasticSearch.StateUpdates != nil {

@@ -59,20 +59,20 @@ func TestMap(t *testing.T) {
 	flattened := structToMetrics(state)
 
 	expectedKeys := map[string]string{
-		"State.Sensors.2.Name":      "Sensor 2",
-		"State.Sensors.2.Temp":      "22.42",
-		"State.Devices.1.State.Dim": "100",
-		"State.Devices.1.Features":  "",
-		"State.Sensors.1.Temp":      "24",
-		"State.Sensors.2.Id":        "2",
-		"State.Devices.1.State.On":  "1",
-		"State.Devices.1.Type":      "TYPE",
-		"State.Sensors.2.Humidity":  "42",
-		"State.Devices.1.Id":        "1",
-		"State.Sensors.1.Id":        "1",
-		"State.Sensors.1.Name":      "Sensor 1",
-		"State.Sensors.1.Humidity":  "40",
-		"State.Devices.1.Name":      "Sensor1",
+		"State_Sensors_2_Name":      "Sensor 2",
+		"State_Sensors_2_Temp":      "22.42",
+		"State_Devices_1_State_Dim": "100",
+		"State_Devices_1_Features":  "",
+		"State_Sensors_1_Temp":      "24",
+		"State_Sensors_2_Id":        "2",
+		"State_Devices_1_State_On":  "1",
+		"State_Devices_1_Type":      "TYPE",
+		"State_Sensors_2_Humidity":  "42",
+		"State_Devices_1_Id":        "1",
+		"State_Sensors_1_Id":        "1",
+		"State_Sensors_1_Name":      "Sensor 1",
+		"State_Sensors_1_Humidity":  "40",
+		"State_Devices_1_Name":      "Sensor1",
 	}
 
 	for k, v := range expectedKeys {

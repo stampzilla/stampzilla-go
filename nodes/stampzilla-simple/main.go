@@ -29,13 +29,10 @@ func main() { /*{{{*/
 	// Thit worker keeps track on our connection state, if we are connected or not
 	go monitorState(node, connection)
 
-	// This worker recives all incomming commands
-	go serverRecv(connection.Receive)
-
 	// Describe available actions
-	node.AddAction("set", "Set", []string{"Devices.Id"})
-	node.AddAction("toggle", "Toggle", []string{"Devices.Id"})
-	node.AddAction("dim", "Dim", []string{"Devices.Id", "value"})
+	//node.AddAction("set", "Set", []string{"Devices.Id"})
+	//node.AddAction("toggle", "Toggle", []string{"Devices.Id"})
+	//node.AddAction("dim", "Dim", []string{"Devices.Id", "value"})
 
 	node.AddElement(&protocol.Element{
 		Type: protocol.ElementTypeText,
@@ -50,17 +47,26 @@ func main() { /*{{{*/
 		Type: protocol.ElementTypeButton,
 		Name: "Example button",
 		Command: &protocol.Command{
-			Cmd:  "set",
+			Cmd:  "on",
 			Args: []string{"1"},
 		},
 		Feedback: "Devices[1].State",
 	})
 	node.AddElement(&protocol.Element{
 		Type: protocol.ElementTypeToggle,
-		Name: "Example toggle",
+		Name: "Example toggle1",
 		Command: &protocol.Command{
-			Cmd:  "set",
+			Cmd:  "toggle",
 			Args: []string{"1"},
+		},
+		Feedback: "Devices[1].State",
+	})
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeToggle,
+		Name: "Example toggle2",
+		Command: &protocol.Command{
+			Cmd:  "toggle",
+			Args: []string{"2"},
 		},
 		Feedback: "Devices[2].State",
 	})
@@ -68,7 +74,7 @@ func main() { /*{{{*/
 		Type: protocol.ElementTypeSlider,
 		Name: "Example slider",
 		Command: &protocol.Command{
-			Cmd:  "set",
+			Cmd:  "slider",
 			Args: []string{"1"},
 		},
 		Feedback: "Devices[3].State",
@@ -77,7 +83,7 @@ func main() { /*{{{*/
 		Type: protocol.ElementTypeColorPicker,
 		Name: "Example color picker",
 		Command: &protocol.Command{
-			Cmd:  "set",
+			Cmd:  "color",
 			Args: []string{"1"},
 		},
 		Feedback: "Devices[4].State",
@@ -86,9 +92,11 @@ func main() { /*{{{*/
 	state := NewState()
 	node.SetState(state)
 
-	state.AddDevice("1", "Dev1", "OFF")
-	state.AddDevice("2", "Dev2", "ON")
+	state.AddDevice("1", "Dev1", false)
+	state.AddDevice("2", "Dev2", true)
 
+	// This worker recives all incomming commands
+	go serverRecv(node, connection)
 	select {}
 } /*}}}*/
 
@@ -104,13 +112,36 @@ func monitorState(node *protocol.Node, connection *basenode.Connection) {
 }
 
 // WORKER that recives all incomming commands
-func serverRecv(recv chan protocol.Command) {
-	for d := range recv {
-		processCommand(d)
+func serverRecv(node *protocol.Node, connection *basenode.Connection) {
+	for d := range connection.Receive {
+		processCommand(node, connection, d)
 	}
 }
 
 // THis is called on each incomming command
-func processCommand(cmd protocol.Command) {
-	log.Info("Incoming command from server:", cmd)
+func processCommand(node *protocol.Node, connection *basenode.Connection, cmd protocol.Command) {
+	if s, ok := node.State.(*State); ok {
+		log.Info("Incoming command from server:", cmd)
+		if len(cmd.Args) == 0 {
+			return
+		}
+		device := s.Device(cmd.Args[0])
+
+		switch cmd.Cmd {
+		case "on":
+			device.State = true
+			connection.Send <- node.Node()
+		case "off":
+			device.State = false
+			connection.Send <- node.Node()
+		case "toggle":
+			log.Info("got toggle")
+			if device.State {
+				device.State = false
+			} else {
+				device.State = true
+			}
+			connection.Send <- node.Node()
+		}
+	}
 }

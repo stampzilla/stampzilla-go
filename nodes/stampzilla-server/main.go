@@ -1,16 +1,19 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"os"
 
 	log "github.com/cihub/seelog"
 	"github.com/facebookgo/inject"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/logic"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/metrics"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
 )
 
+//TODO make config general by using a map so we can get config from ENV,file or flag.
 type ServerConfig struct {
 	NodePort         string
 	WebPort          string
@@ -38,9 +41,8 @@ func main() {
 	flag.StringVar(&config.InfluxDbPassword, "influxdbpassword", "", "InfluxDb password. ")
 	flag.Parse()
 
-	if val := os.Getenv("STAMPZILLA_WEBROOT"); val != "" {
-		config.WebRoot = val
-	}
+	getConfigFromEnv(config)
+	readConfigFromFile("config.json", config)
 
 	// Load logger
 	logger, err := log.LoggerFromConfigAsFile("logconfig.xml")
@@ -82,15 +84,15 @@ func main() {
 
 	services := make([]interface{}, 0)
 
-	nodes := protocol.NewNodes()
-	scheduler := logic.NewScheduler()
-	logic := logic.NewLogic()
+	//nodes := protocol.NewNodes()
+	//scheduler := logic.NewScheduler()
+	//logic := logic.NewLogic()
 	//scheduler.CreateExampleFile()
 	//return
-	webServer := NewWebServer()
-	nodeServer := NewNodeServer()
-	wsrouter := websocket.NewRouter()
-	wsHandler := &WebsocketHandler{}
+	//webServer := NewWebServer()
+	//nodeServer := NewNodeServer()
+	//wsrouter := websocket.NewRouter()
+	//wsHandler := &WebsocketHandler{}
 
 	if config.ElasticSearch != "" {
 		es := NewElasticSearch()
@@ -101,16 +103,65 @@ func main() {
 		services = append(services, i)
 	}
 
-	//Note. webServer must be started last since its blocking.
-	services = append(services, config, nodes, logic, scheduler, nodeServer, wsrouter, wsHandler, webServer)
+	services = append(services, &WebsocketHandler{}, config, protocol.NewNodes(), logic.NewLogic(), logic.NewScheduler(), websocket.NewRouter(), NewNodeServer(), NewWebServer())
+
+	//Add metrics service if we have any loggers (Elasticsearch, influxdb, graphite etc)
+	if loggers := getLoggers(services); len(loggers) != 0 {
+		m := metrics.New()
+		for _, l := range loggers {
+			m.AddLogger(l)
+		}
+		services = append(services, m)
+	}
+
 	err = inject.Populate(services...)
 	if err != nil {
 		panic(err)
 	}
+	StartServices(services)
+	select {}
+}
 
+func StartServices(services []interface{}) {
 	for _, s := range services {
 		if s, ok := s.(Startable); ok {
 			s.Start()
 		}
+
+	}
+}
+
+func getLoggers(services []interface{}) []metrics.Logger {
+	var loggers []metrics.Logger
+	for _, s := range services {
+		if s, ok := s.(metrics.Logger); ok {
+			loggers = append(loggers, s)
+		}
+	}
+	return loggers
+}
+
+func getConfigFromEnv(config *ServerConfig) {
+
+	//TODO make prettier and generate from map with both ENV and flags
+	if val := os.Getenv("STAMPZILLA_WEBROOT"); val != "" {
+		config.WebRoot = val
+	}
+}
+func readConfigFromFile(fn string, config *ServerConfig) {
+	configFile, err := os.Open(fn)
+	if err != nil {
+		log.Error("opening config file", err.Error())
+		return
+	}
+
+	newConfig := &ServerConfig{}
+	jsonParser := json.NewDecoder(configFile)
+	if err = jsonParser.Decode(&config); err != nil {
+		log.Error("parsing config file", err.Error())
+	}
+
+	if newConfig.InfluxDbServer != "" {
+		config.InfluxDbServer = newConfig.InfluxDbServer
 	}
 }

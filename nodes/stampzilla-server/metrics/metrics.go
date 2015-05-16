@@ -4,33 +4,57 @@ import (
 	"reflect"
 	"strconv"
 
+	log "github.com/cihub/seelog"
 	"github.com/fatih/structs"
 )
+
+type Logger interface {
+	Log(key, value string)
+}
 
 type Metrics struct {
 	current  map[string]string
 	previous map[string]string
+	loggers  []Logger
 }
 
 func New() *Metrics {
 	return &Metrics{
 		make(map[string]string),
 		make(map[string]string),
+		nil,
 	}
+}
+func (m *Metrics) AddLogger(l Logger) {
+	log.Infof("Adding logger: %T\n", l)
+	m.loggers = append(m.loggers, l)
 }
 
 func (m *Metrics) Update(s interface{}) {
-	m.current = structToMetrics(s)
-	if len(m.previous) == 0 {
+	if len(m.loggers) == 0 {
 		return
 	}
 
-	for k, _ := range m.current {
-		m.isDiff(k)
+	m.current = structToMetrics(s)
+	if len(m.previous) == 0 {
+		m.previous = m.current
+		return
 	}
 
+	for k, v := range m.current {
+		if m.isDiff(k) {
+			log.Info("found diff. logging!")
+			m.log(k, v)
+		}
+	}
+	m.previous = m.current
 }
 
+func (m *Metrics) log(key, value string) {
+	for _, l := range m.loggers {
+		l.Log(key, value)
+	}
+}
 func (m *Metrics) isDiff(s string) bool {
 	if v, ok := m.previous[s]; ok {
 		if v != m.current[s] {
@@ -50,7 +74,7 @@ func structToMetrics(s interface{}) map[string]string {
 
 func flatten(inputJSON map[string]interface{}, lkey string, flattened *map[string]string) {
 	for rkey, value := range inputJSON {
-		key := lkey + "." + rkey
+		key := lkey + "_" + rkey
 
 		if structs.IsStruct(value) {
 			//fmt.Println("Its a struct: ", value)
