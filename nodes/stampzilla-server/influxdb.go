@@ -54,7 +54,7 @@ func (self *InfluxDb) Start() {
 
 func (self *InfluxDb) Log(key, value string) {
 	var pts = make([]client.Point, 1)
-	log.Info("Logging: ", key, value)
+	log.Info("Logging: ", key, " = ", value)
 	pts[0] = client.Point{
 		Name: key,
 		//Tags: map[string]string{

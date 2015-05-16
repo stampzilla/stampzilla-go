@@ -6,6 +6,7 @@ import (
 
 	log "github.com/cihub/seelog"
 	"github.com/fatih/structs"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 )
 
 type Logger interface {
@@ -65,11 +66,14 @@ func (m *Metrics) isDiff(s string) bool {
 }
 
 func structToMetrics(s interface{}) map[string]string {
-	st := structs.New(s)
-	m := st.Map()
-	flattened := make(map[string]string)
-	flatten(m, st.Name(), &flattened)
-	return flattened
+	log.Infof("%T", s)
+	if node, ok := s.(protocol.Node); ok {
+		st := structs.New(node)
+		flattened := make(map[string]string)
+		flatten(st.Map(), node.Uuid, &flattened)
+		return flattened
+	}
+	return nil
 }
 
 func flatten(inputJSON map[string]interface{}, lkey string, flattened *map[string]string) {
