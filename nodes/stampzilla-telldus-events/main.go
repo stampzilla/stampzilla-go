@@ -107,14 +107,31 @@ func monitorState(connection *basenode.Connection) {
 
 // WORKER that recives all incomming commands
 func serverRecv(connection *basenode.Connection) {
+	send := processCommandWorker()
 	for d := range connection.Receive {
-		if err := processCommand(d); err != nil {
-			log.Error(err)
-		}
+		send <- d
+		//if err := processCommand(d); err != nil {
+		//log.Error(err)
+		//}
 	}
 }
 
+func processCommandWorker() chan protocol.Command {
+	var send = make(chan protocol.Command, 100)
+
+	go func() {
+		for c := range send {
+			if err := processCommand(c); err != nil {
+				log.Error(err)
+			}
+		}
+	}()
+
+	return send
+}
+
 func processCommand(cmd protocol.Command) error {
+	log.Debug("Processing command", cmd)
 	var result C.int = C.TELLSTICK_ERROR_UNKNOWN
 	var id C.int = 0
 
@@ -209,10 +226,21 @@ func newDevice(id int, name *C.char, methods, s int, value *C.char) {
 func sensorEvent(protocol, model *C.char, sensorId, dataType int, value *C.char) {
 	log.Debugf("SensorEVENT %s,\t%s,\t%d -> ", C.GoString(protocol), C.GoString(model), sensorId)
 
+	var s *Sensor
+	if s = state.GetSensor(sensorId); s == nil {
+		s = state.AddSensor(sensorId, "UNKNOWN")
+	}
+
 	if dataType == C.TELLSTICK_TEMPERATURE {
-		log.Debugf("Temperature:\t%s\n", C.GoString(value))
+		t, _ := strconv.ParseFloat(C.GoString(value), 64)
+		log.Debugf("Temperature:\t%s\n", t)
+		s.Temp = t
+		serverConnection.Send <- node.Node()
 	} else if dataType == C.TELLSTICK_HUMIDITY {
-		log.Debugf("Humidity:\t%s%%\n", C.GoString(value))
+		h, _ := strconv.ParseFloat(C.GoString(value), 64)
+		log.Debugf("Humidity:\t%s%%\n", h)
+		s.Humidity = h
+		serverConnection.Send <- node.Node()
 	}
 }
 

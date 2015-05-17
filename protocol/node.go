@@ -2,12 +2,14 @@ package protocol
 
 import (
 	"encoding/json"
+	"net"
 	"sync"
 )
 
 type Node struct { /*{{{*/
 	Name     string
 	Uuid     string
+	Host     net.IP
 	Actions  []*Action
 	Layout   []*Layout
 	Elements []*Element

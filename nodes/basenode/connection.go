@@ -1,7 +1,6 @@
 package basenode
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -25,8 +24,8 @@ type Connection struct {
 func Connect() *Connection {
 
 	connection := &Connection{
-		Send:    make(chan interface{}),
-		Receive: make(chan protocol.Command),
+		Send:    make(chan interface{}, 100),
+		Receive: make(chan protocol.Command, 100),
 		State:   make(chan int),
 	}
 
@@ -58,21 +57,20 @@ func Connect() *Connection {
 
 func sendWorker(connection net.Conn, send chan interface{}, quit chan bool) {
 	var err error
-	var ret []byte
+	encoder := json.NewEncoder(connection)
 	for {
 		select {
 		case d := <-send:
 
 			if a, ok := d.(*protocol.Node); ok {
 				a.Uuid = config.Uuid
-				ret, err = json.Marshal(a.Node())
+				err = encoder.Encode(a.Node())
 			} else {
-				ret, err = json.Marshal(d)
+				err = encoder.Encode(d)
 			}
 			if err != nil {
-				fmt.Println("Error marshal json", err)
+				fmt.Println("Error encoder.Encode: ", err)
 			}
-			fmt.Fprintf(connection, string(ret))
 		case <-quit:
 			return
 
@@ -82,15 +80,14 @@ func sendWorker(connection net.Conn, send chan interface{}, quit chan bool) {
 
 func connectionWorker(connection net.Conn, recv chan protocol.Command) {
 	// Recive data
+	decoder := json.NewDecoder(connection)
 	for {
-		reader := bufio.NewReader(connection)
-		decoder := json.NewDecoder(reader)
 		var cmd protocol.Command
 		err := decoder.Decode(&cmd)
 
-		//err = json.Unmarshal(data, &cmd)
 		if err != nil {
 			if err.Error() == "EOF" {
+				log.Error("EOF:", err)
 				return
 			}
 			log.Warn(err)

@@ -1,20 +1,31 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"os"
 
 	log "github.com/cihub/seelog"
 	"github.com/facebookgo/inject"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/logic"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/metrics"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
 )
 
+//TODO make config general by using a map so we can get config from ENV,file or flag.
 type ServerConfig struct {
-	NodePort string
-	WebPort  string
-	WebRoot  string
+	NodePort         string
+	WebPort          string
+	WebRoot          string
+	ElasticSearch    string
+	InfluxDbServer   string
+	InfluxDbUser     string
+	InfluxDbPassword string
+}
+
+type Startable interface {
+	Start()
 }
 
 func main() {
@@ -24,11 +35,14 @@ func main() {
 	flag.StringVar(&config.NodePort, "node-port", "8282", "Stampzilla NodeServer port")
 	flag.StringVar(&config.WebPort, "web-port", "8080", "Webserver port")
 	flag.StringVar(&config.WebRoot, "web-root", "public", "Webserver root")
+	flag.StringVar(&config.ElasticSearch, "elasticsearch", "", "Address to an ElasticSearch host. Ex: http://hostname:9200/test/test")
+	flag.StringVar(&config.InfluxDbServer, "influxdbserver", "", "Address to an InfluxDb host. Ex: http://localhost:8086")
+	flag.StringVar(&config.InfluxDbUser, "influxdbuser", "", "InfluxDb user. ")
+	flag.StringVar(&config.InfluxDbPassword, "influxdbpassword", "", "InfluxDb password. ")
 	flag.Parse()
 
-	if val := os.Getenv("STAMPZILLA_WEBROOT"); val != "" {
-		config.WebRoot = val
-	}
+	getConfigFromEnv(config)
+	readConfigFromFile("config.json", config)
 
 	// Load logger
 	logger, err := log.LoggerFromConfigAsFile("logconfig.xml")
@@ -68,23 +82,86 @@ func main() {
 	}
 	log.ReplaceLogger(logger)
 
-	nodes := protocol.NewNodes()
-	l := logic.NewLogic()
-	scheduler := logic.NewScheduler()
+	services := make([]interface{}, 0)
+
+	//nodes := protocol.NewNodes()
+	//scheduler := logic.NewScheduler()
+	//logic := logic.NewLogic()
 	//scheduler.CreateExampleFile()
 	//return
-	webServer := NewWebServer()
-	nodeServer := NewNodeServer()
-	wsrouter := websocket.NewRouter()
-	wsHandler := &WebsocketHandler{}
+	//webServer := NewWebServer()
+	//nodeServer := NewNodeServer()
+	//wsrouter := websocket.NewRouter()
+	//wsHandler := &WebsocketHandler{}
 
-	err = inject.Populate(config, nodes, l, nodeServer, webServer, scheduler, wsrouter, wsHandler)
+	if config.ElasticSearch != "" {
+		es := NewElasticSearch()
+		services = append(services, es)
+	}
+	if config.InfluxDbServer != "" {
+		i := NewInfluxDb()
+		services = append(services, i)
+	}
+
+	services = append(services, &WebsocketHandler{}, config, protocol.NewNodes(), logic.NewLogic(), logic.NewScheduler(), websocket.NewRouter(), NewNodeServer(), NewWebServer())
+
+	//Add metrics service if we have any loggers (Elasticsearch, influxdb, graphite etc)
+	if loggers := getLoggers(services); len(loggers) != 0 {
+		m := metrics.New()
+		for _, l := range loggers {
+			m.AddLogger(l)
+		}
+		services = append(services, m)
+	}
+
+	err = inject.Populate(services...)
 	if err != nil {
 		panic(err)
 	}
+	StartServices(services)
+	select {}
+}
 
-	nodeServer.Start() //start the tcp socket server connecting to nodes
-	scheduler.Start()  //start the cron scheduler
-	wsHandler.Start()  //initialize websocket router
-	webServer.Start()  //start the webserver
+func StartServices(services []interface{}) {
+	for _, s := range services {
+		if s, ok := s.(Startable); ok {
+			s.Start()
+		}
+
+	}
+}
+
+func getLoggers(services []interface{}) []metrics.Logger {
+	var loggers []metrics.Logger
+	for _, s := range services {
+		if s, ok := s.(metrics.Logger); ok {
+			loggers = append(loggers, s)
+		}
+	}
+	return loggers
+}
+
+func getConfigFromEnv(config *ServerConfig) {
+
+	//TODO make prettier and generate from map with both ENV and flags
+	if val := os.Getenv("STAMPZILLA_WEBROOT"); val != "" {
+		config.WebRoot = val
+	}
+}
+func readConfigFromFile(fn string, config *ServerConfig) {
+	configFile, err := os.Open(fn)
+	if err != nil {
+		log.Error("opening config file", err.Error())
+		return
+	}
+
+	newConfig := &ServerConfig{}
+	jsonParser := json.NewDecoder(configFile)
+	if err = jsonParser.Decode(&config); err != nil {
+		log.Error("parsing config file", err.Error())
+	}
+
+	if newConfig.InfluxDbServer != "" {
+		config.InfluxDbServer = newConfig.InfluxDbServer
+	}
 }

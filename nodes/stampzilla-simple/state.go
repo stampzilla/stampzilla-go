@@ -14,16 +14,15 @@ func NewState() *State {
 	return &State{Devices: make(map[string]*Device)}
 }
 
-func (s *State) Device(id [4]byte) *Device {
-	senderId := hex.EncodeToString(id[0:4])
+func (s *State) Device(id string) *Device {
 	s.Lock()
 	defer s.Unlock()
-	if _, ok := s.Devices[senderId]; ok {
-		return s.Devices[senderId]
+	if _, ok := s.Devices[id]; ok {
+		return s.Devices[id]
 	}
 	return nil
 }
-func (s *State) AddDevice(id, name string, state string) *Device {
+func (s *State) AddDevice(id, name string, state bool) *Device {
 	d := NewDevice(id, name, state, "")
 	s.Lock()
 	defer s.Unlock()
@@ -43,7 +42,7 @@ func (s *State) GetState() interface{} {
 	return s
 }
 
-func NewDevice(id, name, state, dtype string) *Device {
+func NewDevice(id, name string, state bool, dtype string) *Device {
 	d := &Device{Name: name, State: state, Type: dtype}
 	d.SetId(id)
 	return d
@@ -52,7 +51,7 @@ func NewDevice(id, name, state, dtype string) *Device {
 type Device struct {
 	Id    string
 	Name  string
-	State string
+	State bool
 	Type  string
 	sync.Mutex
 }

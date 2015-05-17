@@ -179,14 +179,18 @@ func incomingPacket(node *protocol.Node, connection *basenode.Connection, p goen
 		connection.Send <- node
 	}
 
+	log.Debug("Incoming packet")
 	if t, ok := p.(goenocean.Telegram); ok {
+		log.Debug("Packet is goenocean.Telegram")
 		for _, deviceEep := range d.RecvEEPs {
 			if deviceEep[0:2] != hex.EncodeToString([]byte{t.TelegramType()}) {
+				log.Debug("Packet is wrong deviceEep ", deviceEep, t.TelegramType())
 				continue
 			}
 
 			if h := handlers.getHandler(deviceEep); h != nil {
 				h.Process(d, t)
+				log.Info("Incoming packet processed from", d.IdString())
 				//TODO add return bool in process and to send depending on that!
 				connection.Send <- node
 				return

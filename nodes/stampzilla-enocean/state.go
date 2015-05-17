@@ -53,15 +53,16 @@ func (s *State) GetState() interface{} {
 }
 
 func NewDevice(id [4]byte, name string, on bool, dtype string, features []string) *Device {
-	d := &Device{Name: name, On: on, Type: dtype}
+	d := &Device{Name: name, On_: on, Type: dtype}
 	d.SetId(id)
 	return d
 }
 
 type Device struct {
 	SenderId string
+	UniqueId int64
 	Name     string
-	On       bool
+	On_      bool `json:"On"`
 	Type     string
 	Features []string
 	SendEEPs []string
@@ -69,7 +70,7 @@ type Device struct {
 	PowerW   int64
 	PowerkWh int64
 	Dim      int64
-	sync.Mutex
+	sync.RWMutex
 }
 
 func (d *Device) AddEepForSending(eep string) {
@@ -95,6 +96,16 @@ func (d *Device) IdString() string {
 	d.Lock()
 	defer d.Unlock()
 	return d.SenderId
+}
+func (d *Device) SetOn(s bool) {
+	d.Lock()
+	d.On_ = s
+	d.Unlock()
+}
+func (d *Device) On() bool {
+	d.RLock()
+	defer d.RUnlock()
+	return d.On_
 }
 func (d *Device) SetId(senderId [4]byte) {
 	d.Lock()

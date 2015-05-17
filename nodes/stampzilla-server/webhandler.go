@@ -51,7 +51,7 @@ func (wh *WebHandler) CommandToNodePut(enc encoder.Encoder, params martini.Param
 		return 404, []byte("Node not found")
 	}
 
-	node.Conn().Write(requestJsonPut)
+	node.Write(requestJsonPut)
 	return 200, encoder.Must(enc.Encode(protocol.Command{Cmd: "testresponse"}))
 }
 
@@ -74,7 +74,7 @@ func (wh *WebHandler) CommandToNodeGet(enc encoder.Encoder, params martini.Param
 		return 500, []byte("Failed json marshal")
 	}
 	log.Info("Command:", string(jsonCmd))
-	node.Conn().Write(jsonCmd)
+	node.Write(jsonCmd)
 	return 200, encoder.Must(enc.Encode(protocol.Command{Cmd: "testresponse"}))
 }
 

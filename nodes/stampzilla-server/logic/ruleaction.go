@@ -35,7 +35,8 @@ func (ra *ruleAction) RunCommand() {
 		}
 
 		log.Info("Running command ", ra.Command, " to ", ra.Uuid)
-		node.Conn().Write(jsonToSend)
+		node.Write(jsonToSend)
+
 		return
 	}
 	log.Warn("Node ", ra.Uuid, " not found :/,  lost command", ra.Command)

@@ -4,6 +4,7 @@ import (
 	"net"
 	"sync"
 
+	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
@@ -15,6 +16,7 @@ type Node struct {
 	conn net.Conn
 	wait chan bool
 	sync.RWMutex
+	//encoder *json.Encoder
 }
 
 func (n *Node) Conn() net.Conn {
@@ -22,10 +24,25 @@ func (n *Node) Conn() net.Conn {
 	defer n.Unlock()
 	return n.conn
 }
+
+//func (n *Node) SetJsonEncoder(enc *json.Encoder) {
+//n.Lock()
+//n.encoder = enc
+//n.Unlock()
+//}
 func (n *Node) SetConn(conn net.Conn) {
 	n.Lock()
 	n.conn = conn
 	n.Unlock()
+}
+func (n *Node) Write(b []byte) {
+	b = append(b, []byte("\n")...)
+	_, err := n.conn.Write(b)
+	//err := n.encoder.Encode(b)
+	if err != nil {
+		log.Error(err)
+		return
+	}
 }
 
 //  TODO: write tests for Nodes struct (jonaz) <Fri 10 Oct 2014 04:31:22 PM CEST>
