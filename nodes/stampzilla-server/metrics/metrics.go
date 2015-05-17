@@ -10,19 +10,19 @@ import (
 )
 
 type Logger interface {
-	Log(key, value string)
+	Log(key string, value interface{})
 }
 
 type Metrics struct {
-	current  map[string]string
-	previous map[string]string
+	current  map[string]interface{}
+	previous map[string]interface{}
 	loggers  []Logger
 }
 
 func New() *Metrics {
 	return &Metrics{
-		make(map[string]string),
-		make(map[string]string),
+		make(map[string]interface{}),
+		make(map[string]interface{}),
 		nil,
 	}
 }
@@ -51,7 +51,7 @@ func (m *Metrics) Update(s interface{}) {
 	m.previous = m.current
 }
 
-func (m *Metrics) log(key, value string) {
+func (m *Metrics) log(key string, value interface{}) {
 	for _, l := range m.loggers {
 		l.Log(key, value)
 	}
@@ -65,8 +65,8 @@ func (m *Metrics) isDiff(s string) bool {
 	return false
 }
 
-func structToMetrics(s interface{}) map[string]string {
-	flattened := make(map[string]string)
+func structToMetrics(s interface{}) map[string]interface{} {
+	flattened := make(map[string]interface{})
 	baseName := ""
 	if node, ok := s.(protocol.Node); ok {
 		//st := structs.New(node)
@@ -76,7 +76,7 @@ func structToMetrics(s interface{}) map[string]string {
 	return flattened
 }
 
-func flatten(inputJSON map[string]interface{}, lkey string, flattened *map[string]string) {
+func flatten(inputJSON map[string]interface{}, lkey string, flattened *map[string]interface{}) {
 	for rkey, value := range inputJSON {
 		key := lkey + "_" + rkey
 		if lkey == "" {
@@ -105,25 +105,30 @@ func flatten(inputJSON map[string]interface{}, lkey string, flattened *map[strin
 		case map[string]interface{}:
 			flatten(v, key, flattened)
 		default:
-			(*flattened)[key] = toString(v)
+			(*flattened)[key] = cast(v)
 		}
 
 	}
 }
 
-func toString(s interface{}) string {
+func cast(s interface{}) interface{} {
 	switch v := s.(type) {
 	case int:
-		return strconv.Itoa(v)
+		return v
+		//return strconv.Itoa(v)
 	case float64:
-		return strconv.FormatFloat(v, 'f', -1, 64)
+		//return strconv.FormatFloat(v, 'f', -1, 64)
+		return v
 	case string:
+		if n, err := strconv.Atoi(v); err == nil {
+			return n
+		}
 		return v
 	case bool:
 		if v {
-			return "1"
+			return 1
 		}
-		return "0"
+		return 0
 	}
 	return ""
 }

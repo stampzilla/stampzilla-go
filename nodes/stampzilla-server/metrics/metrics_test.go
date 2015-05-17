@@ -1,6 +1,9 @@
 package metrics
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestMap(t *testing.T) {
 
@@ -58,36 +61,36 @@ func TestMap(t *testing.T) {
 
 	flattened := structToMetrics(state)
 
-	expectedKeys := map[string]string{
+	expectedKeys := map[string]interface{}{
 		"Sensors_2_Name":      "Sensor 2",
-		"Sensors_2_Temp":      "22.42",
-		"Devices_1_State_Dim": "100",
+		"Sensors_2_Temp":      22.42,
+		"Devices_1_State_Dim": 100,
 		"Devices_1_Features":  "",
-		"Sensors_1_Temp":      "24",
-		"Sensors_2_Id":        "2",
-		"Devices_1_State_On":  "1",
+		"Sensors_1_Temp":      24.0,
+		"Sensors_2_Id":        2,
+		"Devices_1_State_On":  1,
 		"Devices_1_Type":      "TYPE",
-		"Sensors_2_Humidity":  "42",
-		"Devices_1_Id":        "1",
-		"Sensors_1_Id":        "1",
+		"Sensors_2_Humidity":  42.0,
+		"Devices_1_Id":        1,
+		"Sensors_1_Id":        1,
 		"Sensors_1_Name":      "Sensor 1",
-		"Sensors_1_Humidity":  "40",
+		"Sensors_1_Humidity":  40.0,
 		"Devices_1_Name":      "Sensor1",
 	}
 
-	//for k, v := range flattened {
-	//fmt.Printf("%s = %v\n", k, v)
-	//}
+	for k, v := range flattened {
+		fmt.Printf("%s = %v\n", k, v)
+	}
 	for k, v := range expectedKeys {
 		assertKeyExists(t, k, v, flattened)
 	}
 }
 
-func assertKeyExists(t *testing.T, key, val string, m map[string]string) {
+func assertKeyExists(t *testing.T, key string, val interface{}, m map[string]interface{}) {
 	if _, ok := m[key]; !ok {
 		t.Errorf("Key %s does not exist", key)
 	}
 	if m[key] != val {
-		t.Errorf("Value %s does not exist", val)
+		t.Errorf("Value %s does not equal %s exist in %s", m[key], val, key)
 	}
 }

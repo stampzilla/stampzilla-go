@@ -52,9 +52,9 @@ func (self *InfluxDb) Start() {
 	self.conn = self.Connect()
 }
 
-func (self *InfluxDb) Log(key, value string) {
+func (self *InfluxDb) Log(key string, value interface{}) {
 	var pts = make([]client.Point, 1)
-	log.Info("Logging: ", key, " = ", value)
+	log.Debug("Logging: ", key, " = ", value)
 	pts[0] = client.Point{
 		Name: key,
 		//Tags: map[string]string{
