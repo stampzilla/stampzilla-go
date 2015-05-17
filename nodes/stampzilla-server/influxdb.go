@@ -52,7 +52,7 @@ func (self *InfluxDb) Start() {
 	self.conn = self.Connect()
 }
 
-func (self *InfluxDb) Log(node *serverprotocol.Node, key string, value interface{}) {
+func (self *InfluxDb) Log(key string, value interface{}) {
 	var pts = make([]client.Point, 1)
 	log.Debug("Logging: ", key, " = ", value)
 	pts[0] = client.Point{
@@ -77,5 +77,5 @@ func (self *InfluxDb) Log(node *serverprotocol.Node, key string, value interface
 		log.Error(err)
 	}
 }
-func (self *InfluxDb) Commit(node *serverprotocol.Node) {
+func (self *InfluxDb) Commit(s interface{}) {
 }

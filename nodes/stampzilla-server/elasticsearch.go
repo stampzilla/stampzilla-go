@@ -38,10 +38,12 @@ func (self *ElasticSearch) Worker() {
 }
 
 // METRIC LOGGER INTERFACE
-func (self *ElasticSearch) Log(node *serverprotocol.Node, key string, value interface{}) {
+func (self *ElasticSearch) Log(key string, value interface{}) {
 }
-func (self *ElasticSearch) Commit(node *serverprotocol.Node) {
-	self.StateUpdates <- node
+func (self *ElasticSearch) Commit(node interface{}) {
+	if node, ok := node.(serverprotocol.Node); ok {
+		self.StateUpdates <- &node
+	}
 }
 
 // END - METRIC LOGGER INTERFACE

@@ -10,8 +10,8 @@ import (
 )
 
 type Logger interface {
-	Log(node *serverprotocol.Node, key string, value interface{})
-	Commit(node *serverprotocol.Node)
+	Log(key string, value interface{})
+	Commit(node interface{})
 }
 
 type Metrics struct {
@@ -32,12 +32,12 @@ func (m *Metrics) AddLogger(l Logger) {
 	m.loggers = append(m.loggers, l)
 }
 
-func (m *Metrics) Update(node *serverprotocol.Node) {
+func (m *Metrics) Update(s interface{}) {
 	if len(m.loggers) == 0 {
 		return
 	}
 
-	m.current = structToMetrics(node)
+	m.current = structToMetrics(s)
 	if len(m.previous) == 0 {
 		m.previous = m.current
 		return
@@ -47,22 +47,22 @@ func (m *Metrics) Update(node *serverprotocol.Node) {
 	for k, v := range m.current {
 		if m.isDiff(k) {
 			log.Info("found diff. logging!")
-			m.log(node, k, v)
+			m.log(k, v)
 			changed = true
 		}
 	}
 
 	if changed {
 		for _, l := range m.loggers {
-			l.Commit(node)
+			l.Commit(s)
 		}
 	}
 	m.previous = m.current
 }
 
-func (m *Metrics) log(node *serverprotocol.Node, key string, value interface{}) {
+func (m *Metrics) log(key string, value interface{}) {
 	for _, l := range m.loggers {
-		l.Log(node, key, value)
+		l.Log(key, value)
 	}
 }
 func (m *Metrics) isDiff(s string) bool {

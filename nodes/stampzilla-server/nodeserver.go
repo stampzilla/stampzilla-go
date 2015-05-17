@@ -96,7 +96,7 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 
 			//Send to metrics
 			//TODO make this a buffered channel so we dont have to wait for the logging to complete before continueing.
-			ns.Metrics.Update(&node)
+			ns.Metrics.Update(node)
 		}
 	}
 }
