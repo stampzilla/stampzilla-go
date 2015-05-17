@@ -6,11 +6,12 @@ import (
 
 	log "github.com/cihub/seelog"
 	"github.com/fatih/structs"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
+	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 )
 
 type Logger interface {
-	Log(key string, value interface{})
+	Log(node *serverprotocol.Node, key string, value interface{})
+	Commit(node *serverprotocol.Node)
 }
 
 type Metrics struct {
@@ -31,29 +32,37 @@ func (m *Metrics) AddLogger(l Logger) {
 	m.loggers = append(m.loggers, l)
 }
 
-func (m *Metrics) Update(s interface{}) {
+func (m *Metrics) Update(node *serverprotocol.Node) {
 	if len(m.loggers) == 0 {
 		return
 	}
 
-	m.current = structToMetrics(s)
+	m.current = structToMetrics(node)
 	if len(m.previous) == 0 {
 		m.previous = m.current
 		return
 	}
 
+	changed := false
 	for k, v := range m.current {
 		if m.isDiff(k) {
 			log.Info("found diff. logging!")
-			m.log(k, v)
+			m.log(node, k, v)
+			changed = true
+		}
+	}
+
+	if changed {
+		for _, l := range m.loggers {
+			l.Commit(node)
 		}
 	}
 	m.previous = m.current
 }
 
-func (m *Metrics) log(key string, value interface{}) {
+func (m *Metrics) log(node *serverprotocol.Node, key string, value interface{}) {
 	for _, l := range m.loggers {
-		l.Log(key, value)
+		l.Log(node, key, value)
 	}
 }
 func (m *Metrics) isDiff(s string) bool {
@@ -68,7 +77,7 @@ func (m *Metrics) isDiff(s string) bool {
 func structToMetrics(s interface{}) map[string]interface{} {
 	flattened := make(map[string]interface{})
 	baseName := ""
-	if node, ok := s.(protocol.Node); ok {
+	if node, ok := s.(serverprotocol.Node); ok {
 		//st := structs.New(node)
 		baseName = node.Uuid
 	}

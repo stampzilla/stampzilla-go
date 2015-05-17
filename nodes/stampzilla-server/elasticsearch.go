@@ -37,6 +37,15 @@ func (self *ElasticSearch) Worker() {
 	}
 }
 
+// METRIC LOGGER INTERFACE
+func (self *ElasticSearch) Log(node *serverprotocol.Node, key string, value interface{}) {
+}
+func (self *ElasticSearch) Commit(node *serverprotocol.Node) {
+	self.StateUpdates <- node
+}
+
+// END - METRIC LOGGER INTERFACE
+
 func (self *ElasticSearch) pushUpdate(update *serverprotocol.Node) {
 
 	type Item struct {
@@ -62,7 +71,7 @@ func (self *ElasticSearch) pushUpdate(update *serverprotocol.Node) {
 	}
 
 	url := self.Config.ElasticSearch + "/" + update.Name
-	log.Debug("URL:>", url)
+	//log.Debug("URL:>", url)
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
 	req.Header.Set("X-Custom-Header", "myvalue")
@@ -75,10 +84,11 @@ func (self *ElasticSearch) pushUpdate(update *serverprotocol.Node) {
 	}
 	defer resp.Body.Close()
 
-	log.Debug("request Body:", string(jsonStr))
-	log.Debug("response Status:", resp.Status)
-	log.Debug("response Headers:", resp.Header)
-	body, _ := ioutil.ReadAll(resp.Body)
-	log.Debug("response Body:", string(body))
+	//log.Debug("request Body:", string(jsonStr))
+	//log.Debug("response Status:", resp.Status)
+	//log.Debug("response Headers:", resp.Header)
+	ioutil.ReadAll(resp.Body)
+	// body, _ :=
+	//log.Debug("response Body:", string(body))
 
 }

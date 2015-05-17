@@ -33,6 +33,7 @@ func (n *Node) Conn() net.Conn {
 func (n *Node) SetConn(conn net.Conn) {
 	n.Lock()
 	n.conn = conn
+	n.Host = conn.RemoteAddr().String()
 	n.Unlock()
 }
 func (n *Node) Write(b []byte) {

@@ -84,17 +84,9 @@ func main() {
 
 	services := make([]interface{}, 0)
 
-	//nodes := protocol.NewNodes()
-	//scheduler := logic.NewScheduler()
-	//logic := logic.NewLogic()
-	//scheduler.CreateExampleFile()
-	//return
-	//webServer := NewWebServer()
-	//nodeServer := NewNodeServer()
-	//wsrouter := websocket.NewRouter()
-	//wsHandler := &WebsocketHandler{}
-
+	// Register metrics loggers
 	if config.ElasticSearch != "" {
+		log.Info("Starting ElasticSearch metrics logger")
 		es := NewElasticSearch()
 		services = append(services, es)
 	}
@@ -103,11 +95,13 @@ func main() {
 		services = append(services, i)
 	}
 
+	// Register the rest of the services
 	services = append(services, &WebsocketHandler{}, config, protocol.NewNodes(), logic.NewLogic(), logic.NewScheduler(), websocket.NewRouter(), NewNodeServer(), NewWebServer())
 
 	//Add metrics service if we have any loggers (Elasticsearch, influxdb, graphite etc)
 	if loggers := getLoggers(services); len(loggers) != 0 {
 		m := metrics.New()
+		log.Info("Detected metrics loggers, starting up")
 		for _, l := range loggers {
 			m.AddLogger(l)
 		}

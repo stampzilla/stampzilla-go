@@ -96,18 +96,7 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 
 			//Send to metrics
 			//TODO make this a buffered channel so we dont have to wait for the logging to complete before continueing.
-			ns.Metrics.Update(node)
-
-			// Try to send an update to elasticsearch
-			if ns.ElasticSearch.StateUpdates != nil {
-				select {
-				case ns.ElasticSearch.StateUpdates <- &node: // Successfully deliverd to es
-				default: // Failed to deliver to es
-					log.Warn("Failed to update ElasticSearch")
-				}
-			}
+			ns.Metrics.Update(&node)
 		}
-
 	}
-
 }

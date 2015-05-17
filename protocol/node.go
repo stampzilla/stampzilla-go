@@ -2,14 +2,13 @@ package protocol
 
 import (
 	"encoding/json"
-	"net"
 	"sync"
 )
 
 type Node struct { /*{{{*/
 	Name     string
 	Uuid     string
-	Host     net.IP
+	Host     string
 	Actions  []*Action
 	Layout   []*Layout
 	Elements []*Element
@@ -25,6 +24,7 @@ func NewNode(name string) *Node {
 	return &Node{
 		Name:    name,
 		Uuid:    "",
+		Host:    "",
 		Actions: []*Action{},
 		Layout:  []*Layout{}}
 }
