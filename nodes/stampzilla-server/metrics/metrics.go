@@ -66,19 +66,22 @@ func (m *Metrics) isDiff(s string) bool {
 }
 
 func structToMetrics(s interface{}) map[string]string {
-	log.Infof("%T", s)
+	flattened := make(map[string]string)
+	baseName := ""
 	if node, ok := s.(protocol.Node); ok {
-		st := structs.New(node)
-		flattened := make(map[string]string)
-		flatten(st.Map(), node.Uuid, &flattened)
-		return flattened
+		//st := structs.New(node)
+		baseName = node.Uuid
 	}
-	return nil
+	flatten(structs.Map(s), baseName, &flattened)
+	return flattened
 }
 
 func flatten(inputJSON map[string]interface{}, lkey string, flattened *map[string]string) {
 	for rkey, value := range inputJSON {
 		key := lkey + "_" + rkey
+		if lkey == "" {
+			key = rkey
+		}
 
 		if value == nil {
 			continue

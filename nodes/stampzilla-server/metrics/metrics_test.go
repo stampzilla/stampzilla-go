@@ -59,28 +59,28 @@ func TestMap(t *testing.T) {
 	flattened := structToMetrics(state)
 
 	expectedKeys := map[string]string{
-		"State_Sensors_2_Name":      "Sensor 2",
-		"State_Sensors_2_Temp":      "22.42",
-		"State_Devices_1_State_Dim": "100",
-		"State_Devices_1_Features":  "",
-		"State_Sensors_1_Temp":      "24",
-		"State_Sensors_2_Id":        "2",
-		"State_Devices_1_State_On":  "1",
-		"State_Devices_1_Type":      "TYPE",
-		"State_Sensors_2_Humidity":  "42",
-		"State_Devices_1_Id":        "1",
-		"State_Sensors_1_Id":        "1",
-		"State_Sensors_1_Name":      "Sensor 1",
-		"State_Sensors_1_Humidity":  "40",
-		"State_Devices_1_Name":      "Sensor1",
+		"Sensors_2_Name":      "Sensor 2",
+		"Sensors_2_Temp":      "22.42",
+		"Devices_1_State_Dim": "100",
+		"Devices_1_Features":  "",
+		"Sensors_1_Temp":      "24",
+		"Sensors_2_Id":        "2",
+		"Devices_1_State_On":  "1",
+		"Devices_1_Type":      "TYPE",
+		"Sensors_2_Humidity":  "42",
+		"Devices_1_Id":        "1",
+		"Sensors_1_Id":        "1",
+		"Sensors_1_Name":      "Sensor 1",
+		"Sensors_1_Humidity":  "40",
+		"Devices_1_Name":      "Sensor1",
 	}
 
-	for k, v := range expectedKeys {
-		assertKeyExists(t, k, v, flattened)
-	}
 	//for k, v := range flattened {
 	//fmt.Printf("%s = %v\n", k, v)
 	//}
+	for k, v := range expectedKeys {
+		assertKeyExists(t, k, v, flattened)
+	}
 }
 
 func assertKeyExists(t *testing.T, key, val string, m map[string]string) {
