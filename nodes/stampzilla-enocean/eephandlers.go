@@ -47,6 +47,7 @@ func (h *handlerEepf60201) On(d *Device) {
 	p.SetDestinationId(d.Id())
 	//TODO create set methods in EepF60201
 	p.SetTelegramData([]byte{0x50}) //ON
+	fmt.Printf("Sending ON: % x\n", p.Encode())
 	enoceanSend <- p
 }
 func (h *handlerEepf60201) Off(d *Device) {
@@ -54,6 +55,7 @@ func (h *handlerEepf60201) Off(d *Device) {
 	p.SetDestinationId(d.Id())
 	//TODO create set methods in EepF60201
 	p.SetTelegramData([]byte{0x70}) //OFF
+	fmt.Printf("Sending OFF: % x\n", p.Encode())
 	enoceanSend <- p
 }
 func (h *handlerEepf60201) Toggle(d *Device) {
