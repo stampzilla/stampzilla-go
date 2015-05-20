@@ -15,14 +15,12 @@ type Logger interface {
 }
 
 type Metrics struct {
-	current  map[string]interface{}
 	previous map[string]interface{}
 	loggers  []Logger
 }
 
 func New() *Metrics {
 	return &Metrics{
-		make(map[string]interface{}),
 		make(map[string]interface{}),
 		nil,
 	}
@@ -37,15 +35,15 @@ func (m *Metrics) Update(s interface{}) {
 		return
 	}
 
-	m.current = structToMetrics(s)
+	current := structToMetrics(s)
 	if len(m.previous) == 0 {
-		m.previous = m.current
+		m.previous = current
 		return
 	}
 
 	changed := false
-	for k, v := range m.current {
-		if m.isDiff(k) {
+	for k, v := range current {
+		if m.isDiff(k, v) {
 			log.Info("found diff. logging!")
 			m.log(k, v)
 			changed = true
@@ -57,7 +55,7 @@ func (m *Metrics) Update(s interface{}) {
 			l.Commit(s)
 		}
 	}
-	m.previous = m.current
+	m.previous = current
 }
 
 func (m *Metrics) log(key string, value interface{}) {
@@ -65,9 +63,9 @@ func (m *Metrics) log(key string, value interface{}) {
 		l.Log(key, value)
 	}
 }
-func (m *Metrics) isDiff(s string) bool {
-	if v, ok := m.previous[s]; ok {
-		if v != m.current[s] {
+func (m *Metrics) isDiff(k string, v interface{}) bool {
+	if oldValue, ok := m.previous[k]; ok {
+		if oldValue != v {
 			return true
 		}
 	}
