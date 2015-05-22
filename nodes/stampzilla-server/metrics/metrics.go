@@ -17,20 +17,33 @@ type Logger interface {
 type Metrics struct {
 	previous map[string]interface{}
 	loggers  []Logger
+	queue    chan interface{}
 }
 
 func New() *Metrics {
 	return &Metrics{
 		make(map[string]interface{}),
 		nil,
+		make(chan interface{}, 100),
 	}
 }
 func (m *Metrics) AddLogger(l Logger) {
 	log.Infof("Adding logger: %T\n", l)
 	m.loggers = append(m.loggers, l)
 }
-
+func (m *Metrics) Start() {
+	go m.worker()
+}
+func (m *Metrics) worker() {
+	for s := range m.queue {
+		m.update(s)
+	}
+}
 func (m *Metrics) Update(s interface{}) {
+	m.queue <- s
+}
+
+func (m *Metrics) update(s interface{}) {
 	if len(m.loggers) == 0 {
 		return
 	}
