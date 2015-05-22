@@ -68,7 +68,13 @@ func (m *Metrics) update(s interface{}) {
 			l.Commit(s)
 		}
 	}
-	m.previous = current
+	m.updatePrevious(current)
+}
+
+func (m *Metrics) updatePrevious(s map[string]interface{}) {
+	for k, v := range s {
+		m.previous[k] = v
+	}
 }
 
 func (m *Metrics) log(key string, value interface{}) {
