@@ -4,10 +4,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"log"
 	"strconv"
 	"unsafe"
 
-	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
@@ -47,7 +47,7 @@ func main() {
 	//flag.StringVar(&port, "port", "8282", "Stampzilla server port")
 	flag.Parse()
 
-	log.Info("Starting TELLDUS-events node")
+	log.Println("Starting TELLDUS-events node")
 
 	C.registerCallbacks()
 	defer C.unregisterCallbacks()
@@ -68,7 +68,7 @@ func main() {
 
 	// Add devices
 	cnt := C.updateDevices()
-	log.Info("Updated devices (", cnt, " in total)")
+	log.Println("Updated devices (", cnt, " in total)")
 
 	for _, dev := range state.Devices {
 		node.AddElement(&protocol.Element{
@@ -111,7 +111,7 @@ func serverRecv(connection *basenode.Connection) {
 	for d := range connection.Receive {
 		send <- d
 		//if err := processCommand(d); err != nil {
-		//log.Error(err)
+		//log.Println(err)
 		//}
 	}
 }
@@ -122,7 +122,7 @@ func processCommandWorker() chan protocol.Command {
 	go func() {
 		for c := range send {
 			if err := processCommand(c); err != nil {
-				log.Error(err)
+				log.Println(err)
 			}
 		}
 	}()
@@ -131,7 +131,7 @@ func processCommandWorker() chan protocol.Command {
 }
 
 func processCommand(cmd protocol.Command) error {
-	log.Debug("Processing command", cmd)
+	log.Println("Processing command", cmd)
 	var result C.int = C.TELLSTICK_ERROR_UNKNOWN
 	var id C.int = 0
 
@@ -152,7 +152,7 @@ func processCommand(cmd protocol.Command) error {
 		switch {
 		case s&C.TELLSTICK_DIM != 0:
 			var state *C.char = C.tdLastSentValue(id)
-			log.Info("DIM: ", C.GoString(state))
+			log.Println("DIM: ", C.GoString(state))
 			if C.GoString(state) == "0" {
 				result = C.tdTurnOn(id)
 			} else {
@@ -177,7 +177,7 @@ func processCommand(cmd protocol.Command) error {
 
 //export newDevice
 func newDevice(id int, name *C.char, methods, s int, value *C.char) {
-	//log.Info(id, C.GoString(name))
+	//log.Println(id, C.GoString(name))
 
 	features := []string{}
 	if methods&C.TELLSTICK_TURNON != 0 {
@@ -224,7 +224,7 @@ func newDevice(id int, name *C.char, methods, s int, value *C.char) {
 
 //export sensorEvent
 func sensorEvent(protocol, model *C.char, sensorId, dataType int, value *C.char) {
-	log.Debugf("SensorEVENT %s,\t%s,\t%d -> ", C.GoString(protocol), C.GoString(model), sensorId)
+	log.Println("SensorEVENT: ", C.GoString(protocol), C.GoString(model), sensorId)
 
 	var s *Sensor
 	if s = state.GetSensor(sensorId); s == nil {
@@ -233,15 +233,17 @@ func sensorEvent(protocol, model *C.char, sensorId, dataType int, value *C.char)
 
 	if dataType == C.TELLSTICK_TEMPERATURE {
 		t, _ := strconv.ParseFloat(C.GoString(value), 64)
-		log.Debugf("Temperature:\t%s\n", t)
+		log.Println("Temperature:\t", t)
 		if s.Temp != t {
+			log.Println("Difference, sending to server")
 			s.Temp = t
 			serverConnection.Send <- node.Node()
 		}
 	} else if dataType == C.TELLSTICK_HUMIDITY {
 		h, _ := strconv.ParseFloat(C.GoString(value), 64)
-		log.Debugf("Humidity:\t%s%%\n", h)
+		log.Println("Humidity:\t", h)
 		if s.Humidity != h {
+			log.Println("Difference, sending to server")
 			s.Humidity = h
 			serverConnection.Send <- node.Node()
 		}
@@ -250,7 +252,7 @@ func sensorEvent(protocol, model *C.char, sensorId, dataType int, value *C.char)
 
 //export deviceEvent
 func deviceEvent(deviceId, method int, data *C.char, callbackId int, context unsafe.Pointer) {
-	log.Debugf("DeviceEVENT %d\t%d\t:%s\n", deviceId, method, C.GoString(data))
+	log.Println("DeviceEVENT: ", deviceId, method, C.GoString(data))
 	device := state.GetDevice(strconv.Itoa(deviceId))
 	if method&C.TELLSTICK_TURNON != 0 {
 		device.State.On = true
@@ -263,7 +265,7 @@ func deviceEvent(deviceId, method int, data *C.char, callbackId int, context uns
 	if method&C.TELLSTICK_DIM != 0 {
 		level, err := strconv.ParseUint(C.GoString(data), 10, 16)
 		if err != nil {
-			log.Error(err)
+			log.Println(err)
 			return
 		}
 		if level == 0 {
@@ -279,10 +281,10 @@ func deviceEvent(deviceId, method int, data *C.char, callbackId int, context uns
 
 //export deviceChangeEvent
 func deviceChangeEvent(deviceId, changeEvent, changeType, callbackId int, context unsafe.Pointer) {
-	log.Debugf("DeviceChangeEVENT %d\t%d\t%d\n", deviceId, changeEvent, changeType)
+	log.Println("DeviceChangeEVENT: ", deviceId, changeEvent, changeType)
 }
 
 //export rawDeviceEvent
 func rawDeviceEvent(data *C.char, controllerId, callbackId int, context unsafe.Pointer) {
-	log.Debugf("rawDeviceEVENT (%d):%s\n", controllerId, C.GoString(data))
+	log.Println("rawDeviceEVENT: ", controllerId, C.GoString(data))
 }
