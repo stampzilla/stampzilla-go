@@ -56,7 +56,7 @@ func (self *InfluxDb) Log(key string, value interface{}) {
 	var pts = make([]client.Point, 1)
 	log.Debug("Logging: ", key, " = ", value)
 	pts[0] = client.Point{
-		Name: key,
+		Measurement: key,
 		//Tags: map[string]string{
 		//"color": "test",
 		//"shape": "test",
