@@ -2,17 +2,18 @@ package main
 
 import (
 	"flag"
+	"log"
+	"os"
 	"time"
 
-	log "github.com/cihub/seelog"
 	"github.com/goburrow/modbus"
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
 // MAIN - This is run when the init function is done
-func main() { /*{{{*/
-	log.Info("Starting SIMPLE node")
+func main() {
+	log.Println("Starting SIMPLE node")
 
 	// Parse all commandline arguments, host and port parameters are added in the basenode init function
 	flag.Parse()
@@ -29,14 +30,15 @@ func main() { /*{{{*/
 	handler := modbus.NewRTUClientHandler("/dev/ttyUSB0")
 	handler.BaudRate = 9600
 	handler.DataBits = 8
-	handler.Parity = "E"
-	handler.StopBits = 1
+	handler.Parity = "N"
+	handler.StopBits = 2
 	handler.SlaveId = 1
-	handler.Timeout = 5 * time.Second
+	handler.Timeout = 10 * time.Second
+	handler.Logger = log.New(os.Stdout, "test: ", log.LstdFlags)
 
 	err := handler.Connect()
 	if err != nil {
-		log.Error(err)
+		log.Println(err)
 		return
 	}
 
@@ -52,14 +54,30 @@ func main() { /*{{{*/
 	//REG_HC_WC_SIGNAL 204 Reg
 
 	client := modbus.NewClient(handler)
-	results, err := client.ReadInputRegisters(214, 1)
-	if err != nil {
-		log.Error(err)
-		return
-	}
+	//results, _ := client.ReadHoldingRegisters(214, 1)
+	//if err != nil {
+	//log.Println(err)
+	//}
+	results, _ := client.ReadInputRegisters(214, 1)
+	log.Println("REG_HC_TEMP_IN1: ", results)
+	results, _ = client.ReadInputRegisters(215, 1)
+	log.Println("REG_HC_TEMP_IN2: ", results)
+	results, _ = client.ReadInputRegisters(216, 1)
+	log.Println("REG_HC_TEMP_IN3: ", results)
+	results, _ = client.ReadInputRegisters(217, 1)
+	log.Println("REG_HC_TEMP_IN4: ", results)
+	results, _ = client.ReadInputRegisters(218, 1)
+	log.Println("REG_HC_TEMP_IN5: ", results)
+	results, _ = client.ReadInputRegisters(207, 1)
+	log.Println("REG_HC_TEMP_LVL: ", results)
+	results, _ = client.ReadInputRegisters(301, 1)
+	log.Println("REG_DAMPER_PWM: ", results)
+	results, _ = client.ReadInputRegisters(204, 1)
+	log.Println("REG_HC_WC_SIGNAL: ", results)
+	results, _ = client.ReadInputRegisters(209, 5)
+	log.Println("REG_HC_TEMP_LVL1-5: ", results)
 
-	log.Info("REG_HC_TEMP_IN1: ", results)
-
+	time.Sleep(time.Second * 1)
 	return
 	//Start communication with the server
 	connection := basenode.Connect()
@@ -86,7 +104,7 @@ func main() { /*{{{*/
 	// This worker recives all incomming commands
 	go serverRecv(node, connection)
 	select {}
-} /*}}}*/
+}
 
 // WORKER that monitors the current connection state
 func monitorState(node *protocol.Node, connection *basenode.Connection) {
@@ -109,7 +127,7 @@ func serverRecv(node *protocol.Node, connection *basenode.Connection) {
 // THis is called on each incomming command
 func processCommand(node *protocol.Node, connection *basenode.Connection, cmd protocol.Command) {
 	if s, ok := node.State.(*State); ok {
-		log.Info("Incoming command from server:", cmd)
+		log.Println("Incoming command from server:", cmd)
 		if len(cmd.Args) == 0 {
 			return
 		}
@@ -123,7 +141,7 @@ func processCommand(node *protocol.Node, connection *basenode.Connection, cmd pr
 			device.State = false
 			connection.Send <- node.Node()
 		case "toggle":
-			log.Info("got toggle")
+			log.Println("got toggle")
 			if device.State {
 				device.State = false
 			} else {
