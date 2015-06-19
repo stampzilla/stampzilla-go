@@ -99,6 +99,10 @@ func main() {
 }
 
 func periodicalFetcher(registers *Registers, connection *Modbus, nodeConn *basenode.Connection, node *protocol.Node) chan bool {
+
+	//Fetch once straight away
+	fetchRegisters(registers, connection)
+
 	ticker := time.NewTicker(60 * time.Second)
 	quit := make(chan bool)
 	go func() {
