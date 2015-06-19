@@ -73,8 +73,6 @@ func main() {
 	results, _ = modbusConnection.ReadInputRegister(101)
 	log.Println("100 REG_FAN_SPEED_LEVEL: ", results)
 
-	time.Sleep(time.Second * 1)
-	return
 	//Start communication with the server
 	connection := basenode.Connect()
 
