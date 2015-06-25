@@ -102,7 +102,6 @@ func (clients *Clients) WebsocketRoute(params martini.Params, receiver <-chan *M
 
 		case <-client.done:
 			clients.removeClient(client)
-			fmt.Println("waitgroup DONE")
 			return 200, "OK"
 		}
 	}

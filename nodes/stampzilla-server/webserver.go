@@ -3,7 +3,7 @@ package main
 import (
 	"net/http"
 
-	"github.com/beatrichartz/martini-sockets"
+	sockets "github.com/beatrichartz/martini-sockets"
 	log "github.com/cihub/seelog"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/encoder"
@@ -28,9 +28,9 @@ func (ws *WebServer) Start() {
 	//m := martini.Classic()
 	r := martini.NewRouter()
 	ma := martini.New()
-	ma.Use(martini.Logger())
+	//ma.Use(martini.Logger())
 	ma.Use(martini.Recovery())
-	ma.Use(martini.Static(ws.Config.WebRoot))
+	ma.Use(martini.Static(ws.Config.WebRoot, martini.StaticOptions{SkipLogging: true}))
 	ma.MapTo(r, (*martini.Routes)(nil))
 	ma.Action(r.Handle)
 	m := &martini.ClassicMartini{ma, r}
@@ -54,6 +54,8 @@ func (ws *WebServer) Start() {
 	//Schedule
 	m.Get("/api/schedule", ws.WebHandler.GetScheduleTasks)
 	m.Get("/api/schedule/entries", ws.WebHandler.GetScheduleEntries)
+
+	m.Get("/api/reload", ws.WebHandler.GetReload)
 
 	go func() {
 		log.Critical(http.ListenAndServe(":"+ws.Config.WebPort, m))
