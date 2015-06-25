@@ -69,6 +69,24 @@ func (h *handlerEepf60201) Process(d *Device, t goenocean.Telegram) {
 	if t, ok := t.(goenocean.TelegramRps); ok {
 		eep := goenocean.NewEepF60201()
 		eep.SetTelegram(t) //THIS IS COOL!
+
+		d.Status = ""
+
+		switch {
+		case eep.R1A0():
+			d.Status = "R1A0"
+		case eep.R1A1():
+			d.Status = "R1A1"
+		case eep.R1B0():
+			d.Status = "R1B0"
+		case eep.R1B1():
+			d.Status = "R1B1"
+		case eep.R2B0():
+			d.Status = "R2B0"
+		case eep.R2B1():
+			d.Status = "R2B1"
+		}
+
 		fmt.Println("R1A0", eep.R1A0())
 		fmt.Println("R1A1", eep.R1A1())
 		fmt.Println("R1B0", eep.R1B0())
