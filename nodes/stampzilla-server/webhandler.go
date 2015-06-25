@@ -93,3 +93,11 @@ func (wh *WebHandler) GetReload() (int, []byte) {
 	wh.Logic.RestoreRulesFromFile("rules.json")
 	return 200, encoder.Must(json.Marshal(wh.Logic.Rules()))
 }
+
+func (wh *WebHandler) GetServerTrigger(key, value string) (int, []byte) {
+	return 200, []byte("")
+}
+
+func (wh *WebHandler) GetServerSet(key, value string) (int, []byte) {
+	return 200, []byte("")
+}

@@ -32,6 +32,7 @@ func (ns *NodeServer) Start() {
 	}
 
 	ns.Logic.RestoreRulesFromFile("rules.json")
+	ns.addServerNode()
 
 	go func() {
 		for {
@@ -99,4 +100,14 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 			ns.Metrics.Update(node)
 		}
 	}
+}
+
+func (self *NodeServer) addServerNode() {
+	node := &serverprotocol.Node{}
+	node.Name = "server"
+
+	//state := make(map[string]string)
+	//node.SetState(state)
+
+	self.Nodes.Add(node)
 }
