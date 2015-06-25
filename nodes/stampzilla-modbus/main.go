@@ -2,17 +2,16 @@ package main
 
 import (
 	"flag"
+	"log"
 	"time"
 
-	log "github.com/cihub/seelog"
-	"github.com/goburrow/modbus"
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
 // MAIN - This is run when the init function is done
-func main() { /*{{{*/
-	log.Info("Starting SIMPLE node")
+func main() {
+	log.Println("Starting modbus node")
 
 	// Parse all commandline arguments, host and port parameters are added in the basenode init function
 	flag.Parse()
@@ -23,24 +22,20 @@ func main() { /*{{{*/
 	//Activate the config
 	basenode.SetConfig(config)
 
-	node := protocol.NewNode("simple")
+	node := protocol.NewNode("modbus")
 
-	// Modbus RTU/ASCII
-	handler := modbus.NewRTUClientHandler("/dev/ttyUSB0")
-	handler.BaudRate = 9600
-	handler.DataBits = 8
-	handler.Parity = "E"
-	handler.StopBits = 1
-	handler.SlaveId = 1
-	handler.Timeout = 5 * time.Second
+	registers := NewRegisters()
+	registers.ReadFromFile("registers.json")
 
-	err := handler.Connect()
+	modbusConnection := &Modbus{}
+	err := modbusConnection.Connect()
+
 	if err != nil {
-		log.Error(err)
+		log.Println(err)
 		return
 	}
 
-	defer handler.Close()
+	defer modbusConnection.Close()
 
 	//REG_HC_TEMP_IN1 214 Reg
 	//REG_HC_TEMP_IN2 215 Reg
@@ -51,16 +46,33 @@ func main() { /*{{{*/
 	//REG_DAMPER_PWM 301 Reg
 	//REG_HC_WC_SIGNAL 204 Reg
 
-	client := modbus.NewClient(handler)
-	results, err := client.ReadInputRegisters(214, 1)
-	if err != nil {
-		log.Error(err)
-		return
-	}
+	//client := modbus.NewClient(handler)
+	//modbus.NewClient
+	//results, _ := client.ReadHoldingRegisters(214, 1)
+	//if err != nil {
+	//log.Println(err)
+	//}
+	results, _ := modbusConnection.ReadInputRegister(214)
+	log.Println("REG_HC_TEMP_IN1: ", results)
+	results, _ = modbusConnection.ReadInputRegister(215)
+	log.Println("REG_HC_TEMP_IN2: ", results)
+	results, _ = modbusConnection.ReadInputRegister(216)
+	log.Println("REG_HC_TEMP_IN3: ", results)
+	results, _ = modbusConnection.ReadInputRegister(217)
+	log.Println("REG_HC_TEMP_IN4: ", results)
+	results, _ = modbusConnection.ReadInputRegister(218)
+	log.Println("REG_HC_TEMP_IN5: ", results)
+	results, _ = modbusConnection.ReadInputRegister(207)
+	log.Println("REG_HC_TEMP_LVL: ", results)
+	results, _ = modbusConnection.ReadInputRegister(301)
+	log.Println("REG_DAMPER_PWM: ", results)
+	results, _ = modbusConnection.ReadInputRegister(204)
+	log.Println("REG_HC_WC_SIGNAL: ", results)
+	results, _ = modbusConnection.ReadInputRegister(209)
+	log.Println("REG_HC_TEMP_LVL1-5: ", results)
+	results, _ = modbusConnection.ReadInputRegister(101)
+	log.Println("100 REG_FAN_SPEED_LEVEL: ", results)
 
-	log.Info("REG_HC_TEMP_IN1: ", results)
-
-	return
 	//Start communication with the server
 	connection := basenode.Connect()
 
@@ -77,16 +89,59 @@ func main() { /*{{{*/
 	//Feedback: "Devices[4].State",
 	//})
 
-	state := NewState()
-	node.SetState(state)
-
-	state.AddDevice("1", "Dev1", false)
-	state.AddDevice("2", "Dev2", true)
+	//state := NewState()
+	node.SetState(registers)
 
 	// This worker recives all incomming commands
-	go serverRecv(node, connection)
+	go serverRecv(registers, connection, modbusConnection)
+	periodicalFetcher(registers, modbusConnection, connection, node)
 	select {}
-} /*}}}*/
+}
+
+func periodicalFetcher(registers *Registers, connection *Modbus, nodeConn *basenode.Connection, node *protocol.Node) chan bool {
+
+	//Fetch once straight away and send update to server
+	fetchRegisters(registers, connection)
+	nodeConn.Send <- node.Node()
+
+	ticker := time.NewTicker(60 * time.Second)
+	quit := make(chan bool)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				fetchRegisters(registers, connection)
+				nodeConn.Send <- node.Node()
+			case <-quit:
+				ticker.Stop()
+				return
+			}
+		}
+	}()
+
+	return quit
+}
+
+func fetchRegisters(registers *Registers, connection *Modbus) {
+	for _, v := range registers.Registers {
+
+		data, err := connection.ReadInputRegister(v.Id)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		if len(data) != 2 {
+			log.Println("Wrong length, expected 2")
+			continue
+		}
+
+		if v.Base != 0 {
+			v.Value = float64(float64(data[1]) / float64(v.Base))
+			continue
+		}
+		v.Value = data[1]
+	}
+}
 
 // WORKER that monitors the current connection state
 func monitorState(node *protocol.Node, connection *basenode.Connection) {
@@ -100,36 +155,36 @@ func monitorState(node *protocol.Node, connection *basenode.Connection) {
 }
 
 // WORKER that recives all incomming commands
-func serverRecv(node *protocol.Node, connection *basenode.Connection) {
+func serverRecv(registers *Registers, connection *basenode.Connection, modbusConnection *Modbus) {
 	for d := range connection.Receive {
-		processCommand(node, connection, d)
+		processCommand(registers, connection, d)
 	}
 }
 
 // THis is called on each incomming command
-func processCommand(node *protocol.Node, connection *basenode.Connection, cmd protocol.Command) {
-	if s, ok := node.State.(*State); ok {
-		log.Info("Incoming command from server:", cmd)
-		if len(cmd.Args) == 0 {
-			return
-		}
-		device := s.Device(cmd.Args[0])
+func processCommand(registers *Registers, connection *basenode.Connection, cmd protocol.Command) {
+	//if s, ok := node.State.(*Registers); ok {
+	//log.Println("Incoming command from server:", cmd)
+	//if len(cmd.Args) == 0 {
+	//return
+	//}
+	//device := s.Device(cmd.Args[0])
 
-		switch cmd.Cmd {
-		case "on":
-			device.State = true
-			connection.Send <- node.Node()
-		case "off":
-			device.State = false
-			connection.Send <- node.Node()
-		case "toggle":
-			log.Info("got toggle")
-			if device.State {
-				device.State = false
-			} else {
-				device.State = true
-			}
-			connection.Send <- node.Node()
-		}
-	}
+	//switch cmd.Cmd {
+	//case "on":
+	//device.State = true
+	//connection.Send <- node.Node()
+	//case "off":
+	//device.State = false
+	//connection.Send <- node.Node()
+	//case "toggle":
+	//log.Println("got toggle")
+	//if device.State {
+	//device.State = false
+	//} else {
+	//device.State = true
+	//}
+	//connection.Send <- node.Node()
+	//}
+	//}
 }
