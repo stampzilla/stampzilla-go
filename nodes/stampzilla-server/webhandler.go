@@ -88,3 +88,8 @@ func (wh *WebHandler) GetScheduleTasks() (int, []byte) {
 func (wh *WebHandler) GetScheduleEntries() (int, []byte) {
 	return 200, encoder.Must(json.Marshal(wh.Scheduler.Cron.Entries()))
 }
+
+func (wh *WebHandler) GetReload() (int, []byte) {
+	wh.Logic.RestoreRulesFromFile("rules.json")
+	return 200, encoder.Must(json.Marshal(wh.Logic.Rules()))
+}
