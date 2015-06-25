@@ -15,9 +15,10 @@ import (
 )
 
 type WebHandler struct {
-	Logic     *logic.Logic          `inject:""`
-	Scheduler *logic.Scheduler      `inject:""`
-	Nodes     *serverprotocol.Nodes `inject:""`
+	Logic      *logic.Logic          `inject:""`
+	Scheduler  *logic.Scheduler      `inject:""`
+	Nodes      *serverprotocol.Nodes `inject:""`
+	NodeServer *NodeServer           `inject:""`
 }
 
 func (wh *WebHandler) GetNodes(enc encoder.Encoder) (int, []byte) {
@@ -94,10 +95,12 @@ func (wh *WebHandler) GetReload() (int, []byte) {
 	return 200, encoder.Must(json.Marshal(wh.Logic.Rules()))
 }
 
-func (wh *WebHandler) GetServerTrigger(key, value string) (int, []byte) {
-	return 200, []byte("")
+func (wh *WebHandler) GetServerTrigger(params martini.Params) (int, []byte) {
+	wh.NodeServer.Trigger(params["key"], params["value"])
+	return 200, encoder.Must(json.Marshal(wh.NodeServer.State.GetState()))
 }
 
-func (wh *WebHandler) GetServerSet(key, value string) (int, []byte) {
-	return 200, []byte("")
+func (wh *WebHandler) GetServerSet(params martini.Params) (int, []byte) {
+	wh.NodeServer.Set(params["key"], params["value"])
+	return 200, encoder.Must(json.Marshal(wh.NodeServer.State.GetState()))
 }
