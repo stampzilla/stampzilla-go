@@ -136,7 +136,7 @@ func fetchRegisters(registers *Registers, connection *Modbus) {
 		}
 
 		if v.Base != 0 {
-			v.Value = float64(float64(data[1]) / float64(v.Base))
+			v.Value = float64(float64(data[0])*255 + float64(data[1])/float64(v.Base))
 			continue
 		}
 		v.Value = data[1]
