@@ -1,0 +1,31 @@
+{
+	"Registers": {
+		"outsideTemp" : {
+			"Name": "outSideTemp",
+			"Id": 218,
+			"Base":10
+		},
+		"supplyAirTemp" : {
+			"Name": "supplyTemp",
+			"Id": 214,
+			"Base":10
+		},
+		"exitAirTemp" : {
+			"Name": "exitAirTemp",
+			"Id": 215,
+			"Base":10
+		},
+		"coolerSignal" : {
+			"Name": "coolerSignal",
+			"Id": 204
+		},
+		"bypassSignal" : {
+			"Name": "bypassSignal",
+			"Id": 301
+		},
+		"fanSpeed" : {
+			"Name": "fanSpeed",
+			"Id": 101
+		}
+	}
+}
