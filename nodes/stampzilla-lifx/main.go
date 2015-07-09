@@ -34,18 +34,14 @@ func init() { // {{{
 
 	node = protocol.NewNode("lifx")
 
-	//Create channels so we can communicate with the stampzilla-go server
-	serverSendChannel = make(chan interface{})
-	serverRecvChannel = make(chan protocol.Command)
-
 	//Start communication with the server
-	connectionState := basenode.Connect(serverSendChannel, serverRecvChannel)
+	connection := basenode.Connect()
 
 	// This worker keeps track on our connection state, if we are connected or not
-	go monitorState(connectionState, serverSendChannel)
+	go monitorState(node, connection)
 
 	// This worker recives all incomming commands
-	go serverRecv(serverRecvChannel)
+	go serverRecv(connection)
 } // }}}
 
 // MAIN - This is run when the init function is done
@@ -111,19 +107,19 @@ func monitorLampCollection(lights *client.LightCollection) {
 }
 
 // WORKER that monitors the current connection state
-func monitorState(connectionState chan int, send chan interface{}) {
-	for s := range connectionState {
+func monitorState(node *protocol.Node, connection *basenode.Connection) {
+	for s := range connection.State {
 		switch s {
 		case basenode.ConnectionStateConnected:
-			send <- node.Node()
+			connection.Send <- node
 		case basenode.ConnectionStateDisconnected:
 		}
 	}
 }
 
 // WORKER that recives all incoming commands
-func serverRecv(recv chan protocol.Command) {
-	for d := range recv {
+func serverRecv(connection *basenode.Connection) {
+	for d := range connection.Receive {
 		processCommand(d)
 	}
 }
