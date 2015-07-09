@@ -105,10 +105,10 @@ func (l *Logic) evaluateRule(r Rule) bool {
 	return true
 }
 
-func (l *Logic) ListenForChanges(uuid string) chan string {
+func (l *Logic) ListenForChanges(uuid string) *chan string {
 	c := make(chan string)
 	go l.listen(uuid, c)
-	return c
+	return &c
 }
 
 func (l *Logic) StopListen(uuid string) {
