@@ -65,7 +65,7 @@ func (m *Metrics) update(s interface{}) {
 	changed := false
 	for k, v := range current {
 		if m.isDiff(k, v) {
-			log.Info("found diff. logging!")
+			//log.Info("found diff. logging!")
 			m.log(k, v)
 			changed = true
 		}
