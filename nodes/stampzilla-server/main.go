@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"os"
@@ -112,6 +113,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	saveConfigToFile(config)
+
 	StartServices(services)
 	select {}
 }
@@ -142,6 +146,7 @@ func getConfigFromEnv(config *ServerConfig) {
 		config.WebRoot = val
 	}
 }
+
 func readConfigFromFile(fn string, config *ServerConfig) {
 	configFile, err := os.Open(fn)
 	if err != nil {
@@ -158,4 +163,20 @@ func readConfigFromFile(fn string, config *ServerConfig) {
 	if newConfig.InfluxDbServer != "" {
 		config.InfluxDbServer = newConfig.InfluxDbServer
 	}
+}
+
+func saveConfigToFile(config *ServerConfig) {
+	configFile, err := os.Create("config.json")
+	if err != nil {
+		log.Error("creating config file", err.Error())
+	}
+
+	log.Info("Save config: ", config)
+	var out bytes.Buffer
+	b, err := json.MarshalIndent(config, "", "\t")
+	if err != nil {
+		log.Error("error marshal json", err)
+	}
+	json.Indent(&out, b, "", "\t")
+	out.WriteTo(configFile)
 }
