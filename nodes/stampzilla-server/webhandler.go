@@ -97,10 +97,10 @@ func (wh *WebHandler) GetReload() (int, []byte) {
 
 func (wh *WebHandler) GetServerTrigger(params martini.Params) (int, []byte) {
 	wh.NodeServer.Trigger(params["key"], params["value"])
-	return 200, encoder.Must(json.Marshal(wh.NodeServer.State.GetState()))
+	return 200, encoder.Must(json.Marshal(wh.NodeServer.State))
 }
 
 func (wh *WebHandler) GetServerSet(params martini.Params) (int, []byte) {
 	wh.NodeServer.Set(params["key"], params["value"])
-	return 200, encoder.Must(json.Marshal(wh.NodeServer.State.GetState()))
+	return 200, encoder.Must(json.Marshal(wh.NodeServer.State))
 }

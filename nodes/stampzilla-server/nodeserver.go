@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net"
+	"strconv"
 
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/logic"
@@ -19,11 +20,14 @@ type NodeServer struct {
 	Metrics          *metrics.Metrics      `inject:""`
 
 	ServerNode *serverprotocol.Node
-	State      *NodeState
+	State      map[string]interface{}
 }
 
 func NewNodeServer() *NodeServer {
-	return &NodeServer{}
+	return &NodeServer{
+		ServerNode: &serverprotocol.Node{},
+		State:      make(map[string]interface{}),
+	}
 }
 
 func (ns *NodeServer) Start() {
@@ -37,6 +41,7 @@ func (ns *NodeServer) Start() {
 	ns.Logic.RestoreRulesFromFile("rules.json")
 	ns.addServerNode()
 
+	//return
 	go func() {
 		for {
 			fd, err := listen.Accept()
@@ -89,7 +94,6 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 				ns.updateState(existingNode)
 			}
 
-			log.Info(node.Uuid, " - ", node.Name, " - Got update on state")
 			ns.WebsocketHandler.SendSingleNode(uuid)
 		}
 	}
@@ -101,55 +105,63 @@ func (ns *NodeServer) updateState(node *serverprotocol.Node) {
 		return
 	}
 
-	logicChannel := ns.Logic.ListenForChanges(node.Uuid)
+	//log.Info(node.Uuid, " - ", node.Name, " - Got update on state")
 
 	//Send to logic for evaluation
+	logicChannel := ns.Logic.ListenForChanges(node.Uuid)
 	state, _ := json.Marshal(node.State)
 	*logicChannel <- string(state)
 
 	//Send to metrics
-	//TODO make this a buffered channel so we dont have to wait for the logging to complete before continueing.
 	ns.Metrics.Update(node)
 }
 
 func (self *NodeServer) addServerNode() {
-	node := &serverprotocol.Node{}
-	node.Name = "server"
+	self.ServerNode.Name = "server"
+	self.ServerNode.Uuid = self.Config.Uuid
+	self.ServerNode.State = &self.State
 
-	self.State = &NodeState{
-		values:     make(map[string]string),
-		nodeServer: self,
+	self.Nodes.Add(self.ServerNode)
+}
+
+func (self *NodeServer) Set(key string, value interface{}) {
+	self.State[key] = cast(value)
+	self.updateState(self.ServerNode)
+}
+
+func (self *NodeServer) Trigger(key string, value interface{}) {
+	self.Set(key, value)
+
+	switch self.State[key].(type) {
+	case int:
+		self.Set(key, 0)
+	case float64:
+		self.Set(key, 0.0)
+	case string:
+		self.Set(key, "")
+	case bool:
+		self.Set(key, 0)
 	}
-	self.State.logicChannel = self.Logic.ListenForChanges("server")
-	node.SetState(self.State)
-
-	self.Nodes.Add(node)
-	self.ServerNode = node
 }
 
-func (self *NodeServer) Set(key, value string) {
-	// Update the value
-	self.State.values[key] = value
-	self.updateState(self.ServerNode)
-}
-
-func (self *NodeServer) Trigger(key, value string) {
-	// Update the value
-	self.State.values[key] = value
-	self.updateState(self.ServerNode)
-
-	// Return the value to empty
-	self.State.values[key] = ""
-	self.updateState(self.ServerNode)
-}
-
-/* SERVER NODE STATE */
-type NodeState struct {
-	values       map[string]string
-	logicChannel *chan string
-	nodeServer   *NodeServer
-}
-
-func (self *NodeState) GetState() interface{} {
-	return self.values
+func cast(s interface{}) interface{} {
+	switch v := s.(type) {
+	case int:
+		return v
+		//return strconv.Itoa(v)
+	case float64:
+		//return strconv.FormatFloat(v, 'f', -1, 64)
+		return v
+	case string:
+		if n, err := strconv.Atoi(v); err == nil {
+			return n
+		}
+		return v
+	case bool:
+		if v {
+			return 1
+		}
+		return 0
+	}
+	return ""
 }

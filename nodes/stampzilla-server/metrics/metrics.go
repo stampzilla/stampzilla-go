@@ -1,12 +1,11 @@
 package metrics
 
 import (
+	"encoding/json"
 	"reflect"
 	"strconv"
 
 	log "github.com/cihub/seelog"
-	"github.com/fatih/structs"
-	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 )
 
 type Logger interface {
@@ -17,30 +16,47 @@ type Logger interface {
 type Metrics struct {
 	previous map[string]interface{}
 	loggers  []Logger
-	queue    chan interface{}
+	queue    chan []byte
 }
 
 func New() *Metrics {
 	return &Metrics{
 		make(map[string]interface{}),
 		nil,
-		make(chan interface{}, 100),
+		make(chan []byte, 100),
 	}
 }
 func (m *Metrics) AddLogger(l Logger) {
 	log.Infof("Adding logger: %T\n", l)
 	m.loggers = append(m.loggers, l)
 }
+
 func (m *Metrics) Start() {
 	go m.worker()
 }
+
 func (m *Metrics) worker() {
 	for s := range m.queue {
-		m.update(s)
+		var data interface{}
+		err := json.Unmarshal(s, &data)
+
+		if err != nil {
+			log.Warn("Failed to unmarshal metrics update: ", err)
+			continue
+		}
+
+		m.update(data)
 	}
 }
+
 func (m *Metrics) Update(s interface{}) {
-	m.queue <- s
+	data, err := json.Marshal(s)
+	if err != nil {
+		log.Warn("Failed to marshal metrics update: ", err)
+		return
+	}
+
+	m.queue <- data
 }
 
 func (m *Metrics) update(s interface{}) {
@@ -65,7 +81,6 @@ func (m *Metrics) update(s interface{}) {
 	changed := false
 	for k, v := range current {
 		if m.isDiff(k, v) {
-			//log.Info("found diff. logging!")
 			m.log(k, v)
 			changed = true
 		}
@@ -90,6 +105,7 @@ func (m *Metrics) log(key string, value interface{}) {
 		l.Log(key, value)
 	}
 }
+
 func (m *Metrics) isDiff(k string, v interface{}) bool {
 	if oldValue, ok := m.previous[k]; ok {
 		if oldValue != v {
@@ -102,11 +118,14 @@ func (m *Metrics) isDiff(k string, v interface{}) bool {
 func structToMetrics(s interface{}) map[string]interface{} {
 	flattened := make(map[string]interface{})
 	baseName := ""
-	if node, ok := s.(serverprotocol.Node); ok {
-		//st := structs.New(node)
-		baseName = node.Uuid
+
+	if data, ok := s.(map[string]interface{}); ok {
+		if uuid, ok := data["Uuid"].(string); ok {
+			baseName = uuid
+		}
+
+		flatten(data, baseName, &flattened)
 	}
-	flatten(structs.Map(s), baseName, &flattened)
 	return flattened
 }
 
@@ -121,13 +140,11 @@ func flatten(inputJSON map[string]interface{}, lkey string, flattened *map[strin
 			continue
 		}
 
-		if structs.IsStruct(value) {
-			//fmt.Println("Its a struct: ", value)
-			value = structs.Map(value)
-		}
+		//if structs.IsStruct(value) {
+		//value = structs.Map(value)
+		//}
 		reflectValue := reflect.ValueOf(value)
 		if reflectValue.Type().Kind() == reflect.Map {
-			//fmt.Println("its a map: ", value)
 			out := make(map[string]interface{})
 			for _, b := range reflectValue.MapKeys() {
 				out[b.String()] = reflectValue.MapIndex(b).Interface()
@@ -136,6 +153,8 @@ func flatten(inputJSON map[string]interface{}, lkey string, flattened *map[strin
 		}
 
 		switch v := value.(type) {
+		case *map[string]interface{}:
+			flatten(*v, key, flattened)
 		case map[string]interface{}:
 			flatten(v, key, flattened)
 		default:

@@ -6,6 +6,8 @@ import (
 	"flag"
 	"os"
 
+	"code.google.com/p/go-uuid/uuid"
+
 	log "github.com/cihub/seelog"
 	"github.com/facebookgo/inject"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/logic"
@@ -16,6 +18,7 @@ import (
 
 //TODO make config general by using a map so we can get config from ENV,file or flag.
 type ServerConfig struct {
+	Uuid             string
 	NodePort         string
 	WebPort          string
 	WebRoot          string
@@ -43,7 +46,14 @@ func main() {
 	flag.Parse()
 
 	getConfigFromEnv(config)
+
+	// Load config file
 	readConfigFromFile("config.json", config)
+
+	// Create an uuid
+	if config.Uuid == "" {
+		config.Uuid = uuid.New()
+	}
 
 	// Load logger
 	logger, err := log.LoggerFromConfigAsFile("logconfig.xml")
