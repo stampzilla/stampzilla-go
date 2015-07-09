@@ -105,7 +105,7 @@ func periodicalFetcher(registers *Registers, connection *Modbus, nodeConn *basen
 	fetchRegisters(registers, connection)
 	nodeConn.Send <- node.Node()
 
-	ticker := time.NewTicker(60 * time.Second)
+	ticker := time.NewTicker(30 * time.Second)
 	quit := make(chan bool)
 	go func() {
 		for {
