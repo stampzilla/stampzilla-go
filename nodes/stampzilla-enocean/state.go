@@ -70,6 +70,7 @@ type Device struct {
 	PowerW   int64
 	PowerkWh int64
 	Dim      int64
+	Status   string
 	sync.RWMutex
 }
 

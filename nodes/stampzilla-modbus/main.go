@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	"flag"
 	"log"
 	"time"
@@ -61,7 +62,7 @@ func main() {
 	results, _ = modbusConnection.ReadInputRegister(217)
 	log.Println("REG_HC_TEMP_IN4: ", results)
 	results, _ = modbusConnection.ReadInputRegister(218)
-	log.Println("REG_HC_TEMP_IN5: ", results)
+	log.Println("REG_HC_TEMP_IN5: ", binary.BigEndian.Uint16(results))
 	results, _ = modbusConnection.ReadInputRegister(207)
 	log.Println("REG_HC_TEMP_LVL: ", results)
 	results, _ = modbusConnection.ReadInputRegister(301)
@@ -104,7 +105,7 @@ func periodicalFetcher(registers *Registers, connection *Modbus, nodeConn *basen
 	fetchRegisters(registers, connection)
 	nodeConn.Send <- node.Node()
 
-	ticker := time.NewTicker(60 * time.Second)
+	ticker := time.NewTicker(30 * time.Second)
 	quit := make(chan bool)
 	go func() {
 		for {
@@ -136,10 +137,10 @@ func fetchRegisters(registers *Registers, connection *Modbus) {
 		}
 
 		if v.Base != 0 {
-			v.Value = float64(float64(data[1]) / float64(v.Base))
+			v.Value = float64(binary.BigEndian.Uint16(data)) / float64(v.Base)
 			continue
 		}
-		v.Value = data[1]
+		v.Value = binary.BigEndian.Uint16(data)
 	}
 }
 

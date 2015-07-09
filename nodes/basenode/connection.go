@@ -91,7 +91,7 @@ func connectionWorker(connection net.Conn, recv chan protocol.Command) {
 				return
 			}
 			log.Warn(err)
-			//return here?
+			return
 		} else {
 			log.Debug("Command from server", cmd)
 			recv <- cmd

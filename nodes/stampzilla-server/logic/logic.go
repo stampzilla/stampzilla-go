@@ -61,6 +61,12 @@ func (l *Logic) AddRule(name string) Rule {
 	l.Rules_ = append(l.Rules_, r)
 	return r
 }
+func (self *Logic) EmptyRules() {
+	self.Lock()
+	defer self.Unlock()
+	self.Rules_ = make([]Rule, 0)
+}
+
 func (l *Logic) EvaluateRules() {
 	for _, rule := range l.Rules() {
 		evaluation := l.evaluateRule(rule)
@@ -194,6 +200,8 @@ func (l *Logic) RestoreRulesFromFile(path string) {
 	if err = jsonParser.Decode(&rules); err != nil {
 		log.Error(err)
 	}
+
+	l.EmptyRules()
 
 	for _, rule := range rules {
 		r := l.AddRule(rule.Name)
