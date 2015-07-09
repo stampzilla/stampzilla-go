@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net"
 	"sync"
 	"time"
@@ -13,7 +14,7 @@ type Target struct {
 	Name   string
 	Ip     string
 	Online bool
-	Lag    string
+	Ping   float64
 
 	shutdown chan bool
 	waiting  bool
@@ -47,15 +48,16 @@ func (t *Target) worker(connection *basenode.Connection) error {
 	p.AddIPAddr(ra)
 
 	p.OnRecv = func(addr *net.IPAddr, rtt time.Duration) {
-		//fmt.Printf("IP Addr: %s receive, RTT: %v\n", addr.String(), rtt)
 		t.Lock()
 		t.waiting = false
 		if !t.Online {
+			fmt.Printf("Online: %s receive, RTT: %v\n", addr.String(), rtt)
 			t.Online = true
-			t.Lag = rtt.String()
-
-			connection.Send <- node.Node()
 		}
+
+		t.Ping = float64(rtt) / float64(time.Millisecond)
+		connection.Send <- node.Node()
+
 		t.Unlock()
 	}
 
@@ -63,9 +65,10 @@ func (t *Target) worker(connection *basenode.Connection) error {
 		if t.waiting && t.Online {
 			t.Lock()
 			t.Online = false
-			t.Lag = ""
+			t.Ping = 0
 			t.Unlock()
 
+			fmt.Printf("Offline: %s\n", ra.String())
 			connection.Send <- node.Node()
 		}
 	}

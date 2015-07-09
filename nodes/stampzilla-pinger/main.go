@@ -72,7 +72,7 @@ func main() { /*{{{*/
 
 	t := &Target{
 		Name: "stamps",
-		Ip:   "10.21.10.148",
+		Ip:   "10.21.10.115",
 	}
 
 	state.Add(t)
