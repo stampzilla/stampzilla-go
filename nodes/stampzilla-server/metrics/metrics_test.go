@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -61,7 +62,18 @@ func TestMap(t *testing.T) {
 	state.Sensors["2"] = sensor2
 	state.Devices["1"] = device1
 
-	flattened := structToMetrics(state)
+	data, err := json.Marshal(state)
+	if err != nil {
+		t.Errorf("Failed to marshal: ", err)
+	}
+
+	var state2 interface{}
+	err = json.Unmarshal(data, &state2)
+	if err != nil {
+		t.Errorf("Failed to unmarshal: ", err)
+	}
+
+	flattened := structToMetrics(state2)
 
 	expectedKeys := map[string]interface{}{
 		"Sensors_2_Name":      "Sensor 2",
@@ -93,7 +105,7 @@ func assertKeyExists(t *testing.T, key string, val interface{}, m map[string]int
 		t.Errorf("Key %s does not exist", key)
 	}
 	if m[key] != val {
-		t.Errorf("Value %s does not equal %s exist in %s", m[key], val, key)
+		t.Errorf("Value %s does not equal expected value %s, exist in %s", m[key], val, key)
 	}
 }
 
