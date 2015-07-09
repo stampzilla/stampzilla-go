@@ -125,7 +125,6 @@ func StartServices(services []interface{}) {
 		if s, ok := s.(Startable); ok {
 			s.Start()
 		}
-
 	}
 }
 

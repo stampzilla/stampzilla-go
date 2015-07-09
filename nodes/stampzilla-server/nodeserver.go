@@ -17,6 +17,9 @@ type NodeServer struct {
 	WebsocketHandler *WebsocketHandler     `inject:""`
 	ElasticSearch    *ElasticSearch        `inject:""`
 	Metrics          *metrics.Metrics      `inject:""`
+
+	ServerNode *serverprotocol.Node
+	State      *NodeState
 }
 
 func NewNodeServer() *NodeServer {
@@ -32,6 +35,7 @@ func (ns *NodeServer) Start() {
 	}
 
 	ns.Logic.RestoreRulesFromFile("rules.json")
+	ns.addServerNode()
 
 	go func() {
 		for {
@@ -51,7 +55,6 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 	log.Info("New client connected")
 	name := ""
 	uuid := ""
-	var logicChannel chan string
 	decoder := json.NewDecoder(connection)
 	//encoder := json.NewEncoder(os.Stdout)
 	for {
@@ -63,7 +66,7 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 				log.Info(name, " - Client disconnected")
 				if uuid != "" {
 					ns.Nodes.Delete(uuid)
-					close(logicChannel)
+					ns.Logic.StopListen(uuid)
 				}
 				//TODO be able to not send everything always. perhaps implement remove instead of all?
 				ns.WebsocketHandler.SendAllNodes()
@@ -75,28 +78,78 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 			name = node.Name
 			uuid = node.Uuid
 
-			if logicChannel == nil {
-				logicChannel = ns.Logic.ListenForChanges(uuid)
-			}
-
 			existingNode := ns.Nodes.ByUuid(uuid)
 			if existingNode == nil {
 				ns.Nodes.Add(&node)
 				//node.SetJsonEncoder(encoder)
 				node.SetConn(connection)
+				ns.updateState(&node)
 			} else {
 				existingNode.State = node.State
+				ns.updateState(existingNode)
 			}
+
 			log.Info(node.Uuid, " - ", node.Name, " - Got update on state")
 			ns.WebsocketHandler.SendSingleNode(uuid)
-
-			//Send to logic for evaluation
-			state, _ := json.Marshal(node.State)
-			logicChannel <- string(state)
-
-			//Send to metrics
-			//TODO make this a buffered channel so we dont have to wait for the logging to complete before continueing.
-			ns.Metrics.Update(node)
 		}
 	}
+}
+
+func (ns *NodeServer) updateState(node *serverprotocol.Node) {
+	if node == nil {
+		log.Warn("Recived an updateState but no node was provided, ignoring...")
+		return
+	}
+
+	logicChannel := ns.Logic.ListenForChanges(node.Uuid)
+
+	//Send to logic for evaluation
+	state, _ := json.Marshal(node.State)
+	*logicChannel <- string(state)
+
+	//Send to metrics
+	//TODO make this a buffered channel so we dont have to wait for the logging to complete before continueing.
+	ns.Metrics.Update(node)
+}
+
+func (self *NodeServer) addServerNode() {
+	node := &serverprotocol.Node{}
+	node.Name = "server"
+
+	self.State = &NodeState{
+		values:     make(map[string]string),
+		nodeServer: self,
+	}
+	self.State.logicChannel = self.Logic.ListenForChanges("server")
+	node.SetState(self.State)
+
+	self.Nodes.Add(node)
+	self.ServerNode = node
+}
+
+func (self *NodeServer) Set(key, value string) {
+	// Update the value
+	self.State.values[key] = value
+	self.updateState(self.ServerNode)
+}
+
+func (self *NodeServer) Trigger(key, value string) {
+	// Update the value
+	self.State.values[key] = value
+	self.updateState(self.ServerNode)
+
+	// Return the value to empty
+	self.State.values[key] = ""
+	self.updateState(self.ServerNode)
+}
+
+/* SERVER NODE STATE */
+type NodeState struct {
+	values       map[string]string
+	logicChannel *chan string
+	nodeServer   *NodeServer
+}
+
+func (self *NodeState) GetState() interface{} {
+	return self.values
 }

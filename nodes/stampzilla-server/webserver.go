@@ -57,6 +57,10 @@ func (ws *WebServer) Start() {
 
 	m.Get("/api/reload", ws.WebHandler.GetReload)
 
+	// Server state methods
+	m.Get("/api/trigger/:key/:value", ws.WebHandler.GetServerTrigger)
+	m.Get("/api/set/:key/:value", ws.WebHandler.GetServerSet)
+
 	go func() {
 		log.Critical(http.ListenAndServe(":"+ws.Config.WebPort, m))
 	}()
