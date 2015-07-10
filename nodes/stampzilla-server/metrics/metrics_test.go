@@ -1,12 +1,51 @@
 package metrics
 
 import (
-	"encoding/json"
+	"os"
 	"testing"
 	"time"
 
 	log "github.com/cihub/seelog"
+	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 )
+
+func TestMain(m *testing.M) {
+	testConfig := `
+			<seelog type="sync" asyncinterval="1000" minlevel="warn">
+				<outputs>
+					<filter levels="trace">
+						<console formatid="colored-trace"/>
+					</filter>
+					<filter levels="debug">
+						<console formatid="colored-debug"/>
+					</filter>
+					<filter levels="info">
+						<console formatid="colored-info"/>
+					</filter>
+					<filter levels="warn">
+						<console formatid="colored-warn"/>
+					</filter>
+					<filter levels="error">
+						<console formatid="colored-error"/>
+					</filter>
+					<filter levels="critical">
+						<console formatid="colored-critical"/>
+					</filter>
+				</outputs>
+				<formats>
+					<format id="colored-trace"  format="%Date %Time %EscM(40)%Level%EscM(49) - %File:%Line - %Msg%n%EscM(0)"/>
+					<format id="colored-debug"  format="%Date %Time %EscM(45)%Level%EscM(49) - %File:%Line - %Msg%n%EscM(0)"/>
+					<format id="colored-info"  format="%Date %Time %EscM(46)%Level%EscM(49) - %File:%Line - %Msg%n%EscM(0)"/>
+					<format id="colored-warn"  format="%Date %Time %EscM(43)%Level%EscM(49) - %File:%Line - %Msg%n%EscM(0)"/>
+					<format id="colored-error"  format="%Date %Time %EscM(41)%Level%EscM(49) - %File:%Line - %Msg%n%EscM(0)"/>
+					<format id="colored-critical"  format="%Date %Time %EscM(41)%Level%EscM(49) - %File:%Line - %Msg%n%EscM(0)"/>
+				</formats>
+			</seelog>`
+	logger, _ := log.LoggerFromConfigAsBytes([]byte(testConfig))
+	log.ReplaceLogger(logger)
+
+	os.Exit(m.Run())
+}
 
 func TestMap(t *testing.T) {
 
@@ -62,18 +101,7 @@ func TestMap(t *testing.T) {
 	state.Sensors["2"] = sensor2
 	state.Devices["1"] = device1
 
-	data, err := json.Marshal(state)
-	if err != nil {
-		t.Errorf("Failed to marshal: ", err)
-	}
-
-	var state2 interface{}
-	err = json.Unmarshal(data, &state2)
-	if err != nil {
-		t.Errorf("Failed to unmarshal: ", err)
-	}
-
-	flattened := structToMetrics(state2)
+	flattened := structToMetrics("", state)
 
 	expectedKeys := map[string]interface{}{
 		"Sensors_2_Name":      "Sensor 2",
@@ -92,9 +120,12 @@ func TestMap(t *testing.T) {
 		"Devices_1_Name":      "Sensor1",
 	}
 
-	//for k, v := range flattened {
-	//fmt.Printf("%s = %v\n", k, v)
-	//}
+	t.Logf("Flatten result:")
+	for k, v := range flattened {
+		t.Logf("%s = %v\n", k, v)
+	}
+	t.Logf("\n")
+
 	for k, v := range expectedKeys {
 		assertKeyExists(t, k, v, flattened)
 	}
@@ -103,6 +134,7 @@ func TestMap(t *testing.T) {
 func assertKeyExists(t *testing.T, key string, val interface{}, m map[string]interface{}) {
 	if _, ok := m[key]; !ok {
 		t.Errorf("Key %s does not exist", key)
+		return
 	}
 	if m[key] != val {
 		t.Errorf("Value %s does not equal expected value %s, exist in %s", m[key], val, key)
@@ -167,37 +199,62 @@ func getState() State {
 func TestUpdate(t *testing.T) {
 
 	m := New()
-	l := &LoggerStub{}
+	l := &LoggerStub{T: t}
 	m.AddLogger(l)
 	m.Start()
 
+	node := &serverprotocol.Node{}
 	state := getState()
-	m.Update(state)
 
-	state = getState()
+	node.Name = "metrics-test"
+	node.Uuid = "123-123"
+	node.State = state
+
+	m.Update(node)
+
 	state.Sensors["1"].Temp = 100
-	m.Update(state)
+	m.Update(node)
 
-	state = getState()
 	state.Sensors["2"].Temp = 100
-	m.Update(state)
+	m.Update(node)
+
+	// Adding an new sensor
+	sensor3 := &Sensor{
+		3,
+		"Sensor 3",
+		78,
+		42,
+	}
+	state.Sensors["3"] = sensor3
+	m.Update(node)
+
+	// Test to delete that same sensor again
+	delete(state.Sensors, "3")
+	m.Update(node)
 
 	//Wait for all metric.Log calls to finnish
 	time.Sleep(100 * time.Millisecond)
 
-	if l.logcount != 3 {
-		t.Errorf("Expected Log to have ran 3 time got: %s", l.logcount)
+	if l.logcount != 20 {
+		t.Errorf("Expected Log to have ran 20 time got: %d", l.logcount)
+	}
+	if l.commitcount != 4 {
+		t.Errorf("Expected Commit to have ran 4 time got: %d", l.commitcount)
 	}
 }
 
 type LoggerStub struct {
-	logcount int
+	logcount    int
+	commitcount int
+	T           *testing.T
 }
 
 func (m *LoggerStub) Log(key string, value interface{}) {
-	log.Info(key, value)
+	m.T.Log("Log: ", key, value)
 	m.logcount++
 }
 func (m *LoggerStub) Commit(node interface{}) {
+	m.T.Log("Commit")
 	//log.Info(node)
+	m.commitcount++
 }

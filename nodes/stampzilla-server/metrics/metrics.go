@@ -1,11 +1,12 @@
 package metrics
 
 import (
-	"encoding/json"
 	"reflect"
 	"strconv"
 
 	log "github.com/cihub/seelog"
+	"github.com/fatih/structs"
+	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 )
 
 type Logger interface {
@@ -16,14 +17,21 @@ type Logger interface {
 type Metrics struct {
 	previous map[string]interface{}
 	loggers  []Logger
-	queue    chan []byte
+	queue    chan UpdatePackage
 }
+
+type UpdatePackage struct {
+	Node  *serverprotocol.Node
+	State map[string]interface{}
+}
+
+/* ----[ startup ]-------------------------------------------------*/
 
 func New() *Metrics {
 	return &Metrics{
 		make(map[string]interface{}),
 		nil,
-		make(chan []byte, 100),
+		make(chan UpdatePackage, 100),
 	}
 }
 func (m *Metrics) AddLogger(l Logger) {
@@ -37,34 +45,28 @@ func (m *Metrics) Start() {
 
 func (m *Metrics) worker() {
 	for s := range m.queue {
-		var data interface{}
-		err := json.Unmarshal(s, &data)
-
-		if err != nil {
-			log.Warn("Failed to unmarshal metrics update: ", err)
-			continue
-		}
-
-		m.update(data)
+		m.update(s.Node, s.State)
 	}
 }
 
-func (m *Metrics) Update(s interface{}) {
-	data, err := json.Marshal(s)
-	if err != nil {
-		log.Warn("Failed to marshal metrics update: ", err)
-		return
+/* ----[ handle updates ]------------------------------------------*/
+
+func (m *Metrics) Update(node *serverprotocol.Node) {
+	current := structToMetrics(node.Uuid, node.State)
+
+	data := UpdatePackage{
+		Node:  node,
+		State: current,
 	}
 
 	m.queue <- data
 }
 
-func (m *Metrics) update(s interface{}) {
+func (m *Metrics) update(node *serverprotocol.Node, current map[string]interface{}) {
 	if len(m.loggers) == 0 {
 		return
 	}
 
-	current := structToMetrics(s)
 	if len(m.previous) == 0 { // No previous values exists, then use this one and commit all values
 		m.previous = current
 
@@ -73,7 +75,7 @@ func (m *Metrics) update(s interface{}) {
 			m.log(k, v)
 		}
 		for _, l := range m.loggers {
-			l.Commit(s)
+			l.Commit(current) // TODO: is currently returning wrong value, should be the full struct
 		}
 		return
 	}
@@ -88,16 +90,10 @@ func (m *Metrics) update(s interface{}) {
 
 	if changed {
 		for _, l := range m.loggers {
-			l.Commit(s)
+			l.Commit(current) // TODO: is currently returning wrong value, should be the full struct
 		}
 	}
 	m.updatePrevious(current)
-}
-
-func (m *Metrics) updatePrevious(s map[string]interface{}) {
-	for k, v := range s {
-		m.previous[k] = v
-	}
 }
 
 func (m *Metrics) log(key string, value interface{}) {
@@ -106,26 +102,37 @@ func (m *Metrics) log(key string, value interface{}) {
 	}
 }
 
-func (m *Metrics) isDiff(k string, v interface{}) bool {
-	if oldValue, ok := m.previous[k]; ok {
-		if oldValue != v {
-			return true
-		}
+func (m *Metrics) updatePrevious(s map[string]interface{}) {
+	for k, v := range s {
+		m.previous[k] = v
 	}
-	return false
 }
 
-func structToMetrics(s interface{}) map[string]interface{} {
-	flattened := make(map[string]interface{})
-	baseName := ""
-
-	if data, ok := s.(map[string]interface{}); ok {
-		if uuid, ok := data["Uuid"].(string); ok {
-			baseName = uuid
+func (m *Metrics) isDiff(k string, v interface{}) bool {
+	if oldValue, ok := m.previous[k]; ok {
+		if oldValue == v {
+			return false // Previous value found and is equal. No difference
 		}
-
-		flatten(data, baseName, &flattened)
 	}
+	return true // Previous value not found, difference
+}
+
+/* ----[ converters ]----------------------------------------------*/
+
+func structToMetrics(baseName string, s interface{}) map[string]interface{} {
+	flattened := make(map[string]interface{})
+
+	switch v := s.(type) {
+	case *map[string]interface{}:
+		flatten(*v, baseName, &flattened)
+	case map[string]interface{}:
+		flatten(v, baseName, &flattened)
+	default:
+		if structs.IsStruct(s) {
+			flatten(structs.Map(s), baseName, &flattened)
+		}
+	}
+
 	return flattened
 }
 
@@ -140,9 +147,9 @@ func flatten(inputJSON map[string]interface{}, lkey string, flattened *map[strin
 			continue
 		}
 
-		//if structs.IsStruct(value) {
-		//value = structs.Map(value)
-		//}
+		if structs.IsStruct(value) {
+			value = structs.Map(value)
+		}
 		reflectValue := reflect.ValueOf(value)
 		if reflectValue.Type().Kind() == reflect.Map {
 			out := make(map[string]interface{})
