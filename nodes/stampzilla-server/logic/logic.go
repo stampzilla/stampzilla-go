@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"regexp"
 	"strconv"
@@ -22,7 +21,13 @@ type Logic struct {
 	Rules_ []Rule
 	re     *regexp.Regexp
 	sync.RWMutex
-	Nodes *serverprotocol.Nodes `inject:""`
+	Nodes         *serverprotocol.Nodes `inject:""`
+	updateChannel chan UpdatePackage
+}
+
+type UpdatePackage struct {
+	Uuid  string
+	State string
 }
 
 func NewLogic() *Logic {
@@ -55,7 +60,7 @@ func (l *Logic) Rules() []Rule {
 	return l.Rules_
 }
 func (l *Logic) AddRule(name string) Rule {
-	r := &rule{Name: name, Uuid_: uuid.New(), nodes: l.Nodes}
+	r := &rule{Name_: name, Uuid_: uuid.New(), nodes: l.Nodes}
 	l.Lock()
 	defer l.Unlock()
 	l.Rules_ = append(l.Rules_, r)
@@ -70,13 +75,16 @@ func (self *Logic) EmptyRules() {
 func (l *Logic) EvaluateRules() {
 	for _, rule := range l.Rules() {
 		evaluation := l.evaluateRule(rule)
-		fmt.Println("ruleEvaluationResult:", evaluation)
+		//fmt.Println("ruleEvaluationResult:", evaluation)
 		if evaluation != rule.CondState() {
 			rule.SetCondState(evaluation)
 			if evaluation {
+				log.Info("Rule: ", rule.Name(), " (", rule.Uuid(), ") - running enter actions")
 				rule.RunEnter()
 				continue
 			}
+
+			log.Info("Rule: ", rule.Name(), " (", rule.Uuid(), ") - running exit actions")
 			rule.RunExit()
 		}
 	}
@@ -84,7 +92,7 @@ func (l *Logic) EvaluateRules() {
 func (l *Logic) evaluateRule(r Rule) bool {
 	var state string
 	for _, cond := range r.Conditions() {
-		fmt.Println(cond.StatePath())
+		//fmt.Println(cond.StatePath())
 		//for _, state := range l.States() {
 		//var value string
 		if state = l.GetStateByUuid(cond.Uuid()); state == "" {
@@ -96,7 +104,7 @@ func (l *Logic) evaluateRule(r Rule) bool {
 			log.Error(err)
 		}
 
-		fmt.Println("path output:", value)
+		//fmt.Println("path output:", value)
 		// All conditions must evaluate to true
 		if !cond.Check(value) {
 			return false
@@ -111,8 +119,34 @@ func (l *Logic) ListenForChanges(uuid string) *chan string {
 	return &c
 }
 
-func (l *Logic) StopListen(uuid string) {
+func (l *Logic) Listen() *chan UpdatePackage {
+	l.updateChannel = make(chan UpdatePackage)
 
+	go func() {
+		for {
+			select {
+			case pkg, open := <-l.updateChannel:
+				if !open {
+					return
+				}
+				l.SetState(pkg.Uuid, pkg.State)
+				l.EvaluateRules()
+			}
+		}
+	}()
+
+	return &l.updateChannel
+}
+
+func (l *Logic) Update(node *serverprotocol.Node) {
+	state, _ := json.Marshal(node.State)
+	pkg := UpdatePackage{
+		Uuid:  node.Uuid,
+		State: string(state),
+	}
+
+	l.updateChannel <- pkg
+	//*logicChannel <- string(state)
 }
 
 // listen will run in a own goroutine and listen to incoming state changes and Parse them

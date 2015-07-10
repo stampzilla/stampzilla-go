@@ -41,6 +41,8 @@ func (ns *NodeServer) Start() {
 	ns.Logic.RestoreRulesFromFile("rules.json")
 	ns.addServerNode()
 
+	ns.Logic.Listen()
+
 	//return
 	go func() {
 		for {
@@ -71,7 +73,6 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 				log.Info(name, " - Client disconnected")
 				if uuid != "" {
 					ns.Nodes.Delete(uuid)
-					ns.Logic.StopListen(uuid)
 				}
 				//TODO be able to not send everything always. perhaps implement remove instead of all?
 				ns.WebsocketHandler.SendAllNodes()
@@ -108,9 +109,10 @@ func (ns *NodeServer) updateState(node *serverprotocol.Node) {
 	//log.Info(node.Uuid, " - ", node.Name, " - Got update on state")
 
 	//Send to logic for evaluation
-	logicChannel := ns.Logic.ListenForChanges(node.Uuid)
-	state, _ := json.Marshal(node.State)
-	*logicChannel <- string(state)
+	//logicChannel := ns.Logic.ListenForChanges(node.Uuid)
+	//state, _ := json.Marshal(node.State)
+	//*logicChannel <- string(state)
+	ns.Logic.Update(node)
 
 	//Send to metrics
 	ns.Metrics.Update(node)
