@@ -49,16 +49,8 @@ func (m *Metrics) update(s interface{}) {
 	}
 
 	current := structToMetrics(s)
-	if len(m.previous) == 0 { // No previous values exists, then use this one and commit all values
+	if len(m.previous) == 0 {
 		m.previous = current
-
-		// Force commit the first set off values
-		for k, v := range current {
-			m.log(k, v)
-		}
-		for _, l := range m.loggers {
-			l.Commit(s)
-		}
 		return
 	}
 
