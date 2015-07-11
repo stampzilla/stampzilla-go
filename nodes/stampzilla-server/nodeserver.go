@@ -93,7 +93,6 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 			if existingNode == nil {
 				ns.Nodes.Add(&node)
 				logicChannel = ns.Logic.ListenForChanges(node.Uuid)
-				//node.SetJsonEncoder(encoder)
 				node.SetConn(connection)
 				ns.updateState(logicChannel, &node)
 			} else {

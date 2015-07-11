@@ -52,7 +52,8 @@ func (m *Metrics) worker() {
 /* ----[ handle updates ]------------------------------------------*/
 
 func (m *Metrics) Update(node *serverprotocol.Node) {
-	current := structToMetrics(node.Uuid, node.State)
+	current := structToMetrics(node.Uuid+"_Node_State", node.State)
+	//current := structToMetrics(node.Uuid, node) //DO we want this instead? It will also logg Node.Uuid, Node.Elements etc... i think not!
 
 	data := UpdatePackage{
 		Node:  node,
@@ -121,18 +122,7 @@ func (m *Metrics) isDiff(k string, v interface{}) bool {
 
 func structToMetrics(baseName string, s interface{}) map[string]interface{} {
 	flattened := make(map[string]interface{})
-
-	switch v := s.(type) {
-	case *map[string]interface{}:
-		flatten(*v, baseName, &flattened)
-	case map[string]interface{}:
-		flatten(v, baseName, &flattened)
-	default:
-		if structs.IsStruct(s) {
-			flatten(structs.Map(s), baseName, &flattened)
-		}
-	}
-
+	flatten(structs.Map(s), baseName, &flattened)
 	return flattened
 }
 
@@ -160,8 +150,6 @@ func flatten(inputJSON map[string]interface{}, lkey string, flattened *map[strin
 		}
 
 		switch v := value.(type) {
-		case *map[string]interface{}:
-			flatten(*v, key, flattened)
 		case map[string]interface{}:
 			flatten(v, key, flattened)
 		default:

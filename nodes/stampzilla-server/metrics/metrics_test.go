@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -141,6 +142,15 @@ func assertKeyExists(t *testing.T, key string, val interface{}, m map[string]int
 	}
 }
 
+func assertSliceHas(t *testing.T, val string, s []string) {
+	for _, v := range s {
+		if v == val {
+			return
+		}
+	}
+	t.Errorf("%s does not exist in slice", val)
+}
+
 type Sensor struct {
 	Id       int
 	Name     string
@@ -199,7 +209,7 @@ func getState() State {
 func TestUpdate(t *testing.T) {
 
 	m := New()
-	l := &LoggerStub{T: t}
+	l := &LoggerStub{T: t, lastValues: make(map[string]interface{})}
 	m.AddLogger(l)
 	m.Start()
 
@@ -241,17 +251,79 @@ func TestUpdate(t *testing.T) {
 	if l.commitcount != 4 {
 		t.Errorf("Expected Commit to have ran 4 time got: %d", l.commitcount)
 	}
+	expectedKeys := map[string]interface{}{
+		"123-123_Node_State_Sensors_2_Name":      "Sensor 2",
+		"123-123_Node_State_Sensors_2_Temp":      100.0,
+		"123-123_Node_State_Devices_1_State_Dim": 100,
+		"123-123_Node_State_Devices_1_Features":  "",
+		"123-123_Node_State_Sensors_1_Temp":      100.0,
+		"123-123_Node_State_Sensors_2_Id":        2,
+		"123-123_Node_State_Devices_1_State_On":  1,
+		"123-123_Node_State_Devices_1_Type":      "TYPE",
+		"123-123_Node_State_Sensors_2_Humidity":  42.0,
+		"123-123_Node_State_Devices_1_Id":        1,
+		"123-123_Node_State_Sensors_1_Id":        1,
+		"123-123_Node_State_Sensors_1_Name":      "Sensor 1",
+		"123-123_Node_State_Sensors_1_Humidity":  40.0,
+		"123-123_Node_State_Devices_1_Name":      "Sensor1",
+		"123-123_Node_State_Sensors_3_Name":      "Sensor 3",
+		"123-123_Node_State_Sensors_3_Humidity":  42.0,
+	}
+
+	for k, v := range expectedKeys {
+		assertKeyExists(t, k, v, l.lastValues)
+	}
+}
+
+func TestUpdateSameValueVeryFast(t *testing.T) {
+
+	m := New()
+	l := &LoggerStub{T: t, lastValues: make(map[string]interface{})}
+	m.AddLogger(l)
+	m.Start()
+
+	node := &serverprotocol.Node{}
+	state := getState()
+
+	node.Name = "metrics-test"
+	node.Uuid = "123-123"
+	node.State = state
+
+	m.Update(node)
+
+	state.Sensors["1"].Temp = 100
+	m.Update(node)
+
+	state.Sensors["1"].Temp = 101
+	m.Update(node)
+
+	//Wait for all metric.Log calls to finnish
+	time.Sleep(100 * time.Millisecond)
+
+	expectedKeys := []string{
+		"123-123_Node_State_Sensors_1_Temp 24",
+		"123-123_Node_State_Sensors_1_Temp 100",
+		"123-123_Node_State_Sensors_1_Temp 101",
+	}
+
+	for _, v := range expectedKeys {
+		assertSliceHas(t, v, l.logged)
+	}
 }
 
 type LoggerStub struct {
 	logcount    int
 	commitcount int
 	T           *testing.T
+	lastValues  map[string]interface{}
+	logged      []string
 }
 
 func (m *LoggerStub) Log(key string, value interface{}) {
 	m.T.Log("Log: ", key, value)
 	m.logcount++
+	m.lastValues[key] = value
+	m.logged = append(m.logged, fmt.Sprint(key, " ", value))
 }
 func (m *LoggerStub) Commit(node interface{}) {
 	m.T.Log("Commit")
