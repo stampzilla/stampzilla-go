@@ -21,13 +21,7 @@ type Logic struct {
 	Rules_ []Rule
 	re     *regexp.Regexp
 	sync.RWMutex
-	Nodes         *serverprotocol.Nodes `inject:""`
-	updateChannel chan UpdatePackage
-}
-
-type UpdatePackage struct {
-	Uuid  string
-	State string
+	Nodes *serverprotocol.Nodes `inject:""`
 }
 
 func NewLogic() *Logic {
@@ -113,40 +107,20 @@ func (l *Logic) evaluateRule(r Rule) bool {
 	return true
 }
 
-func (l *Logic) ListenForChanges(uuid string) *chan string {
+func (l *Logic) ListenForChanges(uuid string) chan string {
 	c := make(chan string)
 	go l.listen(uuid, c)
-	return &c
+	return c
 }
 
-func (l *Logic) Listen() *chan UpdatePackage {
-	l.updateChannel = make(chan UpdatePackage)
-
-	go func() {
-		for {
-			select {
-			case pkg, open := <-l.updateChannel:
-				if !open {
-					return
-				}
-				l.SetState(pkg.Uuid, pkg.State)
-				l.EvaluateRules()
-			}
-		}
-	}()
-
-	return &l.updateChannel
-}
-
-func (l *Logic) Update(node *serverprotocol.Node) {
-	state, _ := json.Marshal(node.State)
-	pkg := UpdatePackage{
-		Uuid:  node.Uuid,
-		State: string(state),
+func (l *Logic) Update(updateChannel chan string, node *serverprotocol.Node) {
+	state, err := json.Marshal(node.State)
+	if err != nil {
+		log.Error(err)
+		return
 	}
 
-	l.updateChannel <- pkg
-	//*logicChannel <- string(state)
+	updateChannel <- string(state)
 }
 
 // listen will run in a own goroutine and listen to incoming state changes and Parse them
