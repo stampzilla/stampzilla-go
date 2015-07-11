@@ -13,4 +13,4 @@ install:
 script: 
   - go test -v ./nodes/stampzilla-server/...
   - bash coverage  
-  - goveralls -coverprofile=gover.coverprofile -service travis-ci
+  - goveralls -coverprofile=./nodes/stampzilla-server/gover.coverprofile -service travis-ci
