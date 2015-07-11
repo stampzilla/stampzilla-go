@@ -5,7 +5,12 @@ go:
   - tip
 
 install: 
+  - go get code.google.com/p/go.tools/cmd/cover
+  - go get github.com/mattn/goveralls
+  - curl -sLOf https://raw.githubusercontent.com/stampzilla/stampzilla-go/master/coverage
   - go get -d -v ./nodes/stampzilla-server/...
 
 script: 
   - go test -v ./nodes/stampzilla-server/...
+  - bash coverage  
+  - goveralls -coverprofile=gover.coverprofile -service travis-ci
