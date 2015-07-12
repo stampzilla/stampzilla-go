@@ -122,7 +122,15 @@ func (m *Metrics) isDiff(k string, v interface{}) bool {
 
 func structToMetrics(baseName string, s interface{}) map[string]interface{} {
 	flattened := make(map[string]interface{})
-	flatten(structs.Map(s), baseName, &flattened)
+
+	if v, ok := s.(map[string]interface{}); ok {
+		flatten(v, baseName, &flattened)
+		return flattened
+	}
+
+	if structs.IsStruct(s) {
+		flatten(structs.Map(s), baseName, &flattened)
+	}
 	return flattened
 }
 
