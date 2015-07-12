@@ -1,4 +1,4 @@
-stampzilla-go [![Build Status](https://travis-ci.org/stampzilla/stampzilla-go.svg?branch=master)](https://travis-ci.org/stampzilla/stampzilla-go)
+stampzilla-go [![Build Status](https://travis-ci.org/stampzilla/stampzilla-go.svg?branch=master)](https://travis-ci.org/stampzilla/stampzilla-go) [![Coverage Status](https://coveralls.io/repos/stampzilla/stampzilla-go/badge.svg?branch=master&service=github)](https://coveralls.io/github/stampzilla/stampzilla-go?branch=master)
 =============
 
 New version of this awesome homeautomation software written in Go and javascript with Polymer and webcomponents. 

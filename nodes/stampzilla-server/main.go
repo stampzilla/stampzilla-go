@@ -45,10 +45,8 @@ func main() {
 	flag.StringVar(&config.InfluxDbPassword, "influxdbpassword", "", "InfluxDb password. ")
 	flag.Parse()
 
-	getConfigFromEnv(config)
-
-	// Load config file
 	readConfigFromFile("config.json", config)
+	getConfigFromEnv(config)
 
 	// Create an uuid
 	if config.Uuid == "" {
@@ -165,13 +163,18 @@ func readConfigFromFile(fn string, config *ServerConfig) {
 
 	newConfig := &ServerConfig{}
 	jsonParser := json.NewDecoder(configFile)
-	if err = jsonParser.Decode(&config); err != nil {
+	if err = jsonParser.Decode(&newConfig); err != nil {
 		log.Error("parsing config file", err.Error())
 	}
 
-	if newConfig.InfluxDbServer != "" {
-		config.InfluxDbServer = newConfig.InfluxDbServer
+	//Command line arguments has higher priority. Only implemented for config.InfluxDbServer yet
+	//TODO generalize using reflect to itearate over config struct so check all
+	if config.InfluxDbServer != "" {
+		log.Info("config.InfluxDbServer != \"\"")
+		newConfig.InfluxDbServer = config.InfluxDbServer
 	}
+
+	*config = *newConfig
 }
 
 func saveConfigToFile(config *ServerConfig) {
