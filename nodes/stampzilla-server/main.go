@@ -3,11 +3,11 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"flag"
 	"os"
 
 	log "github.com/cihub/seelog"
 	"github.com/facebookgo/inject"
+	"github.com/koding/multiconfig"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/logic"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/metrics"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
@@ -16,9 +16,10 @@ import (
 
 //TODO make config general by using a map so we can get config from ENV,file or flag.
 type ServerConfig struct {
-	NodePort         string
-	WebPort          string
-	WebRoot          string
+	Uuid             string
+	NodePort         string `default:"8282"`
+	WebPort          string `default:"8080"`
+	WebRoot          string `default:"public"`
 	ElasticSearch    string
 	InfluxDbServer   string
 	InfluxDbUser     string
@@ -30,20 +31,9 @@ type Startable interface {
 }
 
 func main() {
-
 	config := &ServerConfig{}
-
-	flag.StringVar(&config.NodePort, "node-port", "8282", "Stampzilla NodeServer port")
-	flag.StringVar(&config.WebPort, "web-port", "8080", "Webserver port")
-	flag.StringVar(&config.WebRoot, "web-root", "public", "Webserver root")
-	flag.StringVar(&config.ElasticSearch, "elasticsearch", "", "Address to an ElasticSearch host. Ex: http://hostname:9200/test/test")
-	flag.StringVar(&config.InfluxDbServer, "influxdbserver", "", "Address to an InfluxDb host. Ex: http://localhost:8086")
-	flag.StringVar(&config.InfluxDbUser, "influxdbuser", "", "InfluxDb user. ")
-	flag.StringVar(&config.InfluxDbPassword, "influxdbpassword", "", "InfluxDb password. ")
-	flag.Parse()
-
-	readConfigFromFile("config.json", config)
-	getConfigFromEnv(config)
+	m := loadMultiConfig()
+	m.MustLoad(config)
 
 	// Load logger
 	logger, err := log.LoggerFromConfigAsFile("logconfig.xml")
@@ -139,37 +129,6 @@ func getLoggers(services []interface{}) []metrics.Logger {
 	return loggers
 }
 
-func getConfigFromEnv(config *ServerConfig) {
-
-	//TODO make prettier and generate from map with both ENV and flags
-	if val := os.Getenv("STAMPZILLA_WEBROOT"); val != "" {
-		config.WebRoot = val
-	}
-}
-
-func readConfigFromFile(fn string, config *ServerConfig) {
-	configFile, err := os.Open(fn)
-	if err != nil {
-		log.Error("opening config file", err.Error())
-		return
-	}
-
-	newConfig := &ServerConfig{}
-	jsonParser := json.NewDecoder(configFile)
-	if err = jsonParser.Decode(&newConfig); err != nil {
-		log.Error("parsing config file", err.Error())
-	}
-
-	//Command line arguments has higher priority. Only implemented for config.InfluxDbServer yet
-	//TODO generalize using reflect to itearate over config struct so check all
-	if config.InfluxDbServer != "" {
-		log.Info("config.InfluxDbServer != \"\"")
-		newConfig.InfluxDbServer = config.InfluxDbServer
-	}
-
-	*config = *newConfig
-}
-
 func saveConfigToFile(config *ServerConfig) {
 	configFile, err := os.Create("config.json")
 	if err != nil {
@@ -184,4 +143,29 @@ func saveConfigToFile(config *ServerConfig) {
 	}
 	json.Indent(&out, b, "", "\t")
 	out.WriteTo(configFile)
+}
+
+func loadMultiConfig() *multiconfig.DefaultLoader {
+	loaders := []multiconfig.Loader{}
+
+	// Read default values defined via tag fields "default"
+	loaders = append(loaders, &multiconfig.TagLoader{})
+
+	if _, err := os.Stat("config.json"); err == nil {
+		loaders = append(loaders, &multiconfig.JSONLoader{Path: "config.json"})
+	}
+
+	e := &multiconfig.EnvironmentLoader{}
+	e.Prefix = "STAMPZILLA"
+	f := &multiconfig.FlagLoader{}
+	f.EnvPrefix = "STAMPZILLA"
+
+	loaders = append(loaders, e, f)
+	loader := multiconfig.MultiLoader(loaders...)
+
+	d := &multiconfig.DefaultLoader{}
+	d.Loader = loader
+	d.Validator = multiconfig.MultiValidator(&multiconfig.RequiredValidator{})
+	return d
+
 }
