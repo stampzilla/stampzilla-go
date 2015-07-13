@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net/url"
-	"os"
 	"time"
 
 	log "github.com/cihub/seelog"
@@ -30,8 +29,8 @@ func (i *InfluxDb) Connect() *client.Client {
 
 	conf := client.Config{
 		URL:      *u,
-		Username: os.Getenv("INFLUX_USER"),
-		Password: os.Getenv("INFLUX_PWD"),
+		Username: i.Config.InfluxDbUser,
+		Password: i.Config.InfluxDbPassword,
 	}
 
 	con, err := client.NewClient(conf)

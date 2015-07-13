@@ -25,11 +25,6 @@ func (n *Node) Conn() net.Conn {
 	return n.conn
 }
 
-//func (n *Node) SetJsonEncoder(enc *json.Encoder) {
-//n.Lock()
-//n.encoder = enc
-//n.Unlock()
-//}
 func (n *Node) SetConn(conn net.Conn) {
 	n.Lock()
 	n.conn = conn
@@ -39,7 +34,6 @@ func (n *Node) SetConn(conn net.Conn) {
 func (n *Node) Write(b []byte) {
 	b = append(b, []byte("\n")...)
 	_, err := n.conn.Write(b)
-	//err := n.encoder.Encode(b)
 	if err != nil {
 		log.Error(err)
 		return

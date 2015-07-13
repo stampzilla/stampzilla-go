@@ -1,6 +1,14 @@
 package websocket
 
-import "errors"
+import "fmt"
+
+type ErrNoSuchRoute struct {
+	route string
+}
+
+func (self *ErrNoSuchRoute) Error() string {
+	return fmt.Sprintf("Undefined websocket route: %s", self.route)
+}
 
 type Router struct {
 	callbacks       map[string]func(*Message)
@@ -39,5 +47,6 @@ func (w *Router) Run(msg *Message) error {
 		cb(msg)
 		return nil
 	}
-	return errors.New("Undefined websocket route: " + msg.Type)
+	return &ErrNoSuchRoute{route: msg.Type}
+	//return errors.New("Undefined websocket route: " + msg.Type)
 }
