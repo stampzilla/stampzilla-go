@@ -78,7 +78,6 @@ func main() {
 	connection := basenode.Connect()
 
 	// Thit worker keeps track on our connection state, if we are connected or not
-	go monitorState(node, connection)
 
 	//node.AddElement(&protocol.Element{
 	//Type: protocol.ElementTypeColorPicker,
@@ -95,15 +94,13 @@ func main() {
 
 	// This worker recives all incomming commands
 	go serverRecv(registers, connection, modbusConnection)
+	fetchRegisters(registers, modbusConnection)
+	go monitorState(node, connection)
 	periodicalFetcher(registers, modbusConnection, connection, node)
 	select {}
 }
 
 func periodicalFetcher(registers *Registers, connection *Modbus, nodeConn *basenode.Connection, node *protocol.Node) chan bool {
-
-	//Fetch once straight away and send update to server
-	fetchRegisters(registers, connection)
-	nodeConn.Send <- node.Node()
 
 	ticker := time.NewTicker(30 * time.Second)
 	quit := make(chan bool)
