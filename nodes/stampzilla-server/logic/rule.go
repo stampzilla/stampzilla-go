@@ -8,6 +8,7 @@ import (
 
 type Rule interface {
 	Uuid() string
+	Name() string
 	SetUuid(string)
 	CondState() bool
 	SetCondState(bool)
@@ -20,7 +21,7 @@ type Rule interface {
 }
 
 type rule struct {
-	Name          string          `json:"name"`
+	Name_         string          `json:"name"`
 	Uuid_         string          `json:"uuid"`
 	Conditions_   []RuleCondition `json:"conditions"`
 	EnterActions_ []RuleAction    `json:"enterActions"`
@@ -34,6 +35,11 @@ func (r *rule) Uuid() string {
 	r.RLock()
 	defer r.RUnlock()
 	return r.Uuid_
+}
+func (r *rule) Name() string {
+	r.RLock()
+	defer r.RUnlock()
+	return r.Name_
 }
 func (r *rule) SetUuid(uuid string) {
 	r.Lock()

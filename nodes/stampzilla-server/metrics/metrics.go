@@ -17,47 +17,73 @@ type Logger interface {
 type Metrics struct {
 	previous map[string]interface{}
 	loggers  []Logger
-	queue    chan interface{}
+	queue    chan UpdatePackage
 }
+
+type UpdatePackage struct {
+	Node  *serverprotocol.Node
+	State map[string]interface{}
+}
+
+/* ----[ startup ]-------------------------------------------------*/
 
 func New() *Metrics {
 	return &Metrics{
 		make(map[string]interface{}),
 		nil,
-		make(chan interface{}, 100),
+		make(chan UpdatePackage, 100),
 	}
 }
 func (m *Metrics) AddLogger(l Logger) {
 	log.Infof("Adding logger: %T\n", l)
 	m.loggers = append(m.loggers, l)
 }
+
 func (m *Metrics) Start() {
 	go m.worker()
 }
+
 func (m *Metrics) worker() {
 	for s := range m.queue {
-		m.update(s)
+		m.update(s.Node, s.State)
 	}
 }
-func (m *Metrics) Update(s interface{}) {
-	m.queue <- s
+
+/* ----[ handle updates ]------------------------------------------*/
+
+func (m *Metrics) Update(node *serverprotocol.Node) {
+	current := structToMetrics(node.Uuid+"_Node_State", node.State)
+	//current := structToMetrics(node.Uuid, node) //DO we want this instead? It will also logg Node.Uuid, Node.Elements etc... i think not!
+
+	data := UpdatePackage{
+		Node:  node,
+		State: current,
+	}
+
+	m.queue <- data
 }
 
-func (m *Metrics) update(s interface{}) {
+func (m *Metrics) update(node *serverprotocol.Node, current map[string]interface{}) {
 	if len(m.loggers) == 0 {
 		return
 	}
 
-	current := structToMetrics(s)
-	if len(m.previous) == 0 {
+	if len(m.previous) == 0 { // No previous values exists, then use this one and commit all values
 		m.previous = current
+
+		// Force commit the first set off values
+		for k, v := range current {
+			m.log(k, v)
+		}
+		for _, l := range m.loggers {
+			l.Commit(current) // TODO: is currently returning wrong value, should be the full struct
+		}
 		return
 	}
 
 	changed := false
 	for k, v := range current {
 		if m.isDiff(k, v) {
-			log.Info("found diff. logging!")
 			m.log(k, v)
 			changed = true
 		}
@@ -65,10 +91,16 @@ func (m *Metrics) update(s interface{}) {
 
 	if changed {
 		for _, l := range m.loggers {
-			l.Commit(s)
+			l.Commit(current) // TODO: is currently returning wrong value, should be the full struct
 		}
 	}
 	m.updatePrevious(current)
+}
+
+func (m *Metrics) log(key string, value interface{}) {
+	for _, l := range m.loggers {
+		l.Log(key, value)
+	}
 }
 
 func (m *Metrics) updatePrevious(s map[string]interface{}) {
@@ -77,28 +109,28 @@ func (m *Metrics) updatePrevious(s map[string]interface{}) {
 	}
 }
 
-func (m *Metrics) log(key string, value interface{}) {
-	for _, l := range m.loggers {
-		l.Log(key, value)
-	}
-}
 func (m *Metrics) isDiff(k string, v interface{}) bool {
 	if oldValue, ok := m.previous[k]; ok {
-		if oldValue != v {
-			return true
+		if oldValue == v {
+			return false // Previous value found and is equal. No difference
 		}
 	}
-	return false
+	return true // Previous value not found, difference
 }
 
-func structToMetrics(s interface{}) map[string]interface{} {
+/* ----[ converters ]----------------------------------------------*/
+
+func structToMetrics(baseName string, s interface{}) map[string]interface{} {
 	flattened := make(map[string]interface{})
-	baseName := ""
-	if node, ok := s.(serverprotocol.Node); ok {
-		//st := structs.New(node)
-		baseName = node.Uuid
+
+	if v, ok := s.(map[string]interface{}); ok {
+		flatten(v, baseName, &flattened)
+		return flattened
 	}
-	flatten(structs.Map(s), baseName, &flattened)
+
+	if structs.IsStruct(s) {
+		flatten(structs.Map(s), baseName, &flattened)
+	}
 	return flattened
 }
 
@@ -114,12 +146,10 @@ func flatten(inputJSON map[string]interface{}, lkey string, flattened *map[strin
 		}
 
 		if structs.IsStruct(value) {
-			//fmt.Println("Its a struct: ", value)
 			value = structs.Map(value)
 		}
 		reflectValue := reflect.ValueOf(value)
 		if reflectValue.Type().Kind() == reflect.Map {
-			//fmt.Println("its a map: ", value)
 			out := make(map[string]interface{})
 			for _, b := range reflectValue.MapKeys() {
 				out[b.String()] = reflectValue.MapIndex(b).Interface()

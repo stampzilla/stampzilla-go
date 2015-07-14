@@ -78,7 +78,6 @@ func main() {
 	connection := basenode.Connect()
 
 	// Thit worker keeps track on our connection state, if we are connected or not
-	go monitorState(node, connection)
 
 	//node.AddElement(&protocol.Element{
 	//Type: protocol.ElementTypeColorPicker,
@@ -95,15 +94,26 @@ func main() {
 
 	// This worker recives all incomming commands
 	go serverRecv(registers, connection, modbusConnection)
-	periodicalFetcher(registers, modbusConnection, connection, node)
+	go monitorState(node, connection, registers, modbusConnection)
 	select {}
 }
 
-func periodicalFetcher(registers *Registers, connection *Modbus, nodeConn *basenode.Connection, node *protocol.Node) chan bool {
+// WORKER that monitors the current connection state
+func monitorState(node *protocol.Node, connection *basenode.Connection, registers *Registers, modbusConnection *Modbus) {
+	var stopFetching chan bool
+	for s := range connection.State {
+		switch s {
+		case basenode.ConnectionStateConnected:
+			fetchRegisters(registers, modbusConnection)
+			stopFetching = periodicalFetcher(registers, modbusConnection, connection, node)
+			connection.Send <- node.Node()
+		case basenode.ConnectionStateDisconnected:
+			close(stopFetching)
+		}
+	}
+}
 
-	//Fetch once straight away and send update to server
-	fetchRegisters(registers, connection)
-	nodeConn.Send <- node.Node()
+func periodicalFetcher(registers *Registers, connection *Modbus, nodeConn *basenode.Connection, node *protocol.Node) chan bool {
 
 	ticker := time.NewTicker(30 * time.Second)
 	quit := make(chan bool)
@@ -115,6 +125,7 @@ func periodicalFetcher(registers *Registers, connection *Modbus, nodeConn *basen
 				nodeConn.Send <- node.Node()
 			case <-quit:
 				ticker.Stop()
+				log.Println("Stopping periodicalFetcher")
 				return
 			}
 		}
@@ -141,17 +152,6 @@ func fetchRegisters(registers *Registers, connection *Modbus) {
 			continue
 		}
 		v.Value = binary.BigEndian.Uint16(data)
-	}
-}
-
-// WORKER that monitors the current connection state
-func monitorState(node *protocol.Node, connection *basenode.Connection) {
-	for s := range connection.State {
-		switch s {
-		case basenode.ConnectionStateConnected:
-			connection.Send <- node.Node()
-		case basenode.ConnectionStateDisconnected:
-		}
 	}
 }
 

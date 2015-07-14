@@ -1,8 +1,13 @@
 package logic
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"testing"
+	"time"
+
+	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 )
 
 type ruleActionStub struct {
@@ -223,4 +228,86 @@ func TestParseRuleEnterExitActionsWithoutUuid(t *testing.T) {
 		return
 	}
 	t.Errorf("actionRunCount wrong expected: %s got %s", 0, actionRunCount)
+}
+
+func TestListenForChanges(t *testing.T) {
+
+	logic := NewLogic()
+
+	rule := logic.AddRule("test rule 1")
+
+	actionRunCount := 0
+	action := NewRuleActionStub(&actionRunCount)
+	rule.AddEnterAction(action)
+	rule.AddExitAction(action)
+
+	rule.AddCondition(&ruleCondition{`Devices[1].State`, "==", true, "uuid1234"})
+	rule.AddCondition(&ruleCondition{`Devices[2].State`, "!=", "OFF", "uuid1234"})
+	//rule.AddCondition(&ruleCondition{`Devices[3].State`, "!=", "OFF"})
+
+	c := logic.ListenForChanges("uuid1234")
+
+	node := &serverprotocol.Node{}
+	state := `
+		{
+			"Devices": {
+				"1": {
+					"Id": "1",
+					"Name": "Dev1",
+					"State": true,
+					"Type": ""
+				},
+				"2": {
+					"Id": "2",
+					"Name": "Dev2",
+					"State": "ON",
+					"Type": ""
+				}
+			}
+		}
+	`
+	_ = json.Unmarshal([]byte(state), &node.State)
+
+	logic.Update(c, node)
+	//logic.SetState("uuid1234", state)
+	//logic.EvaluateRules()
+
+	state = `
+		{
+			"Devices": {
+				"1": {
+					"Id": "1",
+					"Name": "Dev1",
+					"State": "OFF",
+					"Type": ""
+				},
+				"2": {
+					"Id": "2",
+					"Name": "Dev2",
+					"State": "OFF",
+					"Type": ""
+				}
+			}
+		}
+	`
+	err := json.Unmarshal([]byte(state), &node.State)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	logic.Update(c, node)
+
+	// Must wait for Update to send to channel
+	time.Sleep(100 * time.Millisecond)
+
+	if len(logic.States()) != 1 {
+		t.Errorf("length of logic.States should be 1. got: %s", len(logic.States()))
+	}
+
+	fmt.Println(actionRunCount)
+	if actionRunCount == 2 {
+		return
+	}
+	t.Errorf("actionRunCount wrong expected: %s got %s", 2, actionRunCount)
 }

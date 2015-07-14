@@ -87,7 +87,6 @@ func (n *Nodes) All() map[string]*Node {
 func (n *Nodes) Add(node *Node) {
 	n.Lock()
 	defer n.Unlock()
-	//var newNode = node
 	n.nodes[node.Uuid] = node
 }
 func (n *Nodes) Delete(uuid string) {

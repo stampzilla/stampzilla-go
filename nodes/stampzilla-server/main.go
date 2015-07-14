@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"os"
 
+	"code.google.com/p/go-uuid/uuid"
+
 	log "github.com/cihub/seelog"
 	"github.com/facebookgo/inject"
 	"github.com/koding/multiconfig"
@@ -34,6 +36,11 @@ func main() {
 	config := &ServerConfig{}
 	m := loadMultiConfig()
 	m.MustLoad(config)
+
+	// Create an uuid
+	if config.Uuid == "" {
+		config.Uuid = uuid.New()
+	}
 
 	// Load logger
 	logger, err := log.LoggerFromConfigAsFile("logconfig.xml")
@@ -115,7 +122,6 @@ func StartServices(services []interface{}) {
 		if s, ok := s.(Startable); ok {
 			s.Start()
 		}
-
 	}
 }
 
