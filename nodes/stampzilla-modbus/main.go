@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"flag"
 	"log"
+	"os"
 	"time"
 
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
@@ -139,6 +140,10 @@ func fetchRegisters(registers *Registers, connection *Modbus) {
 
 		data, err := connection.ReadInputRegister(v.Id)
 		if err != nil {
+			if connection.handler.Logger == nil {
+				log.Println("Adding debug logging to handler")
+				connection.handler.Logger = log.New(os.Stdout, "modbus-debug: ", log.LstdFlags)
+			}
 			log.Println(err)
 			continue
 		}
