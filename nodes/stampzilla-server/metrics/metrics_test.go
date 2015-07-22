@@ -5,7 +5,6 @@ import (
 	"os"
 	"sync"
 	"testing"
-	"time"
 
 	log "github.com/cihub/seelog"
 	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
@@ -209,8 +208,13 @@ func getState() State {
 
 func TestUpdate(t *testing.T) {
 
+	var wg sync.WaitGroup
 	m := New()
-	l := &LoggerStub{T: t, lastValues: make(map[string]interface{})}
+	l := &LoggerStub{
+		T:          t,
+		lastValues: make(map[string]interface{}),
+		wg:         &wg,
+	}
 	m.AddLogger(l)
 	m.Start()
 
@@ -221,12 +225,15 @@ func TestUpdate(t *testing.T) {
 	node.Uuid = "123-123"
 	node.State = state
 
+	wg.Add(1)
 	m.Update(node)
 
 	state.Sensors["1"].Temp = 100
+	wg.Add(1)
 	m.Update(node)
 
 	state.Sensors["2"].Temp = 100
+	wg.Add(1)
 	m.Update(node)
 
 	// Adding an new sensor
@@ -237,14 +244,14 @@ func TestUpdate(t *testing.T) {
 		42,
 	}
 	state.Sensors["3"] = sensor3
+	wg.Add(1)
 	m.Update(node)
 
 	// Test to delete that same sensor again
 	delete(state.Sensors, "3")
 	m.Update(node)
 
-	//Wait for all metric.Log calls to finnish
-	time.Sleep(100 * time.Millisecond)
+	wg.Wait()
 
 	if l.Logcount() != 20 {
 		t.Errorf("Expected Log to have ran 20 time got: %d", l.Logcount())
@@ -278,8 +285,14 @@ func TestUpdate(t *testing.T) {
 
 func TestUpdateSameValueVeryFast(t *testing.T) {
 
+	var wg sync.WaitGroup
+
 	m := New()
-	l := &LoggerStub{T: t, lastValues: make(map[string]interface{})}
+	l := &LoggerStub{
+		T:          t,
+		lastValues: make(map[string]interface{}),
+		wg:         &wg,
+	}
 	m.AddLogger(l)
 	m.Start()
 
@@ -290,16 +303,19 @@ func TestUpdateSameValueVeryFast(t *testing.T) {
 	node.Uuid = "123-123"
 	node.State = state
 
+	wg.Add(1)
 	m.Update(node)
 
 	state.Sensors["1"].Temp = 100
+	wg.Add(1)
 	m.Update(node)
 
 	state.Sensors["1"].Temp = 101
+	wg.Add(1)
 	m.Update(node)
 
 	//Wait for all metric.Log calls to finnish
-	time.Sleep(100 * time.Millisecond)
+	wg.Wait()
 
 	expectedKeys := []string{
 		"123-123_Node_State_Sensors_1_Temp 24",
@@ -331,19 +347,19 @@ func (m *LoggerStub) Log(key string, value interface{}) {
 	m.logged = append(m.logged, fmt.Sprint(key, " ", value))
 }
 func (m *LoggerStub) Logcount() int {
-	m.Lock()
-	defer m.Unlock()
+	m.RLock()
+	defer m.RUnlock()
 	return m.logcount
 }
 func (m *LoggerStub) Logged() []string {
-	m.Lock()
-	defer m.Unlock()
+	m.RLock()
+	defer m.RUnlock()
 	return m.logged
 }
 func (m *LoggerStub) Commit(node interface{}) {
 	m.Lock()
 	defer m.Unlock()
 	m.T.Log("Commit")
-	//log.Info(node)
 	m.commitcount++
+	m.wg.Done()
 }
