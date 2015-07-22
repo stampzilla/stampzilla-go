@@ -3,6 +3,7 @@ package metrics
 import (
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -245,8 +246,8 @@ func TestUpdate(t *testing.T) {
 	//Wait for all metric.Log calls to finnish
 	time.Sleep(100 * time.Millisecond)
 
-	if l.logcount != 20 {
-		t.Errorf("Expected Log to have ran 20 time got: %d", l.logcount)
+	if l.Logcount() != 20 {
+		t.Errorf("Expected Log to have ran 20 time got: %d", l.Logcount())
 	}
 	if l.commitcount != 4 {
 		t.Errorf("Expected Commit to have ran 4 time got: %d", l.commitcount)
@@ -307,7 +308,7 @@ func TestUpdateSameValueVeryFast(t *testing.T) {
 	}
 
 	for _, v := range expectedKeys {
-		assertSliceHas(t, v, l.logged)
+		assertSliceHas(t, v, l.Logged())
 	}
 }
 
@@ -317,15 +318,31 @@ type LoggerStub struct {
 	T           *testing.T
 	lastValues  map[string]interface{}
 	logged      []string
+	wg          *sync.WaitGroup
+	sync.RWMutex
 }
 
 func (m *LoggerStub) Log(key string, value interface{}) {
+	m.Lock()
+	defer m.Unlock()
 	m.T.Log("Log: ", key, value)
 	m.logcount++
 	m.lastValues[key] = value
 	m.logged = append(m.logged, fmt.Sprint(key, " ", value))
 }
+func (m *LoggerStub) Logcount() int {
+	m.Lock()
+	defer m.Unlock()
+	return m.logcount
+}
+func (m *LoggerStub) Logged() []string {
+	m.Lock()
+	defer m.Unlock()
+	return m.logged
+}
 func (m *LoggerStub) Commit(node interface{}) {
+	m.Lock()
+	defer m.Unlock()
 	m.T.Log("Commit")
 	//log.Info(node)
 	m.commitcount++
