@@ -218,7 +218,7 @@ func TestUpdate(t *testing.T) {
 
 	node.Name = "metrics-test"
 	node.Uuid = "123-123"
-	node.State = state
+	node.SetState(state)
 
 	m.Update(node)
 
@@ -287,7 +287,7 @@ func TestUpdateSameValueVeryFast(t *testing.T) {
 
 	node.Name = "metrics-test"
 	node.Uuid = "123-123"
-	node.State = state
+	node.SetState(state)
 
 	m.Update(node)
 

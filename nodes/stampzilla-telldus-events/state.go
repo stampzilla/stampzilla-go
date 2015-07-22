@@ -30,7 +30,3 @@ func (s *State) GetDevice(id string) *Device {
 	}
 	return nil
 }
-
-func (s *State) GetState() interface{} {
-	return s
-}

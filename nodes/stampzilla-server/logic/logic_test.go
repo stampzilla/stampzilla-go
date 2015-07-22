@@ -266,7 +266,7 @@ func TestListenForChanges(t *testing.T) {
 			}
 		}
 	`
-	_ = json.Unmarshal([]byte(state), &node.State)
+	_ = json.Unmarshal([]byte(state), &node.State_)
 
 	logic.Update(c, node)
 	//logic.SetState("uuid1234", state)
@@ -290,7 +290,7 @@ func TestListenForChanges(t *testing.T) {
 			}
 		}
 	`
-	err := json.Unmarshal([]byte(state), &node.State)
+	err := json.Unmarshal([]byte(state), &node.State_)
 	if err != nil {
 		log.Println(err)
 		return

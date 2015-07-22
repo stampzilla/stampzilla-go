@@ -52,7 +52,7 @@ func (m *Metrics) worker() {
 /* ----[ handle updates ]------------------------------------------*/
 
 func (m *Metrics) Update(node *serverprotocol.Node) {
-	current := structToMetrics(node.Uuid+"_Node_State", node.State)
+	current := structToMetrics(node.Uuid+"_Node_State", node.State())
 	//current := structToMetrics(node.Uuid, node) //DO we want this instead? It will also logg Node.Uuid, Node.Elements etc... i think not!
 
 	data := UpdatePackage{

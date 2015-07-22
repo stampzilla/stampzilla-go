@@ -5,13 +5,8 @@ type State struct { /*{{{*/
 	Sensors map[string]*Sensor
 } /*}}}*/
 
-
 func (s *State) AddDevice(id, name string, features []string, state string) {
 	d := NewDevice(id, name, state, "", features)
 
 	s.Devices = append(s.Devices, d)
-}
-
-func (s *State) GetState() interface{} {
-	return s;
 }

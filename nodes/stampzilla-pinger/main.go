@@ -18,10 +18,6 @@ type TargetState struct {
 
 var state TargetState
 
-func (s TargetState) GetState() interface{} {
-	return s
-}
-
 func (s *TargetState) Add(t *Target) {
 	s.Targets[t.Name] = t
 

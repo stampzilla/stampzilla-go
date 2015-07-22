@@ -120,7 +120,7 @@ func serverRecv(node *protocol.Node, connection *basenode.Connection) {
 
 // THis is called on each incomming command
 func processCommand(node *protocol.Node, connection *basenode.Connection, cmd protocol.Command) {
-	if s, ok := node.State.(*State); ok {
+	if s, ok := node.State().(*State); ok {
 		log.Info("Incoming command from server:", cmd)
 		if len(cmd.Args) == 0 {
 			return
@@ -129,17 +129,19 @@ func processCommand(node *protocol.Node, connection *basenode.Connection, cmd pr
 
 		switch cmd.Cmd {
 		case "on":
-			device.State = true
+			log.Info("got on")
+			device.SetState(true)
 			connection.Send <- node.Node()
 		case "off":
-			device.State = false
+			log.Info("got off")
+			device.SetState(false)
 			connection.Send <- node.Node()
 		case "toggle":
 			log.Info("got toggle")
 			if device.State {
-				device.State = false
+				device.SetState(false)
 			} else {
-				device.State = true
+				device.SetState(true)
 			}
 			connection.Send <- node.Node()
 		}

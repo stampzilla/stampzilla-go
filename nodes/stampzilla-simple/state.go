@@ -36,12 +36,6 @@ func (s *State) RemoveDevice(id [4]byte) {
 	delete(s.Devices, senderId)
 }
 
-func (s *State) GetState() interface{} {
-	s.Lock()
-	defer s.Unlock()
-	return s
-}
-
 func NewDevice(id, name string, state bool, dtype string) *Device {
 	d := &Device{Name: name, State: state, Type: dtype}
 	d.SetId(id)
@@ -60,5 +54,9 @@ func (d *Device) SetId(id string) {
 	d.Lock()
 	defer d.Unlock()
 	d.Id = id
-
+}
+func (d *Device) SetState(state bool) {
+	d.Lock()
+	defer d.Unlock()
+	d.State = state
 }
