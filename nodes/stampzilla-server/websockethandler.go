@@ -101,8 +101,8 @@ func (wh *WebsocketHandler) RunCommand(msg *websocket.Message) {
 }
 
 func (wh *WebsocketHandler) SendAllNodes() {
-	wh.Clients.SendToAll("all", wh.Nodes.All())
+	go wh.Clients.SendToAll("all", wh.Nodes.All())
 }
 func (wh *WebsocketHandler) SendSingleNode(uuid string) {
-	wh.Clients.SendToAll("singlenode", wh.Nodes.ByUuid(uuid))
+	go wh.Clients.SendToAll("singlenode", wh.Nodes.ByUuid(uuid))
 }
