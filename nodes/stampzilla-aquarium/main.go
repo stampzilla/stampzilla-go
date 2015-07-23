@@ -27,6 +27,7 @@ var state *State = &State{}
 var serverConnection *basenode.Connection
 var ard *SerialConnection
 var disp *SerialConnection
+var frameCount int
 
 func main() {
 	config := basenode.NewConfig()
@@ -50,6 +51,50 @@ func main() {
 		Name:     "Water temperature",
 		Feedback: `WaterTemperature`,
 	})
+	node.AddElement(&protocol.Element{
+		Type:     protocol.ElementTypeText,
+		Name:     "Water level - OK",
+		Feedback: `WaterLevelOk`,
+	})
+	node.AddElement(&protocol.Element{
+		Type:     protocol.ElementTypeText,
+		Name:     "Filter - OK",
+		Feedback: `FilterOk`,
+	})
+
+	node.AddElement(&protocol.Element{
+		Type:     protocol.ElementTypeText,
+		Name:     "Cooling",
+		Feedback: `Cooling`,
+	})
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeToggle,
+		Name: "Heating",
+		Command: &protocol.Command{
+			Cmd:  "Heating",
+			Args: []string{},
+		},
+		Feedback: `Heating`,
+	})
+
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeToggle,
+		Name: "Skimmer",
+		Command: &protocol.Command{
+			Cmd:  "Skimmer",
+			Args: []string{},
+		},
+		Feedback: `Skimmer`,
+	})
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeToggle,
+		Name: "Circulation pumps",
+		Command: &protocol.Command{
+			Cmd:  "CirculationPumps",
+			Args: []string{},
+		},
+		Feedback: `CirculationPumps`,
+	})
 
 	serverConnection = basenode.Connect()
 	go monitorState(serverConnection)
@@ -70,6 +115,13 @@ func main() {
 
 	go updateDisplay(serverConnection, disp)
 
+	go func() {
+		for {
+			fmt.Print("\r", frameCount)
+			<-time.After(time.Millisecond * 10)
+		}
+	}()
+
 	select {}
 }
 
@@ -77,7 +129,8 @@ var updateInhibit bool = false
 var changed bool = false
 
 func processArduinoData(msg string, connection *basenode.Connection) { // {{{
-	log.Debug(msg)
+	//log.Debug(msg)
+	frameCount++
 
 	var prevState State = *state
 
@@ -91,9 +144,9 @@ func processArduinoData(msg string, connection *basenode.Connection) { // {{{
 	if err != nil {
 		return
 	}
-	//if value != state.WaterTemperature {
-	//changed = true
-	//}
+	if value != state.WaterTemperature {
+		changed = true
+	}
 	state.WaterTemperature = value // }}}
 
 	// Filling stat0e // {{{
@@ -101,9 +154,9 @@ func processArduinoData(msg string, connection *basenode.Connection) { // {{{
 	if err != nil {
 		return
 	}
-	//if state.FillingTime != value {
-	//changed = true
-	//}
+	if state.FillingTime != value {
+		changed = true
+	}
 	state.FillingTime = value // }}}
 
 	// Cooling %// {{{
@@ -111,30 +164,41 @@ func processArduinoData(msg string, connection *basenode.Connection) { // {{{
 	if err != nil {
 		return
 	}
-	//if state.Cooling != value {
-	//changed = true
-	//}
+	if state.Cooling != value {
+		changed = true
+	}
 	state.Cooling = value // }}}
 
 	bits := values[3][0]
 
-	state.CirculationPumps = bits&0x01 > 0
-	state.Skimmer = bits&0x02 > 0
-	state.Heating = bits&0x04 > 0
+	state.CirculationPumps = bits&0x01 != 0
+	state.Skimmer = bits&0x02 != 0
+	state.Heating = bits&0x04 != 0
 	state.Filling = bits&0x08 == 0
 	state.WaterLevelOk = bits&0x0F == 0
 	state.FilterOk = bits&0x10 == 0
 
 	// Check if something have changed
-	changed = reflect.DeepEqual(prevState, *state)
+	if !reflect.DeepEqual(prevState, *state) {
+		changed = true
+	}
 
 	if !updateInhibit && changed {
 		changed = false
-		connection.Send <- node.Node()
+		//fmt.Print("\n")
+
+		go func() {
+			select {
+			case connection.Send <- node.Node():
+			case <-time.After(time.Second * 1):
+				log.Warn("TIMEOUT: Failed to send update to server")
+			}
+		}()
+
 		updateInhibit = true
 		//log.Warn("Invalid pacakge: ", msg)
 		go func() {
-			<-time.After(time.Millisecond * 100)
+			<-time.After(time.Millisecond * 200)
 			updateInhibit = false
 		}()
 	}
@@ -155,7 +219,7 @@ func updateDisplay(connection *basenode.Connection, serial *SerialConnection) { 
 			//}
 			if state.FillingTime > 0 {
 				wLevel = "FILL ERR"
-				if state.FillingTime < 10000 {
+				if state.FillingTime < 20000 {
 					wLevel = "FILLING"
 				}
 			}
@@ -212,27 +276,35 @@ func serverRecv(connection *basenode.Connection) { // {{{
 } // }}}
 
 func processCommand(cmd protocol.Command) error { // {{{
+	var target bool
+
 	if len(cmd.Args) < 1 {
-		return fmt.Errorf("Missing arguments, ignoring command")
+		if len(cmd.Params) < 1 {
+			return fmt.Errorf("Missing arguments, ignoring command")
+		} else {
+			target = cmd.Params[0] != "" && cmd.Params[0] != "false"
+		}
+	} else {
+		target = cmd.Args[0] != "" && cmd.Args[0] != "0"
 	}
 
 	switch cmd.Cmd {
 	case "CirculationPumps":
-		if cmd.Args[0] != "" && cmd.Args[0] != "0" {
+		if target {
 			ard.Port.Write([]byte{0x02, 0x01, 0x01, 0x03}) // Turn on
 		} else {
 			ard.Port.Write([]byte{0x02, 0x01, 0x00, 0x03}) // Turn off
 		}
 		break
 	case "Skimmer":
-		if cmd.Args[0] != "" && cmd.Args[0] != "0" {
+		if target {
 			ard.Port.Write([]byte{0x02, 0x02, 0x01, 0x03}) // Turn on
 		} else {
 			ard.Port.Write([]byte{0x02, 0x02, 0x00, 0x03}) // Turn off
 		}
 		break
 	case "Heating":
-		if cmd.Args[0] != "" && cmd.Args[0] != "0" {
+		if target {
 			ard.Port.Write([]byte{0x02, 0x03, 0x01, 0x03}) // Turn on
 		} else {
 			ard.Port.Write([]byte{0x02, 0x03, 0x00, 0x03}) // Turn off
@@ -308,7 +380,7 @@ func (config *SerialConnection) connect(connection *basenode.Connection, callbac
 
 			msg := strings.TrimSpace(incomming[:n])
 			incomming = incomming[n+1:]
-			//log.Info(msg)
+			fmt.Print(msg, "\r")
 
 			go callback(msg, connection)
 		}
