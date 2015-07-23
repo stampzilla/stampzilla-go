@@ -42,10 +42,6 @@ type Devices struct {
 	Devices map[string]*Device
 }
 
-func (c *Devices) GetState() interface{} {
-	return &c.Devices
-}
-
 func (d *Device) Changed() {
 	d.Fire("Updated")
 }

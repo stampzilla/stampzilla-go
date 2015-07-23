@@ -22,7 +22,3 @@ type State struct { /*{{{*/
 		Temperature float32
 	}
 } /*}}}*/
-
-func (s *State) GetState() interface{} {
-	return s
-}

@@ -96,7 +96,7 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 				node.SetConn(connection)
 				ns.updateState(logicChannel, &node)
 			} else {
-				existingNode.State = node.State
+				existingNode.SetState(node.State())
 				ns.updateState(logicChannel, existingNode)
 			}
 
@@ -126,7 +126,7 @@ func (ns *NodeServer) updateState(updateChan chan string, node *serverprotocol.N
 func (self *NodeServer) addServerNode() {
 	self.ServerNode.Name = "server"
 	self.ServerNode.Uuid = self.Config.Uuid
-	self.ServerNode.State = &self.State
+	self.ServerNode.SetState(self.State)
 
 	self.Nodes.Add(self.ServerNode)
 }

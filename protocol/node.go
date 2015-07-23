@@ -12,13 +12,13 @@ type Node struct { /*{{{*/
 	Actions  []*Action
 	Layout   []*Layout
 	Elements []*Element
-	State    interface{}
+	State_   interface{} `json:"State"`
 	sync.RWMutex
 } /*}}}*/
 
-type State interface {
-	GetState() interface{}
-}
+//type State interface {
+//GetState() interface{}
+//}
 
 func NewNode(name string) *Node {
 	return &Node{
@@ -51,10 +51,15 @@ func (n *Node) AddElement(el *Element) {
 	n.Unlock()
 }
 
-func (n *Node) SetState(state State) {
+func (n *Node) SetState(state interface{}) {
 	n.Lock()
-	n.State = state
+	n.State_ = state
 	n.Unlock()
+}
+func (n *Node) State() interface{} {
+	n.RLock()
+	defer n.RUnlock()
+	return n.State_
 }
 func (n *Node) Node() *Node {
 	n.RLock()

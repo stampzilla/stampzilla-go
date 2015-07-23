@@ -53,7 +53,3 @@ func (c *Registers) ReadFromFile(filepath string) error {
 	*c = *registers
 	return nil
 }
-
-func (c *Registers) GetState() interface{} {
-	return c
-}

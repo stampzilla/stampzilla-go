@@ -43,12 +43,6 @@ func (s *State) RemoveDevice(id [4]byte) {
 	delete(s.Lamps, senderId)
 }
 
-func (s *State) GetState() interface{} {
-	s.Lock()
-	defer s.Unlock()
-	return s
-}
-
 func NewLamp(id, name string) *Lamp {
 	d := &Lamp{Name: name}
 	d.SetId(id)
