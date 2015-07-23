@@ -8,9 +8,9 @@ install:
   - go get golang.org/x/tools/cmd/cover
   - go get github.com/mattn/goveralls
   - curl -sLOf https://raw.githubusercontent.com/stampzilla/stampzilla-go/master/coverage
-  - go get -d -v ./nodes/stampzilla-server/...
+  - go get -d -v ./...
 
 script: 
-  - go test -v ./nodes/stampzilla-server/...
+  - go test -v `go list ./... | grep -v telldus-events`
   - bash coverage  
   - goveralls -coverprofile=./nodes/stampzilla-server/gover.coverprofile -service travis-ci
