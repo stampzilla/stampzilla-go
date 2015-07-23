@@ -10,7 +10,7 @@ import (
 	"strings"
 	"sync"
 
-	"code.google.com/p/go-uuid/uuid"
+	"github.com/pborman/uuid"
 
 	log "github.com/cihub/seelog"
 	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"

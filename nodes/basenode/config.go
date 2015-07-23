@@ -7,8 +7,8 @@ import (
 	"flag"
 	"os"
 
-	"code.google.com/p/go-uuid/uuid"
 	log "github.com/cihub/seelog"
+	"github.com/pborman/uuid"
 )
 
 var config = &Config{}

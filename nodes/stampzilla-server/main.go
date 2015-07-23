@@ -5,11 +5,10 @@ import (
 	"encoding/json"
 	"os"
 
-	"code.google.com/p/go-uuid/uuid"
-
 	log "github.com/cihub/seelog"
 	"github.com/facebookgo/inject"
 	"github.com/koding/multiconfig"
+	"github.com/pborman/uuid"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/logic"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/metrics"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"

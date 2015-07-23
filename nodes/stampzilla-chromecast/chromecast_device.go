@@ -4,7 +4,7 @@ import (
 	"net"
 	"time"
 
-	"code.google.com/p/go-uuid/uuid"
+	"github.com/pborman/uuid"
 
 	log "github.com/cihub/seelog"
 	"github.com/davecgh/go-spew/spew"

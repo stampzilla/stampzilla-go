@@ -6,9 +6,9 @@ import (
 	"os"
 	"sync"
 
-	"code.google.com/p/go-uuid/uuid"
 	log "github.com/cihub/seelog"
 	"github.com/jonaz/cron"
+	"github.com/pborman/uuid"
 	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
