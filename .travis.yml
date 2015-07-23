@@ -13,4 +13,4 @@ install:
 script: 
   - go test -v `go list ./... | grep -v telldus-events`
   - bash coverage  
-  - goveralls -coverprofile=./nodes/stampzilla-server/gover.coverprofile -service travis-ci
+  - goveralls -coverprofile=./gover.coverprofile -service travis-ci
