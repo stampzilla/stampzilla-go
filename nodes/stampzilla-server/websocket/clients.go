@@ -2,8 +2,8 @@ package websocket
 
 import (
 	"encoding/json"
-	"fmt"
 	"sync"
+	"time"
 
 	log "github.com/cihub/seelog"
 	"github.com/go-martini/martini"
@@ -54,7 +54,12 @@ func (r *Clients) SendToAll(t string, data interface{}) {
 	r.Lock()
 	defer r.Unlock()
 	for _, c := range r.clients {
-		c.out <- msg
+		select {
+		case c.out <- msg:
+			// Everything went well :)
+		case <-time.After(time.Second):
+			log.Warn("Failed writing to websocket: timeout (", c.Name, ")")
+		}
 	}
 }
 
@@ -97,9 +102,9 @@ func (clients *Clients) WebsocketRoute(params martini.Params, receiver <-chan *M
 			// Use the error for statistics etc
 		case msg := <-client.in:
 			//TODO implement command from websocket here. using same process as WebHandlerCommandToNode
-			fmt.Println("incoming message from webui on websocket", msg)
-			clients.Router.Run(msg)
 
+			log.Info("incoming message from webui on websocket", string(msg.Data))
+			clients.Router.Run(msg)
 		case <-client.done:
 			clients.removeClient(client)
 			return 200, "OK"
