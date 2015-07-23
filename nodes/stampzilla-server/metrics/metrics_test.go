@@ -3,6 +3,7 @@ package metrics
 import (
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -208,8 +209,13 @@ func getState() State {
 
 func TestUpdate(t *testing.T) {
 
+	var wg sync.WaitGroup
 	m := New()
-	l := &LoggerStub{T: t, lastValues: make(map[string]interface{})}
+	l := &LoggerStub{
+		T:          t,
+		lastValues: make(map[string]interface{}),
+		wg:         &wg,
+	}
 	m.AddLogger(l)
 	m.Start()
 
@@ -220,12 +226,15 @@ func TestUpdate(t *testing.T) {
 	node.Uuid = "123-123"
 	node.SetState(state)
 
+	wg.Add(1)
 	m.Update(node)
 
 	state.Sensors["1"].Temp = 100
+	wg.Add(1)
 	m.Update(node)
 
 	state.Sensors["2"].Temp = 100
+	wg.Add(1)
 	m.Update(node)
 
 	// Adding an new sensor
@@ -236,17 +245,17 @@ func TestUpdate(t *testing.T) {
 		42,
 	}
 	state.Sensors["3"] = sensor3
+	wg.Add(1)
 	m.Update(node)
 
 	// Test to delete that same sensor again
 	delete(state.Sensors, "3")
 	m.Update(node)
 
-	//Wait for all metric.Log calls to finnish
-	time.Sleep(100 * time.Millisecond)
+	WaitOrTimeout(t, &wg, time.Second)
 
-	if l.logcount != 20 {
-		t.Errorf("Expected Log to have ran 20 time got: %d", l.logcount)
+	if l.Logcount() != 20 {
+		t.Errorf("Expected Log to have ran 20 time got: %d", l.Logcount())
 	}
 	if l.commitcount != 4 {
 		t.Errorf("Expected Commit to have ran 4 time got: %d", l.commitcount)
@@ -277,8 +286,14 @@ func TestUpdate(t *testing.T) {
 
 func TestUpdateSameValueVeryFast(t *testing.T) {
 
+	var wg sync.WaitGroup
+
 	m := New()
-	l := &LoggerStub{T: t, lastValues: make(map[string]interface{})}
+	l := &LoggerStub{
+		T:          t,
+		lastValues: make(map[string]interface{}),
+		wg:         &wg,
+	}
 	m.AddLogger(l)
 	m.Start()
 
@@ -289,16 +304,18 @@ func TestUpdateSameValueVeryFast(t *testing.T) {
 	node.Uuid = "123-123"
 	node.SetState(state)
 
+	wg.Add(1)
 	m.Update(node)
 
 	state.Sensors["1"].Temp = 100
+	wg.Add(1)
 	m.Update(node)
 
 	state.Sensors["1"].Temp = 101
+	wg.Add(1)
 	m.Update(node)
 
-	//Wait for all metric.Log calls to finnish
-	time.Sleep(100 * time.Millisecond)
+	WaitOrTimeout(t, &wg, time.Second)
 
 	expectedKeys := []string{
 		"123-123_Node_State_Sensors_1_Temp 24",
@@ -307,7 +324,22 @@ func TestUpdateSameValueVeryFast(t *testing.T) {
 	}
 
 	for _, v := range expectedKeys {
-		assertSliceHas(t, v, l.logged)
+		assertSliceHas(t, v, l.Logged())
+	}
+}
+
+func WaitOrTimeout(t *testing.T, wg *sync.WaitGroup, timeout time.Duration) {
+	//Wait for all metric.Log calls to finish
+	done := make(chan bool)
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(timeout):
+		t.Errorf("TIMEOUT, not all metrics.Update calls finished in time")
 	}
 }
 
@@ -317,16 +349,32 @@ type LoggerStub struct {
 	T           *testing.T
 	lastValues  map[string]interface{}
 	logged      []string
+	wg          *sync.WaitGroup
+	sync.RWMutex
 }
 
 func (m *LoggerStub) Log(key string, value interface{}) {
+	m.Lock()
+	defer m.Unlock()
 	m.T.Log("Log: ", key, value)
 	m.logcount++
 	m.lastValues[key] = value
 	m.logged = append(m.logged, fmt.Sprint(key, " ", value))
 }
+func (m *LoggerStub) Logcount() int {
+	m.RLock()
+	defer m.RUnlock()
+	return m.logcount
+}
+func (m *LoggerStub) Logged() []string {
+	m.RLock()
+	defer m.RUnlock()
+	return m.logged
+}
 func (m *LoggerStub) Commit(node interface{}) {
+	m.Lock()
+	defer m.Unlock()
 	m.T.Log("Commit")
-	//log.Info(node)
 	m.commitcount++
+	m.wg.Done()
 }
