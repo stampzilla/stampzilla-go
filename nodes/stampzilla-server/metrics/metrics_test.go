@@ -5,6 +5,7 @@ import (
 	"os"
 	"sync"
 	"testing"
+	"time"
 
 	log "github.com/cihub/seelog"
 	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
@@ -251,7 +252,7 @@ func TestUpdate(t *testing.T) {
 	delete(state.Sensors, "3")
 	m.Update(node)
 
-	wg.Wait()
+	WaitOrTimeout(t, &wg, time.Second)
 
 	if l.Logcount() != 20 {
 		t.Errorf("Expected Log to have ran 20 time got: %d", l.Logcount())
@@ -314,8 +315,7 @@ func TestUpdateSameValueVeryFast(t *testing.T) {
 	wg.Add(1)
 	m.Update(node)
 
-	//Wait for all metric.Log calls to finnish
-	wg.Wait()
+	WaitOrTimeout(t, &wg, time.Second)
 
 	expectedKeys := []string{
 		"123-123_Node_State_Sensors_1_Temp 24",
@@ -325,6 +325,21 @@ func TestUpdateSameValueVeryFast(t *testing.T) {
 
 	for _, v := range expectedKeys {
 		assertSliceHas(t, v, l.Logged())
+	}
+}
+
+func WaitOrTimeout(t *testing.T, wg *sync.WaitGroup, timeout time.Duration) {
+	//Wait for all metric.Log calls to finish
+	done := make(chan bool)
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(timeout):
+		t.Errorf("TIMEOUT, not all metrics.Update calls finished in time")
 	}
 }
 
