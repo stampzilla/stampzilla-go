@@ -247,7 +247,7 @@ func TestListenForChanges(t *testing.T) {
 
 	c := logic.ListenForChanges("uuid1234")
 
-	node := &serverprotocol.Node{}
+	node := serverprotocol.NewNode()
 	state := `
 		{
 			"Devices": {
@@ -266,7 +266,9 @@ func TestListenForChanges(t *testing.T) {
 			}
 		}
 	`
-	_ = json.Unmarshal([]byte(state), &node.State_)
+	var tmp interface{}
+	_ = json.Unmarshal([]byte(state), &tmp)
+	node.SetState(tmp)
 
 	logic.Update(c, node)
 	//logic.SetState("uuid1234", state)
@@ -290,7 +292,8 @@ func TestListenForChanges(t *testing.T) {
 			}
 		}
 	`
-	err := json.Unmarshal([]byte(state), &node.State_)
+	err := json.Unmarshal([]byte(state), &tmp)
+	node.SetState(tmp)
 	if err != nil {
 		log.Println(err)
 		return

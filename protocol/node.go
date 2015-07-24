@@ -6,8 +6,8 @@ import (
 )
 
 type Node struct { /*{{{*/
-	Name     string
-	Uuid     string
+	Name_    string `json:"Name"`
+	Uuid_    string `json:"Uuid"`
 	Host     string
 	Actions  []*Action
 	Layout   []*Layout
@@ -22,9 +22,7 @@ type Node struct { /*{{{*/
 
 func NewNode(name string) *Node {
 	return &Node{
-		Name:    name,
-		Uuid:    "",
-		Host:    "",
+		Name_:   name,
 		Actions: []*Action{},
 		Layout:  []*Layout{}}
 }
@@ -65,6 +63,26 @@ func (n *Node) Node() *Node {
 	n.RLock()
 	defer n.RUnlock()
 	return n
+}
+func (n *Node) Uuid() string {
+	n.RLock()
+	defer n.RUnlock()
+	return n.Uuid_
+}
+func (n *Node) Name() string {
+	n.RLock()
+	defer n.RUnlock()
+	return n.Name_
+}
+func (n *Node) SetUuid(uuid string) {
+	n.Lock()
+	defer n.Unlock()
+	n.Uuid_ = uuid
+}
+func (n *Node) SetName(name string) {
+	n.Lock()
+	defer n.Unlock()
+	n.Name_ = name
 }
 
 func (n *Node) JsonEncode() (string, error) {

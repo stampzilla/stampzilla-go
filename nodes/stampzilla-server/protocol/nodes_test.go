@@ -9,9 +9,9 @@ import (
 func TestSearch(t *testing.T) {
 	nodes := NewNodes()
 
-	node := &Node{}
-	node.Name = "Test"
-	node.Uuid = "testuuid"
+	node := &node{}
+	node.SetName("Test")
+	node.SetUuid("testuuid")
 
 	nodes.Add(node)
 
@@ -33,9 +33,9 @@ func TestSearch(t *testing.T) {
 }
 func TestDelete(t *testing.T) {
 	nodes := NewNodes()
-	node := &Node{}
-	node.Name = "Test"
-	node.Uuid = "testuuid"
+	node := &node{}
+	node.SetName("Test")
+	node.SetUuid("testuuid")
 	nodes.Add(node)
 
 	nodes.Delete("testuuid")
@@ -50,9 +50,9 @@ func TestWrite(t *testing.T) {
 	cli, srv := net.Pipe()
 	defer cli.Close()
 
-	node := &Node{}
-	node.Name = "Test"
-	node.Uuid = "testuuid"
+	node := &node{}
+	node.SetName("Test")
+	node.SetUuid("testuuid")
 	node.SetConn(cli)
 
 	go func() {

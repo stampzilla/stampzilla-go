@@ -113,7 +113,7 @@ func (l *Logic) ListenForChanges(uuid string) chan string {
 	return c
 }
 
-func (l *Logic) Update(updateChannel chan string, node *serverprotocol.Node) {
+func (l *Logic) Update(updateChannel chan string, node serverprotocol.Node) {
 	state, err := json.Marshal(node.State())
 	if err != nil {
 		log.Error(err)

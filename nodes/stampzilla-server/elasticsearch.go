@@ -15,12 +15,12 @@ type ElasticSearch struct {
 	Config *ServerConfig         `inject:""`
 	Nodes  *serverprotocol.Nodes `inject:""`
 
-	StateUpdates chan *serverprotocol.Node // JSON encoded state updates from the
+	StateUpdates chan serverprotocol.Node // JSON encoded state updates from the
 }
 
 func NewElasticSearch() *ElasticSearch {
 	return &ElasticSearch{
-		StateUpdates: make(chan *serverprotocol.Node, 20),
+		StateUpdates: make(chan serverprotocol.Node, 20),
 	}
 }
 
@@ -42,13 +42,13 @@ func (self *ElasticSearch) Log(key string, value interface{}) {
 }
 func (self *ElasticSearch) Commit(node interface{}) {
 	if node, ok := node.(serverprotocol.Node); ok {
-		self.StateUpdates <- &node
+		self.StateUpdates <- node
 	}
 }
 
 // END - METRIC LOGGER INTERFACE
 
-func (self *ElasticSearch) pushUpdate(update *serverprotocol.Node) {
+func (self *ElasticSearch) pushUpdate(update serverprotocol.Node) {
 
 	type Item struct {
 		Name      string      `json:"name"`
@@ -59,9 +59,9 @@ func (self *ElasticSearch) pushUpdate(update *serverprotocol.Node) {
 	}
 
 	item := &Item{
-		Name:      update.Name,
-		Uuid:      update.Uuid,
-		State:     update.State,
+		Name:      update.Name(),
+		Uuid:      update.Uuid(),
+		State:     update.State(),
 		Timestamp: time.Now().UTC().Format("2006-01-02T15:04:05") + ".000Z",
 		Version:   "1",
 	}
@@ -72,7 +72,7 @@ func (self *ElasticSearch) pushUpdate(update *serverprotocol.Node) {
 		return
 	}
 
-	url := self.Config.ElasticSearch + "/" + update.Name
+	url := self.Config.ElasticSearch + "/" + update.Name()
 	//log.Debug("URL:>", url)
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
