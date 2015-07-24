@@ -58,7 +58,7 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 	//encoder := json.NewEncoder(os.Stdout)
 	var logicChannel chan string
 	for {
-		var node serverprotocol.Node
+		node := serverprotocol.NewNode()
 		err := decoder.Decode(&node)
 
 		if err != nil {

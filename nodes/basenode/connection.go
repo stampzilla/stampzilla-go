@@ -63,7 +63,7 @@ func sendWorker(connection net.Conn, send chan interface{}, quit chan bool) {
 		case d := <-send:
 
 			if a, ok := d.(*protocol.Node); ok {
-				a.Uuid = config.Uuid
+				a.SetUuid(config.Uuid)
 				err = encoder.Encode(a.Node())
 			} else {
 				err = encoder.Encode(d)
