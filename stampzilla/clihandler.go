@@ -199,7 +199,7 @@ func (t *cliHandler) getRunningProcesses() []*Process {
 		if file.IsDir() {
 			continue
 		}
-		process := NewProcess(file.Name(), "")
+		process := NewProcess(strings.TrimSuffix(file.Name(), ".pid"), "")
 		process.Pid = process.Pidfile.read()
 		processes = append(processes, process)
 	}
