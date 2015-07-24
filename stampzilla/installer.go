@@ -12,12 +12,12 @@ import (
 type Installer struct {
 }
 
-func (t *Installer) config() {
-	fmt.Print("Creating config /etc/stampzilla.conf... ")
-	if _, err := os.Stat("/etc/stampzilla.conf"); os.IsNotExist(err) {
+func (t *Installer) createConfig() {
+	fmt.Print("Creating config /etc/stampzilla/nodes.conf... ")
+	if _, err := os.Stat("/etc/stampzilla/nodes.conf"); os.IsNotExist(err) {
 		config := &Config{}
 		config.generateDefault()
-		config.SaveToFile("/etc/stampzilla.conf")
+		config.SaveToFile("/etc/stampzilla/nodes.conf")
 		fmt.Println("DONE")
 	} else {
 		fmt.Println("Already exists, Skipping!")

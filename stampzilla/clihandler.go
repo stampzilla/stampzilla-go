@@ -21,6 +21,12 @@ type cliHandler struct {
 func (t *cliHandler) Install(c *cli.Context) {
 	requireRoot()
 
+	nodes, err := ioutil.ReadDir("/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/")
+	if err != nil {
+		fmt.Println("Found no nodes. installing stampzilla cli first!")
+		t.Installer.goGet("github.com/stampzilla/stampzilla-go/stampzilla", c.Bool("u"))
+	}
+
 	if c.Bool("u") {
 		fmt.Println("Updating stampzilla")
 	} else {
@@ -29,17 +35,14 @@ func (t *cliHandler) Install(c *cli.Context) {
 		// Create required user and folders
 		t.Installer.createUser("stampzilla")
 		t.Installer.createDirAsUser("/var/spool/stampzilla", "stampzilla")
-		t.Installer.createDirAsUser("/var/spool/stampzilla/config", "stampzilla")
+		//t.Installer.createDirAsUser("/var/spool/stampzilla/config", "stampzilla")
 		t.Installer.createDirAsUser("/var/log/stampzilla", "stampzilla")
 		t.Installer.createDirAsUser("/home/stampzilla/go", "stampzilla")
-		t.Installer.config()
+		t.Installer.createDirAsUser("/etc/stampzilla", "stampzilla")
+		t.Installer.createDirAsUser("/etc/stampzilla/nodes", "stampzilla")
+		t.Installer.createConfig()
 	}
 
-	nodes, err := ioutil.ReadDir("/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/")
-	if err != nil {
-		fmt.Println("Found no nodes. installing stampzilla cli first!")
-		t.Installer.goGet("github.com/stampzilla/stampzilla-go/stampzilla", c.Bool("u"))
-	}
 	nodes, err = ioutil.ReadDir("/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/")
 	if err != nil {
 		fmt.Println(err)
@@ -51,6 +54,7 @@ func (t *cliHandler) Install(c *cli.Context) {
 			continue
 		}
 
+		//Skip telldus-events since it contains C bindings if we dont explicly requests it to install
 		if len(c.Args()) == 0 && node.Name() == "stampzilla-telldus-events" {
 			continue
 		}
@@ -61,6 +65,7 @@ func (t *cliHandler) Install(c *cli.Context) {
 
 		t.Installer.goGet("github.com/stampzilla/stampzilla-go/nodes/"+node.Name(), c.Bool("u"))
 
+		//Run bower install to set up javascript and polymer if we are installing the server.
 		if node.Name() == "stampzilla-server" && !c.Bool("u") {
 			t.Installer.bower()
 		}
@@ -81,10 +86,9 @@ func (t *cliHandler) findNodeInArgs(c *cli.Context, node string) bool {
 func (t *cliHandler) Start(c *cli.Context) {
 	requireRoot()
 
-	t.Config.readConfigFromFile("/etc/stampzilla.conf")
+	t.Config.readConfigFromFile("/etc/stampzilla/nodes.conf")
 
-	what := c.Args().First()
-	if what != "" {
+	if c.Args().First() != "" {
 		for _, what := range c.Args() {
 			t.start(what)
 		}
@@ -100,12 +104,7 @@ func (t *cliHandler) start(what string) {
 	if dir := t.Config.GetConfigForNode(what); dir != nil {
 		cdir = dir.Config
 	}
-	process := &Process{
-		Pidfile: PidFile("/var/spool/stampzilla/" + what + ".pid"),
-		Name:    "stampzilla-" + what,
-		Command: "stampzilla-" + what,
-		ConfDir: cdir,
-	}
+	process := NewProcess(what, cdir)
 	process.start()
 }
 
@@ -115,11 +114,7 @@ func (t *cliHandler) Stop(c *cli.Context) {
 	what := c.Args().First()
 	if what != "" {
 		for _, what := range c.Args() {
-			process := &Process{
-				Pidfile: PidFile("/var/spool/stampzilla/" + what + ".pid"),
-				Name:    "stampzilla-" + what,
-				Command: "stampzilla-" + what,
-			}
+			process := NewProcess(what, "")
 			process.stop()
 		}
 		return
@@ -165,7 +160,7 @@ func (t *cliHandler) Debug(c *cli.Context) {
 	if err != nil {
 		fmt.Printf("LookPath Error: %s", err)
 	}
-	t.Config.readConfigFromFile("/etc/stampzilla.conf")
+	t.Config.readConfigFromFile("/etc/stampzilla/nodes.conf")
 	chdircmd := ""
 	if dir := t.Config.GetConfigForNode(what); dir != nil {
 		i := &Installer{}
@@ -204,11 +199,8 @@ func (t *cliHandler) getRunningProcesses() []*Process {
 		if file.IsDir() {
 			continue
 		}
-		pidFile := PidFile("/var/spool/stampzilla/" + file.Name())
-		pid := pidFile.read()
-		process := &Process{Pid: pid}
-		process.Pidfile = pidFile
-		process.Name = file.Name()
+		process := NewProcess(file.Name(), "")
+		process.Pid = process.Pidfile.read()
 		processes = append(processes, process)
 	}
 

@@ -8,23 +8,29 @@ import (
 )
 
 type Process struct {
-	Name     string
-	Command  string
-	Args     []string
-	Pidfile  PidFile
-	Logfile  string
-	ConfDir  string
-	Respawn  int
-	Pid      int
-	Status   *ProcessStatus
-	process  *os.Process
-	respawns int
+	Name    string
+	Command string
+	Args    []string
+	Pidfile PidFile
+	ConfDir string
+	Pid     int
+	Status  *ProcessStatus
+	process *os.Process
 }
 
 type ProcessStatus struct {
 	Running bool
 	CPU     string
 	Memory  string
+}
+
+func NewProcess(name, configDir string) *Process {
+	return &Process{
+		Pidfile: PidFile("/var/spool/stampzilla/" + name + ".pid"),
+		Name:    "stampzilla-" + name,
+		Command: "stampzilla-" + name,
+		ConfDir: configDir,
+	}
 }
 
 func (p *Process) start() {
