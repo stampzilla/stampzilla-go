@@ -11,6 +11,7 @@ import (
 	"github.com/martini-contrib/encoder"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/logic"
 	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/servernode"
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
@@ -96,11 +97,22 @@ func (wh *WebHandler) GetReload() (int, []byte) {
 }
 
 func (wh *WebHandler) GetServerTrigger(params martini.Params) (int, []byte) {
-	wh.NodeServer.Trigger(params["key"], params["value"])
-	return 200, encoder.Must(json.Marshal(wh.NodeServer.State))
+
+	if node, ok := wh.Nodes.ByName("server").(*servernode.Node); ok {
+		node.Set(params["key"], params["value"])
+		wh.NodeServer.updateState(node.LogicChannel(), node)
+		node.Reset(params["key"])
+		wh.NodeServer.updateState(node.LogicChannel(), node)
+		return 200, encoder.Must(json.Marshal(node.State()))
+	}
+	return 500, []byte("node server is wrong type")
 }
 
 func (wh *WebHandler) GetServerSet(params martini.Params) (int, []byte) {
-	wh.NodeServer.Set(params["key"], params["value"])
-	return 200, encoder.Must(json.Marshal(wh.NodeServer.State))
+	if node, ok := wh.Nodes.ByName("server").(*servernode.Node); ok {
+		node.Set(params["key"], params["value"])
+		wh.NodeServer.updateState(node.LogicChannel(), node)
+		return 200, encoder.Must(json.Marshal(node.State()))
+	}
+	return 500, []byte("node server is wrong type")
 }

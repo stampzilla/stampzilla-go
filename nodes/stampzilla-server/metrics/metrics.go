@@ -21,7 +21,7 @@ type Metrics struct {
 }
 
 type UpdatePackage struct {
-	Node  *serverprotocol.Node
+	Node  serverprotocol.Node
 	State map[string]interface{}
 }
 
@@ -51,8 +51,8 @@ func (m *Metrics) worker() {
 
 /* ----[ handle updates ]------------------------------------------*/
 
-func (m *Metrics) Update(node *serverprotocol.Node) {
-	current := structToMetrics(node.Uuid+"_Node_State", node.State())
+func (m *Metrics) Update(node serverprotocol.Node) {
+	current := structToMetrics(node.Uuid()+"_Node_State", node.State())
 	//current := structToMetrics(node.Uuid, node) //DO we want this instead? It will also logg Node.Uuid, Node.Elements etc... i think not!
 
 	data := UpdatePackage{
@@ -63,7 +63,7 @@ func (m *Metrics) Update(node *serverprotocol.Node) {
 	m.queue <- data
 }
 
-func (m *Metrics) update(node *serverprotocol.Node, current map[string]interface{}) {
+func (m *Metrics) update(node serverprotocol.Node, current map[string]interface{}) {
 	if len(m.loggers) == 0 {
 		return
 	}
