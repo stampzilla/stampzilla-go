@@ -42,13 +42,13 @@ func (n *Node) Write(b []byte) {
 
 //  TODO: write tests for Nodes struct (jonaz) <Fri 10 Oct 2014 04:31:22 PM CEST>
 type Nodes struct {
-	nodes map[string]*Node
+	nodes []*Node
 	sync.RWMutex
 }
 
 func NewNodes() *Nodes {
 	n := &Nodes{}
-	n.nodes = make(map[string]*Node)
+	n.nodes = make([]*Node, 0)
 	return n
 }
 
@@ -74,12 +74,16 @@ func (n *Nodes) Search(nameoruuid string) *Node {
 func (n *Nodes) ByUuid(uuid string) *Node {
 	n.RLock()
 	defer n.RUnlock()
-	if node, ok := n.nodes[uuid]; ok {
-		return node
+
+	for _, node := range n.nodes {
+		if node.Uuid == uuid {
+			return node
+		}
 	}
+
 	return nil
 }
-func (n *Nodes) All() map[string]*Node {
+func (n *Nodes) All() []*Node {
 	n.RLock()
 	defer n.RUnlock()
 	return n.nodes
@@ -87,10 +91,15 @@ func (n *Nodes) All() map[string]*Node {
 func (n *Nodes) Add(node *Node) {
 	n.Lock()
 	defer n.Unlock()
-	n.nodes[node.Uuid] = node
+	n.nodes = append(n.nodes, node)
 }
 func (n *Nodes) Delete(uuid string) {
 	n.Lock()
 	defer n.Unlock()
-	delete(n.nodes, uuid)
+	for i, node := range n.nodes {
+		if node.Uuid == uuid {
+			n.nodes = append(n.nodes[:i], n.nodes[i+1:]...)
+			return
+		}
+	}
 }
