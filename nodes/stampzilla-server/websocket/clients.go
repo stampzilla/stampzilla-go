@@ -53,14 +53,23 @@ func (r *Clients) SendToAll(t string, data interface{}) {
 
 	r.Lock()
 	defer r.Unlock()
+	clientsToRemove := make([]*Client, 0)
+
 	for _, c := range r.clients {
 		select {
 		case c.out <- msg:
 			// Everything went well :)
 		case <-time.After(time.Second):
 			log.Warn("Failed writing to websocket: timeout (", c.Name, ")")
+			clientsToRemove = append(clientsToRemove, c)
 		}
 	}
+
+	go func() {
+		for _, c := range clientsToRemove {
+			r.removeClient(c)
+		}
+	}()
 }
 
 // Remove a client
@@ -70,6 +79,7 @@ func (r *Clients) removeClient(client *Client) {
 
 	for index, c := range r.clients {
 		if c == client {
+			c.disconnect <- websocket.CloseInternalServerErr
 			r.clients = append(r.clients[:index], r.clients[(index+1):]...)
 		}
 	}
