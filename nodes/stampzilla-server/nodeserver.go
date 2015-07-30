@@ -78,6 +78,7 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 				if uuid != "" {
 					ns.Nodes.Delete(uuid)
 					close(logicChannel)
+					log.Info(name, " - Removing node from nodes list")
 				}
 				//TODO be able to not send everything always. perhaps implement remove instead of all?
 				ns.WebsocketHandler.SendAllNodes()
