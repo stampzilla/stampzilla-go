@@ -62,35 +62,35 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 		err := decoder.Decode(&node)
 
 		if err != nil {
-			if err.Error() == "EOF" {
-				log.Info(name, " - Client disconnected")
-				if uuid != "" {
-					ns.Nodes.Delete(uuid)
-					close(logicChannel)
-				}
-				//TODO be able to not send everything always. perhaps implement remove instead of all?
-				ns.WebsocketHandler.SendAllNodes()
-				return
+			//if err.Error() == "EOF" {
+			log.Info(name, " - Client disconnected with error:", err.Error())
+			if uuid != "" {
+				ns.Nodes.Delete(uuid)
+				close(logicChannel)
 			}
-			log.Warn("Not disconnect but error: ", err)
-			//return here?
-		} else {
-			name = node.Name()
-			uuid = node.Uuid()
-
-			existingNode := ns.Nodes.ByUuid(uuid)
-			if existingNode == nil {
-				ns.Nodes.Add(node)
-				logicChannel = ns.Logic.ListenForChanges(node.Uuid())
-				node.SetConn(connection)
-				ns.updateState(logicChannel, node)
-			} else {
-				existingNode.SetState(node.State())
-				ns.updateState(logicChannel, existingNode)
-			}
-
-			ns.WebsocketHandler.SendSingleNode(uuid)
+			//TODO be able to not send everything always. perhaps implement remove instead of all?
+			ns.WebsocketHandler.SendAllNodes()
+			//return
+			//}
+			//log.Warn("Not disconnect but error: ", err)
+			return
 		}
+
+		name = node.Name()
+		uuid = node.Uuid()
+
+		existingNode := ns.Nodes.ByUuid(uuid)
+		if existingNode == nil {
+			ns.Nodes.Add(node)
+			logicChannel = ns.Logic.ListenForChanges(node.Uuid())
+			node.SetConn(connection)
+			ns.updateState(logicChannel, node)
+		} else {
+			existingNode.SetState(node.State())
+			ns.updateState(logicChannel, existingNode)
+		}
+
+		ns.WebsocketHandler.SendSingleNode(uuid)
 	}
 }
 
