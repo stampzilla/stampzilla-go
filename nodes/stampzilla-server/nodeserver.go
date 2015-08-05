@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"io"
 	"net"
 
 	log "github.com/cihub/seelog"
@@ -62,17 +63,18 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 		err := decoder.Decode(&node)
 
 		if err != nil {
-			//if err.Error() == "EOF" {
-			log.Info(name, " - Client disconnected with error:", err.Error())
-			if uuid != "" {
-				ns.Nodes.Delete(uuid)
-				close(logicChannel)
+			//If the error was a network error we have disconnected. Otherwise it might be a json decode error
+			if neterr, ok := err.(net.Error); (ok && !neterr.Temporary()) || err == io.EOF {
+				log.Info(name, " - Client disconnected with error:", err.Error())
+				if uuid != "" {
+					ns.Nodes.Delete(uuid)
+					close(logicChannel)
+				}
+				//TODO be able to not send everything always. perhaps implement remove instead of all?
+				ns.WebsocketHandler.SendAllNodes()
+				return
 			}
-			//TODO be able to not send everything always. perhaps implement remove instead of all?
-			ns.WebsocketHandler.SendAllNodes()
-			//return
-			//}
-			//log.Warn("Not disconnect but error: ", err)
+			log.Warn("Not a net.Error but error: ", err)
 			return
 		}
 
