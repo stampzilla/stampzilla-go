@@ -52,14 +52,14 @@ func TestDispatch(t *testing.T) {
 		router.Dispatch(Notification{
 			Source:     "RouterTest",
 			SourceUuid: "123-123",
-			Level:      "Warning",
+			Level:      NewNotificationLevel("Warning"),
 			Message:    "Test message",
 		})
 
 		router.Dispatch(Notification{
 			Source:     "RouterTest",
 			SourceUuid: "123-123",
-			Level:      "Error",
+			Level:      NewNotificationLevel("Error"),
 			Message:    "Test message",
 		})
 	}
@@ -70,7 +70,7 @@ func TestDispatch(t *testing.T) {
 	transport.haveRecived(Notification{
 		Source:     "RouterTest",
 		SourceUuid: "123-123",
-		Level:      "Warning",
+		Level:      NewNotificationLevel("Warning"),
 		Message:    "Test message",
 	}, 150)
 
@@ -78,7 +78,7 @@ func TestDispatch(t *testing.T) {
 	transport.haveRecived(Notification{
 		Source:     "RouterTest",
 		SourceUuid: "123-123",
-		Level:      "Error",
+		Level:      NewNotificationLevel("Error"),
 		Message:    "Test message",
 	}, 0)
 }

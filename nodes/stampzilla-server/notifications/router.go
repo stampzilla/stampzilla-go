@@ -12,7 +12,7 @@ import (
 type Router struct {
 	Config RouterConfig
 
-	transports map[string][]Transport
+	transports map[NotificationLevel][]Transport
 }
 
 type RouterConfig struct {
@@ -22,7 +22,7 @@ type RouterConfig struct {
 
 func NewRouter() *Router {
 	return &Router{
-		transports: make(map[string][]Transport),
+		transports: make(map[NotificationLevel][]Transport),
 		Config: RouterConfig{
 			Transports: make(map[string]interface{}),
 			Routes:     make(map[string][]string),
@@ -75,7 +75,8 @@ func (self *Router) AddTransport(t interface{}, levels []string) {
 	if transport, ok := t.(Transport); ok {
 		for _, level := range levels {
 			log.Infof("Notifications - added transport (%T) for level %s", transport, level)
-			self.transports[level] = append(self.transports[level], transport)
+			l := NewNotificationLevel(level)
+			self.transports[l] = append(self.transports[l], transport)
 		}
 		transport.Start()
 
