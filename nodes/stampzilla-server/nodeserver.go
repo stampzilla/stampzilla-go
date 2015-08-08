@@ -62,7 +62,7 @@ func (ns *NodeServer) Start() {
 
 func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 	// Recive data
-	log.Info("New client connected (", connection.RemoteAddr(), ")")
+	log.Info("New client connected")
 	name := ""
 	uuid := ""
 	decoder := json.NewDecoder(connection)
@@ -84,10 +84,8 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 				ns.WebsocketHandler.SendAllNodes()
 				return
 			}
-			log.Warn(name, " - Not disconnect but error (closing connection): ", err)
-
-			connection.Close()
-			return
+			log.Warn("Not disconnect but error: ", err)
+			//return here?
 		} else {
 			name = node.Name
 			uuid = node.Uuid
