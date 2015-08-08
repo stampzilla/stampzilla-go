@@ -219,11 +219,12 @@ func TestUpdate(t *testing.T) {
 	m.AddLogger(l)
 	m.Start()
 
-	node := &serverprotocol.Node{}
+	//node := &serverprotocol.Node{}
+	node := serverprotocol.NewNode()
 	state := getState()
 
-	node.Name = "metrics-test"
-	node.Uuid = "123-123"
+	node.SetName("metrics-test")
+	node.SetUuid("123-123")
 	node.SetState(state)
 
 	wg.Add(1)
@@ -297,11 +298,11 @@ func TestUpdateSameValueVeryFast(t *testing.T) {
 	m.AddLogger(l)
 	m.Start()
 
-	node := &serverprotocol.Node{}
+	node := serverprotocol.NewNode()
 	state := getState()
 
-	node.Name = "metrics-test"
-	node.Uuid = "123-123"
+	node.SetName("metrics-test")
+	node.SetUuid("123-123")
 	node.SetState(state)
 
 	wg.Add(1)
