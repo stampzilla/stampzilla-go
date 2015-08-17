@@ -52,7 +52,6 @@ func (r *Clients) SendToAll(t string, data interface{}) {
 	msg := &Message{Type: t, Data: out}
 
 	r.Lock()
-	defer r.Unlock()
 	clientsToRemove := make([]*Client, 0)
 
 	for _, c := range r.clients {
@@ -65,6 +64,7 @@ func (r *Clients) SendToAll(t string, data interface{}) {
 		}
 	}
 
+	r.Unlock()
 	go func() {
 		for _, c := range clientsToRemove {
 			r.removeClient(c)
