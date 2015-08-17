@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net"
+	"syscall"
 
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/logic"
@@ -64,7 +65,7 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 
 		if err != nil {
 			//If the error was a network error we have disconnected. Otherwise it might be a json decode error
-			if neterr, ok := err.(net.Error); (ok && !neterr.Temporary()) || err == io.EOF {
+			if neterr, ok := err.(net.Error); (ok && !neterr.Temporary()) || err == io.EOF || err == syscall.ECONNRESET || err == syscall.EPIPE {
 				log.Info(name, " - Client disconnected with error:", err.Error())
 				if uuid != "" {
 					ns.Nodes.Delete(uuid)
