@@ -1,0 +1,29 @@
+{
+	"Transports": {
+		"Exec": {
+			"Command": "notify-send",
+			"Arguments": [
+				"stampzilla",
+				"[level] - [message]"
+			]
+		},
+		"Smtp": {
+			"Server": "10.21.10.1",
+			"Username": "",
+			"Password": "",
+			"Port": 25,
+			"Sender": "stampzilla@desktop",
+			"To": "stamp@stamp.se"
+		}
+	},
+	"Routes": {
+		"Exec": [
+			"Information",
+			"Warning",
+			"Error"
+		],
+		"Smtp": [
+			"Error"
+		]
+	}
+}

@@ -10,7 +10,7 @@ import (
 )
 
 type Router struct {
-	Config RouterConfig
+	Config *RouterConfig
 
 	transports map[NotificationLevel][]Transport
 }
@@ -23,7 +23,7 @@ type RouterConfig struct {
 func NewRouter() *Router {
 	return &Router{
 		transports: make(map[NotificationLevel][]Transport),
-		Config: RouterConfig{
+		Config: &RouterConfig{
 			Transports: make(map[string]interface{}),
 			Routes:     make(map[string][]string),
 		},
@@ -37,22 +37,54 @@ type Transport interface {
 }
 
 func (self *Router) Load(configFileName string) error {
+	log.Info("Load notifications config: ", configFileName)
 	m := multiconfig.NewWithPath(configFileName)
 	err := m.Load(self.Config)
 	if err != nil {
 		log.Error("Failed to read config file (", configFileName, ")", err)
 	}
+
+	for transport, config := range self.Config.Transports {
+		var t interface{}
+
+		// Create an instance of the transport
+		switch transport {
+		case "Smtp":
+			t = &Smtp{}
+		case "Exec":
+			t = &Exec{}
+		default:
+			log.Errorf("Failed to create instance of transport \"%s\", no such transport is defined", transport)
+		}
+
+		if t != nil {
+			// Add the config
+			// TODO: Maybe find a better solution to load the config here.. // stamp
+			configEncoded, _ := json.Marshal(config)
+			json.Unmarshal(configEncoded, t)
+
+			// Replace the loaded map with the real instance instead
+			self.Config.Transports[transport] = t
+
+			// Add the routes if there is any defined
+			if levels, ok := self.Config.Routes[transport]; ok {
+				// Register the new transport
+				self.AddTransport(t, levels)
+			}
+		}
+	}
 	return err
 }
 
 func (self *Router) Save(configFileName string) error {
+	log.Info("Save notifications config: ", configFileName)
+
 	configFile, err := os.Create(configFileName)
 	if err != nil {
 		log.Error("Failed to create config file (", configFileName, ")", err.Error())
 		return err
 	}
 
-	log.Info("Save config: ", self.Config)
 	var out bytes.Buffer
 	b, err := json.MarshalIndent(self.Config, "", "\t")
 	if err != nil {
@@ -66,16 +98,19 @@ func (self *Router) Save(configFileName string) error {
 }
 
 func (self *Router) Start() {
-	self.Load("notifications.json")
-	//self.Config.Transports["smtp"] = &Smtp{}
-	self.Save("notifications.json")
+	err := self.Load("notifications.json")
+
+	// Dont resave if we failed to load the file
+	if err == nil {
+		self.Save("notifications.json")
+	}
 }
 
 func (self *Router) AddTransport(t interface{}, levels []string) {
 	if transport, ok := t.(Transport); ok {
 		for _, level := range levels {
-			log.Infof("Notifications - added transport (%T) for level %s", transport, level)
 			l := NewNotificationLevel(level)
+			log.Infof("Notifications - added transport (%T) for level %s", transport, l)
 			self.transports[l] = append(self.transports[l], transport)
 		}
 		transport.Start()
@@ -91,5 +126,8 @@ func (self *Router) Dispatch(msg Notification) {
 		for _, t := range transports {
 			t.Dispatch(msg)
 		}
+		return
 	}
+
+	log.Warnf("Notification type \"%s\" dropped, no one is listening", msg.Level)
 }
