@@ -42,12 +42,15 @@ func TestDispatch(t *testing.T) {
 	router := NewRouter()
 
 	transport := testTransport{T: t}
+	transport2 := testTransport{T: t}
 
 	// Add the dummy transport and request only Warnings
 	router.AddTransport(&transport, []string{"Warning"})
+	router.AddTransport(&transport2, []string{"Error"})
 
 	// Test send 300 notifications
 	transport.wg.Add(150)
+	transport2.wg.Add(150)
 	for i := 0; i < 150; i++ {
 		router.Dispatch(Notification{
 			Source:     "RouterTest",
@@ -81,6 +84,22 @@ func TestDispatch(t *testing.T) {
 		Level:      NewNotificationLevel("Error"),
 		Message:    "Test message",
 	}, 0)
+
+	// Check that we have recived the correct amount of notifications
+	transport2.haveRecived(Notification{
+		Source:     "RouterTest",
+		SourceUuid: "123-123",
+		Level:      NewNotificationLevel("Warning"),
+		Message:    "Test message",
+	}, 0)
+
+	// And check that we didnt recive notifications that we dont requested
+	transport2.haveRecived(Notification{
+		Source:     "RouterTest",
+		SourceUuid: "123-123",
+		Level:      NewNotificationLevel("Error"),
+		Message:    "Test message",
+	}, 150)
 }
 
 func WaitOrTimeout(t *testing.T, wg *sync.WaitGroup, timeout time.Duration) {

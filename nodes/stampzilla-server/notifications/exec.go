@@ -40,7 +40,7 @@ func (self *Exec) Dispatch(note Notification) {
 		return
 	}
 
-	log.Tracef("notifications.Exec result %s\n", out)
+	log.Tracef("notifications.Exec result %s", out)
 }
 func (self *Exec) Stop() {
 }

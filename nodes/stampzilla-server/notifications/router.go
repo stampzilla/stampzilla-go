@@ -53,6 +53,8 @@ func (self *Router) Load(configFileName string) error {
 			t = &Smtp{}
 		case "Exec":
 			t = &Exec{}
+		case "Nma":
+			t = &Nma{}
 		default:
 			log.Errorf("Failed to create instance of transport \"%s\", no such transport is defined", transport)
 		}

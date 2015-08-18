@@ -7,8 +7,11 @@
 				"[level] - [message]"
 			]
 		},
+		"Nma": {
+			"ApiKey": "asdasdasd"
+		},
 		"Smtp": {
-			"Server": "10.21.10.1",
+			"Server": "localhost",
 			"Username": "",
 			"Password": "",
 			"Port": 25,
