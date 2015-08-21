@@ -68,6 +68,10 @@ func (self *Node) GetPing() bool {
 	return false
 }
 
+func (self *Node) GetPong() bool {
+	return false
+}
+
 func cast(s interface{}) interface{} {
 	switch v := s.(type) {
 	case int:
