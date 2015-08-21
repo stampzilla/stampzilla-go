@@ -1,11 +1,16 @@
 {
-  "name": "stampzilla-go",
-  "version": "0.1.0",
+  "name": "polymer-starter-kit",
+  "private": true,
   "dependencies": {
-    "polymer": "Polymer/polymer#latest",
-    "core-elements": "Polymer/core-elements#latest",
-    "paper-elements": "Polymer/paper-elements#latest",
-    "font-roboto": "Polymer/font-roboto#latest",
-    "color-picker-element": "bbrewer97202/color-picker-element#latest"
+    "polymer": "Polymer/polymer#^1.1.0",
+    "iron-elements": "PolymerElements/iron-elements#^1.0.0",
+    "paper-elements": "PolymerElements/paper-elements#^1.0.1",
+    "platinum-elements": "PolymerElements/platinum-elements#^1.1.0",
+    "neon-elements": "PolymerElements/neon-elements#^1.0.0",
+    "page": "visionmedia/page.js#~1.6.3"
+  },
+  "devDependencies": {
+    "web-component-tester": "*",
+    "test-fixture": "PolymerElements/test-fixture#^1.0.0"
   }
 }
