@@ -110,6 +110,7 @@ func connectionWorker(connection net.Conn, recv chan protocol.Command, serverIsA
 			serverIsAlive <- true
 
 			if cmd.Ping {
+				log.Debug("Recived ping - pong")
 				connection.Write([]byte("{\"Pong\":true}"))
 				continue
 			}
@@ -127,10 +128,17 @@ func timeoutMonitor(connection net.Conn, serverIsAlive chan bool) {
 		case <-serverIsAlive:
 			// Everything is great, just continue
 			continue
-		case <-time.After(time.Second * 15):
-			log.Warn("Server connection timeout, closing connection")
-			connection.Close()
-			return
+		case <-time.After(time.Second * 10):
+			connection.Write([]byte("{\"Ping\":true}"))
+
+			select {
+			case <-serverIsAlive:
+				continue
+			case <-time.After(time.Second * 2):
+				log.Warn("Server connection timeout, no answer to ping")
+				connection.Close()
+				return
+			}
 		}
 	}
 }

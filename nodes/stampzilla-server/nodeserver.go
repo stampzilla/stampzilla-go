@@ -93,6 +93,11 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 
 		nodeIsAlive <- true
 
+		if node.GetPing() {
+			connection.Write([]byte("{\"Ping\":true}"))
+			continue
+		}
+
 		if existingNode := ns.Nodes.ByUuid(uuid); existingNode != nil {
 			log.Tracef("Existing node: %#v", existingNode)
 			node.SetUuid(existingNode.Uuid()) // Add name and uuid to package
@@ -128,6 +133,9 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 }
 
 func timeoutMonitor(connection net.Conn, nodeIsAlive chan bool) {
+	log.Debug("Timeout monitor started (", connection.RemoteAddr(), ")")
+	defer log.Debug("Timeout monitor closed (", connection.RemoteAddr(), ")")
+
 	for {
 		select {
 		case <-nodeIsAlive:
