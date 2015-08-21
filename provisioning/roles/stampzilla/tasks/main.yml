@@ -1,0 +1,41 @@
+---
+- file: path="{{ ansible_env.HOME }}/go" state=directory mode=0755
+
+- shell: wget http://mirrors.nl.eu.kernel.org/fedora-epel/6/i386/epel-release-6-8.noarch.rpm && rpm -Uvh epel-release-6-8.noarch.rpm && rm epel-release-6-8.noarch.rpm -f
+  args:
+    creates: /etc/yum.repos.d/epel.repo
+
+- name: install deps
+  yum: name={{item}} state=installed
+  with_items:
+    - git
+    - golang
+    - libselinux-python
+
+
+- name: install npm
+  yum: name=npm state=installed
+  when: node == "server"
+
+- npm: name=bower global=yes
+  when: node == "server"
+
+- name: install stampzilla cli 
+  shell: go get github.com/stampzilla/stampzilla-go/stampzilla
+  args:
+    creates: "{{ ansible_env.HOME }}/go/bin/stampzilla"
+  environment:
+      GOPATH: "{{ ansible_env.HOME }}/go"
+
+- name: install {{node}}
+  shell: cd / && stampzilla install {{node}}
+  environment:
+      PATH: "{{ ansible_env.PATH }}:{{ ansible_env.HOME }}/go/bin"
+
+- name: start {{node}}
+  shell: stampzilla restart {{node}}
+  environment:
+      GOPATH: "{{ ansible_env.HOME }}/go"
+      PATH: "{{ ansible_env.PATH }}:{{ ansible_env.HOME }}/go/bin"
+
+

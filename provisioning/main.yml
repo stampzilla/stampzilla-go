@@ -1,0 +1,13 @@
+---
+- name: Install errorlogger
+  hosts: all
+  #remote_user: root
+  # remote_user: user
+  sudo: yes
+  vars:
+    gopath: "{{ lookup('env','GOPATH') }}"
+
+  roles:
+    - { role: stampzilla, node: 'server'}
+    - { role: stampzilla, node: 'simple'}
+
