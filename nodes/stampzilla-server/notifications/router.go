@@ -45,7 +45,7 @@ func (self *Router) Load(configFileName string) error {
 	}
 
 	for transport, config := range self.Config.Transports {
-		var t interface{}
+		var t Transport
 
 		// Create an instance of the transport
 		switch transport {
@@ -58,6 +58,8 @@ func (self *Router) Load(configFileName string) error {
 		default:
 			log.Errorf("Failed to create instance of transport \"%s\", no such transport is defined", transport)
 		}
+
+		//  TODO: USE Unmarshaler? (jonaz) <Fri 21 Aug 2015 10:23:51 PM CEST>
 
 		if t != nil {
 			// Add the config
@@ -108,19 +110,16 @@ func (self *Router) Start() {
 	}
 }
 
-func (self *Router) AddTransport(t interface{}, levels []string) {
-	if transport, ok := t.(Transport); ok {
-		for _, level := range levels {
-			l := NewNotificationLevel(level)
-			log.Infof("Notifications - added transport (%T) for level %s", transport, l)
-			self.transports[l] = append(self.transports[l], transport)
-		}
-		transport.Start()
-
-		return
+func (self *Router) AddTransport(transport Transport, levels []string) {
+	for _, level := range levels {
+		l := NewNotificationLevel(level)
+		log.Infof("Notifications - added transport (%T) for level %s", transport, l)
+		self.transports[l] = append(self.transports[l], transport)
 	}
+	transport.Start()
 
-	log.Warnf("Notifications - Added transport (%T) do not fullfill the transport interface", t)
+	return
+
 }
 
 func (self *Router) Dispatch(msg Notification) {
