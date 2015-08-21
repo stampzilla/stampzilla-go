@@ -50,6 +50,7 @@ func (n *node) Write(b []byte) {
 	b = append(b, []byte("\n")...)
 	_, err := n.conn.Write(b)
 	if err != nil {
+		n.conn.Close()
 		log.Error(err)
 		return
 	}

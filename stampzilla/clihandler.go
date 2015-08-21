@@ -24,6 +24,8 @@ func (t *cliHandler) Install(c *cli.Context) {
 	nodes, err := ioutil.ReadDir("/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/")
 	if err != nil {
 		fmt.Println("Found no nodes. installing stampzilla cli first!")
+		t.Installer.createUser("stampzilla")
+		t.Installer.createDirAsUser("/home/stampzilla/go", "stampzilla")
 		t.Installer.goGet("github.com/stampzilla/stampzilla-go/stampzilla", c.Bool("u"))
 	}
 
