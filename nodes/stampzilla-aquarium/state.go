@@ -14,11 +14,16 @@ type State struct { /*{{{*/
 	WaterLevelOk bool
 	FilterOk     bool
 
+	AirTemperature float64
+	Humidity       float64
+
 	Lights struct {
-		White       float32
-		Red         float32
-		Greed       float32
-		Blue        float32
-		Temperature float32
+		White       float64
+		Red         float64
+		Green       float64
+		Blue        float64
+		Temperature float64
 	}
+
+	PH float64
 } /*}}}*/
