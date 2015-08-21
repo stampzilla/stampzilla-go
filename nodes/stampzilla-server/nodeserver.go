@@ -67,6 +67,7 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 			//If the error was a network error we have disconnected. Otherwise it might be a json decode error
 			if neterr, ok := err.(net.Error); (ok && !neterr.Temporary()) || err == io.EOF || err == syscall.ECONNRESET || err == syscall.EPIPE {
 				log.Info(name, " - Client disconnected with error:", err.Error())
+				connection.Close()
 				if uuid != "" {
 					ns.Nodes.Delete(uuid)
 					close(logicChannel)
@@ -82,15 +83,14 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 		name = node.Name()
 		uuid = node.Uuid()
 
-		existingNode := ns.Nodes.ByUuid(uuid)
-		if existingNode == nil {
+		if existingNode := ns.Nodes.ByUuid(uuid); existingNode != nil {
+			existingNode.SetState(node.State())
+			ns.updateState(logicChannel, existingNode)
+		} else {
 			ns.Nodes.Add(node)
 			logicChannel = ns.Logic.ListenForChanges(node.Uuid())
 			node.SetConn(connection)
 			ns.updateState(logicChannel, node)
-		} else {
-			existingNode.SetState(node.State())
-			ns.updateState(logicChannel, existingNode)
 		}
 
 		ns.WebsocketHandler.SendSingleNode(uuid)
