@@ -11,8 +11,8 @@ const (
 )
 
 type Notification struct {
-	Source     string
-	SourceUuid string
+	Source     string `json:",omitempty"`
+	SourceUuid string `json:",omitempty"`
 	Level      NotificationLevel
 	Message    string
 }
@@ -23,6 +23,13 @@ var levelToStringMap = map[NotificationLevel]string{
 	ErrorLevel:    "Error",
 	CriticalLevel: "Critical",
 	UnknownLevel:  "Unknown",
+}
+
+func NewNotification(level NotificationLevel, message string) *Notification {
+	return &Notification{
+		Level:   level,
+		Message: message,
+	}
 }
 
 func (level NotificationLevel) String() string {

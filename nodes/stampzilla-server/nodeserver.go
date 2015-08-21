@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"io"
 	"net"
+	"os"
 	"syscall"
 
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/logic"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/metrics"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/notifications"
 	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/servernode"
 )
@@ -20,6 +22,7 @@ type NodeServer struct {
 	WebsocketHandler *WebsocketHandler     `inject:""`
 	ElasticSearch    *ElasticSearch        `inject:""`
 	Metrics          *metrics.Metrics      `inject:""`
+	Notifications    *notifications.Router `inject:""`
 }
 
 func NewNodeServer() *NodeServer {
@@ -81,14 +84,29 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 			return
 		}
 
-		name = node.Name()
-		uuid = node.Uuid()
-
 		if existingNode := ns.Nodes.ByUuid(uuid); existingNode != nil {
+			log.Tracef("Existing node: %#v", existingNode)
+			node.SetUuid(existingNode.Uuid()) // Add name and uuid to package
+			node.SetName(existingNode.Name()) // Add name and uuid to package
+
+			if note := node.GetNotification(); note != nil {
+				log.Tracef("Recived notification: %#v", note)
+				ns.Notifications.Dispatch(*note) // Send the notification to the router
+				continue
+			}
+
 			existingNode.SetState(node.State())
 			ns.updateState(logicChannel, existingNode)
 		} else {
-			ns.Nodes.Add(node)
+			name = node.Name()
+			uuid = node.Uuid()
+
+			err := ns.Nodes.Add(node)
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+
 			logicChannel = ns.Logic.ListenForChanges(node.Uuid())
 			node.SetConn(connection)
 			ns.updateState(logicChannel, node)
@@ -110,5 +128,9 @@ func (ns *NodeServer) updateState(updateChan chan string, node serverprotocol.No
 func (self *NodeServer) addServerNode() {
 	logicChannel := self.Logic.ListenForChanges(self.Config.Uuid)
 	node := servernode.New(self.Config.Uuid, logicChannel)
-	self.Nodes.Add(node)
+	err := self.Nodes.Add(node)
+	if err != nil {
+		log.Critical(err)
+		os.Exit(2)
+	}
 }
