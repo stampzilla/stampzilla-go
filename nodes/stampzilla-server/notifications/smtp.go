@@ -1,14 +1,11 @@
 package notifications
 
 import (
-	"sync"
-
 	log "github.com/cihub/seelog"
 	"gopkg.in/gomail.v1"
 )
 
 type Smtp struct {
-	wg       sync.WaitGroup
 	Server   string `default:localhost`
 	Username string
 	Password string
@@ -21,9 +18,6 @@ func (self *Smtp) Start() {
 }
 
 func (self *Smtp) Dispatch(note Notification) {
-	self.wg.Add(1)
-	defer self.wg.Done()
-
 	msg := gomail.NewMessage()
 	msg.SetHeader("From", self.Sender)
 	msg.SetHeader("To", self.To)

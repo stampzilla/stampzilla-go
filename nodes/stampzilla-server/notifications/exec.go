@@ -4,13 +4,11 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"sync"
 
 	log "github.com/cihub/seelog"
 )
 
 type Exec struct {
-	wg        sync.WaitGroup
 	Command   string
 	Arguments []string
 }
@@ -18,9 +16,6 @@ type Exec struct {
 func (self *Exec) Start() {
 }
 func (self *Exec) Dispatch(note Notification) {
-	self.wg.Add(1)
-	defer self.wg.Done()
-
 	args := make([]string, 0)
 	for _, text := range self.Arguments {
 		text = strings.Replace(text, "[level]", note.Level.String(), -1)
