@@ -195,7 +195,7 @@ func (l *Logic) SaveRulesToFile(path string) {
 func (l *Logic) RestoreRulesFromFile(path string) {
 	configFile, err := os.Open(path)
 	if err != nil {
-		log.Error("opening config file", err.Error())
+		log.Warn("opening config file", err.Error())
 		return
 	}
 

@@ -11,6 +11,7 @@ import (
 	"github.com/pborman/uuid"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/logic"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/metrics"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/notifications"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
 )
@@ -92,8 +93,10 @@ func main() {
 		services = append(services, i)
 	}
 
+	notificationRouter := notifications.NewRouter()
+
 	// Register the rest of the services
-	services = append(services, &WebsocketHandler{}, config, protocol.NewNodes(), logic.NewLogic(), logic.NewScheduler(), websocket.NewRouter(), NewNodeServer(), NewWebServer())
+	services = append(services, &WebsocketHandler{}, config, protocol.NewNodes(), logic.NewLogic(), logic.NewScheduler(), websocket.NewRouter(), NewNodeServer(), NewWebServer(), notificationRouter)
 
 	//Add metrics service if we have any loggers (Elasticsearch, influxdb, graphite etc)
 	if loggers := getLoggers(services); len(loggers) != 0 {
@@ -113,6 +116,13 @@ func main() {
 	saveConfigToFile(config)
 
 	StartServices(services)
+
+	notificationRouter.Dispatch(notifications.Notification{
+		Source:     "server",
+		SourceUuid: config.Uuid,
+		Level:      notifications.NewNotificationLevel("Information"),
+		Message:    "Server started and ready",
+	})
 	select {}
 }
 

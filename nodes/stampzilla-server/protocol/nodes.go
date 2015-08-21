@@ -1,10 +1,13 @@
 package protocol
 
 import (
+	"encoding/json"
+	"fmt"
 	"net"
 	"sync"
 
 	log "github.com/cihub/seelog"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/notifications"
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
@@ -20,9 +23,12 @@ type Node interface {
 	SetName(string)
 	Write(b []byte)
 	SetConn(conn net.Conn)
+	GetNotification() *notifications.Notification
 }
 
 type node struct {
+	Notification *json.RawMessage
+
 	protocol.Node
 	conn net.Conn
 	wait chan bool
@@ -54,6 +60,25 @@ func (n *node) Write(b []byte) {
 		log.Error(err)
 		return
 	}
+}
+
+func (n *node) GetNotification() *notifications.Notification {
+	if n.Notification == nil {
+		return nil
+	}
+
+	note := &notifications.Notification{}
+	err := json.Unmarshal(*n.Notification, note)
+
+	note.SourceUuid = n.Uuid()
+	note.Source = n.Name()
+
+	if err != nil {
+		log.Warn("Failed to decode notification: ", err)
+		return nil
+	}
+
+	return note
 }
 
 //  TODO: write tests for Nodes struct (jonaz) <Fri 10 Oct 2014 04:31:22 PM CEST>
@@ -105,10 +130,17 @@ func (n *Nodes) All() map[string]Node {
 	return r
 	//return n.nodes
 }
-func (n *Nodes) Add(node Node) {
+func (n *Nodes) Add(node Node) error {
 	n.Lock()
 	defer n.Unlock()
+
+	if node.Uuid() == "" {
+		return fmt.Errorf("Failed to add node, does not contain an UUID")
+	}
+
 	n.nodes[node.Uuid()] = node
+
+	return nil
 }
 func (n *Nodes) Delete(uuid string) {
 	n.Lock()

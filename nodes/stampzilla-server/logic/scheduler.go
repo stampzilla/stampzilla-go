@@ -96,7 +96,7 @@ func (s *Scheduler) loadFromFile(filepath string) {
 
 	configFile, err := os.Open(filepath)
 	if err != nil {
-		log.Error("opening config file", err.Error())
+		log.Warn("opening config file", err.Error())
 		return
 	}
 

@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"io"
 	"net"
+	"os"
 	"syscall"
 	"time"
 
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/logic"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/metrics"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/notifications"
 	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/servernode"
 )
@@ -21,6 +23,7 @@ type NodeServer struct {
 	WebsocketHandler *WebsocketHandler     `inject:""`
 	ElasticSearch    *ElasticSearch        `inject:""`
 	Metrics          *metrics.Metrics      `inject:""`
+	Notifications    *notifications.Router `inject:""`
 }
 
 func NewNodeServer() *NodeServer {
@@ -54,7 +57,7 @@ func (ns *NodeServer) Start() {
 
 func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 	// Recive data
-	log.Trace("New connection opend")
+	log.Trace("New client connected (", connection.RemoteAddr(), ")")
 	name := ""
 	uuid := ""
 	decoder := json.NewDecoder(connection)
@@ -77,6 +80,7 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 					ns.WebsocketHandler.SendDisconnectedNode(uuid)
 					ns.Nodes.Delete(uuid)
 					close(logicChannel)
+					log.Info(name, " - Removing node from nodes list")
 					return
 				}
 				// No uuid available, send the whole node list to webclients
@@ -88,16 +92,32 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 		}
 
 		nodeIsAlive <- true
-		name = node.Name()
-		uuid = node.Uuid()
 
 		if existingNode := ns.Nodes.ByUuid(uuid); existingNode != nil {
+			log.Tracef("Existing node: %#v", existingNode)
+			node.SetUuid(existingNode.Uuid()) // Add name and uuid to package
+			node.SetName(existingNode.Name()) // Add name and uuid to package
+
+			if note := node.GetNotification(); note != nil {
+				log.Tracef("Recived notification: %#v", note)
+				ns.Notifications.Dispatch(*note) // Send the notification to the router
+				continue
+			}
+
 			existingNode.SetState(node.State())
 			ns.updateState(logicChannel, existingNode)
 		} else {
+			name = node.Name()
+			uuid = node.Uuid()
+
+			err := ns.Nodes.Add(node)
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+
 			log.Info("New client connected (", name, " - ", uuid, ")")
 
-			ns.Nodes.Add(node)
 			logicChannel = ns.Logic.ListenForChanges(node.Uuid())
 			node.SetConn(connection)
 			ns.updateState(logicChannel, node)
@@ -141,5 +161,9 @@ func (ns *NodeServer) updateState(updateChan chan string, node serverprotocol.No
 func (self *NodeServer) addServerNode() {
 	logicChannel := self.Logic.ListenForChanges(self.Config.Uuid)
 	node := servernode.New(self.Config.Uuid, logicChannel)
-	self.Nodes.Add(node)
+	err := self.Nodes.Add(node)
+	if err != nil {
+		log.Critical(err)
+		os.Exit(2)
+	}
 }
