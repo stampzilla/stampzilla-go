@@ -1,0 +1,32 @@
+{
+	"Transports": {
+		"Exec": {
+			"Command": "notify-send",
+			"Arguments": [
+				"stampzilla",
+				"[level] - [message]"
+			]
+		},
+		"Nma": {
+			"ApiKey": "asdasdasd"
+		},
+		"Smtp": {
+			"Server": "localhost",
+			"Username": "",
+			"Password": "",
+			"Port": 25,
+			"Sender": "stampzilla@desktop",
+			"To": "stamp@stamp.se"
+		}
+	},
+	"Routes": {
+		"Exec": [
+			"Information",
+			"Warning",
+			"Error"
+		],
+		"Smtp": [
+			"Error"
+		]
+	}
+}

@@ -106,3 +106,6 @@ func (wh *WebsocketHandler) SendAllNodes() {
 func (wh *WebsocketHandler) SendSingleNode(uuid string) {
 	go wh.Clients.SendToAll("singlenode", wh.Nodes.ByUuid(uuid))
 }
+func (wh *WebsocketHandler) SendDisconnectedNode(uuid string) {
+	go wh.Clients.SendToAll("disconnected", uuid)
+}

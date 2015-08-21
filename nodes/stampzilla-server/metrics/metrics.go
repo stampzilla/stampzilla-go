@@ -52,6 +52,9 @@ func (m *Metrics) worker() {
 /* ----[ handle updates ]------------------------------------------*/
 
 func (m *Metrics) Update(node serverprotocol.Node) {
+	if len(m.loggers) == 0 {
+		return
+	}
 	current := structToMetrics(node.Uuid()+"_Node_State", node.State())
 	//current := structToMetrics(node.Uuid, node) //DO we want this instead? It will also logg Node.Uuid, Node.Elements etc... i think not!
 
@@ -64,9 +67,6 @@ func (m *Metrics) Update(node serverprotocol.Node) {
 }
 
 func (m *Metrics) update(node serverprotocol.Node, current map[string]interface{}) {
-	if len(m.loggers) == 0 {
-		return
-	}
 
 	if len(m.previous) == 0 { // No previous values exists, then use this one and commit all values
 		m.previous = current

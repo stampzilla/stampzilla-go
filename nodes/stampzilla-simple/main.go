@@ -5,6 +5,7 @@ import (
 
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/notifications"
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
@@ -89,6 +90,40 @@ func main() { /*{{{*/
 		Feedback: "Devices[4].State",
 	})
 
+	// Notification buttons
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeButton,
+		Name: "Send \"Critical\" notification",
+		Command: &protocol.Command{
+			Cmd:  "notification",
+			Args: []string{"Critical"},
+		},
+	})
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeButton,
+		Name: "Send \"Error\" notification",
+		Command: &protocol.Command{
+			Cmd:  "notification",
+			Args: []string{"Error"},
+		},
+	})
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeButton,
+		Name: "Send \"Warning\" notification",
+		Command: &protocol.Command{
+			Cmd:  "notification",
+			Args: []string{"Warning"},
+		},
+	})
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeButton,
+		Name: "Send \"Information\" notification",
+		Command: &protocol.Command{
+			Cmd:  "notification",
+			Args: []string{"Information"},
+		},
+	})
+
 	state := NewState()
 	node.SetState(state)
 
@@ -128,6 +163,9 @@ func processCommand(node *protocol.Node, connection *basenode.Connection, cmd pr
 		device := s.Device(cmd.Args[0])
 
 		switch cmd.Cmd {
+		case "notification":
+			connection.Send <- notifications.NewNotification(notifications.NewNotificationLevel(cmd.Args[0]), "Test notifcation with level '"+cmd.Args[0]+"'")
+
 		case "on":
 			log.Info("got on")
 			device.SetState(true)

@@ -4,6 +4,7 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/notifications"
 	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
@@ -20,6 +21,7 @@ func New(uuid string, logicChannel chan string) serverprotocol.Node {
 		logicChannel: logicChannel,
 	}
 	node.SetName("server")
+	node.SetUuid(uuid)
 	return node
 }
 func (self *Node) SetConn(conn net.Conn) {
@@ -56,6 +58,10 @@ func (self *Node) Reset(key string) {
 	case bool:
 		self.Set(key, 0)
 	}
+}
+
+func (self *Node) GetNotification() *notifications.Notification {
+	return nil
 }
 
 func cast(s interface{}) interface{} {
