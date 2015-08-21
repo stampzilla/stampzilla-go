@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"syscall"
+	"time"
 
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/logic"
@@ -56,11 +57,15 @@ func (ns *NodeServer) Start() {
 
 func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 	// Recive data
-	log.Info("New client connected (", connection.RemoteAddr(), ")")
+	log.Trace("New client connected (", connection.RemoteAddr(), ")")
 	name := ""
 	uuid := ""
 	decoder := json.NewDecoder(connection)
 	//encoder := json.NewEncoder(os.Stdout)
+
+	nodeIsAlive := make(chan bool)
+	go timeoutMonitor(connection, nodeIsAlive)
+
 	var logicChannel chan string
 	for {
 		node := serverprotocol.NewNode()
@@ -72,17 +77,21 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 				log.Info(name, " - Client disconnected with error:", err.Error())
 				connection.Close()
 				if uuid != "" {
+					ns.WebsocketHandler.SendDisconnectedNode(uuid)
 					ns.Nodes.Delete(uuid)
 					close(logicChannel)
 					log.Info(name, " - Removing node from nodes list")
+					return
 				}
-				//TODO be able to not send everything always. perhaps implement remove instead of all?
+				// No uuid available, send the whole node list to webclients
 				ns.WebsocketHandler.SendAllNodes()
 				return
 			}
 			log.Warn("Not a net.Error but error: ", err)
 			return
 		}
+
+		nodeIsAlive <- true
 
 		if existingNode := ns.Nodes.ByUuid(uuid); existingNode != nil {
 			log.Tracef("Existing node: %#v", existingNode)
@@ -107,12 +116,36 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 				continue
 			}
 
+			log.Info("New client connected (", name, " - ", uuid, ")")
+
 			logicChannel = ns.Logic.ListenForChanges(node.Uuid())
 			node.SetConn(connection)
 			ns.updateState(logicChannel, node)
 		}
 
 		ns.WebsocketHandler.SendSingleNode(uuid)
+	}
+}
+
+func timeoutMonitor(connection net.Conn, nodeIsAlive chan bool) {
+	for {
+		select {
+		case <-nodeIsAlive:
+			// Everything is good, just continue
+			continue
+		case <-time.After(time.Second * 10):
+			// Send ping and wait for the answer
+			connection.Write([]byte("{\"Ping\":true}"))
+
+			select {
+			case <-nodeIsAlive:
+				continue
+			case <-time.After(time.Second * 2):
+				log.Warn("Connection timeout, no answer on ping")
+				connection.Close()
+				return
+			}
+		}
 	}
 }
 

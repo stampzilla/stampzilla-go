@@ -43,9 +43,11 @@ func Connect() *Connection {
 
 			connection.State <- ConnectionStateConnected
 			log.Trace("Connected")
+			serverIsAlive := make(chan bool)
+			go timeoutMonitor(tcpConnection, serverIsAlive)
 			go sendWorker(tcpConnection, connection.Send, quit)
 
-			connectionWorker(tcpConnection, connection.Receive)
+			connectionWorker(tcpConnection, connection.Receive, serverIsAlive)
 			close(quit)
 			connection.State <- ConnectionStateDisconnected
 
@@ -83,13 +85,14 @@ func sendWorker(connection net.Conn, send chan interface{}, quit chan bool) {
 				fmt.Println("Error encoder.Encode: ", err)
 			}
 		case <-quit:
+			log.Trace("sendWorker disconnected")
 			return
 
 		}
 	}
 }
 
-func connectionWorker(connection net.Conn, recv chan protocol.Command) {
+func connectionWorker(connection net.Conn, recv chan protocol.Command, serverIsAlive chan bool) {
 	// Recive data
 	decoder := json.NewDecoder(connection)
 	for {
@@ -104,9 +107,30 @@ func connectionWorker(connection net.Conn, recv chan protocol.Command) {
 			log.Warn(err)
 			return
 		} else {
+			serverIsAlive <- true
+
+			if cmd.Ping {
+				connection.Write([]byte("{\"Pong\":true}"))
+				continue
+			}
+
 			log.Debug("Command from server", cmd)
 			recv <- cmd
 		}
 
+	}
+}
+
+func timeoutMonitor(connection net.Conn, serverIsAlive chan bool) {
+	for {
+		select {
+		case <-serverIsAlive:
+			// Everything is great, just continue
+			continue
+		case <-time.After(time.Second * 15):
+			log.Warn("Server connection timeout, closing connection")
+			connection.Close()
+			return
+		}
 	}
 }
