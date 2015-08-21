@@ -24,10 +24,12 @@ type Node interface {
 	Write(b []byte)
 	SetConn(conn net.Conn)
 	GetNotification() *notifications.Notification
+	GetPing() bool
 }
 
 type node struct {
 	Notification *json.RawMessage
+	Ping         bool `json:",omitempty"`
 
 	protocol.Node
 	conn net.Conn
@@ -79,6 +81,10 @@ func (n *node) GetNotification() *notifications.Notification {
 	}
 
 	return note
+}
+
+func (n *node) GetPing() bool {
+	return n.Ping
 }
 
 //  TODO: write tests for Nodes struct (jonaz) <Fri 10 Oct 2014 04:31:22 PM CEST>

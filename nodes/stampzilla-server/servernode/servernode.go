@@ -64,6 +64,10 @@ func (self *Node) GetNotification() *notifications.Notification {
 	return nil
 }
 
+func (self *Node) GetPing() bool {
+	return false
+}
+
 func cast(s interface{}) interface{} {
 	switch v := s.(type) {
 	case int:
