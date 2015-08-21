@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"syscall"
+	"time"
 
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/logic"
@@ -53,11 +54,15 @@ func (ns *NodeServer) Start() {
 
 func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 	// Recive data
-	log.Info("New client connected")
+	log.Trace("New connection opend")
 	name := ""
 	uuid := ""
 	decoder := json.NewDecoder(connection)
 	//encoder := json.NewEncoder(os.Stdout)
+
+	nodeIsAlive := make(chan bool)
+	go timeoutMonitor(connection, nodeIsAlive)
+
 	var logicChannel chan string
 	for {
 		node := serverprotocol.NewNode()
@@ -82,6 +87,7 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 			return
 		}
 
+		nodeIsAlive <- true
 		name = node.Name()
 		uuid = node.Uuid()
 
@@ -89,6 +95,8 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 			existingNode.SetState(node.State())
 			ns.updateState(logicChannel, existingNode)
 		} else {
+			log.Info("New client connected (", name, " - ", uuid, ")")
+
 			ns.Nodes.Add(node)
 			logicChannel = ns.Logic.ListenForChanges(node.Uuid())
 			node.SetConn(connection)
@@ -96,6 +104,28 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 		}
 
 		ns.WebsocketHandler.SendSingleNode(uuid)
+	}
+}
+
+func timeoutMonitor(connection net.Conn, nodeIsAlive chan bool) {
+	for {
+		select {
+		case <-nodeIsAlive:
+			// Everything is good, just continue
+			continue
+		case <-time.After(time.Second * 10):
+			// Send ping and wait for the answer
+			connection.Write([]byte("{\"Ping\":true}"))
+
+			select {
+			case <-nodeIsAlive:
+				continue
+			case <-time.After(time.Second * 2):
+				log.Warn("Connection timeout, no answer on ping")
+				connection.Close()
+				return
+			}
+		}
 	}
 }
 
