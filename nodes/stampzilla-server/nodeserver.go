@@ -69,10 +69,12 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 				log.Info(name, " - Client disconnected with error:", err.Error())
 				connection.Close()
 				if uuid != "" {
+					ns.WebsocketHandler.SendDisconnectedNode(uuid)
 					ns.Nodes.Delete(uuid)
 					close(logicChannel)
+					return
 				}
-				//TODO be able to not send everything always. perhaps implement remove instead of all?
+				// No uuid available, send the whole node list to webclients
 				ns.WebsocketHandler.SendAllNodes()
 				return
 			}
