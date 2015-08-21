@@ -7,6 +7,7 @@ import (
 	"time"
 
 	log "github.com/cihub/seelog"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/notifications"
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
@@ -61,11 +62,21 @@ func sendWorker(connection net.Conn, send chan interface{}, quit chan bool) {
 	for {
 		select {
 		case d := <-send:
-
 			if a, ok := d.(*protocol.Node); ok {
 				a.SetUuid(config.Uuid)
+				log.Trace("Sending node package: ", a)
 				err = encoder.Encode(a.Node())
+			} else if a, ok := d.(*notifications.Notification); ok {
+				type NotificationPkg struct {
+					Notification *notifications.Notification
+				}
+				note := NotificationPkg{
+					Notification: a,
+				}
+				log.Tracef("Sending notification: %#v", d, d)
+				err = encoder.Encode(note)
 			} else {
+				log.Tracef("Sending %T package: %#v", d, d)
 				err = encoder.Encode(d)
 			}
 			if err != nil {
