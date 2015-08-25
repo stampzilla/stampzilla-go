@@ -38,21 +38,23 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 						observer: 'newMessage'
 					}
 				},
+				observers: [
+					'nodesChanged(nodes.*)'
+				],
 				_getHref: function(myAttrib) {
 					return '/nodes/' + myAttrib;
 				},
 				newMessage: function(d) {
 					console.log("new nodes",d);
 				},
+				nodesChanged: function(d){
+					console.log("nodes changed",d);
+				},
 				ready: function() {
-					this.items = [
-						'Responsive Web App boilerplate',
-						'Iron Elements and Paper Elements',
-						'End-to-end Build Tooling (including Vulcanize)',
-						'Unit testing with Web Component Tester',
-						'Routing with Page.js',
-						'Offline support with the Platinum Service Worker Elements'
-					];
+					//var self = this;
+					//NOTE we must use notifyPath(path, value) OR set(path, value)
+					//setInterval(function(){self.set('nodes.0.Name', 'TESTAR');},3000);
+
 				}
 			});
 		})();
