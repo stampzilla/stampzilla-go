@@ -38,21 +38,21 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 						observer: 'newMessage'
 					}
 				},
-				observers: [
-					'nodesChanged(nodes.*)'
-				],
+				//observers: [
+				//	'nodesChanged(nodes.*)'
+				//],
 				_getHref: function(myAttrib) {
 					return '/nodes/' + myAttrib;
 				},
 				newMessage: function(d) {
 					console.log("new nodes",d);
 				},
-				nodesChanged: function(d){
-					console.log("nodes changed",d);
-				},
+				//nodesChanged: function(d){
+			//		console.log("nodes changed",d);
+			//	},
 				ready: function() {
 					//var self = this;
-					//NOTE we must use notifyPath(path, value) OR set(path, value)
+					//NOTE we must use notifyPath(path, value) OR set(path, value) and we dont need custom observers. dom-repeat is happy just using set or notifyPath
 					//setInterval(function(){self.set('nodes.0.Name', 'TESTAR');},3000);
 
 				}
