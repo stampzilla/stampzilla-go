@@ -21,7 +21,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	<script>
 		(function () {
 			'use strict';
-			Polymer({
+			new Polymer({
 				is: 'ws-data',
 				properties: {
 					url: {
@@ -54,14 +54,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				newMessage: function(d) {
 					console.log(d);
 
-					if(d.type === "all"){
+					if(d.type === 'all'){
 						this.nodes = this._toArray(d.data);
 						return;
 					}
-					if(d.type === "singlenode"){
+					if(d.type === 'singlenode'){
 						this.push('nodes',d.data);
 					}
-					if(d.type === "disconnected"){
+					if(d.type === 'disconnected'){
 						this.removeNode(d.data);
 					}
 
