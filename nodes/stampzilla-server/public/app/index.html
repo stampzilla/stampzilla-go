@@ -59,7 +59,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		<span id="browser-sync-binding"></span>
 		<template is="dom-bind" id="app">
 			<!--<x-websocket json auto url="ws://{{wsLocation}}/socket"></x-websocket>-->
-			<x-websocket json auto url="{{wsLocation}}" message="{{wsMessage}}"></x-websocket>
+			<ws-data nodes={{nodes}}></ws-data>
 
 			<paper-drawer-panel id="paperDrawerPanel">
 				<!-- Drawer Scroll Header Panel -->
@@ -176,7 +176,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 							<section data-route="nodes">
 								<paper-material elevation="1">
 									<h2 class="paper-font-display2">Nodes</h2>
-									<nodes-list message={{wsMessage}}></nodes-list>
+									<nodes-list nodes={{nodes}}></nodes-list>
 								</paper-material>
 							</section>
 

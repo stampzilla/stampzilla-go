@@ -16,7 +16,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			}
 		</style>
 		<ul>
-			<template is="dom-repeat" items="{{_toArray(items)}}">
+			<template is="dom-repeat" items="{{nodes}}">
 				<li>
 					<a href="{{_getHref(item.Uuid)}}">
 						<span class="paper-font-body1">{{item.Name}}</span>
@@ -32,30 +32,17 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			Polymer({
 				is: 'nodes-list',
 				properties: {
-					items: {
-						type: Object,
-						notify: true,
-					},
-					message: {
+					nodes: {
 						type: Object,
 						notify: true,
 						observer: 'newMessage'
 					}
 				},
-				_toArray: function(obj) {
-					if(!obj){
-						return [];
-					}
-					return Object.keys(obj).map(function(key) {
-						return obj[key];
-					});
-				},
 				_getHref: function(myAttrib) {
 					return '/nodes/' + myAttrib;
 				},
 				newMessage: function(d) {
-					console.log(d);
-					this.items = d.data;
+					console.log("new nodes",d);
 				},
 				ready: function() {
 					this.items = [
