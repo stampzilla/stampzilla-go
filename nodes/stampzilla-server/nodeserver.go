@@ -81,6 +81,14 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 					ns.Nodes.Delete(uuid)
 					close(logicChannel)
 					log.Info(name, " - Removing node from nodes list")
+
+					ns.Notifications.Dispatch(notifications.Notification{
+						Source:     "server",
+						SourceUuid: ns.Config.Uuid,
+						Level:      notifications.NewNotificationLevel("Warning"),
+						Message:    "Node disconnected -> " + name + "(" + uuid + ")",
+					})
+
 					return
 				}
 				// No uuid available, send the whole node list to webclients
