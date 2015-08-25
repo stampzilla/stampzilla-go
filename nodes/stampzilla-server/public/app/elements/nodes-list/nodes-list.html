@@ -21,7 +21,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 					<a href="{{_getHref(item.Uuid)}}">
 						<span class="paper-font-body1">{{item.Name}}</span>
 					</a>
-						<span class="paper-font-body1">{{item.Host}}</span>
+					<span class="paper-font-body1">{{item.Host}}</span>
+					<span class="paper-font-body1">{{item.LastSeen}}</span>
 				</li>
 			</template>
 		</ul>
@@ -42,7 +43,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 					return '/nodes/' + myAttrib;
 				},
 				newMessage: function(d) {
-					console.log("new nodes",d);
+					console.log('new nodes',d);
 				},
 				ready: function() {
 					this.items = [
