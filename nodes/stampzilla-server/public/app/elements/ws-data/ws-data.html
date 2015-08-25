@@ -64,7 +64,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 						this.nodes.forEach(function(el,index){
 							if( d.data !== undefined && el.Uuid === d.data.Uuid){
 								// Update the node
-								this.nodes[index] = d.data;
+								this.set('nodes.'+index+'', d.data);
 								// Make sure that is is not added to the nodelist
 								delete(d.data);
 							}
