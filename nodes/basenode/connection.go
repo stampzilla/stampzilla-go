@@ -142,3 +142,31 @@ func timeoutMonitor(connection net.Conn, serverIsAlive chan bool) {
 		}
 	}
 }
+
+func (self *Connection) SendCritical(message string) {
+	self.Send <- &notifications.Notification{
+		Level:      notifications.CriticalLevel,
+		Message:    message,
+	}
+}
+
+func (self *Connection) SendError(message string) {
+	self.Send <- &notifications.Notification{
+		Level:      notifications.ErrorLevel,
+		Message:    message,
+	}
+}
+
+func (self *Connection) SendWarn(message string) {
+	self.Send <- &notifications.Notification{
+		Level:      notifications.WarnLevel,
+		Message:    message,
+	}
+}
+
+func (self *Connection) SendInfo(message string) {
+	self.Send <- &notifications.Notification{
+		Level:      notifications.InfoLevel,
+		Message:    message,
+	}
+}

@@ -5,7 +5,6 @@ import (
 
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/notifications"
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
@@ -164,8 +163,16 @@ func processCommand(node *protocol.Node, connection *basenode.Connection, cmd pr
 
 		switch cmd.Cmd {
 		case "notification":
-			connection.Send <- notifications.NewNotification(notifications.NewNotificationLevel(cmd.Args[0]), "Test notifcation with level '"+cmd.Args[0]+"'")
-
+			switch cmd.Args[0] {
+			case "Critical":
+				connection.SendCritical("Test notifcation with level '" + cmd.Args[0] + "'")
+			case "Error":
+				connection.SendError("Test notifcation with level '" + cmd.Args[0] + "'")
+			case "Warning":
+				connection.SendWarn("Test notifcation with level '" + cmd.Args[0] + "'")
+			case "Information":
+				connection.SendInfo("Test notifcation with level '" + cmd.Args[0] + "'")
+			}
 		case "on":
 			log.Info("got on")
 			device.SetState(true)
