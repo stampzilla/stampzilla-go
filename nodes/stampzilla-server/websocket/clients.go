@@ -12,6 +12,17 @@ import (
 	"github.com/pborman/uuid"
 )
 
+const (
+	// Time allowed to write the file to the client.
+	writeWait = 10 * time.Second
+
+	// Time allowed to read the next pong message from the client.
+	pongWait = 60 * time.Second
+
+	// Send pings to client with this period. Must be less than pongWait.
+	pingPeriod = (pongWait * 9) / 10
+)
+
 type Message struct {
 	Type string          `json:"type"`
 	Data json.RawMessage `json:"data"`
@@ -100,29 +111,6 @@ func newClients() *Clients {
 	return &Clients{sync.Mutex{}, make([]*Client, 0), nil}
 }
 
-//func (clients *Clients) WebsocketRoute(params martini.Params, receiver <-chan *Message, sender chan<- *Message, done <-chan bool, disconnect chan<- int, err <-chan error) (int, string) {
-//client := &Client{params["clientname"], receiver, sender, done, err, disconnect}
-//clients.appendClient(client)
-
-//// A single select can be used to do all the messaging
-//for {
-//select {
-//case <-client.err:
-//// Don't try to do this:
-//// client.out <- &Message{"system", "system", "There has been an error with your connection"}
-//// The socket connection is already long gone.
-//// Use the error for statistics etc
-//case msg := <-client.in:
-////TODO implement command from websocket here. using same process as WebHandlerCommandToNode
-
-//log.Info("incoming message from webui on websocket", string(msg.Data))
-//clients.Router.Run(msg)
-//case <-client.done:
-//clients.removeClient(client)
-//return 200, "OK"
-//}
-//}
-//}
 func (clients *Clients) WebsocketRoute(c *gin.Context) {
 	conn, err := websocket.Upgrade(c.Writer, c.Request, nil, 1024, 1024)
 	if err != nil {
@@ -132,13 +120,22 @@ func (clients *Clients) WebsocketRoute(c *gin.Context) {
 	}
 
 	out := make(chan *Message)
-	go senderWorker(conn, out)
 	done := make(chan bool)
 	wsErr := make(chan error)
 	disconnect := make(chan int)
-	go disconnectWorker(conn, disconnect)
 	client := &Client{out, done, wsErr, uuid.New(), disconnect}
+
+	go senderWorker(conn, out)
+	go disconnectWorker(conn, client)
+
 	clients.appendClient(client)
+
+	conn.SetReadDeadline(time.Now().Add(pongWait))
+	conn.SetPongHandler(func(string) error {
+		//log.Debug("Got pong response from browser")
+		conn.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
 
 	//Listen to websocket
 	for {
@@ -148,7 +145,6 @@ func (clients *Clients) WebsocketRoute(c *gin.Context) {
 			log.Info(conn.LocalAddr(), " Disconnected")
 			close(done)
 			close(out)
-			close(disconnect)
 			clients.removeClient(client)
 			break
 		}
@@ -156,21 +152,37 @@ func (clients *Clients) WebsocketRoute(c *gin.Context) {
 	}
 }
 
-func disconnectWorker(conn *websocket.Conn, disconnect <-chan int) {
-	for code := range disconnect {
-		conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(code, ""), time.Now().Add(10*time.Second))
+func disconnectWorker(conn *websocket.Conn, c *Client) {
+	for code := range c.disconnect {
+		log.Debug("Closing websocket")
+		conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(code, ""), time.Now().Add(writeWait))
+		//We can only disconnect once so we can close this channel here
+		close(c.disconnect)
 		if err := conn.Close(); err != nil {
 			log.Error("Connection could not be closed: %s", err)
-			return
 		}
+		return
 	}
 }
-func senderWorker(conn *websocket.Conn, c chan *Message) {
-	for msg := range c {
-		err := conn.WriteJSON(msg)
-		if err != nil {
-			log.Error(err)
-		}
+func senderWorker(conn *websocket.Conn, out chan *Message) {
+	pingTicker := time.NewTicker(pingPeriod)
+	for {
+		select {
+		case msg, opened := <-out:
+			err := conn.WriteJSON(msg)
+			if err != nil {
+				log.Error(err)
+			}
+			if !opened {
+				pingTicker.Stop()
+				return
+			}
+		case <-pingTicker.C:
+			if err := conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(writeWait)); err != nil {
+				log.Error(err)
+				return
+			}
 
+		}
 	}
 }
