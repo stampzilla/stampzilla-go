@@ -82,12 +82,7 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 					close(logicChannel)
 					log.Info(name, " - Removing node from nodes list")
 
-					ns.Notifications.Dispatch(notifications.Notification{
-						Source:     "server",
-						SourceUuid: ns.Config.Uuid,
-						Level:      notifications.NewNotificationLevel("Warning"),
-						Message:    "Node disconnected -> " + name + "(" + uuid + ")",
-					})
+					ns.Notifications.Warn("Node disconnected -> " + name + "(" + uuid + ")")
 
 					return
 				}

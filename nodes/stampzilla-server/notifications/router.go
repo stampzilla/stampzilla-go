@@ -10,6 +10,8 @@ import (
 )
 
 type Router struct {
+	Uuid   string
+	Name   string
 	Config *RouterConfig
 
 	transports map[NotificationLevel][]Transport
@@ -131,4 +133,40 @@ func (self *Router) Dispatch(msg Notification) {
 	}
 
 	log.Warnf("Notification type \"%s\" dropped, no one is listening", msg.Level)
+}
+
+func (self *Router) Critical(message string) {
+	self.Dispatch(Notification{
+		Source:     self.Name,
+		SourceUuid: self.Uuid,
+		Level:      CriticalLevel,
+		Message:    message,
+	})
+}
+
+func (self *Router) Error(message string) {
+	self.Dispatch(Notification{
+		Source:     self.Name,
+		SourceUuid: self.Uuid,
+		Level:      ErrorLevel,
+		Message:    message,
+	})
+}
+
+func (self *Router) Warn(message string) {
+	self.Dispatch(Notification{
+		Source:     self.Name,
+		SourceUuid: self.Uuid,
+		Level:      WarnLevel,
+		Message:    message,
+	})
+}
+
+func (self *Router) Info(message string) {
+	self.Dispatch(Notification{
+		Source:     self.Name,
+		SourceUuid: self.Uuid,
+		Level:      InfoLevel,
+		Message:    message,
+	})
 }

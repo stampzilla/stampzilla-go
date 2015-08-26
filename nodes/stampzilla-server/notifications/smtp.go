@@ -8,12 +8,13 @@ import (
 )
 
 type Smtp struct {
-	Server   string `default:localhost`
-	Username string
-	Password string
-	Port     int    `default:25`
-	Sender   string `default:stampzilla`
-	To       string `default:stampzilla`
+	Server             string `default:localhost`
+	Username           string
+	Password           string
+	Port               int    `default:25`
+	Sender             string `default:stampzilla`
+	To                 string `default:stampzilla`
+	InsecureSkipVerify bool
 }
 
 func (self *Smtp) Start() {
@@ -27,7 +28,7 @@ func (self *Smtp) Dispatch(note Notification) {
 	msg.SetBody("text/html", "<p>Notification from <b>"+note.Source+"</b>("+note.SourceUuid+")!</p><p>"+note.Level.String()+" - "+note.Message+"</p>")
 
 	mailer := gomail.NewPlainDialer(self.Server, self.Port, self.Username, self.Password)
-	mailer.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+	mailer.TLSConfig = &tls.Config{InsecureSkipVerify: self.InsecureSkipVerify}
 	if err := mailer.DialAndSend(msg); err != nil {
 		log.Error("Failed to send mail - ", err)
 	}

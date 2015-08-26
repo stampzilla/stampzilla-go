@@ -94,6 +94,8 @@ func main() {
 	}
 
 	notificationRouter := notifications.NewRouter()
+	notificationRouter.Uuid = config.Uuid
+	notificationRouter.Name = "server"
 
 	// Register the rest of the services
 	services = append(services, &WebsocketHandler{}, config, protocol.NewNodes(), logic.NewLogic(), logic.NewScheduler(), websocket.NewRouter(), NewNodeServer(), NewWebServer(), notificationRouter)
@@ -117,12 +119,7 @@ func main() {
 
 	StartServices(services)
 
-	notificationRouter.Dispatch(notifications.Notification{
-		Source:     "server",
-		SourceUuid: config.Uuid,
-		Level:      notifications.NewNotificationLevel("Information"),
-		Message:    "Server started and ready",
-	})
+	notificationRouter.Info("Server started and ready")
 	select {}
 }
 
