@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	log "github.com/cihub/seelog"
+	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
 )
@@ -37,7 +38,8 @@ func (ws *WebServer) Start() {
 	//})
 
 	r := gin.Default()
-	r.Static("/app", "./public/dist")
+	r.Use(static.Serve("/", static.LocalFile("./public/dist", false)))
+	r.StaticFile("/", "./public/dist/index.html")
 
 	//m.Get("/socket", sockets.JSON(websocket.Message{}, &sockets.Options{AllowedOrigin: "https?://(localhost:5000|{{host}})$"}), ws.WsClients.WebsocketRoute)
 	r.GET("/socket", ws.WsClients.WebsocketRoute)
