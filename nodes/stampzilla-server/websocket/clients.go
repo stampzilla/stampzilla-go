@@ -163,7 +163,7 @@ func disconnectWorker(conn *websocket.Conn, c *Client) {
 		log.Debug("Closing websocket")
 		conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(code, ""), time.Now().Add(writeWait))
 		if err := conn.Close(); err != nil {
-			log.Error("Connection could not be closed: %s", err)
+			log.Error("Connection could not be closed: ", err)
 		}
 		return
 	}
