@@ -169,13 +169,13 @@ func senderWorker(conn *websocket.Conn, out chan *Message) {
 	for {
 		select {
 		case msg, opened := <-out:
-			err := conn.WriteJSON(msg)
-			if err != nil {
-				log.Error(err)
-			}
 			if !opened {
+				log.Debug("websocket: Sendchannel closed stopping pingTicket and senderWorker")
 				pingTicker.Stop()
 				return
+			}
+			if err := conn.WriteJSON(msg); err != nil {
+				log.Error(err)
 			}
 		case <-pingTicker.C:
 			if err := conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(writeWait)); err != nil {
