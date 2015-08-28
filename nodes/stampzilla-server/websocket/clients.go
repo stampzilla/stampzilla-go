@@ -123,6 +123,13 @@ func (clients *Clients) WebsocketRoute(c *gin.Context) {
 	done := make(chan bool)
 	wsErr := make(chan error)
 	disconnect := make(chan int)
+
+	defer func() {
+		close(out)
+		close(done)
+		close(wsErr)
+	}()
+
 	client := &Client{out, done, wsErr, uuid.New(), disconnect}
 
 	go senderWorker(conn, out)
@@ -143,39 +150,38 @@ func (clients *Clients) WebsocketRoute(c *gin.Context) {
 		err := conn.ReadJSON(msg)
 		if err != nil {
 			log.Info(conn.LocalAddr(), " Disconnected")
-			close(done)
-			close(out)
 			clients.removeClient(client)
-			break
+			return
 		}
 		go clients.Router.Run(msg)
 	}
 }
 
 func disconnectWorker(conn *websocket.Conn, c *Client) {
+	defer close(c.disconnect)
 	for code := range c.disconnect {
 		log.Debug("Closing websocket")
 		conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(code, ""), time.Now().Add(writeWait))
-		//We can only disconnect once so we can close this channel here
-		close(c.disconnect)
 		if err := conn.Close(); err != nil {
-			log.Error("Connection could not be closed: %s", err)
+			log.Error("Connection could not be closed: ", err)
 		}
 		return
 	}
 }
 func senderWorker(conn *websocket.Conn, out chan *Message) {
 	pingTicker := time.NewTicker(pingPeriod)
+	defer func() {
+		pingTicker.Stop()
+	}()
 	for {
 		select {
 		case msg, opened := <-out:
-			err := conn.WriteJSON(msg)
-			if err != nil {
-				log.Error(err)
-			}
 			if !opened {
-				pingTicker.Stop()
+				log.Debug("websocket: Sendchannel closed stopping pingTicket and senderWorker")
 				return
+			}
+			if err := conn.WriteJSON(msg); err != nil {
+				log.Error(err)
 			}
 		case <-pingTicker.C:
 			if err := conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(writeWait)); err != nil {

@@ -155,7 +155,7 @@ func serverRecv(node *protocol.Node, connection *basenode.Connection) {
 // THis is called on each incomming command
 func processCommand(node *protocol.Node, connection *basenode.Connection, cmd protocol.Command) {
 	if s, ok := node.State().(*State); ok {
-		log.Info("Incoming command from server:", cmd)
+		log.Infof("Incoming command from server: %#v \n", cmd)
 		if len(cmd.Args) == 0 {
 			return
 		}
