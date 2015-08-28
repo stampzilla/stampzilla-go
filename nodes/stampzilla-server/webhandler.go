@@ -58,18 +58,20 @@ func (wh *WebHandler) CommandToNodeGet(c *gin.Context) {
 	if node == nil {
 		log.Debug("NODE: ", node)
 		c.String(404, "Node not found")
+		return
 	}
 
 	log.Info("Sending command to:", id)
 
 	// Split on / to add arguments
 	p := strings.Split(c.Param("cmd"), "/")
-	cmd := protocol.Command{Cmd: p[0], Args: p[1:]}
+	cmd := protocol.Command{Cmd: p[1], Args: p[2:]}
 
 	jsonCmd, err := json.Marshal(cmd)
 	if err != nil {
 		log.Error(err)
 		c.String(500, "Failed json marshal")
+		return
 	}
 	log.Info("Command:", string(jsonCmd))
 	node.Write(jsonCmd)
