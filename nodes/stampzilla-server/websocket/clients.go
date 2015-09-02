@@ -2,12 +2,25 @@ package websocket
 
 import (
 	"encoding/json"
+	"net/http"
 	"sync"
 	"time"
 
 	log "github.com/cihub/seelog"
-	"github.com/go-martini/martini"
+	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"github.com/pborman/uuid"
+)
+
+const (
+	// Time allowed to write the file to the client.
+	writeWait = 10 * time.Second
+
+	// Time allowed to read the next pong message from the client.
+	pongWait = 60 * time.Second
+
+	// Send pings to client with this period. Must be less than pongWait.
+	pingPeriod = (pongWait * 9) / 10
 )
 
 type Message struct {
@@ -21,12 +34,11 @@ type Clients struct {
 	Router  *Router `inject:""`
 }
 type Client struct {
-	Name       string
-	in         <-chan *Message
 	out        chan<- *Message
 	done       <-chan bool
 	err        <-chan error
-	disconnect chan<- int
+	Id         string
+	disconnect chan int
 }
 
 // Add a client to a room
@@ -59,7 +71,7 @@ func (r *Clients) SendToAll(t string, data interface{}) {
 		case c.out <- msg:
 			// Everything went well :)
 		case <-time.After(time.Second):
-			log.Warn("Failed writing to websocket: timeout (", c.Name, ")")
+			log.Warn("Failed writing to websocket: timeout (", c.Id, ")")
 			clientsToRemove = append(clientsToRemove, c)
 		}
 	}
@@ -98,26 +110,85 @@ func (r *Clients) disconnectAll() {
 func newClients() *Clients {
 	return &Clients{sync.Mutex{}, make([]*Client, 0), nil}
 }
-func (clients *Clients) WebsocketRoute(params martini.Params, receiver <-chan *Message, sender chan<- *Message, done <-chan bool, disconnect chan<- int, err <-chan error) (int, string) {
-	client := &Client{params["clientname"], receiver, sender, done, err, disconnect}
+
+func (clients *Clients) WebsocketRoute(c *gin.Context) {
+	conn, err := websocket.Upgrade(c.Writer, c.Request, nil, 1024, 1024)
+	if err != nil {
+		http.Error(c.Writer, "Websocket error", 400)
+		log.Error(err)
+		return
+	}
+
+	out := make(chan *Message)
+	done := make(chan bool)
+	wsErr := make(chan error)
+	disconnect := make(chan int)
+
+	defer func() {
+		close(out)
+		close(done)
+		close(wsErr)
+	}()
+
+	client := &Client{out, done, wsErr, uuid.New(), disconnect}
+
+	go senderWorker(conn, out)
+	go disconnectWorker(conn, client)
+
 	clients.appendClient(client)
 
-	// A single select can be used to do all the messaging
+	conn.SetReadDeadline(time.Now().Add(pongWait))
+	conn.SetPongHandler(func(string) error {
+		//log.Debug("Got pong response from browser")
+		conn.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
+
+	//Listen to websocket
+	for {
+		msg := &Message{}
+		err := conn.ReadJSON(msg)
+		if err != nil {
+			log.Info(conn.LocalAddr(), " Disconnected")
+			clients.removeClient(client)
+			return
+		}
+		go clients.Router.Run(msg)
+	}
+}
+
+func disconnectWorker(conn *websocket.Conn, c *Client) {
+	defer close(c.disconnect)
+	for code := range c.disconnect {
+		log.Debug("Closing websocket")
+		conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(code, ""), time.Now().Add(writeWait))
+		if err := conn.Close(); err != nil {
+			log.Error("Connection could not be closed: ", err)
+		}
+		return
+	}
+}
+func senderWorker(conn *websocket.Conn, out chan *Message) {
+	pingTicker := time.NewTicker(pingPeriod)
+	defer func() {
+		pingTicker.Stop()
+	}()
 	for {
 		select {
-		case <-client.err:
-			// Don't try to do this:
-			// client.out <- &Message{"system", "system", "There has been an error with your connection"}
-			// The socket connection is already long gone.
-			// Use the error for statistics etc
-		case msg := <-client.in:
-			//TODO implement command from websocket here. using same process as WebHandlerCommandToNode
+		case msg, opened := <-out:
+			if !opened {
+				log.Debug("websocket: Sendchannel closed stopping pingTicket and senderWorker")
+				return
+			}
+			if err := conn.WriteJSON(msg); err != nil {
+				log.Error(err)
+			}
+		case <-pingTicker.C:
+			if err := conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(writeWait)); err != nil {
+				log.Error(err)
+				return
+			}
 
-			log.Info("incoming message from webui on websocket", string(msg.Data))
-			clients.Router.Run(msg)
-		case <-client.done:
-			clients.removeClient(client)
-			return 200, "OK"
 		}
 	}
 }
