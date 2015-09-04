@@ -1,0 +1,101 @@
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<dom-module id="ws-data">
+	<template>
+		<style>
+			:host {
+				display: none;
+			}
+		</style>
+		<x-websocket json auto url="{{url}}" message="{{message}}"></x-websocket>
+	</template>
+
+	<script>
+		(function () {
+			'use strict';
+			new Polymer({
+				is: 'ws-data',
+				properties: {
+					url: {
+						type: String,
+						value: 'ws://'+location.hostname+':8080/socket',
+						notify: true
+					},
+					nodes: {
+						type: Array,
+						notify: true,
+					},
+					message: {
+						type: Object,
+						notify: true,
+						observer: 'newMessage'
+					}
+				},
+				_toArray: function(obj) {
+					if(!obj){
+						return [];
+					}
+					return Object.keys(obj).map(function(key) {
+						return obj[key];
+					});
+				},
+				_getHref: function(myAttrib) {
+					return '/nodes/' + myAttrib;
+				},
+				//https://www.polymer-project.org/1.0/docs/devguide/properties.html 
+				newMessage: function(d) {
+					console.log(d);
+
+					if(d.type === 'all'){
+						this.nodes = this._toArray(d.data);
+						return;
+					}
+					if(d.type === 'singlenode'){
+						d.data.LastSeen = Math.floor(Date.now() / 1000); // <-- Todo: remove, test update // stamp
+					
+						this.nodes.forEach(function(el,index){
+							if( d.data !== undefined && el.Uuid === d.data.Uuid){
+								// Update the node
+								this.set('nodes.'+index+'', d.data);
+								// Make sure that is is not added to the nodelist
+								delete(d.data);
+							}
+						}, this);
+
+						if ( d.data !== undefined ) {
+							this.push('nodes',d.data);
+						}
+					}
+					if(d.type === 'disconnected'){
+						this.removeNode(d.data);
+					}
+
+				},
+				removeNode: function(uuid){
+					var i = -1;
+					this.nodes.forEach(function(el,index){
+						if(el.Uuid === uuid){
+							i = index;
+						}
+					});
+
+					if(i !== -1){
+						this.splice('nodes', i, 1);
+					}
+
+				},
+				ready: function() {
+				}
+			});
+		})();
+	</script>
+
+</dom-module>

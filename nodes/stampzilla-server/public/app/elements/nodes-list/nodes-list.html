@@ -16,12 +16,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			}
 		</style>
 		<ul>
-			<template is="dom-repeat" items="{{_toArray(items)}}">
+			<template is="dom-repeat" items="{{nodes}}">
 				<li>
 					<a href="{{_getHref(item.Uuid)}}">
 						<span class="paper-font-body1">{{item.Name}}</span>
 					</a>
-						<span class="paper-font-body1">{{item.Host}}</span>
+					<span class="paper-font-body1">{{item.Host}}</span>
+					<span class="paper-font-body1">{{item.LastSeen}}</span>
 				</li>
 			</template>
 		</ul>
@@ -32,40 +33,29 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			Polymer({
 				is: 'nodes-list',
 				properties: {
-					items: {
-						type: Object,
-						notify: true,
-					},
-					message: {
+					nodes: {
 						type: Object,
 						notify: true,
 						observer: 'newMessage'
 					}
 				},
-				_toArray: function(obj) {
-					if(!obj){
-						return [];
-					}
-					return Object.keys(obj).map(function(key) {
-						return obj[key];
-					});
-				},
+				//observers: [
+				//	'nodesChanged(nodes.*)'
+				//],
 				_getHref: function(myAttrib) {
 					return '/nodes/' + myAttrib;
 				},
 				newMessage: function(d) {
-					console.log(d);
-					this.items = d.data;
+					console.log('new nodes',d);
 				},
+				//nodesChanged: function(d){
+			//		console.log("nodes changed",d);
+			//	},
 				ready: function() {
-					this.items = [
-						'Responsive Web App boilerplate',
-						'Iron Elements and Paper Elements',
-						'End-to-end Build Tooling (including Vulcanize)',
-						'Unit testing with Web Component Tester',
-						'Routing with Page.js',
-						'Offline support with the Platinum Service Worker Elements'
-					];
+					//var self = this;
+					//NOTE we must use notifyPath(path, value) OR set(path, value) and we dont need custom observers. dom-repeat is happy just using set or notifyPath
+					//setInterval(function(){self.set('nodes.0.Name', 'TESTAR');},3000);
+
 				}
 			});
 		})();

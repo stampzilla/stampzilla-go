@@ -93,6 +93,9 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 
 		nodeIsAlive <- true
 
+		if node.GetPong() {
+			continue
+		}
 		if node.GetPing() {
 			connection.Write([]byte("{\"Ping\":true}"))
 			continue
