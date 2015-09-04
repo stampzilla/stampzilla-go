@@ -312,7 +312,7 @@ func processArduinoData(msg string, connection *basenode.Connection) { // {{{
 			select {
 			case connection.Send <- node.Node():
 			case <-time.After(time.Second * 1):
-				log.Warn("TIMEOUT: Failed to send update to server")
+				//log.Warn("TIMEOUT: Failed to send update to server")
 			}
 		}()
 
@@ -560,6 +560,11 @@ func (config *SerialConnection) run(connection *basenode.Connection, callback fu
 }                                                                                                                                       // }}}
 func (config *SerialConnection) connect(connection *basenode.Connection, callback func(data string, connection *basenode.Connection)) { // {{{
 
+	red := state.Lights.Red
+	green := state.Lights.Green
+	blue := state.Lights.Blue
+	white := state.Lights.White
+
 	c := &serial.Config{Name: config.Name, Baud: config.Baud}
 	var err error
 
@@ -571,10 +576,10 @@ func (config *SerialConnection) connect(connection *basenode.Connection, callbac
 
 	<-time.After(time.Second)
 
-	config.Port.Write([]byte{0x02, 0x07, byte(15), 0x03}) // red
-	config.Port.Write([]byte{0x02, 0x08, byte(15), 0x03}) // green
-	config.Port.Write([]byte{0x02, 0x09, byte(15), 0x03}) // blue
-	config.Port.Write([]byte{0x02, 0x0A, byte(15), 0x03}) // white
+	config.Port.Write([]byte{0x02, 0x07, byte(red), 0x03})   // red
+	config.Port.Write([]byte{0x02, 0x08, byte(green), 0x03}) // green
+	config.Port.Write([]byte{0x02, 0x09, byte(blue), 0x03})  // blue
+	config.Port.Write([]byte{0x02, 0x0A, byte(white), 0x03}) // white
 
 	var incomming string = ""
 
