@@ -34,29 +34,25 @@
 						observer: 'changeNode'
 					}
 				},
-				nodesUpdated: function(d) {
-
-					this.nodes.forEach(function(el,index){
+				nodesUpdated: function() {
+					this.nodes.forEach(function(el){
 						if( el.Uuid === this.uuid){
 							this.set('node', el);
-							console.log(this.uuid, this.node);
 						}
 					}, this);
 				},
-				changeUuid: function(d) {
+				changeUuid: function() {
 					if ( this.nodes !== undefined ) {
-						this.nodes.forEach(function(el,index){
+						this.nodes.forEach(function(el){
 							if( el.Uuid === this.uuid){
 								this.set('node', el);
 							}
 						}, this);
 					}
 				},
-				changeNode: function(d) {
-					console.log('node changed ',d);
+				changeNode: function() {
 				},
 				ready: function() {
-					console.log("elements! ready", this);
 				}
 			});
 		})();

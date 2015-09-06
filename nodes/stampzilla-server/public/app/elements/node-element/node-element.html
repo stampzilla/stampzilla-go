@@ -75,15 +75,15 @@
 						observer: 'changeElement'
 					}
 				},
-				changeElement: function(d) {
+				changeElement: function() {
 					this.ready();
 				},
 				ready: function() {
-					this.isText = this.element.Type == 0;
-					this.isButton = this.element.Type == 1;
-					this.isToggle = this.element.Type == 2;
-					this.isSlider = this.element.Type == 3;
-					this.isColorpick = this.element.Type == 4;
+					this.isText = this.element.Type === 0;
+					this.isButton = this.element.Type === 1;
+					this.isToggle = this.element.Type === 2;
+					this.isSlider = this.element.Type === 3;
+					this.isColorpick = this.element.Type === 4;
 				}
 			});
 		})();
