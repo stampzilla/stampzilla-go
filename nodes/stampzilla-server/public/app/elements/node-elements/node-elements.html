@@ -1,0 +1,65 @@
+<dom-module id="node-elements">
+	<template>
+		<style>
+			:host {
+				@apply(--layout-flex);
+				display: block;
+			}
+		</style>
+		Nod: <span class="paper-font-body1">{{ node.Name }}</span>
+		<template is="dom-repeat" items="{{node.Elements}}">
+			<node-element element={{item}}></node-element>
+		</template>
+
+	</template>
+
+	<script>
+		(function () {
+			Polymer({
+				is: 'node-elements',
+				properties: {
+					nodes: {
+						type: Array,
+						notify: true,
+						observer: 'nodesUpdated'
+					},
+					uuid: {
+						type: String,
+						notify: true,
+						observer: 'changeUuid'
+					},
+					node: {
+						type: Object,
+						notify: true,
+						observer: 'changeNode'
+					}
+				},
+				nodesUpdated: function(d) {
+
+					this.nodes.forEach(function(el,index){
+						if( el.Uuid === this.uuid){
+							this.set('node', el);
+							console.log(this.uuid, this.node);
+						}
+					}, this);
+				},
+				changeUuid: function(d) {
+					if ( this.nodes !== undefined ) {
+						this.nodes.forEach(function(el,index){
+							if( el.Uuid === this.uuid){
+								this.set('node', el);
+							}
+						}, this);
+					}
+				},
+				changeNode: function(d) {
+					console.log('node changed ',d);
+				},
+				ready: function() {
+					console.log("elements! ready", this);
+				}
+			});
+		})();
+	</script>
+
+</dom-module>
