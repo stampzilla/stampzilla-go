@@ -34,6 +34,16 @@ func (h *baseHandler) SendElements(d *Device) []*protocol.Element {
 func (h *baseHandler) ReceiveElements(d *Device) []*protocol.Element {
 	return nil
 }
+func (h *baseHandler) generateSenderId(d *Device) [4]byte {
+	senderId := usb300SenderId
+	//id := d.Id()[3]
+	//senderId[3] = id & 0x7f
+
+	senderId[3] = byte(d.UniqueId)
+
+	fmt.Printf("Sending with ID:% x\n", senderId)
+	return senderId
+}
 
 // }}}
 
@@ -44,6 +54,7 @@ type handlerEepf60201 struct { // {{{
 
 func (h *handlerEepf60201) On(d *Device) {
 	p := goenocean.NewEepF60201()
+	p.SetSenderId(h.generateSenderId(d))
 	p.SetDestinationId(d.Id())
 	//TODO create set methods in EepF60201
 	p.SetTelegramData([]byte{0x50}) //ON
@@ -52,6 +63,7 @@ func (h *handlerEepf60201) On(d *Device) {
 }
 func (h *handlerEepf60201) Off(d *Device) {
 	p := goenocean.NewEepF60201()
+	p.SetSenderId(h.generateSenderId(d))
 	p.SetDestinationId(d.Id())
 	//TODO create set methods in EepF60201
 	p.SetTelegramData([]byte{0x70}) //OFF
@@ -280,16 +292,6 @@ type handlerEepa53808eltako struct { // {{{
 	handlerEepa53808
 }
 
-func (h *handlerEepa53808eltako) generateSenderId(d *Device) [4]byte {
-	senderId := usb300SenderId
-	//id := d.Id()[3]
-	//senderId[3] = id & 0x7f
-
-	senderId[3] = byte(d.UniqueId)
-
-	fmt.Printf("Sending with ID:% x\n", senderId)
-	return senderId
-}
 func (h *handlerEepa53808eltako) Toggle(d *Device) {
 	if d.On() {
 		h.Off(d)
