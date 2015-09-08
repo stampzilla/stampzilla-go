@@ -160,7 +160,7 @@ func reciever(node *protocol.Node, connection *basenode.Connection, recv chan go
 	for p := range recv {
 		if p.PacketType() == goenocean.PacketTypeResponse && len(p.Data()) == 5 {
 			copy(usb300SenderId[:], p.Data()[1:4])
-			log.Debugf("senderid: % x", usb300SenderId)
+			log.Debugf("senderid: % x ( % x )", usb300SenderId, p.Data())
 			continue
 		}
 		if p.SenderId() != [4]byte{0, 0, 0, 0} {
