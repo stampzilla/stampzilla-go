@@ -120,6 +120,10 @@ func processCommand(cmd protocol.Command) {
 	}
 
 	device := state.DeviceByString(cmd.Args[0])
+	if device == nil {
+		log.Errorf("Device %s does not exist", device)
+		return
+	}
 	switch cmd.Cmd {
 	case "toggle":
 		device.CmdToggle()
