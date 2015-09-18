@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/codegangsta/cli"
-	"github.com/facebookgo/inject"
+	"github.com/stampzilla/stampzilla-go/stampzilla/installer"
 )
 
 func main() {
@@ -13,11 +13,7 @@ func main() {
 	app.Version = "0.0.1"
 	app.Usage = "Manage stampzilla on the command line"
 
-	cliHandler := &cliHandler{}
-	err := inject.Populate(cliHandler)
-	if err != nil {
-		panic(err)
-	}
+	cliHandler := &cliHandler{installer.NewInstaller()}
 
 	app.Commands = []cli.Command{
 		{

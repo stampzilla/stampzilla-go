@@ -1,4 +1,4 @@
-package main
+package installer
 
 import (
 	"fmt"
@@ -10,9 +10,15 @@ import (
 )
 
 type Installer struct {
+	Config *Config
 }
 
-func (t *Installer) createConfig() {
+func NewInstaller() *Installer {
+	c := &Config{}
+	return &Installer{c}
+}
+
+func (t *Installer) CreateConfig() {
 	fmt.Print("Creating config /etc/stampzilla/nodes.conf... ")
 	if _, err := os.Stat("/etc/stampzilla/nodes.conf"); os.IsNotExist(err) {
 		config := &Config{}
@@ -24,7 +30,7 @@ func (t *Installer) createConfig() {
 	}
 }
 
-func (t *Installer) bower() {
+func (t *Installer) Bower() {
 	bower, err := exec.LookPath("bower")
 	if err != nil {
 		fmt.Println("Missing bower executable. Install with: npm install -g bower")
@@ -39,20 +45,20 @@ func (t *Installer) bower() {
 	}
 
 	toRun := "cd /home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/public && " + bower + " install"
-	out, err := run("sudo", "-E", "-u", "stampzilla", "-H", shbin, "-c", toRun)
+	out, err := Run("sudo", "-E", "-u", "stampzilla", "-H", shbin, "-c", toRun)
 	if err != nil {
 		fmt.Println("ERROR", err, out)
 	}
 	fmt.Println("DONE")
 }
-func (t *Installer) createUser(username string) {
+func (t *Installer) CreateUser(username string) {
 	fmt.Print("Creating user " + username + "... ")
 	if t.userExists(username) {
 		fmt.Println("already exists!")
 		return
 	}
 
-	out, err := run("useradd", "-m", "-r", "-s", "/bin/false", username)
+	out, err := Run("useradd", "-m", "-r", "-s", "/bin/false", username)
 	if err != nil {
 		fmt.Println("ERROR", err, out)
 		return
@@ -60,14 +66,14 @@ func (t *Installer) createUser(username string) {
 	fmt.Println("DONE")
 }
 func (t *Installer) userExists(username string) bool {
-	_, err := run("id", "-u", username)
+	_, err := Run("id", "-u", username)
 	if err != nil {
 		return false
 	}
 	return true
 }
 
-func (t *Installer) createDirAsUser(directory string, username string) {
+func (t *Installer) CreateDirAsUser(directory string, username string) {
 	fmt.Print("Creating directory " + directory + "... ")
 
 	if _, err := os.Stat(directory); os.IsNotExist(err) {
@@ -106,7 +112,7 @@ func (t *Installer) createDirAsUser(directory string, username string) {
 	fmt.Println("DONE")
 }
 
-func (t *Installer) goGet(url string, update bool) {
+func (t *Installer) GoGet(url string, update bool) {
 	var out string
 	var err error
 	fmt.Print("go get " + filepath.Base(url) + "... ")
@@ -120,15 +126,15 @@ func (t *Installer) goGet(url string, update bool) {
 	//fmt.Printf("LookPath Error: %s", err)
 	//return
 	//}
-	//out, err = run("sudo", "-E", "-u", "stampzilla", "-H", "/usr/bin/env")
+	//out, err = Run("sudo", "-E", "-u", "stampzilla", "-H", "/usr/bin/env")
 	//fmt.Println(out)
 	//return
 	if update {
-		//out, err = run("go", "get", "-u", url)
-		out, err = run("sudo", "-E", "-u", "stampzilla", "-H", gobin, "get", "-u", url)
+		//out, err = Run("go", "get", "-u", url)
+		out, err = Run("sudo", "-E", "-u", "stampzilla", "-H", gobin, "get", "-u", url)
 	} else {
-		out, err = run("sudo", "-E", "-u", "stampzilla", "-H", gobin, "get", url)
-		//out, err = run("go", "get", url)
+		out, err = Run("sudo", "-E", "-u", "stampzilla", "-H", gobin, "get", url)
+		//out, err = Run("go", "get", url)
 	}
 	if err != nil {
 		fmt.Println(err)

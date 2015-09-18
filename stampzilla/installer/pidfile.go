@@ -1,4 +1,4 @@
-package main
+package installer
 
 import (
 	"io/ioutil"
@@ -14,7 +14,7 @@ func (f *PidFile) String() string {
 }
 
 //Read the pidfile.
-func (f *PidFile) read() int {
+func (f *PidFile) Read() int {
 	data, err := ioutil.ReadFile(string(*f))
 	if err != nil {
 		return 0
