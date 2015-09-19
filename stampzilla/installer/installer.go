@@ -121,26 +121,25 @@ func (t *Installer) GoGet(url string, update bool) {
 	if err != nil {
 		fmt.Printf("LookPath Error: %s", err)
 	}
-	//shbin, err := exec.LookPath("sh")
-	//if err != nil {
-	//fmt.Printf("LookPath Error: %s", err)
-	//return
-	//}
-	//out, err = Run("sudo", "-E", "-u", "stampzilla", "-H", "/usr/bin/env")
-	//fmt.Println(out)
-	//return
+	u := ""
 	if update {
-		//out, err = Run("go", "get", "-u", url)
-		out, err = Run("sudo", "-E", "-u", "stampzilla", "-H", gobin, "get", "-u", url)
-	} else {
-		out, err = Run("sudo", "-E", "-u", "stampzilla", "-H", gobin, "get", url)
-		//out, err = Run("go", "get", url)
+		u = "-u"
 	}
+
+	// If we already is stampzilla user no need to sudo!
+	if user, err := user.Current(); err == nil && user.Username == "stampzilla" {
+		out, err = Run(gobin, "get", u, url)
+	} else {
+		out, err = Run("sudo", "-E", "-u", "stampzilla", "-H", gobin, "get", u, url)
+	}
+
 	if err != nil {
 		fmt.Println(err)
 		fmt.Println(out)
 		return
 	}
 	fmt.Println("DONE")
-	//fmt.Println(out)
+	if out != "" {
+		fmt.Println(out)
+	}
 }
