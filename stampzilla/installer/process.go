@@ -1,4 +1,4 @@
-package main
+package installer
 
 import (
 	"fmt"
@@ -33,9 +33,9 @@ func NewProcess(name, configDir string) *Process {
 	}
 }
 
-func (p *Process) start() {
+func (p *Process) Start() {
 
-	if p.Pidfile.read() != 0 {
+	if p.Pidfile.Read() != 0 {
 		fmt.Println("Process " + p.Name + " already running!")
 		return
 	}
@@ -52,25 +52,25 @@ func (p *Process) start() {
 	chdircmd := ""
 	if p.ConfDir != "" {
 		i := &Installer{}
-		i.createDirAsUser(p.ConfDir, "stampzilla")
+		i.CreateDirAsUser(p.ConfDir, "stampzilla")
 		chdircmd = " cd " + p.ConfDir + "; "
 	}
 
 	log.Println("Starting: " + p.Command)
 	cmd := chdircmd + nohupbin + " $GOPATH/bin/" + p.Command + " > /var/log/stampzilla/" + p.Command + " 2>&1 & echo $! > " + p.Pidfile.String()
 
-	//run("sh", "-c", cmd)
+	//Run("sh", "-c", cmd)
 
-	out, err := run("sudo", "-E", "-u", "stampzilla", "-H", shbin, "-c", cmd)
+	out, err := Run("sudo", "-E", "-u", "stampzilla", "-H", shbin, "-c", cmd)
 	if err != nil {
 		fmt.Println(out)
 		fmt.Println(err)
 	}
 }
 
-func (p *Process) stop() {
+func (p *Process) Stop() {
 	log.Println("Stopping:", p.Name)
-	pid := p.Pidfile.read()
+	pid := p.Pidfile.Read()
 	if pid == 0 {
 		log.Println("pid file not found! Process not running?")
 		return
@@ -87,3 +87,25 @@ func (p *Process) stop() {
 	}
 	p.Pidfile.delete()
 }
+
+func Run(head string, parts ...string) (string, error) { // {{{
+	var err error
+	var out []byte
+
+	head, err = exec.LookPath(head)
+	if err != nil {
+		return "", err
+	}
+	cmd := exec.Command(head, parts...)
+	//cmd.Env = []string{"GOPATH=$HOME/go", "PATH=$PATH:$GOPATH/bin"}
+	cmd.Env = []string{
+		"GOPATH=/home/stampzilla/go",
+		"PATH=" + os.Getenv("PATH"),
+		"STAMPZILLA_WEBROOT=/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/public",
+	}
+	out, err = cmd.CombinedOutput()
+	if err != nil {
+		return string(out), err
+	}
+	return string(out), nil
+} // }}}

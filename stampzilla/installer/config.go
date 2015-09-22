@@ -1,4 +1,4 @@
-package main
+package installer
 
 import (
 	"bytes"
@@ -69,7 +69,7 @@ func (c *Config) SaveToFile(filepath string) error {
 	out.WriteTo(configFile)
 	return nil
 }
-func (c *Config) readConfigFromFile(filepath string) error {
+func (c *Config) ReadConfigFromFile(filepath string) error {
 	configFile, err := os.Open(filepath)
 	if err != nil {
 		return err
