@@ -14,6 +14,7 @@ import (
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/notifications"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
+	"github.com/stampzilla/stampzilla-go/pkg/notifier"
 )
 
 //TODO make config general by using a map so we can get config from ENV,file or flag.
@@ -31,6 +32,8 @@ type ServerConfig struct {
 type Startable interface {
 	Start()
 }
+
+var notify notifier.Notify
 
 func main() {
 	config := &ServerConfig{}
@@ -119,7 +122,7 @@ func main() {
 
 	StartServices(services)
 
-	notificationRouter.Info("Server started and ready")
+	notify.Info("Server started and ready")
 	select {}
 }
 

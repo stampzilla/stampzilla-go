@@ -16,18 +16,38 @@ const (
 	ConnectionStateDisconnected = 0
 )
 
-type Connection struct {
-	Send    chan interface{}
-	Receive chan protocol.Command
-	State   chan int
+type Sendable interface {
+	Send(interface{})
 }
 
-func Connect() *Connection {
+type Connection interface {
+	Sendable
+	Receive() chan protocol.Command
+	State() chan int
+}
 
-	connection := &Connection{
-		Send:    make(chan interface{}, 100),
-		Receive: make(chan protocol.Command, 100),
-		State:   make(chan int),
+type connection struct {
+	send    chan interface{}
+	receive chan protocol.Command
+	state   chan int
+}
+
+func (c *connection) Receive() chan protocol.Command {
+	return c.receive
+}
+func (c *connection) State() chan int {
+	return c.state
+}
+func (c *connection) Send(data interface{}) {
+	c.send <- data
+}
+
+func Connect() Connection {
+
+	connection := &connection{
+		send:    make(chan interface{}, 100),
+		receive: make(chan protocol.Command, 100),
+		state:   make(chan int),
 	}
 
 	go func() {
@@ -41,15 +61,15 @@ func Connect() *Connection {
 				continue
 			}
 
-			connection.State <- ConnectionStateConnected
+			connection.State() <- ConnectionStateConnected
 			log.Trace("Connected")
 			serverIsAlive := make(chan bool)
 			go timeoutMonitor(tcpConnection, serverIsAlive)
-			go sendWorker(tcpConnection, connection.Send, quit)
+			go sendWorker(tcpConnection, connection.send, quit)
 
-			connectionWorker(tcpConnection, connection.Receive, serverIsAlive)
+			connectionWorker(tcpConnection, connection.receive, serverIsAlive)
 			close(quit)
-			connection.State <- ConnectionStateDisconnected
+			connection.State() <- ConnectionStateDisconnected
 
 			log.Warn("Lost connection, reconnecting")
 			<-time.After(time.Second)
@@ -140,33 +160,5 @@ func timeoutMonitor(connection net.Conn, serverIsAlive chan bool) {
 				return
 			}
 		}
-	}
-}
-
-func (self *Connection) SendCritical(message string) {
-	self.Send <- &notifications.Notification{
-		Level:      notifications.CriticalLevel,
-		Message:    message,
-	}
-}
-
-func (self *Connection) SendError(message string) {
-	self.Send <- &notifications.Notification{
-		Level:      notifications.ErrorLevel,
-		Message:    message,
-	}
-}
-
-func (self *Connection) SendWarn(message string) {
-	self.Send <- &notifications.Notification{
-		Level:      notifications.WarnLevel,
-		Message:    message,
-	}
-}
-
-func (self *Connection) SendInfo(message string) {
-	self.Send <- &notifications.Notification{
-		Level:      notifications.InfoLevel,
-		Message:    message,
 	}
 }

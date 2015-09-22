@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 
 	log "github.com/cihub/seelog"
-	"gopkg.in/gomail.v2-unstable"
+	"gopkg.in/gomail.v2"
 )
 
 type Smtp struct {
