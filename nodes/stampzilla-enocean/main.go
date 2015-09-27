@@ -143,8 +143,8 @@ var enoceanSend chan goenocean.Encoder
 
 func setupEnoceanCommunication(node *protocol.Node, connection *basenode.Connection) {
 
-	enoceanSend = make(chan goenocean.Encoder)
-	recv := make(chan goenocean.Packet)
+	enoceanSend = make(chan goenocean.Encoder, 100)
+	recv := make(chan goenocean.Packet, 100)
 	goenocean.Serial(enoceanSend, recv)
 
 	getIDBase()
