@@ -138,6 +138,8 @@ func (self *Router) Dispatch(msg Notification) {
 
 func (self *Router) Send(data interface{}) {
 	if n, ok := data.(Notification); ok {
+		n.SourceUuid = self.Uuid
+		n.Source = self.Name
 		self.Dispatch(n)
 	}
 }
