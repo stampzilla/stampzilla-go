@@ -30,6 +30,7 @@ func main() { /*{{{*/
 	//Start communication with the server
 	connection := basenode.Connect()
 	notify = notifier.New(connection)
+	notify.SetSource(node)
 
 	// Thit worker keeps track on our connection state, if we are connected or not
 	go monitorState(node, connection)
