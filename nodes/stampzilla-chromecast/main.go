@@ -30,7 +30,7 @@ func main() { /*{{{*/
 	go monitorState(node, connection)
 
 	// This worker recives all incomming commands
-	go serverRecv(connection.Receive)
+	go serverRecv(connection.Receive())
 
 	//Start chromecast monitoring
 	chromecast := NewChromecast()
@@ -58,7 +58,7 @@ func main() { /*{{{*/
 					Feedback: `Devices["` + dev.Id + `"].PrimaryApp`,
 				})
 			case "Updated":
-				connection.Send <- node.Node()
+				connection.Send(node.Node())
 			default:
 				log.Warn("Unknown event: ", event.Name)
 			}
@@ -71,11 +71,11 @@ func main() { /*{{{*/
 } /*}}}*/
 
 // WORKER that monitors the current connection state
-func monitorState(node *protocol.Node, connection *basenode.Connection) {
-	for s := range connection.State {
+func monitorState(node *protocol.Node, connection basenode.Connection) {
+	for s := range connection.State() {
 		switch s {
 		case basenode.ConnectionStateConnected:
-			connection.Send <- node.Node()
+			connection.Send(node.Node())
 		case basenode.ConnectionStateDisconnected:
 		}
 	}
