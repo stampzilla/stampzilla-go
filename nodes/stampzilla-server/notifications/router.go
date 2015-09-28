@@ -43,7 +43,8 @@ func (self *Router) Load(configFileName string) error {
 	m := multiconfig.NewWithPath(configFileName)
 	err := m.Load(self.Config)
 	if err != nil {
-		log.Error("Failed to read config file (", configFileName, ")", err)
+		log.Error("Failed to read config file (", configFileName, ") ", err)
+		return err
 	}
 
 	for transport, config := range self.Config.Transports {
@@ -87,7 +88,7 @@ func (self *Router) Save(configFileName string) error {
 
 	configFile, err := os.Create(configFileName)
 	if err != nil {
-		log.Error("Failed to create config file (", configFileName, ")", err.Error())
+		log.Error("Failed to create config file (", configFileName, ") ", err.Error())
 		return err
 	}
 

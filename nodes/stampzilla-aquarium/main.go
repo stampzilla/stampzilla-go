@@ -34,7 +34,7 @@ type winsize struct {
 
 var node *protocol.Node
 var state *State = &State{}
-var serverConnection *basenode.Connection
+var serverConnection basenode.Connection
 var ard *SerialConnection
 var disp *SerialConnection
 var frameCount int
@@ -166,12 +166,12 @@ func main() {
 
 	// Setup the serial connection
 	ard = &SerialConnection{Name: arddev, Baud: 115200}
-	ard.run(serverConnection, func(data string, connection *basenode.Connection) {
+	ard.run(serverConnection, func(data string, connection basenode.Connection) {
 		processArduinoData(data, connection)
 	})
 
 	disp = &SerialConnection{Name: dispdev, Baud: 9600}
-	disp.run(serverConnection, func(data string, connection *basenode.Connection) {
+	disp.run(serverConnection, func(data string, connection basenode.Connection) {
 		log.Debug("Incomming from display", data)
 	})
 
@@ -190,7 +190,7 @@ func main() {
 var updateInhibit bool = false
 var changed bool = false
 
-func processArduinoData(msg string, connection *basenode.Connection) { // {{{
+func processArduinoData(msg string, connection basenode.Connection) { // {{{
 	//log.Debug(msg)
 
 	var prevState State = *state
@@ -308,13 +308,7 @@ func processArduinoData(msg string, connection *basenode.Connection) { // {{{
 		changed = false
 		//fmt.Print("\n")
 
-		go func() {
-			select {
-			case connection.Send <- node.Node():
-			case <-time.After(time.Second * 1):
-				//log.Warn("TIMEOUT: Failed to send update to server")
-			}
-		}()
+		connection.Send(node.Node())
 
 		updateInhibit = true
 		//log.Warn("Invalid pacakge: ", msg)
@@ -332,7 +326,7 @@ func Average(xs []float64) float64 {
 	}
 	return total / float64(len(xs))
 }
-func updateDisplay(connection *basenode.Connection, serial *SerialConnection) { // {{{
+func updateDisplay(connection basenode.Connection, serial *SerialConnection) { // {{{
 	for {
 		select {
 		case <-time.After(time.Second / 15):
@@ -389,19 +383,19 @@ func updateDisplay(connection *basenode.Connection, serial *SerialConnection) { 
 } // }}}
 
 // WORKER that monitors the current connection state
-func monitorState(connection *basenode.Connection) { // {{{
-	for s := range connection.State {
+func monitorState(connection basenode.Connection) { // {{{
+	for s := range connection.State() {
 		switch s {
 		case basenode.ConnectionStateConnected:
-			connection.Send <- node.Node()
+			connection.Send(node.Node())
 		case basenode.ConnectionStateDisconnected:
 		}
 	}
 } // }}}
 
 // WORKER that recives all incomming commands
-func serverRecv(connection *basenode.Connection) { // {{{
-	for d := range connection.Receive {
+func serverRecv(connection basenode.Connection) { // {{{
+	for d := range connection.Receive() {
 		if err := processCommand(d); err != nil {
 			log.Error(err)
 		}
@@ -550,15 +544,15 @@ func getWindowSize() *winsize {
 }
 
 // Serial connection workers
-func (config *SerialConnection) run(connection *basenode.Connection, callback func(data string, connection *basenode.Connection)) { // {{{
+func (config *SerialConnection) run(connection basenode.Connection, callback func(data string, connection basenode.Connection)) { // {{{
 	go func() {
 		for {
 			config.connect(connection, callback)
 			<-time.After(time.Second * 4)
 		}
 	}()
-}                                                                                                                                       // }}}
-func (config *SerialConnection) connect(connection *basenode.Connection, callback func(data string, connection *basenode.Connection)) { // {{{
+}                                                                                                                                     // }}}
+func (config *SerialConnection) connect(connection basenode.Connection, callback func(data string, connection basenode.Connection)) { // {{{
 
 	red := state.Lights.Red
 	green := state.Lights.Green

@@ -100,21 +100,21 @@ func main() {
 }
 
 // WORKER that monitors the current connection state
-func monitorState(node *protocol.Node, connection *basenode.Connection, registers *Registers, modbusConnection *Modbus) {
+func monitorState(node *protocol.Node, connection basenode.Connection, registers *Registers, modbusConnection *Modbus) {
 	var stopFetching chan bool
-	for s := range connection.State {
+	for s := range connection.State() {
 		switch s {
 		case basenode.ConnectionStateConnected:
 			fetchRegisters(registers, modbusConnection)
 			stopFetching = periodicalFetcher(registers, modbusConnection, connection, node)
-			connection.Send <- node.Node()
+			connection.Send(node.Node())
 		case basenode.ConnectionStateDisconnected:
 			close(stopFetching)
 		}
 	}
 }
 
-func periodicalFetcher(registers *Registers, connection *Modbus, nodeConn *basenode.Connection, node *protocol.Node) chan bool {
+func periodicalFetcher(registers *Registers, connection *Modbus, nodeConn basenode.Connection, node *protocol.Node) chan bool {
 
 	ticker := time.NewTicker(30 * time.Second)
 	quit := make(chan bool)
@@ -123,7 +123,7 @@ func periodicalFetcher(registers *Registers, connection *Modbus, nodeConn *basen
 			select {
 			case <-ticker.C:
 				fetchRegisters(registers, connection)
-				nodeConn.Send <- node.Node()
+				nodeConn.Send(node.Node())
 			case <-quit:
 				ticker.Stop()
 				log.Println("Stopping periodicalFetcher")
@@ -161,14 +161,14 @@ func fetchRegisters(registers *Registers, connection *Modbus) {
 }
 
 // WORKER that recives all incomming commands
-func serverRecv(registers *Registers, connection *basenode.Connection, modbusConnection *Modbus) {
-	for d := range connection.Receive {
+func serverRecv(registers *Registers, connection basenode.Connection, modbusConnection *Modbus) {
+	for d := range connection.Receive() {
 		processCommand(registers, connection, d)
 	}
 }
 
 // THis is called on each incomming command
-func processCommand(registers *Registers, connection *basenode.Connection, cmd protocol.Command) {
+func processCommand(registers *Registers, connection basenode.Connection, cmd protocol.Command) {
 	//if s, ok := node.State.(*Registers); ok {
 	//log.Println("Incoming command from server:", cmd)
 	//if len(cmd.Args) == 0 {

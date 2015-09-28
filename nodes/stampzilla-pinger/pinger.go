@@ -21,7 +21,7 @@ type Target struct {
 	sync.Mutex
 }
 
-func (t *Target) start(connection *basenode.Connection) {
+func (t *Target) start(connection basenode.Connection) {
 	go t.worker(connection)
 }
 
@@ -35,7 +35,7 @@ func (t *Target) stop() {
 	}
 }
 
-func (t *Target) worker(connection *basenode.Connection) error {
+func (t *Target) worker(connection basenode.Connection) error {
 	t.shutdown = make(chan bool)
 
 	ra, err := net.ResolveIPAddr("ip4:icmp", t.Ip)
@@ -56,7 +56,7 @@ func (t *Target) worker(connection *basenode.Connection) error {
 		}
 
 		t.Ping = float64(rtt) / float64(time.Millisecond)
-		connection.Send <- node.Node()
+		connection.Send(node.Node())
 
 		t.Unlock()
 	}
@@ -69,7 +69,7 @@ func (t *Target) worker(connection *basenode.Connection) error {
 			t.Unlock()
 
 			fmt.Printf("Offline: %s\n", ra.String())
-			connection.Send <- node.Node()
+			connection.Send(node.Node())
 		}
 	}
 

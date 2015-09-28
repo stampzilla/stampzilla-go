@@ -14,28 +14,28 @@ func New(output basenode.Sendable) *Notify {
 }
 
 func (n *Notify) Critical(message string) {
-	n.output.Send(&notifications.Notification{
+	n.output.Send(notifications.Notification{
 		Level:   notifications.CriticalLevel,
 		Message: message,
 	})
 }
 
 func (n *Notify) Error(message string) {
-	n.output.Send(&notifications.Notification{
+	n.output.Send(notifications.Notification{
 		Level:   notifications.ErrorLevel,
 		Message: message,
 	})
 }
 
 func (n *Notify) Warn(message string) {
-	n.output.Send(&notifications.Notification{
+	n.output.Send(notifications.Notification{
 		Level:   notifications.WarnLevel,
 		Message: message,
 	})
 }
 
 func (n *Notify) Info(message string) {
-	n.output.Send(&notifications.Notification{
+	n.output.Send(notifications.Notification{
 		Level:   notifications.InfoLevel,
 		Message: message,
 	})

@@ -26,7 +26,7 @@ import "C"
 
 var node *protocol.Node
 var state *State = &State{make(map[string]*Device), make(map[string]*Sensor, 0)}
-var serverConnection *basenode.Connection
+var serverConnection basenode.Connection
 
 func main() {
 	// Load logger
@@ -95,24 +95,21 @@ func main() {
 }
 
 // WORKER that monitors the current connection state
-func monitorState(connection *basenode.Connection) {
-	for s := range connection.State {
+func monitorState(connection basenode.Connection) {
+	for s := range connection.State() {
 		switch s {
 		case basenode.ConnectionStateConnected:
-			connection.Send <- node.Node()
+			connection.Send(node.Node())
 		case basenode.ConnectionStateDisconnected:
 		}
 	}
 }
 
 // WORKER that recives all incomming commands
-func serverRecv(connection *basenode.Connection) {
+func serverRecv(connection basenode.Connection) {
 	send := processCommandWorker()
-	for d := range connection.Receive {
+	for d := range connection.Receive() {
 		send <- d
-		//if err := processCommand(d); err != nil {
-		//log.Println(err)
-		//}
 	}
 }
 
@@ -237,7 +234,7 @@ func sensorEvent(protocol, model *C.char, sensorId, dataType int, value *C.char)
 		if s.Temp != t {
 			log.Println("Difference, sending to server")
 			s.Temp = t
-			serverConnection.Send <- node.Node()
+			serverConnection.Send(node.Node())
 		}
 	} else if dataType == C.TELLSTICK_HUMIDITY {
 		h, _ := strconv.ParseFloat(C.GoString(value), 64)
@@ -245,7 +242,7 @@ func sensorEvent(protocol, model *C.char, sensorId, dataType int, value *C.char)
 		if s.Humidity != h {
 			log.Println("Difference, sending to server")
 			s.Humidity = h
-			serverConnection.Send <- node.Node()
+			serverConnection.Send(node.Node())
 		}
 	}
 }
@@ -256,11 +253,11 @@ func deviceEvent(deviceId, method int, data *C.char, callbackId int, context uns
 	device := state.GetDevice(strconv.Itoa(deviceId))
 	if method&C.TELLSTICK_TURNON != 0 {
 		device.State.On = true
-		serverConnection.Send <- node.Node()
+		serverConnection.Send(node.Node())
 	}
 	if method&C.TELLSTICK_TURNOFF != 0 {
 		device.State.On = false
-		serverConnection.Send <- node.Node()
+		serverConnection.Send(node.Node())
 	}
 	if method&C.TELLSTICK_DIM != 0 {
 		level, err := strconv.ParseUint(C.GoString(data), 10, 16)
@@ -275,7 +272,7 @@ func deviceEvent(deviceId, method int, data *C.char, callbackId int, context uns
 			device.State.On = true
 		}
 		device.State.Dim = int(level)
-		serverConnection.Send <- node.Node()
+		serverConnection.Send(node.Node())
 	}
 }
 

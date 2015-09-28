@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	log "github.com/cihub/seelog"
 	"io/ioutil"
 	"net"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"time"
+
+	log "github.com/cihub/seelog"
 )
 
 var Info InfoStruct

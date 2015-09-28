@@ -33,7 +33,7 @@ type Startable interface {
 	Start()
 }
 
-var notify notifier.Notify
+var notify *notifier.Notify
 
 func main() {
 	config := &ServerConfig{}
@@ -99,6 +99,7 @@ func main() {
 	notificationRouter := notifications.NewRouter()
 	notificationRouter.Uuid = config.Uuid
 	notificationRouter.Name = "server"
+	notify = notifier.New(notificationRouter)
 
 	// Register the rest of the services
 	services = append(services, &WebsocketHandler{}, config, protocol.NewNodes(), logic.NewLogic(), logic.NewScheduler(), websocket.NewRouter(), NewNodeServer(), NewWebServer(), notificationRouter)

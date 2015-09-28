@@ -107,19 +107,19 @@ func monitorLampCollection(lights *client.LightCollection) {
 }
 
 // WORKER that monitors the current connection state
-func monitorState(node *protocol.Node, connection *basenode.Connection) {
-	for s := range connection.State {
+func monitorState(node *protocol.Node, connection basenode.Connection) {
+	for s := range connection.State() {
 		switch s {
 		case basenode.ConnectionStateConnected:
-			connection.Send <- node
+			connection.Send(node)
 		case basenode.ConnectionStateDisconnected:
 		}
 	}
 }
 
 // WORKER that recives all incoming commands
-func serverRecv(connection *basenode.Connection) {
-	for d := range connection.Receive {
+func serverRecv(connection basenode.Connection) {
+	for d := range connection.Receive() {
 		processCommand(d)
 	}
 }

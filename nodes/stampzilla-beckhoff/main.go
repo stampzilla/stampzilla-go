@@ -2,42 +2,41 @@ package main
 
 import (
 	"flag"
-	"os" 
+	"os"
 	"os/signal"
-	"syscall"
-	"sync"
-	"time"
 	"strings"
-	
-	"github.com/stamp/goADS" 
+	"sync"
+	"syscall"
+	"time"
+
+	"github.com/stamp/goADS"
 
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
-
 var WaitGroup sync.WaitGroup
 var node *protocol.Node
 var state *State = &State{}
-var serverConnection *basenode.Connection
+var serverConnection basenode.Connection
 var symbols map[string]goADS.ADSSymbol
 
 func main() {
 	config := basenode.NewConfig()
 	basenode.SetConfig(config)
 
-	settings := NewConfig();
+	settings := NewConfig()
 	SetConfig(settings)
 
 	flag.Parse()
-	
+
 	goADS.UseLogger(log.Current)
 	log.Info("Starting Aquarium node")
 
 	// Create new node description
 	node = protocol.NewNode("beckhoff")
-	state.Values = make(map[string]StateValue,0)
+	state.Values = make(map[string]StateValue, 0)
 	node.SetState(state)
 
 	serverConnection = basenode.Connect()
@@ -46,46 +45,45 @@ func main() {
 	// This worker recives all incomming commands
 	go serverRecv(serverConnection)
 
-
 	// Startup the connection/*{{{*/
-    connection,e := goADS.NewConnection(settings.Ip,settings.Netid,settings.Port)
-    defer connection.Close(); // Close the connection when we are done
-    if e != nil {
-        log.Critical(e)
-        os.Exit(1)
-    }/*}}}*/
+	connection, e := goADS.NewConnection(settings.Ip, settings.Netid, settings.Port)
+	defer connection.Close() // Close the connection when we are done
+	if e != nil {
+		log.Critical(e)
+		os.Exit(1)
+	} /*}}}*/
 
 	go shutdownRoutine(connection)
 
 	if settings.Tpy != "" {
 		symbols = connection.ParseTPY(settings.Tpy)
 	} else {
-		symbols,_ = connection.UploadSymbolInfo()
+		symbols, _ = connection.UploadSymbolInfo()
 	}
 
-	connection.Connect();
+	connection.Connect()
 
-    // Check what device are we connected to/*{{{*/
-    data, e := connection.ReadDeviceInfo();
-    if e != nil {
-        log.Critical(e)
-        os.Exit(1)
-    }
-    log.Infof("Successfully conncected to \"%s\" version %d.%d (build %d)", data.DeviceName, data.MajorVersion, data.MinorVersion, data.BuildVersion)/*}}}*/
+	// Check what device are we connected to/*{{{*/
+	data, e := connection.ReadDeviceInfo()
+	if e != nil {
+		log.Critical(e)
+		os.Exit(1)
+	}
+	log.Infof("Successfully conncected to \"%s\" version %d.%d (build %d)", data.DeviceName, data.MajorVersion, data.MinorVersion, data.BuildVersion) /*}}}*/
 
-	iface,ok := symbols[".Interface"]
+	iface, ok := symbols[".Interface"]
 	if ok {
 		iface.AddDeviceNotification(func(symbol *goADS.ADSSymbol) {
 			WalkSymbol(symbol)
-			serverConnection.Send <- node.Node()
+			serverConnection.Send(node.Node())
 		})
 	}
 
 	go func() {
 		for {
 			select {
-			case <-time.After(time.Second*5):
-				go connection.ReadState();
+			case <-time.After(time.Second * 5):
+				go connection.ReadState()
 			}
 		}
 	}()
@@ -95,19 +93,19 @@ func main() {
 }
 
 // WORKER that monitors the current connection state
-func monitorState(connection *basenode.Connection) {
-	for s := range connection.State {
+func monitorState(connection basenode.Connection) {
+	for s := range connection.State() {
 		switch s {
 		case basenode.ConnectionStateConnected:
-			connection.Send <- node.Node()
+			connection.Send(node.Node())
 		case basenode.ConnectionStateDisconnected:
 		}
 	}
 }
 
 // WORKER that recives all incomming commands
-func serverRecv(connection *basenode.Connection) {
-	for d := range connection.Receive {
+func serverRecv(connection basenode.Connection) {
+	for d := range connection.Receive() {
 		if err := processCommand(d); err != nil {
 			log.Error(err)
 		}
@@ -117,26 +115,26 @@ func serverRecv(connection *basenode.Connection) {
 func processCommand(cmd protocol.Command) error {
 	switch cmd.Cmd {
 	case "set":
-		name := strings.Replace(cmd.Args[0],"_",".",-1)
-		iface,ok := symbols[".Interface"]
+		name := strings.Replace(cmd.Args[0], "_", ".", -1)
+		iface, ok := symbols[".Interface"]
 		if ok {
-			log.Info("Found .interface");
+			log.Info("Found .interface")
 			if len(cmd.Params) == 1 {
-				WriteSymbol(&iface,name, cmd.Params[0])
+				WriteSymbol(&iface, name, cmd.Params[0])
 			} else if len(cmd.Args) == 2 {
-				WriteSymbol(&iface,name, cmd.Args[1])
+				WriteSymbol(&iface, name, cmd.Args[1])
 			}
 		} else {
-			log.Critical("Tag .interface not found");
+			log.Critical("Tag .interface not found")
 		}
 	}
 
 	return nil
 }
 
-func WalkSymbol( data *goADS.ADSSymbol ) {/*{{{*/
+func WalkSymbol(data *goADS.ADSSymbol) { /*{{{*/
 	if len(data.Childs) == 0 {
-		name := strings.Replace(data.FullName,".","_",-1)
+		name := strings.Replace(data.FullName, ".", "_", -1)
 		val, ok := state.Values[name]
 
 		if !ok {
@@ -144,21 +142,21 @@ func WalkSymbol( data *goADS.ADSSymbol ) {/*{{{*/
 		}
 
 		if !data.Valid {
-			val.String = "INVALID";
+			val.String = "INVALID"
 		} else {
-			val.Type = data.DataType;
-			val.String = data.Value;
+			val.Type = data.DataType
+			val.String = data.Value
 			val.Bool = data.Value == "True"
 
 			if !ok {
 				node.AddElement(&protocol.Element{
 					Type: protocol.ElementTypeToggle,
-					Name:     data.FullName,
+					Name: data.FullName,
 					Command: &protocol.Command{
 						Cmd:  "set",
 						Args: []string{name},
 					},
-					Feedback: "Values."+name+".Bool",
+					Feedback: "Values." + name + ".Bool",
 				})
 			}
 		}
@@ -166,30 +164,30 @@ func WalkSymbol( data *goADS.ADSSymbol ) {/*{{{*/
 		state.Values[name] = val
 	} else {
 		//log.Error("TYPE (", data.Area, ":", data.Offset, "): ", path, " [", data.DataType, "] = ", data.Value)
-		for i,_  := range data.Childs {
+		for i, _ := range data.Childs {
 			WalkSymbol(data.Childs[i].Self)
 		}
 	}
-}/*}}}*/
-func WriteSymbol( data *goADS.ADSSymbol, tag, value string ) {/*{{{*/
+}                                                            /*}}}*/
+func WriteSymbol(data *goADS.ADSSymbol, tag, value string) { /*{{{*/
 	if len(data.Childs) == 0 {
-		if ( data.FullName == tag ) {
-			log.Error("Write to tag ",data.FullName)
+		if data.FullName == tag {
+			log.Error("Write to tag ", data.FullName)
 			data.Write(value)
 		} else {
-			log.Debug("Not correct tag: ",tag,"!=",data.FullName)
+			log.Debug("Not correct tag: ", tag, "!=", data.FullName)
 		}
 	} else {
-		for i,_  := range data.Childs {
+		for i, _ := range data.Childs {
 			WriteSymbol(data.Childs[i].Self, tag, value)
 		}
 	}
-}/*}}}*/
-func shutdownRoutine( conn *goADS.Connection ){/*{{{*/
-    sigchan := make(chan os.Signal, 2)
-    signal.Notify(sigchan, os.Interrupt)
-    signal.Notify(sigchan, syscall.SIGTERM)
-    <-sigchan
+}                                              /*}}}*/
+func shutdownRoutine(conn *goADS.Connection) { /*{{{*/
+	sigchan := make(chan os.Signal, 2)
+	signal.Notify(sigchan, os.Interrupt)
+	signal.Notify(sigchan, syscall.SIGTERM)
+	<-sigchan
 
-    conn.Close()
-}/*}}}*/
+	conn.Close()
+} /*}}}*/

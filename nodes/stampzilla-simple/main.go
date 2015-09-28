@@ -5,10 +5,14 @@ import (
 
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
+	"github.com/stampzilla/stampzilla-go/pkg/notifier"
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
 // MAIN - This is run when the init function is done
+
+var notify *notifier.Notify
+
 func main() { /*{{{*/
 	log.Info("Starting SIMPLE node")
 
@@ -25,6 +29,7 @@ func main() { /*{{{*/
 
 	//Start communication with the server
 	connection := basenode.Connect()
+	notify = notifier.New(connection)
 
 	// Thit worker keeps track on our connection state, if we are connected or not
 	go monitorState(node, connection)
@@ -135,25 +140,25 @@ func main() { /*{{{*/
 } /*}}}*/
 
 // WORKER that monitors the current connection state
-func monitorState(node *protocol.Node, connection *basenode.Connection) {
-	for s := range connection.State {
+func monitorState(node *protocol.Node, connection basenode.Connection) {
+	for s := range connection.State() {
 		switch s {
 		case basenode.ConnectionStateConnected:
-			connection.Send <- node.Node()
+			connection.Send(node.Node())
 		case basenode.ConnectionStateDisconnected:
 		}
 	}
 }
 
 // WORKER that recives all incomming commands
-func serverRecv(node *protocol.Node, connection *basenode.Connection) {
-	for d := range connection.Receive {
+func serverRecv(node *protocol.Node, connection basenode.Connection) {
+	for d := range connection.Receive() {
 		processCommand(node, connection, d)
 	}
 }
 
 // THis is called on each incomming command
-func processCommand(node *protocol.Node, connection *basenode.Connection, cmd protocol.Command) {
+func processCommand(node *protocol.Node, connection basenode.Connection, cmd protocol.Command) {
 	if s, ok := node.State().(*State); ok {
 		log.Infof("Incoming command from server: %#v \n", cmd)
 		if len(cmd.Args) == 0 {
@@ -165,22 +170,22 @@ func processCommand(node *protocol.Node, connection *basenode.Connection, cmd pr
 		case "notification":
 			switch cmd.Args[0] {
 			case "Critical":
-				connection.SendCritical("Test notifcation with level '" + cmd.Args[0] + "'")
+				notify.Critical("Test notifcation with level '" + cmd.Args[0] + "'")
 			case "Error":
-				connection.SendError("Test notifcation with level '" + cmd.Args[0] + "'")
+				notify.Error("Test notifcation with level '" + cmd.Args[0] + "'")
 			case "Warning":
-				connection.SendWarn("Test notifcation with level '" + cmd.Args[0] + "'")
+				notify.Warn("Test notifcation with level '" + cmd.Args[0] + "'")
 			case "Information":
-				connection.SendInfo("Test notifcation with level '" + cmd.Args[0] + "'")
+				notify.Info("Test notifcation with level '" + cmd.Args[0] + "'")
 			}
 		case "on":
 			log.Info("got on")
 			device.SetState(true)
-			connection.Send <- node.Node()
+			connection.Send(node.Node())
 		case "off":
 			log.Info("got off")
 			device.SetState(false)
-			connection.Send <- node.Node()
+			connection.Send(node.Node())
 		case "toggle":
 			log.Info("got toggle")
 			if device.State {
@@ -188,7 +193,7 @@ func processCommand(node *protocol.Node, connection *basenode.Connection, cmd pr
 			} else {
 				device.SetState(true)
 			}
-			connection.Send <- node.Node()
+			connection.Send(node.Node())
 		}
 	}
 }

@@ -79,22 +79,20 @@ func main() {
 	setupEnoceanCommunication(node, connection)
 }
 
-func monitorState(node *protocol.Node, connection *basenode.Connection) {
-	for s := range connection.State {
+func monitorState(node *protocol.Node, connection basenode.Connection) {
+	for s := range connection.State() {
 		switch s {
 		case basenode.ConnectionStateConnected:
-			connection.Send <- node
+			connection.Send(node)
 		case basenode.ConnectionStateDisconnected:
 		}
 	}
 }
 
-func serverRecv(connection *basenode.Connection) {
-
-	for d := range connection.Receive {
+func serverRecv(connection basenode.Connection) {
+	for d := range connection.Receive() {
 		processCommand(d)
 	}
-
 }
 
 func checkDuplicateSenderIds() {
@@ -137,7 +135,7 @@ func processCommand(cmd protocol.Command) {
 
 var enoceanSend chan goenocean.Encoder
 
-func setupEnoceanCommunication(node *protocol.Node, connection *basenode.Connection) {
+func setupEnoceanCommunication(node *protocol.Node, connection basenode.Connection) {
 
 	enoceanSend = make(chan goenocean.Encoder)
 	recv := make(chan goenocean.Packet)
@@ -156,7 +154,7 @@ func getIDBase() {
 
 var usb300SenderId [4]byte
 
-func reciever(node *protocol.Node, connection *basenode.Connection, recv chan goenocean.Packet) {
+func reciever(node *protocol.Node, connection basenode.Connection, recv chan goenocean.Packet) {
 	for p := range recv {
 		if p.PacketType() == goenocean.PacketTypeResponse && len(p.Data()) == 5 {
 			copy(usb300SenderId[:], p.Data()[1:4])
@@ -169,14 +167,14 @@ func reciever(node *protocol.Node, connection *basenode.Connection, recv chan go
 	}
 }
 
-func incomingPacket(node *protocol.Node, connection *basenode.Connection, p goenocean.Packet) {
+func incomingPacket(node *protocol.Node, connection basenode.Connection, p goenocean.Packet) {
 
 	var d *Device
 	if d = state.Device(p.SenderId()); d == nil {
 		//Add unknown device
 		d = state.AddDevice(p.SenderId(), "UNKNOWN", nil, false)
 		saveDevicesToFile()
-		connection.Send <- node
+		connection.Send(node)
 	}
 
 	log.Debug("Incoming packet")
@@ -192,7 +190,7 @@ func incomingPacket(node *protocol.Node, connection *basenode.Connection, p goen
 				h.Process(d, t)
 				log.Info("Incoming packet processed from", d.IdString())
 				//TODO add return bool in process and to send depending on that!
-				connection.Send <- node
+				connection.Send(node)
 				return
 			}
 		}

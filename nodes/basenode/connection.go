@@ -88,9 +88,9 @@ func sendWorker(connection net.Conn, send chan interface{}, quit chan bool) {
 				a.SetUuid(config.Uuid)
 				log.Trace("Sending node package: ", a)
 				err = encoder.Encode(a.Node())
-			} else if a, ok := d.(*notifications.Notification); ok {
+			} else if a, ok := d.(notifications.Notification); ok {
 				type NotificationPkg struct {
-					Notification *notifications.Notification
+					Notification notifications.Notification
 				}
 				note := NotificationPkg{
 					Notification: a,

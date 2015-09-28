@@ -13,7 +13,7 @@ var node *protocol.Node
 
 type TargetState struct {
 	Targets    map[string]*Target
-	connection *basenode.Connection
+	connection basenode.Connection
 }
 
 var state TargetState
@@ -58,7 +58,7 @@ func main() { /*{{{*/
 	go monitorState(connection)
 
 	// This worker recives all incomming commands
-	go serverRecv(connection.Receive)
+	go serverRecv(connection.Receive())
 
 	state = TargetState{
 		Targets:    make(map[string]*Target),
@@ -77,11 +77,11 @@ func main() { /*{{{*/
 } /*}}}*/
 
 // WORKER that monitors the current connection state
-func monitorState(connection *basenode.Connection) {
-	for s := range connection.State {
+func monitorState(connection basenode.Connection) {
+	for s := range connection.State() {
 		switch s {
 		case basenode.ConnectionStateConnected:
-			connection.Send <- node.Node()
+			connection.Send(node.Node())
 		case basenode.ConnectionStateDisconnected:
 		}
 	}
