@@ -85,8 +85,8 @@ func main() {
 	select {}
 }
 
-func monitorState(node *protocol.Node, connection *basenode.Connection) {
-	for s := range connection.State {
+func monitorState(node *protocol.Node, connection basenode.Connection) {
+	for s := range connection.State() {
 		switch s {
 		case basenode.ConnectionStateConnected:
 			send <- node
@@ -95,9 +95,9 @@ func monitorState(node *protocol.Node, connection *basenode.Connection) {
 	}
 }
 
-func serverRecv(connection *basenode.Connection) {
+func serverRecv(connection basenode.Connection) {
 
-	for d := range connection.Receive {
+	for d := range connection.Receive() {
 		processCommand(d)
 	}
 

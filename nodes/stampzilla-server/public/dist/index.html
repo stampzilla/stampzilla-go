@@ -48,8 +48,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 
 
-
-
 <style is="custom-style">/*Polymer includes a shim for CSS Custom Properties that we can use for application theming.Below, you'll find the default palette for the Polymer Starter Kit layout. Feel free to playwith changing the colors used or generate your own palette of colours at MaterialPalette.com.See https://www.polymer-project.org/1.0/docs/devguide/styling.html#xscope-styling-detailsfor further information on custom CSS properties.*//* Application theme */:root {--dark-primary-color: #303F9F;--default-primary-color: #3F51B5;--light-primary-color: #C5CAE9;--text-primary-color: #ffffff; /*text/icons*/--accent-color: #FF4081;--primary-background-color: #c5cae9;--primary-text-color: #212121;--secondary-text-color: #727272;--disabled-text-color: #bdbdbd;--divider-color: #B6B6B6;/* Components *//* paper-drawer-panel */--drawer-menu-color: #ffffff;--drawer-border-color: 1px solid #ccc;--drawer-toolbar-border-color: 1px solid rgba(0, 0, 0, 0.22);/* paper-menu */--paper-menu-background-color: #fff;--menu-link-color: #111111;}/* General styles */#drawerToolbar {color: var(--secondary-text-color);background-color: var(--drawer-menu-color);border-bottom: var(--drawer-toolbar-border-color);}paper-scroll-header-panel {height: 100%;}paper-material {border-radius: 2px;height: 100%;padding: 16px 0 16px 0;width: calc(98.66% - 16px);margin: 16px auto;background: white;}paper-menu iron-icon {margin-right: 33px;opacity: 0.54;}.paper-menu > .iron-selected {color: var(--default-primary-color);}paper-menu a {text-decoration: none;color: var(--menu-link-color);display: -ms-flexbox;display: -webkit-flex;display: flex;-ms-flex-direction: row;-webkit-flex-direction: row;flex-direction: row;-ms-flex-align: center;-webkit-align-items: center;align-items: center;font-family: 'Roboto', 'Noto', sans-serif;-webkit-font-smoothing: antialiased;text-rendering: optimizeLegibility;font-size: 14px;font-weight: 400;line-height: 24px;min-height: 48px;padding: 0 16px;}paper-toolbar.tall .app-name {font-size: 40px;font-weight: 300;/* Required for main area's paper-scroll-header-panel custom condensing transformation */-webkit-transform-origin: left center;transform-origin: left center;}#mainToolbar .middle-container{height: 100%;margin-left: 48px;}#mainToolbar:not(.tall) .middle {font-size: 18px;padding-bottom: 0;}#mainToolbar .bottom {margin-left: 48px;/* Required for main area's paper-scroll-header-panel custom condensing transformation */-webkit-transform-origin: left center;transform-origin: left center;}/* Height of the scroll area */.content {height: 900px;}/* Breakpoints *//* Small */@media (max-width: 600px) {paper-material {--menu-container-display: none;width: calc(97.33% - 32px);padding-left: 16px;padding-right: 16px;}.paper-font-display1 {font-size: 12px;}paper-toolbar.tall .app-name {font-size: 24px;font-weight: 400;}#drawer .paper-toolbar {margin-left: 16px;}#overlay {min-width: 360px;}.bg {background: white;}}/* Tablet+ */@media (min-width: 601px) {paper-material {width: calc(98% - 46px);margin-bottom: 32px;padding-left: 30px;padding-right: 30px;}#drawer.paper-drawer-panel > [drawer] {border-right: 1px solid rgba(0, 0, 0, 0.14);}iron-pages {padding: 48px 62px;}}/* Material Design Adaptive Breakpoints *//*Below you'll find CSS media queries based on the breakpoint guidancepublished by the Material Design team. You can choose to use, customiseor remove these breakpoints based on your needs.http://www.google.com/design/spec/layout/adaptive-ui.html#adaptive-ui-breakpoints*//* mobile-small */@media all and (min-width: 0) and (max-width: 360px) and (orientation: portrait) { }/* mobile-large */@media all and (min-width: 361px) and (orientation: portrait) { }/* mobile-small-landscape */@media all and (min-width: 0) and (max-width: 480px) and (orientation: landscape) { }/* mobile-large-landscape */@media all and (min-width: 481px) and (orientation: landscape) { }/* tablet-small-landscape */@media all and (min-width: 600px) and (max-width: 960px) and (orientation: landscape) { }/* tablet-large-landscape */@media all and (min-width: 961px) and (orientation: landscape) { }/* tablet-small */@media all and (min-width: 600px) and (orientation: portrait) { }/* tablet-large */@media all and (min-width: 601px) and (max-width: 840px) and (orientation : portrait) { }/* desktop-x-small-landscape */@media all and (min-width: 0) and (max-width: 480px) and (orientation: landscape) { }/* desktop-x-small */@media all and (min-width: 0) and (max-width: 480px) and (max-aspect-ratio: 4/3) { }/* desktop-small-landscape */@media all and (min-width: 481px) and (max-width: 840px) and (orientation: landscape) { }/* desktop-small */@media all and (min-width: 481px) and (max-width: 840px) and (max-aspect-ratio: 4/3) { }/* desktop-medium-landscape */@media all and (min-width: 841px) and (max-width: 1280px) and (orientation: landscape) { }/* desktop-medium */@media all and (min-width: 841px) and (max-width: 1280px) and (max-aspect-ratio: 4/3) { }/* desktop-large */@media all and (min-width: 1281px) and (max-width: 1600px) { }/* desktop-xlarge */@media all and (min-width: 1601px) and (max-width: 1920px) { }</style></head><body unresolved="" class="fullbleed layout vertical"><div hidden="" by-vulcanize=""><dom-module id="iron-icon" assetpath="bower_components/iron-icon/">
 
   <style>:host {@apply(--layout-inline);@apply(--layout-center-center);position: relative;vertical-align: middle;fill: currentcolor;width: var(--iron-icon-width, 24px);height: var(--iron-icon-height, 24px);}</style>
@@ -479,6 +477,170 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 </dom-module>
 
+<dom-module id="paper-button" assetpath="bower_components/paper-button/">
+
+  <style>:host {display: inline-block;position: relative;box-sizing: border-box;min-width: 5.14em;margin: 0 0.29em;background: transparent;text-align: center;font: inherit;text-transform: uppercase;outline: none;border-radius: 3px;-moz-user-select: none;-ms-user-select: none;-webkit-user-select: none;user-select: none;cursor: pointer;z-index: 0;@apply(--paper-button);}.keyboard-focus {font-weight: bold;}:host([disabled]) {background: #eaeaea;color: #a8a8a8;cursor: auto;pointer-events: none;@apply(--paper-button-disabled);}:host([noink]) paper-ripple {display: none;}paper-material {border-radius: inherit;}.content > ::content * {text-transform: inherit;}.content {padding: 0.7em 0.57em}</style>
+
+  <template>
+
+    <paper-ripple></paper-ripple>
+
+    <paper-material class$="[[_computeContentClass(receivedFocusFromKeyboard)]]" elevation="[[_elevation]]" animated="">
+      <content></content>
+    </paper-material>
+
+  </template>
+
+</dom-module>
+
+<dom-module id="paper-progress" assetpath="bower_components/paper-progress/">
+  <style>:host {display: inline-block;width: 200px;height: 4px;}:host(.transiting) #activeProgress,:host(.transiting) #secondaryProgress {-webkit-transition-property: -webkit-transform;transition-property: transform;/* Duration */-webkit-transition-duration: var(--paper-progress-transition-duration, 0.08s);transition-duration: var(--paper-progress-transition-duration, 0.08s);/* Timing function */-webkit-transition-timing-function: var(--paper-progress-transition-timing-function, ease);transition-timing-function: var(--paper-progress-transition-timing-function, ease);/* Delay */-webkit-transition-delay: var(--paper-progress-transition-delay, 0s);transition-delay: var(--paper-progress-transition-delay, 0s);}#progressContainer {position: relative;height: 100%;overflow: hidden;@apply(--paper-progress-container);}#progressContainer, #indeterminateSplitter {background-color: var(--paper-progress-container-color, --google-grey-300);}#activeProgress,#secondaryProgress {-webkit-transform-origin: left center;transform-origin: left center;-webkit-transform: scaleX(0);transform: scaleX(0);}#activeProgress {background-color: var(--paper-progress-active-color, --google-green-500);}#secondaryProgress {background-color: var(--paper-progress-secondary-color, --google-green-100);}#indeterminateSplitter {display: none;}#activeProgress.indeterminate {-webkit-transform-origin: right center;transform-origin: right center;-webkit-animation: indeterminate-bar 2s linear infinite;animation: indeterminate-bar 2s linear infinite;}#indeterminateSplitter.indeterminate {display: block;-webkit-transform-origin: center center;transform-origin: center center;-webkit-animation: indeterminate-splitter 2s linear infinite;animation: indeterminate-splitter 2s linear infinite;}@-webkit-keyframes indeterminate-bar {0% {-webkit-transform: scaleX(1) translateX(-100%);}50% {-webkit-transform: scaleX(1) translateX(0%);}75% {-webkit-transform: scaleX(1) translateX(0%);-webkit-animation-timing-function: cubic-bezier(.28,.62,.37,.91);}100% {-webkit-transform: scaleX(0) translateX(0%);}}@-webkit-keyframes indeterminate-splitter {0% {-webkit-transform: scaleX(.75) translateX(-125%);}30% {-webkit-transform: scaleX(.75) translateX(-125%);-webkit-animation-timing-function: cubic-bezier(.42,0,.6,.8);}90% {-webkit-transform: scaleX(.75) translateX(125%);}100% {-webkit-transform: scaleX(.75) translateX(125%);}}@keyframes indeterminate-bar {0% {transform: scaleX(1) translateX(-100%);}50% {transform: scaleX(1) translateX(0%);}75% {transform: scaleX(1) translateX(0%);animation-timing-function: cubic-bezier(.28,.62,.37,.91);}100% {transform: scaleX(0) translateX(0%);}}@keyframes indeterminate-splitter {0% {transform: scaleX(.75) translateX(-125%);}30% {transform: scaleX(.75) translateX(-125%);animation-timing-function: cubic-bezier(.42,0,.6,.8);}90% {transform: scaleX(.75) translateX(125%);}100% {transform: scaleX(.75) translateX(125%);}}</style>
+  <template>
+    <div id="progressContainer" role="progressbar" aria-valuenow$="{{value}}" aria-valuemin$="{{min}}" aria-valuemax$="{{max}}">
+      <div id="secondaryProgress" class="fit"></div>
+      <div id="activeProgress" class="fit"></div>
+      <div id="indeterminateSplitter" class="fit"></div>
+    </div>
+  </template>
+</dom-module>
+
+<dom-module id="paper-input-container" assetpath="bower_components/paper-input/">
+
+  <style>:host {display: block;padding: 8px 0;@apply(--paper-input-container);}:host[inline] {display: inline-block;}:host([disabled]) {pointer-events: none;opacity: 0.33;@apply(--paper-input-container-disabled);}.floated-label-placeholder {@apply(--paper-font-caption);}.underline {position: relative;}.focused-line {height: 2px;-webkit-transform-origin: center center;transform-origin: center center;-webkit-transform: scale3d(0,1,1);transform: scale3d(0,1,1);background: var(--paper-input-container-focus-color, --default-primary-color);@apply(--paper-input-container-underline-focus);}.underline.is-highlighted .focused-line {-webkit-transform: none;transform: none;-webkit-transition: -webkit-transform 0.25s;transition: transform 0.25s;@apply(--paper-transition-easing);}.underline.is-invalid .focused-line {background: var(--paper-input-container-invalid-color, --google-red-500);-webkit-transform: none;transform: none;-webkit-transition: -webkit-transform 0.25s;transition: transform 0.25s;@apply(--paper-transition-easing);}.unfocused-line {height: 1px;background: var(--paper-input-container-color, --secondary-text-color);@apply(--paper-input-container-underline);}:host([disabled]) .unfocused-line {border-bottom: 1px dashed;border-color: var(--paper-input-container-color, --secondary-text-color);background: transparent;@apply(--paper-input-container-underline-disabled);}.label-and-input-container {@apply(--layout-flex);@apply(--layout-relative);}.input-content {position: relative;@apply(--layout-horizontal);@apply(--layout-end);}.input-content ::content label,.input-content ::content .paper-input-label {position: absolute;top: 0;right: 0;left: 0;font: inherit;color: var(--paper-input-container-color, --secondary-text-color);@apply(--paper-font-subhead);@apply(--paper-input-container-label);}.input-content.label-is-floating ::content label,.input-content.label-is-floating ::content .paper-input-label {-webkit-transform: translate3d(0, -75%, 0) scale(0.75);transform: translate3d(0, -75%, 0) scale(0.75);-webkit-transform-origin: left top;transform-origin: left top;-webkit-transition: -webkit-transform 0.25s;transition: transform 0.25s;@apply(--paper-transition-easing);}.input-content.label-is-highlighted ::content label,.input-content.label-is-highlighted ::content .paper-input-label {color: var(--paper-input-container-focus-color, --default-primary-color);@apply(--paper-input-container-label-focus);}.input-content.is-invalid ::content label,.input-content.is-invalid ::content .paper-input-label {color: var(--paper-input-container-invalid-color, --google-red-500);}.input-content.label-is-hidden ::content label,.input-content.label-is-hidden ::content .paper-input-label {visibility: hidden;}.input-content ::content input,.input-content ::content textarea,.input-content ::content iron-autogrow-textarea,.input-content ::content .paper-input-input {position: relative; /* to make a stacking context */outline: none;box-shadow: none;padding: 0;width: 100%;background: transparent;border: none;color: var(--paper-input-container-input-color, --primary-text-color);@apply(--paper-font-subhead);@apply(--paper-input-container-input);}::content [prefix] {@apply(--paper-font-subhead);@apply(--paper-input-prefix);}::content [suffix] {@apply(--paper-font-subhead);@apply(--paper-input-suffix);}/* Firefox sets a min-width on the input, which can cause layout issues */.input-content ::content input {min-width: 0;}.input-content ::content textarea {resize: none;}.add-on-content.is-invalid ::content * {color: var(--paper-input-container-invalid-color, --google-red-500);}.add-on-content.is-highlighted ::content * {color: var(--paper-input-container-focus-color, --default-primary-color);}</style>
+
+  <template>
+
+    <template is="dom-if" if="[[!noLabelFloat]]">
+      <div class="floated-label-placeholder">&nbsp;</div>
+    </template>
+
+    <div class$="[[_computeInputContentClass(noLabelFloat,alwaysFloatLabel,focused,invalid,_inputHasContent)]]">
+      <content select="[prefix]" id="prefix"></content>
+      <div class="label-and-input-container">
+        <content select=":not([add-on]):not([prefix]):not([suffix])"></content>
+      </div>
+      <content select="[suffix]"></content>
+    </div>
+
+    <div class$="[[_computeUnderlineClass(focused,invalid)]]">
+      <div class="unfocused-line fit"></div>
+      <div class="focused-line fit"></div>
+    </div>
+
+    <div class$="[[_computeAddOnContentClass(focused,invalid)]]">
+      <content id="addOnContent" select="[add-on]"></content>
+    </div>
+
+  </template>
+
+</dom-module>
+
+<dom-module id="paper-input-error" assetpath="bower_components/paper-input/">
+
+  <style>:host {display: inline-block;visibility: hidden;float: left;color: var(--paper-input-container-invalid-color, --google-red-500);@apply(--paper-font-caption);@apply(--paper-input-error);}:host([invalid]) {visibility: visible;};</style>
+
+  <template>
+
+    <content></content>
+
+  </template>
+
+</dom-module>
+
+<dom-module id="paper-input-char-counter" assetpath="bower_components/paper-input/">
+
+  <style>:host {display: inline-block;float: right;@apply(--paper-font-caption);@apply(--paper-input-char-counter);}</style>
+
+  <template>
+
+    <span>[[_charCounterStr]]</span>
+
+  </template>
+
+</dom-module>
+
+<dom-module id="paper-input" assetpath="bower_components/paper-input/">
+
+  <style>:host {display: block;}input::-webkit-input-placeholder {color: var(--paper-input-container-color, --secondary-text-color);}input:-moz-placeholder {color: var(--paper-input-container-color, --secondary-text-color);}input::-moz-placeholder {color: var(--paper-input-container-color, --secondary-text-color);}input:-ms-input-placeholder {color: var(--paper-input-container-color, --secondary-text-color);}</style>
+
+  <template>
+
+    <paper-input-container no-label-float="[[noLabelFloat]]" always-float-label="[[_computeAlwaysFloatLabel(alwaysFloatLabel,placeholder)]]" auto-validate$="[[autoValidate]]" disabled$="[[disabled]]" invalid="[[invalid]]">
+
+      <content select="[prefix]"></content>
+
+      <label hidden$="[[!label]]">[[label]]</label>
+
+      <input is="iron-input" id="input" aria-labelledby$="[[_ariaLabelledBy]]" aria-describedby$="[[_ariaDescribedBy]]" disabled$="[[disabled]]" bind-value="{{value}}" invalid="{{invalid}}" prevent-invalid-input="[[preventInvalidInput]]" allowed-pattern="[[allowedPattern]]" validator="[[validator]]" type$="[[type]]" pattern$="[[pattern]]" required$="[[required]]" autocomplete$="[[autocomplete]]" autofocus$="[[autofocus]]" inputmode$="[[inputmode]]" minlength$="[[minlength]]" maxlength$="[[maxlength]]" min$="[[min]]" max$="[[max]]" step$="[[step]]" name$="[[name]]" placeholder$="[[placeholder]]" readonly$="[[readonly]]" list$="[[list]]" size$="[[size]]" autocapitalize$="[[autocapitalize]]" autocorrect$="[[autocorrect]]">
+
+      <content select="[suffix]"></content>
+
+      <template is="dom-if" if="[[errorMessage]]">
+        <paper-input-error>[[errorMessage]]</paper-input-error>
+      </template>
+
+      <template is="dom-if" if="[[charCounter]]">
+        <paper-input-char-counter></paper-input-char-counter>
+      </template>
+
+    </paper-input-container>
+
+  </template>
+
+</dom-module>
+
+<dom-module id="paper-slider" assetpath="bower_components/paper-slider/">
+
+  <style>/**@licenseCopyright (c) 2015 The Polymer Project Authors. All rights reserved.This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txtThe complete set of authors may be found at http://polymer.github.io/AUTHORS.txtThe complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txtCode distributed by Google as part of the polymer project is alsosubject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt*/:host {display: inline-block;width: 200px;cursor: default;-webkit-user-select: none;-moz-user-select: none;-ms-user-select: none;user-select: none;-webkit-tap-highlight-color: rgba(0, 0, 0, 0);}:host(:not([disabled])) #sliderBar {--paper-progress-active-color: var(--paper-slider-active-color, --google-blue-700);}:host(:not([disabled])) #sliderBar {--paper-progress-secondary-color: var(--paper-slider-secondary-color, --google-blue-300);}:host([disabled]) #sliderBar {--paper-progress-active-color: var(--paper-slider-disabled-active-color, --google-grey-500);}:host([disabled]) #sliderBar {--paper-progress-secondary-color: var(--paper-slider-disabled-secondary-color, --google-grey-300);}:host(:focus) {outline: none;}#sliderContainer {position: relative;width: calc(100% - 32px);height: 32px;}#sliderContainer.editable {float: left;width: calc(100% - 72px);margin: 12px 0;}.bar-container {position: absolute;top: 0;left: 16px;height: 100%;width: 100%;overflow: hidden;}.ring > .bar-container {left: 20px;width: calc(100% - 4px);transition: left 0.18s ease, width 0.18s ease;}.ring.expand:not(.pin) > .bar-container {left: 30px;width: calc(100% - 14px);}.ring.expand.dragging > .bar-container {transition: none;}#sliderBar {position: absolute;top: 15px;left: 0;height: 2px;width: 100%;padding: 8px 0;margin: -8px 0;background-color: var(--paper-slider-bar-color, transparent);}.ring #sliderBar {left: -4px;width: calc(100% + 4px);}.ring.expand:not(.pin) #sliderBar {left: -14px;width: calc(100% + 14px);}.slider-markers {position: absolute;top: 15px;left: 15px;height: 2px;width: calc(100% + 2px);box-sizing: border-box;pointer-events: none;}.slider-markers::after,.slider-marker::after {content: "";display: block;width: 2px;height: 2px;border-radius: 50%;background-color: black;}#sliderKnob {@apply(--layout-center-justified);@apply(--layout-center);@apply(--layout-horizontal);position: absolute;left: 0;top: 0;width: 32px;height: 32px;}.transiting > #sliderKnob {transition: left 0.08s ease;}#sliderKnob:focus {outline: none;}#sliderKnob.dragging {transition: none;}.snaps > #sliderKnob.dragging {transition: -webkit-transform 0.08s ease;transition: transform 0.08s ease;}#sliderKnobInner {width: 12px;height: 12px;border-radius: 50%;background-color: var(--paper-slider-knob-color, --google-blue-700);-moz-box-sizing: border-box;box-sizing: border-box;transition-property: height, width, background-color, border;transition-duration: 0.1s;transition-timing-function: ease;}.expand:not(.pin) > #sliderKnob > #sliderKnobInner {width: 100%;height: 100%;-webkit-transform: translateZ(0);transform: translateZ(0);}.ring > #sliderKnob > #sliderKnobInner {background-color: var(--paper-slider-knob-start-color, transparent);border: 2px solid var(--paper-slider-knob-start-border-color, #c8c8c8);}#sliderKnobInner::before {background-color: var(--paper-slider-pin-color, --google-blue-700);}.pin > #sliderKnob > #sliderKnobInner::before {content: "";position: absolute;top: 0;left: 0;width: 26px;height: 26px;margin-left: 3px;border-radius: 50% 50% 50% 0;-webkit-transform: rotate(-45deg) scale(0) translate(0);transform: rotate(-45deg) scale(0) translate(0);}#sliderKnobInner::before,#sliderKnobInner::after {transition: -webkit-transform .2s ease, background-color .18s ease;transition: transform .2s ease, background-color .18s ease;}.pin.ring > #sliderKnob > #sliderKnobInner::before {background-color: var(--paper-slider-pin-start-color, #c8c8c8);}.pin.expand > #sliderKnob > #sliderKnobInner::before {-webkit-transform: rotate(-45deg) scale(1) translate(17px, -17px);transform: rotate(-45deg) scale(1) translate(17px, -17px);}.pin > #sliderKnob > #sliderKnobInner::after {content: attr(value);position: absolute;top: 0;left: 0;width: 32px;height: 26px;text-align: center;color: var(--paper-slider-font-color, #fff);font-size: 10px;-webkit-transform: scale(0) translate(0);transform: scale(0) translate(0);}.pin.expand > #sliderKnob > #sliderKnobInner::after {-webkit-transform: scale(1) translate(0, -17px);transform: scale(1) translate(0, -17px);}/* editable: paper-input */.slider-input {width: 40px;float: right;overflow: hidden;}.slider-input {--paper-input-container-input: {text-align: center;};}/* disabled state */#sliderContainer.disabled {pointer-events: none;}.disabled > #sliderKnob > #sliderKnobInner {width: 8px;height: 8px;background-color: var(--paper-slider-disabled-knob-color, --google-grey-500);}.disabled.ring > #sliderKnob > #sliderKnobInner {background-color: transparent;}paper-ripple {color: var(--paper-slider-knob-color, --google-blue-700);}</style>
+
+  <template>
+    <div id="sliderContainer" class$="[[_getClassNames(disabled, pin, snaps, immediateValue, min, expand, dragging, transiting, editable)]]">
+
+      <div class="bar-container">
+        <paper-progress class$="[[_getProgressClass(transiting)]]" id="sliderBar" aria-hidden="true" min="[[min]]" max="[[max]]" step="[[step]]" value="[[immediateValue]]" secondary-progress="[[secondaryProgress]]" on-down="_bardown" on-up="_resetKnob" on-track="_onTrack">
+        </paper-progress>
+      </div>
+
+      <template is="dom-if" if="[[snaps]]">
+        <div class="slider-markers horizontal layout">
+          <template is="dom-repeat" items="[[markers]]">
+            <div class="slider-marker flex"></div>
+          </template>
+        </div>
+      </template>
+
+      <div id="sliderKnob" class="center-justified center horizontal layout" on-down="_knobdown" on-up="_resetKnob" on-track="_onTrack" on-transitionend="_knobTransitionEnd">
+          <paper-ripple center="" id="ink" class="circle" hidden$="[[!receivedFocusFromKeyboard]]">
+          </paper-ripple>
+          <div id="sliderKnobInner" value$="[[immediateValue]]"></div>
+      </div>
+    </div>
+
+    <template is="dom-if" if="[[editable]]">
+      <paper-input id="input" class="slider-input" disabled$="[[disabled]]" on-change="_inputChange" value="[[_fixForInput(immediateValue)]]">
+      </paper-input>
+    </template>
+  </template>
+
+</dom-module>
+
+<dom-module id="paper-checkbox" assetpath="bower_components/paper-checkbox/">
+  <style>/**@licenseCopyright (c) 2015 The Polymer Project Authors. All rights reserved.This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txtThe complete set of authors may be found at http://polymer.github.io/AUTHORS.txtThe complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txtCode distributed by Google as part of the polymer project is alsosubject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt*/:host {display: inline-block;white-space: nowrap;}:host(:focus) {outline: none;}.hidden {display: none;}#checkboxContainer {display: inline-block;position: relative;width: 18px;height: 18px;cursor: pointer;-webkit-transform: translateZ(0);transform: translateZ(0);vertical-align: middle;background-color: var(--paper-checkbox-unchecked-background-color, transparent);}:host #ink {position: absolute;top: -15px;left: -15px;width: 48px;height: 48px;color: var(--paper-checkbox-unchecked-ink-color, --primary-text-color);opacity: 0.6;pointer-events: none;}:host #ink[checked] {color: var(--paper-checkbox-checked-ink-color, --default-primary-color);}:host #checkbox {position: relative;box-sizing: border-box;height: 100%;border: solid 2px;border-color: var(--paper-checkbox-unchecked-color, --primary-text-color);border-radius: 2px;pointer-events: none;-webkit-transition: background-color 140ms, border-color 140ms;transition: background-color 140ms, border-color 140ms;}/* checkbox checked animations */#checkbox.checked #checkmark {-webkit-animation: checkmark-expand 140ms ease-out forwards;animation: checkmark-expand 140ms ease-out forwards;}@-webkit-keyframes checkmark-expand {0% {top: 9px;left: 6px;width: 0px;height: 0px;}100% {top: -1px;left: 4px;width: 5px;height: 10px;}}@keyframes checkmark-expand {0% {top: 9px;left: 6px;width: 0px;height: 0px;}100% {top: -1px;left: 4px;width: 5px;height: 10px;}}:host #checkbox.checked {background-color: var(--paper-checkbox-checked-color, --default-primary-color);border-color: var(--paper-checkbox-checked-color, --default-primary-color);}:host #checkmark {-webkit-transform: rotate(45deg);transform: rotate(45deg);position: absolute;top: -1px;left: 4px;width: 5px;height: 10px;border-style: solid;border-top: none;border-left: none;border-right-width: 2px;border-bottom-width: 2px;border-color: var(--paper-checkbox-checkmark-color, white);}/* label */#checkboxLabel {position: relative;display: inline-block;vertical-align: middle;padding-left: 8px;white-space: normal;pointer-events: none;color: var(--paper-checkbox-label-color, --primary-text-color);}#checkboxLabel[hidden] {display: none;}/* disabled state */:host([disabled]) {pointer-events: none;}:host([disabled]) #checkbox {opacity: 0.5;border-color: var(--paper-checkbox-unchecked-color, --primary-text-color);}:host([disabled][checked]) #checkbox {background-color: var(--paper-checkbox-unchecked-color, --primary-text-color);opacity: 0.5;}:host([disabled]) #checkboxLabel{opacity: 0.65;}/* invalid state */#checkbox.invalid:not(.checked) {border-color: var(--paper-checkbox-error-color, --google-red-500);}</style>
+
+  <template>
+
+    <div id="checkboxContainer">
+      <paper-ripple id="ink" class="circle" center="" checked$="[[checked]]"></paper-ripple>
+      <div id="checkbox" class$="[[_computeCheckboxClass(checked, invalid)]]">
+        <div id="checkmark" class$="[[_computeCheckmarkClass(checked)]]"></div>
+      </div>
+    </div>
+
+    <div id="checkboxLabel" aria-hidden="true"><content></content></div>
+
+  </template>
+
+  </dom-module>
 <dom-module id="my-greeting" assetpath="elements/my-greeting/">
   <template>
     <style>:host {display: block;}@media (max-width: 600px) {h1.paper-font-display1 {font-size: 24px;}}</style>
@@ -513,11 +675,64 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 					<a href="{{_getHref(item.Uuid)}}">
 						<span class="paper-font-body1">{{item.Name}}</span>
 					</a>
+
 					<span class="paper-font-body1">{{item.Host}}</span>
 					<span class="paper-font-body1">{{item.LastSeen}}</span>
 				</li>
 			</template>
 		</ul>
+	</template>
+
+	</dom-module>
+<dom-module id="node-element" assetpath="elements/node-element/">
+	<style>		:host {			@apply(--layout-horizontal);			@apply(--shadow-elevation-2dp);			margin-bottom:10px;			padding:1em;		}		:host:hover {			@apply(--shadow-elevation-6dp);		}		#action {			@apply(--layout-flex-2);		}		#title {			@apply(--layout-flex);		}		#type {			@apply(--layout-flex-2);			text-align:right;		}	</style>
+	<template>
+		<paper-shadow z="1"></paper-shadow>
+			<template is="dom-if" if="{{isText}}">
+				<div id="action" style="width:200px;">
+						Text
+				</div>
+				<div id="title">{{element.Name}}</div>
+				<div id="type">TEXT</div>
+			</template>
+			<template is="dom-if" if="{{isButton}}">
+				<div id="action" style="width:200px;">
+						<paper-button raised="">{{element.Name}}</paper-button>
+				</div>
+				<div id="title">{{element.Name}}</div>
+				<div id="type">BUTTON</div>
+			</template>
+			<template is="dom-if" if="{{isToggle}}">
+				<div id="action" style="width:200px;">
+						<paper-checkbox>{{element.Name}}</paper-checkbox>
+				</div>
+				<div id="title">{{element.Name}}</div>
+				<div id="type">TOGGLE</div>
+			</template>
+			<template is="dom-if" if="{{isSlider}}">
+				<div id="action" style="width:200px;">
+						<paper-slider pin="">{{element.Name}}</paper-slider>
+				</div>
+				<div id="title">{{element.Name}}</div>
+				<div id="type">SLIDER</div>
+			</template>
+			<template is="dom-if" if="{{isColorpick}}">
+				<div id="action" style="width:200px;">
+						colorpick
+				</div>
+				<div id="title">{{element.Name}}</div>
+				<div id="type">COLORPICK</div>
+			</template>
+	</template>
+	</dom-module>
+<dom-module id="node-elements" assetpath="elements/node-elements/">
+	<template>
+		<style>			:host {				@apply(--layout-flex);				display: block;			}		</style>
+		Nod: <span class="paper-font-body1">{{ node.Name }}</span>
+		<template is="dom-repeat" items="{{node.Elements}}">
+			<node-element element="{{item}}"></node-element>
+		</template>
+
 	</template>
 
 	</dom-module>
@@ -528,4 +743,4 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	</template>
 
 	</dom-module>
-</div><span id="browser-sync-binding"></span><template is="dom-bind" id="app"><ws-data nodes="{{nodes}}"></ws-data><paper-drawer-panel id="paperDrawerPanel"><paper-scroll-header-panel drawer="" fixed=""><paper-toolbar id="drawerToolbar"><span class="paper-font-title">Menu</span></paper-toolbar><paper-menu class="list" attr-for-selected="data-route" selected="[[route]]"><a data-route="home" href="/" on-click="onDataRouteClick"><iron-icon icon="home"></iron-icon><span>Home</span></a> <a data-route="nodes" href="/nodes" on-click="onDataRouteClick"><iron-icon icon="info"></iron-icon><span>Nodes</span></a> <a data-route="users" href="/users" on-click="onDataRouteClick"><iron-icon icon="info"></iron-icon><span>Users</span></a> <a data-route="contact" href="/contact" on-click="onDataRouteClick"><iron-icon icon="mail"></iron-icon><span>Contact</span></a></paper-menu></paper-scroll-header-panel><paper-scroll-header-panel main="" condenses="" keep-condensed-header=""><paper-toolbar id="mainToolbar" class="tall"><paper-icon-button id="paperToggle" icon="menu" paper-drawer-toggle=""></paper-icon-button><span class="flex"></span><paper-icon-button icon="refresh"></paper-icon-button><paper-icon-button icon="search"></paper-icon-button><div class="middle middle-container center horizontal layout"><div class="app-name">Polymer Starter Kit</div></div><div class="bottom bottom-container center horizontal layout"><div class="bottom-title paper-font-subhead">The future of the web today</div></div></paper-toolbar><div class="content"><iron-pages attr-for-selected="data-route" selected="{{route}}"><section data-route="home"><paper-material elevation="1"><my-greeting></my-greeting><p class="paper-font-subhead">You now have:</p><my-list></my-list><p class="paper-font-body2">Looking for more Web App layouts? Check out our <a href="https://github.com/PolymerElements/app-layout-templates">layouts</a> collection. You can also <a href="http://polymerelements.github.io/app-layout-templates/">preview</a> them live.</p></paper-material><paper-material elevation="1"><p class="paper-font-body2">This is another card.</p></paper-material><paper-material elevation="1" class="paper-font-body2"><h1 id="license">License</h1><p>Everything in this repo is BSD style license unless otherwise specified.</p><p>Copyright (c) 2015 The Polymer Authors. All rights reserved.</p><p>Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:</p><ul><li>Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.</li><li>Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.</li><li>Neither the name of Google Inc. nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.</li></ul><p>THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</p></paper-material></section><section data-route="users"><paper-material elevation="1"><h2 class="paper-font-display2">Users</h2><p>This is the users section</p><a href="/users/Rob">Rob</a></paper-material></section><section data-route="user-info"><paper-material elevation="1"><h2 class="paper-font-display2">User:<span>{{params.name}}</span></h2><div>This is <span>{{params.name}}</span>'s section</div></paper-material></section><section data-route="nodes"><paper-material elevation="1"><h2 class="paper-font-display2">Nodes</h2><nodes-list nodes="{{nodes}}"></nodes-list></paper-material></section><section data-route="node-info"><paper-material elevation="1"><h2 class="paper-font-display2">Node:<span>{{params.name}}</span></h2><div>This is <span>{{params.name}}</span>'s section</div></paper-material></section><section data-route="contact"><paper-material elevation="1"><h2 class="paper-font-display2">Contact</h2><p>This is the contact section</p></paper-material></section></iron-pages></div></paper-scroll-header-panel></paper-drawer-panel></template><script src="index.build.js"></script></body></html>
+</div><span id="browser-sync-binding"></span><template is="dom-bind" id="app"><ws-data nodes="{{nodes}}"></ws-data><paper-drawer-panel id="paperDrawerPanel"><paper-scroll-header-panel drawer="" fixed=""><paper-toolbar id="drawerToolbar"><span class="paper-font-title">Menu</span></paper-toolbar><paper-menu class="list" attr-for-selected="data-route" selected="[[route]]"><a data-route="home" href="/" on-click="onDataRouteClick"><iron-icon icon="home"></iron-icon><span>Home</span></a> <a data-route="nodes" href="/nodes" on-click="onDataRouteClick"><iron-icon icon="info"></iron-icon><span>Nodes</span></a> <a data-route="users" href="/users" on-click="onDataRouteClick"><iron-icon icon="info"></iron-icon><span>Users</span></a> <a data-route="contact" href="/contact" on-click="onDataRouteClick"><iron-icon icon="mail"></iron-icon><span>Contact</span></a></paper-menu></paper-scroll-header-panel><paper-scroll-header-panel main="" condenses="" keep-condensed-header=""><paper-toolbar id="mainToolbar" class="tall"><paper-icon-button id="paperToggle" icon="menu" paper-drawer-toggle=""></paper-icon-button><span class="flex"></span><paper-icon-button icon="refresh"></paper-icon-button><paper-icon-button icon="search"></paper-icon-button><div class="middle middle-container center horizontal layout"><div class="app-name">Polymer Starter Kit</div></div><div class="bottom bottom-container center horizontal layout"><div class="bottom-title paper-font-subhead">The future of the web today</div></div></paper-toolbar><div class="content"><iron-pages attr-for-selected="data-route" selected="{{route}}"><section data-route="home"><paper-material elevation="1"><my-greeting></my-greeting><p class="paper-font-subhead">You now have:</p><my-list></my-list><p class="paper-font-body2">Looking for more Web App layouts? Check out our <a href="https://github.com/PolymerElements/app-layout-templates">layouts</a> collection. You can also <a href="http://polymerelements.github.io/app-layout-templates/">preview</a> them live.</p></paper-material><paper-material elevation="1"><p class="paper-font-body2">This is another card.</p></paper-material><paper-material elevation="1" class="paper-font-body2"><h1 id="license">License</h1><p>Everything in this repo is BSD style license unless otherwise specified.</p><p>Copyright (c) 2015 The Polymer Authors. All rights reserved.</p><p>Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:</p><ul><li>Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.</li><li>Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.</li><li>Neither the name of Google Inc. nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.</li></ul><p>THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</p></paper-material></section><section data-route="users"><paper-material elevation="1"><h2 class="paper-font-display2">Users</h2><p>This is the users section</p><a href="/users/Rob">Rob</a></paper-material></section><section data-route="user-info"><paper-material elevation="1"><h2 class="paper-font-display2">User:<span>{{params.name}}</span></h2><div>This is <span>{{params.name}}</span>'s section</div></paper-material></section><section data-route="nodes"><paper-material elevation="1"><h2 class="paper-font-display2">Nodes</h2><nodes-list nodes="{{nodes}}"></nodes-list></paper-material></section><section data-route="node-info"><paper-material elevation="1"><h2 class="paper-font-display2">Node:<span>{{params.name}}</span></h2><node-elements nodes="{{nodes}}" uuid="{{params.name}}"></node-elements></paper-material></section><section data-route="contact"><paper-material elevation="1"><h2 class="paper-font-display2">Contact</h2><p>This is the contact section</p></paper-material></section></iron-pages></div></paper-scroll-header-panel></paper-drawer-panel></template><script src="index.build.js"></script></body></html>

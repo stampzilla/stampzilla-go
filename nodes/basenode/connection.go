@@ -16,18 +16,38 @@ const (
 	ConnectionStateDisconnected = 0
 )
 
-type Connection struct {
-	Send    chan interface{}
-	Receive chan protocol.Command
-	State   chan int
+type Sendable interface {
+	Send(interface{})
 }
 
-func Connect() *Connection {
+type Connection interface {
+	Sendable
+	Receive() chan protocol.Command
+	State() chan int
+}
 
-	connection := &Connection{
-		Send:    make(chan interface{}, 100),
-		Receive: make(chan protocol.Command, 100),
-		State:   make(chan int),
+type connection struct {
+	send    chan interface{}
+	receive chan protocol.Command
+	state   chan int
+}
+
+func (c *connection) Receive() chan protocol.Command {
+	return c.receive
+}
+func (c *connection) State() chan int {
+	return c.state
+}
+func (c *connection) Send(data interface{}) {
+	c.send <- data
+}
+
+func Connect() Connection {
+
+	connection := &connection{
+		send:    make(chan interface{}, 100),
+		receive: make(chan protocol.Command, 100),
+		state:   make(chan int),
 	}
 
 	go func() {
@@ -41,15 +61,15 @@ func Connect() *Connection {
 				continue
 			}
 
-			connection.State <- ConnectionStateConnected
+			connection.State() <- ConnectionStateConnected
 			log.Trace("Connected")
 			serverIsAlive := make(chan bool)
 			go timeoutMonitor(tcpConnection, serverIsAlive)
-			go sendWorker(tcpConnection, connection.Send, quit)
+			go sendWorker(tcpConnection, connection.send, quit)
 
-			connectionWorker(tcpConnection, connection.Receive, serverIsAlive)
+			connectionWorker(tcpConnection, connection.receive, serverIsAlive)
 			close(quit)
-			connection.State <- ConnectionStateDisconnected
+			connection.State() <- ConnectionStateDisconnected
 
 			log.Warn("Lost connection, reconnecting")
 			<-time.After(time.Second)
@@ -68,9 +88,9 @@ func sendWorker(connection net.Conn, send chan interface{}, quit chan bool) {
 				a.SetUuid(config.Uuid)
 				log.Trace("Sending node package: ", a)
 				err = encoder.Encode(a.Node())
-			} else if a, ok := d.(*notifications.Notification); ok {
+			} else if a, ok := d.(notifications.Notification); ok {
 				type NotificationPkg struct {
-					Notification *notifications.Notification
+					Notification notifications.Notification
 				}
 				note := NotificationPkg{
 					Notification: a,

@@ -10,6 +10,8 @@ import (
 )
 
 type Router struct {
+	Uuid   string
+	Name   string
 	Config *RouterConfig
 
 	transports map[NotificationLevel][]Transport
@@ -41,7 +43,8 @@ func (self *Router) Load(configFileName string) error {
 	m := multiconfig.NewWithPath(configFileName)
 	err := m.Load(self.Config)
 	if err != nil {
-		log.Error("Failed to read config file (", configFileName, ")", err)
+		log.Error("Failed to read config file (", configFileName, ") ", err)
+		return err
 	}
 
 	for transport, config := range self.Config.Transports {
@@ -85,7 +88,7 @@ func (self *Router) Save(configFileName string) error {
 
 	configFile, err := os.Create(configFileName)
 	if err != nil {
-		log.Error("Failed to create config file (", configFileName, ")", err.Error())
+		log.Error("Failed to create config file (", configFileName, ") ", err.Error())
 		return err
 	}
 
@@ -132,3 +135,45 @@ func (self *Router) Dispatch(msg Notification) {
 
 	log.Warnf("Notification type \"%s\" dropped, no one is listening", msg.Level)
 }
+
+func (self *Router) Send(data interface{}) {
+	if n, ok := data.(Notification); ok {
+		self.Dispatch(n)
+	}
+}
+
+//func (self *Router) Critical(message string) {
+//self.Dispatch(Notification{
+//Source:     self.Name,
+//SourceUuid: self.Uuid,
+//Level:      CriticalLevel,
+//Message:    message,
+//})
+//}
+
+//func (self *Router) Error(message string) {
+//self.Dispatch(Notification{
+//Source:     self.Name,
+//SourceUuid: self.Uuid,
+//Level:      ErrorLevel,
+//Message:    message,
+//})
+//}
+
+//func (self *Router) Warn(message string) {
+//self.Dispatch(Notification{
+//Source:     self.Name,
+//SourceUuid: self.Uuid,
+//Level:      WarnLevel,
+//Message:    message,
+//})
+//}
+
+//func (self *Router) Info(message string) {
+//self.Dispatch(Notification{
+//Source:     self.Name,
+//SourceUuid: self.Uuid,
+//Level:      InfoLevel,
+//Message:    message,
+//})
+//}
