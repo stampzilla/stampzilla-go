@@ -230,7 +230,7 @@ func sensorEvent(protocol, model *C.char, sensorId, dataType int, value *C.char)
 
 	if dataType == C.TELLSTICK_TEMPERATURE {
 		t, _ := strconv.ParseFloat(C.GoString(value), 64)
-		log.Println("Temperature %s : %s\n", s.Id, t)
+		log.Println("Temperature %d : %f\n", s.Id, t)
 		if s.Temp != t {
 			//log.Println("Difference, sending to server")
 			s.Temp = t
@@ -238,7 +238,7 @@ func sensorEvent(protocol, model *C.char, sensorId, dataType int, value *C.char)
 		}
 	} else if dataType == C.TELLSTICK_HUMIDITY {
 		h, _ := strconv.ParseFloat(C.GoString(value), 64)
-		log.Printf("Humidity %s : %s\n", s.Id, h)
+		log.Printf("Humidity %d : %f\n", s.Id, h)
 		if s.Humidity != h {
 			//log.Println("Difference, sending to server")
 			s.Humidity = h
