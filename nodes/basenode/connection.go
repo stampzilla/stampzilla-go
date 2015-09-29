@@ -2,7 +2,6 @@ package basenode
 
 import (
 	"encoding/json"
-	"fmt"
 	"net"
 	"time"
 
@@ -63,6 +62,7 @@ func Connect() Connection {
 
 			connection.State() <- ConnectionStateConnected
 			log.Trace("Connected")
+
 			serverIsAlive := make(chan bool)
 			go timeoutMonitor(tcpConnection, serverIsAlive)
 			go sendWorker(tcpConnection, connection.send, quit)
@@ -102,7 +102,10 @@ func sendWorker(connection net.Conn, send chan interface{}, quit chan bool) {
 				err = encoder.Encode(d)
 			}
 			if err != nil {
-				fmt.Println("Error encoder.Encode: ", err)
+				log.Warn("Error encoder.Encode: ", err)
+				connection.Close()
+				log.Trace("sendWorker disconnected")
+				return
 			}
 		case <-quit:
 			log.Trace("sendWorker disconnected")
@@ -130,7 +133,7 @@ func connectionWorker(connection net.Conn, recv chan protocol.Command, serverIsA
 			serverIsAlive <- true
 
 			if cmd.Ping {
-				log.Debug("Recived ping - pong")
+				//log.Debug("Recived ping - pong")
 				connection.Write([]byte("{\"Pong\":true}"))
 				continue
 			}
@@ -143,6 +146,9 @@ func connectionWorker(connection net.Conn, recv chan protocol.Command, serverIsA
 }
 
 func timeoutMonitor(connection net.Conn, serverIsAlive chan bool) {
+	log.Debug("Timeout monitor started (", connection.RemoteAddr(), ")")
+	defer log.Debug("Timeout monitor closed (", connection.RemoteAddr(), ")")
+
 	for {
 		select {
 		case <-serverIsAlive:

@@ -12,11 +12,15 @@ import (
 	"syscall"
 	"unsafe"
 
+	"math"
+
 	"github.com/tarm/goserial"
 
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/stampzilla/stampzilla-go/protocol"
+
+	"github.com/stampzilla/stampzilla-go/pkg/notifier"
 )
 
 type SerialConnection struct {
@@ -34,14 +38,23 @@ type winsize struct {
 
 var node *protocol.Node
 var state *State = &State{}
+var notify *notifier.Notify
 var serverConnection basenode.Connection
 var ard *SerialConnection
 var disp *SerialConnection
 var frameCount int
 var lastTemp float64
 var phFilter []float64
+var waterLevelFilter []float64
 
-func main() {
+var filterFilterAlarm int
+var filterFillingAlarm int
+
+var rateTimestamp int64
+var rateCount int64
+var rate int64
+
+func main() { // {{{
 	config := basenode.NewConfig()
 	basenode.SetConfig(config)
 
@@ -159,6 +172,9 @@ func main() {
 	})
 
 	serverConnection = basenode.Connect()
+	notify = notifier.New(serverConnection)
+	notify.SetSource(node)
+
 	go monitorState(serverConnection)
 
 	// This worker recives all incomming commands
@@ -185,7 +201,7 @@ func main() {
 	}()*/
 
 	select {}
-}
+} // }}}
 
 var updateInhibit bool = false
 var changed bool = false
@@ -196,7 +212,7 @@ func processArduinoData(msg string, connection basenode.Connection) { // {{{
 	var prevState State = *state
 
 	values := strings.Split(msg, "|")
-	if len(values) != 10 {
+	if len(values) != 12 {
 		printTerminalStatus("Invalid length")
 		//log.Warn("Invalid message: ", msg)
 		return
@@ -238,12 +254,41 @@ func processArduinoData(msg string, connection basenode.Connection) { // {{{
 	state.Cooling = value // }}}
 
 	bits := values[3][0]
-	state.CirculationPumps = bits&0x01 != 0
-	state.Skimmer = bits&0x02 != 0
-	state.Heating = bits&0x04 != 0
-	state.Filling = bits&0x08 == 0
-	state.WaterLevelOk = bits&0x10 == 0
-	state.FilterOk = bits&0x20 == 0
+	CirculationPumps := bits&0x01 != 0
+	Skimmer := bits&0x02 != 0
+	Heating := bits&0x04 != 0
+	Filling := bits&0x08 == 0
+	WaterLevelOk := bits&0x10 == 0
+	FilterOk := bits&0x20 == 0
+
+	if state.FilterOk != FilterOk {
+		if filterFilterAlarm < 500 {
+			filterFilterAlarm++
+		} else if filterFilterAlarm <= 500 {
+			filterFilterAlarm++
+			notify.Error("Filter igensatt")
+		}
+	} else {
+		filterFilterAlarm = 0
+	}
+
+	if state.Filling != Filling && state.FillingTime > 0 && state.CirculationPumps {
+		if filterFillingAlarm < 500 {
+			filterFillingAlarm++
+		} else if filterFillingAlarm <= 500 {
+			filterFillingAlarm++
+			notify.Error("Påfyllnad misslyckad")
+		}
+	} else {
+		filterFillingAlarm = 0
+	}
+
+	state.CirculationPumps = CirculationPumps
+	state.Skimmer = Skimmer
+	state.Heating = Heating
+	state.Filling = Filling
+	state.WaterLevelOk = WaterLevelOk
+	state.FilterOk = FilterOk
 
 	light := strings.Split(values[6], "*")
 	value, err = strconv.ParseFloat(light[0], 64)
@@ -279,7 +324,7 @@ func processArduinoData(msg string, connection basenode.Connection) { // {{{
 			phFilter = append(phFilter, ph)
 		} else {
 			phFilter = append(phFilter[1:], ph)
-			state.PH = Average(phFilter)
+			state.PH = toFixed(Average(phFilter), 2)
 		}
 	}
 
@@ -295,14 +340,44 @@ func processArduinoData(msg string, connection basenode.Connection) { // {{{
 		}
 	}
 
+	value, err = strconv.ParseFloat(values[10], 64)
+	if err == nil {
+		if value > 0 {
+			state.Lights.Cooling = value
+		}
+	} else {
+		state.Lights.Cooling = -1
+	}
+
+	value, err = strconv.ParseFloat(values[11], 64)
+	if err == nil {
+		waterLevel := toFixed((value-497)/313*213, 1)
+		if len(waterLevelFilter) < 200 {
+			waterLevelFilter = append(waterLevelFilter, waterLevel)
+		} else {
+			waterLevelFilter = append(waterLevelFilter[1:], waterLevel)
+			state.WaterLevel = toFixed(Average(waterLevelFilter), 0)
+		}
+	} else {
+		state.WaterLevel = -1
+	}
+
 	// Check if something have changed
 	if !reflect.DeepEqual(prevState, *state) {
 		changed = true
 	}
 
 	frameCount++
+	rateCount++
+
+	if time.Now().Unix() != rateTimestamp {
+		rateTimestamp = time.Now().Unix()
+		rate = rateCount
+		rateCount = 0
+	}
+
 	//fmt.Print(frameCount, " - ", msg, " - ", bits, "\r")
-	printTerminalStatus(msg)
+	printTerminalStatus(strconv.Itoa(int(rate)) + " msg/s " + msg + "        " + strconv.FormatFloat(state.WaterLevel, 'g', -1, 64))
 
 	if !updateInhibit && changed {
 		changed = false
@@ -327,6 +402,9 @@ func Average(xs []float64) float64 {
 	return total / float64(len(xs))
 }
 func updateDisplay(connection basenode.Connection, serial *SerialConnection) { // {{{
+
+	serial.Port.Write([]byte("\x1B")) // reset
+
 	for {
 		select {
 		case <-time.After(time.Second / 15):
@@ -349,6 +427,10 @@ func updateDisplay(connection basenode.Connection, serial *SerialConnection) { /
 				if state.FillingTime < 20000 {
 					wLevel = "FILLING"
 				}
+			}
+
+			if !state.FilterOk {
+				wLevel = "FILTER!"
 			}
 
 			//msg += "\x1B" // Reset
@@ -489,11 +571,19 @@ func processCommand(cmd protocol.Command) error { // {{{
 		case "white":
 			ard.Port.Write([]byte{0x02, 0x0A, byte(i), 0x03}) // Turn on
 		}
+	case "cooling":
+		i, err := strconv.Atoi(cmd.Args[0])
+		if err != nil {
+			return fmt.Errorf("Failed to decode arg[0] to int %s %s", err, cmd.Args[0])
+		}
+
+		ard.Port.Write([]byte{0x02, 0x0B, byte(i), 0x03}) // Turn on
+		break
 	}
 	return nil
 } // }}}
 
-func printTerminalStatus(msg string) {
+func printTerminalStatus(msg string) { // {{{
 	size := getWindowSize()
 
 	if size.Col < 20 {
@@ -518,9 +608,8 @@ func printTerminalStatus(msg string) {
 	printWithLimit(msg, int(size.Col))
 
 	fmt.Print("\033[4A\r") // Move cursor up 2 lines
-}
-
-func printWithLimit(msg string, length int) {
+}                                             // }}}
+func printWithLimit(msg string, length int) { // {{{
 	pad := length - len(msg) - 1
 
 	if pad < 1 {
@@ -528,9 +617,8 @@ func printWithLimit(msg string, length int) {
 	} else {
 		fmt.Print(msg + strings.Repeat(" ", pad) + "\n")
 	}
-}
-
-func getWindowSize() *winsize {
+}                               // }}}
+func getWindowSize() *winsize { // {{{
 	ws := &winsize{}
 	retCode, _, errno := syscall.Syscall(syscall.SYS_IOCTL,
 		uintptr(syscall.Stdin),
@@ -541,23 +629,29 @@ func getWindowSize() *winsize {
 		panic(errno)
 	}
 	return ws
-}
+} // }}}
 
 // Serial connection workers
 func (config *SerialConnection) run(connection basenode.Connection, callback func(data string, connection basenode.Connection)) { // {{{
+	connected := make(chan struct{})
+
 	go func() {
 		for {
-			config.connect(connection, callback)
+			config.connect(connection, callback, connected)
 			<-time.After(time.Second * 4)
+			connected = make(chan struct{})
 		}
 	}()
-}                                                                                                                                     // }}}
-func (config *SerialConnection) connect(connection basenode.Connection, callback func(data string, connection basenode.Connection)) { // {{{
 
+	<-connected
+} // }}}
+
+func (config *SerialConnection) connect(connection basenode.Connection, callback func(data string, connection basenode.Connection), connected chan struct{}) { // {{{
 	red := state.Lights.Red
 	green := state.Lights.Green
 	blue := state.Lights.Blue
 	white := state.Lights.White
+	cooling := state.Cooling
 
 	c := &serial.Config{Name: config.Name, Baud: config.Baud}
 	var err error
@@ -568,12 +662,14 @@ func (config *SerialConnection) connect(connection basenode.Connection, callback
 		return
 	}
 
+	close(connected)
 	<-time.After(time.Second)
 
-	config.Port.Write([]byte{0x02, 0x07, byte(red), 0x03})   // red
-	config.Port.Write([]byte{0x02, 0x08, byte(green), 0x03}) // green
-	config.Port.Write([]byte{0x02, 0x09, byte(blue), 0x03})  // blue
-	config.Port.Write([]byte{0x02, 0x0A, byte(white), 0x03}) // white
+	config.Port.Write([]byte{0x02, 0x07, byte(red), 0x03})     // red
+	config.Port.Write([]byte{0x02, 0x08, byte(green), 0x03})   // green
+	config.Port.Write([]byte{0x02, 0x09, byte(blue), 0x03})    // blue
+	config.Port.Write([]byte{0x02, 0x0A, byte(white), 0x03})   // white
+	config.Port.Write([]byte{0x02, 0x0B, byte(cooling), 0x03}) // cooling
 
 	var incomming string = ""
 
@@ -602,3 +698,12 @@ func (config *SerialConnection) connect(connection basenode.Connection, callback
 		}
 	}
 } // }}}
+
+func round(num float64) int {
+	return int(num + math.Copysign(0.5, num))
+}
+
+func toFixed(num float64, precision int) float64 {
+	output := math.Pow(10, float64(precision))
+	return float64(round(num*output)) / output
+}

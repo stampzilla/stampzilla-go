@@ -17,12 +17,15 @@ type State struct { /*{{{*/
 	AirTemperature float64
 	Humidity       float64
 
+	WaterLevel float64
+
 	Lights struct {
 		White       float64
 		Red         float64
 		Green       float64
 		Blue        float64
 		Temperature float64
+		Cooling     float64
 	}
 
 	PH float64
