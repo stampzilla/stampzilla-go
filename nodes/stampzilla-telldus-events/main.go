@@ -221,7 +221,7 @@ func newDevice(id int, name *C.char, methods, s int, value *C.char) {
 
 //export sensorEvent
 func sensorEvent(protocol, model *C.char, sensorId, dataType int, value *C.char) {
-	log.Println("SensorEVENT: ", C.GoString(protocol), C.GoString(model), sensorId)
+	//log.Println("SensorEVENT: ", C.GoString(protocol), C.GoString(model), sensorId)
 
 	var s *Sensor
 	if s = state.GetSensor(sensorId); s == nil {
@@ -230,17 +230,17 @@ func sensorEvent(protocol, model *C.char, sensorId, dataType int, value *C.char)
 
 	if dataType == C.TELLSTICK_TEMPERATURE {
 		t, _ := strconv.ParseFloat(C.GoString(value), 64)
-		log.Println("Temperature:\t", t)
+		log.Println("Temperature %s : %s\n", s.Id, t)
 		if s.Temp != t {
-			log.Println("Difference, sending to server")
+			//log.Println("Difference, sending to server")
 			s.Temp = t
 			serverConnection.Send(node.Node())
 		}
 	} else if dataType == C.TELLSTICK_HUMIDITY {
 		h, _ := strconv.ParseFloat(C.GoString(value), 64)
-		log.Println("Humidity:\t", h)
+		log.Printf("Humidity %s : %s\n", s.Id, h)
 		if s.Humidity != h {
-			log.Println("Difference, sending to server")
+			//log.Println("Difference, sending to server")
 			s.Humidity = h
 			serverConnection.Send(node.Node())
 		}
@@ -249,7 +249,7 @@ func sensorEvent(protocol, model *C.char, sensorId, dataType int, value *C.char)
 
 //export deviceEvent
 func deviceEvent(deviceId, method int, data *C.char, callbackId int, context unsafe.Pointer) {
-	log.Println("DeviceEVENT: ", deviceId, method, C.GoString(data))
+	//log.Println("DeviceEVENT: ", deviceId, method, C.GoString(data))
 	device := state.GetDevice(strconv.Itoa(deviceId))
 	if method&C.TELLSTICK_TURNON != 0 {
 		device.State.On = true
@@ -278,10 +278,10 @@ func deviceEvent(deviceId, method int, data *C.char, callbackId int, context uns
 
 //export deviceChangeEvent
 func deviceChangeEvent(deviceId, changeEvent, changeType, callbackId int, context unsafe.Pointer) {
-	log.Println("DeviceChangeEVENT: ", deviceId, changeEvent, changeType)
+	//log.Println("DeviceChangeEVENT: ", deviceId, changeEvent, changeType)
 }
 
 //export rawDeviceEvent
 func rawDeviceEvent(data *C.char, controllerId, callbackId int, context unsafe.Pointer) {
-	log.Println("rawDeviceEVENT: ", controllerId, C.GoString(data))
+	//log.Println("rawDeviceEVENT: ", controllerId, C.GoString(data))
 }
