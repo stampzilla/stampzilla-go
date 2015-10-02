@@ -117,6 +117,11 @@ type Config struct {
 	Host string
 	Port string
 	Uuid string
+	Node *json.RawMessage `json:"Node,omitempty"`
+}
+
+func (c *Config) NodeSpecific(i interface{}) error {
+	return json.Unmarshal(*c.Node, &i)
 }
 
 func (c *Config) GetUuid() string {
@@ -133,5 +138,5 @@ func (c *Config) Merge(c2 *Config) {
 	}
 
 	c.Uuid = c2.Uuid
-
+	c.Node = c2.Node
 }
