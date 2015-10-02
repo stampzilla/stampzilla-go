@@ -89,6 +89,10 @@ func (wh *WebHandler) GetScheduleEntries(c *gin.Context) {
 	c.JSON(200, wh.Scheduler.Cron.Entries())
 }
 
+func (wh *WebHandler) GetScheduleReload(c *gin.Context) {
+	wh.Scheduler.Reload()
+	c.JSON(200, wh.Scheduler.Tasks())
+}
 func (wh *WebHandler) GetReload(c *gin.Context) {
 	wh.Logic.RestoreRulesFromFile("rules.json")
 	c.JSON(200, wh.Logic.Rules())

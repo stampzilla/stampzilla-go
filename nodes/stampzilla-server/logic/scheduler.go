@@ -34,6 +34,18 @@ func (s *Scheduler) Start() {
 	s.Cron.Start()
 }
 
+func (s *Scheduler) Reload() {
+	//TODO verify the the new JSON is valid before unloading the existing schedule
+	s.Lock()
+	s.tasks = nil
+	s.Unlock()
+	for _, job := range s.Cron.Entries() {
+		s.Cron.RemoveJob(job.Id)
+	}
+	s.Cron.Stop()
+	s.Start()
+}
+
 func (s *Scheduler) Tasks() []Task {
 	s.RLock()
 	defer s.RUnlock()
@@ -60,7 +72,7 @@ func (s *Scheduler) RemoveTask(uuid string) error {
 	defer s.Unlock()
 	for i, task := range s.tasks {
 		if task.Uuid() == uuid {
-			s.Cron.RemoveFunc(task.CronId())
+			s.Cron.RemoveJob(task.CronId())
 			s.tasks = append(s.tasks[:i], s.tasks[i+1:]...)
 			return nil
 		}

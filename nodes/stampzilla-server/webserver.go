@@ -56,6 +56,7 @@ func (ws *WebServer) Start() {
 	//Schedule
 	r.GET("/api/schedule", ws.WebHandler.GetScheduleTasks)
 	r.GET("/api/schedule/entries", ws.WebHandler.GetScheduleEntries)
+	r.GET("/api/schedule/reload", ws.WebHandler.GetScheduleReload)
 
 	r.GET("/api/reload", ws.WebHandler.GetReload)
 
