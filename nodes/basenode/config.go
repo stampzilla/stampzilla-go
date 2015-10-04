@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"flag"
 	"os"
+	"fmt"
 
 	log "github.com/cihub/seelog"
 	"github.com/pborman/uuid"
@@ -121,7 +122,11 @@ type Config struct {
 }
 
 func (c *Config) NodeSpecific(i interface{}) error {
-	return json.Unmarshal(*c.Node, &i)
+	if c.Node != nil  {
+		return json.Unmarshal(*c.Node, &i)
+	}
+
+	return fmt.Errorf("No node specific config exist")
 }
 
 func (c *Config) GetUuid() string {

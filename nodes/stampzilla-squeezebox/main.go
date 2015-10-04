@@ -30,7 +30,11 @@ func main() {
 	basenode.SetConfig(config)
 
 	nc := &Config{}
-	config.NodeSpecific(&nc)
+	err := config.NodeSpecific(&nc)
+	if err != nil {
+		log.Error(err)
+		return
+	}
 
 	node := protocol.NewNode("squeezebox")
 
@@ -54,7 +58,12 @@ func main() {
 	processor := NewProcessor(node, connection, state, s)
 	go serverRecv(processor)
 	go squeezeboxReader(s, processor)
-	s.Connect(nc.Host, nc.Username, nc.Password)
+	err = s.Connect(nc.Host, nc.Username, nc.Password)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
 	s.Send("subscribe power,alarm,pause,play,stop,client,mixer,playlist")
 	s.Send("players 0 999")
 

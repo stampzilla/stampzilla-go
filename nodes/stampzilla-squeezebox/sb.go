@@ -32,8 +32,7 @@ func (s *squeezebox) Read() chan string {
 func (s *squeezebox) Connect(host, username, password string) (err error) {
 	s.conn, err = net.Dial("tcp", host)
 	if err != nil {
-		log.Println(err)
-		return
+		return err
 	}
 	go s.writer()
 	go s.reader()
