@@ -3,9 +3,10 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"net"
 	"time"
+
+	log "github.com/cihub/seelog"
 )
 
 type squeezebox struct {
@@ -45,7 +46,7 @@ func (s *squeezebox) SendTo(d *Device, cmd string) {
 }
 
 func (s *squeezebox) Send(cmd string) {
-	log.Println("Sending: ", cmd)
+	log.Info("Sending: ", cmd)
 	wait := make(chan struct{})
 	go s.waitForResponse(wait)
 	s.write <- (cmd) + "\n"
@@ -62,7 +63,7 @@ func (s *squeezebox) waitForResponse(c chan struct{}) {
 		c <- struct{}{}
 		return
 	case <-time.After(time.Second * 1):
-		log.Println("We got TIMOUT after send")
+		log.Error("We got TIMOUT after send")
 		c <- struct{}{}
 		return
 	}
@@ -71,7 +72,10 @@ func (s *squeezebox) waitForResponse(c chan struct{}) {
 
 func (s *squeezebox) writer() {
 	for v := range s.write {
-		s.conn.Write([]byte(v))
+		_, err := s.conn.Write([]byte(v))
+		if err != nil {
+			log.Error(err)
+		}
 	}
 }
 
@@ -84,7 +88,7 @@ func (s *squeezebox) reader() {
 			s.read <- str
 		}
 		if err != nil {
-			log.Println(err)
+			log.Error(err)
 			break
 		}
 	}
