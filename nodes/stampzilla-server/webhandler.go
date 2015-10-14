@@ -81,6 +81,26 @@ func (wh *WebHandler) CommandToNodeGet(c *gin.Context) {
 func (wh *WebHandler) GetRules(c *gin.Context) {
 	c.JSON(200, wh.Logic.Rules())
 }
+func (wh *WebHandler) GetRunRules(c *gin.Context) {
+	id := c.Param("id")
+	action := c.Param("action")
+	for _, rule := range wh.Logic.Rules() {
+		if rule.Uuid() == id {
+			switch action {
+			case "enter":
+				rule.RunEnter()
+				c.JSON(200, "ok")
+				return
+			case "exit":
+				rule.RunExit()
+				c.JSON(200, "ok")
+				return
+
+			}
+		}
+	}
+	c.String(404, "Rule not found")
+}
 
 func (wh *WebHandler) GetScheduleTasks(c *gin.Context) {
 	c.JSON(200, wh.Scheduler.Tasks())
