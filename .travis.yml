@@ -1,5 +1,9 @@
 language: go
 sudo: false
+addons:
+  apt:
+    packages:
+    - libev-dev
 
 go:
   - 1.4
@@ -11,6 +15,6 @@ install:
   - go get -d -v ./...
 
 script: 
-  - go test -v `go list ./... | grep -v telldus-events`
+  - go test -v `go list ./... | grep -v telldus-events | grep -v stampzilla-hidcommander`
   - bash coverage  
   - goveralls -coverprofile=./gover.coverprofile -service travis-ci
