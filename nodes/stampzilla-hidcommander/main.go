@@ -60,7 +60,7 @@ func main() {
 }
 
 func getRequest(config *basenode.Config, cmd string) {
-	url := "http://" + config.Host + ":" + config.Port + "/api/nodes/" + cmd
+	url := "http://" + config.Host + ":" + config.Port + "/api/" + cmd
 	fmt.Println(url)
 	_, err := http.Get(url)
 	if err != nil {

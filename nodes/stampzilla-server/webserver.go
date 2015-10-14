@@ -52,7 +52,7 @@ func (ws *WebServer) Start() {
 
 	//Rules
 	r.GET("/api/rules", ws.WebHandler.GetRules)
-	r.GET("/api/rules/:action/:id", ws.WebHandler.GetRunRules)
+	r.GET("/api/rules/:id/:action", ws.WebHandler.GetRunRules)
 
 	//Schedule
 	r.GET("/api/schedule", ws.WebHandler.GetScheduleTasks)
