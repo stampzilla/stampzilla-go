@@ -85,6 +85,10 @@ func (l *Logic) EvaluateRules() {
 }
 func (l *Logic) evaluateRule(r Rule) bool {
 	var state string
+	if len(r.Conditions()) == 0 {
+		return false
+	}
+
 	for _, cond := range r.Conditions() {
 		//fmt.Println(cond.StatePath())
 		//for _, state := range l.States() {
