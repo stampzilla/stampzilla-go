@@ -22,7 +22,7 @@ func (t *Installer) CreateConfig() {
 	fmt.Print("Creating config /etc/stampzilla/nodes.conf... ")
 	if _, err := os.Stat("/etc/stampzilla/nodes.conf"); os.IsNotExist(err) {
 		config := &Config{}
-		config.generateDefault()
+		config.GenerateDefault()
 		config.SaveToFile("/etc/stampzilla/nodes.conf")
 		fmt.Println("DONE")
 	} else {
@@ -121,16 +121,20 @@ func (t *Installer) GoGet(url string, update bool) {
 	if err != nil {
 		fmt.Printf("LookPath Error: %s", err)
 	}
-	u := ""
-	if update {
-		u = "-u"
-	}
 
 	// If we already is stampzilla user no need to sudo!
 	if user, err := user.Current(); err == nil && user.Username == "stampzilla" {
-		out, err = Run(gobin, "get", u, url)
+		if update {
+			out, err = Run(gobin, "get", "-u", url)
+		} else {
+			out, err = Run(gobin, "get", url)
+		}
 	} else {
-		out, err = Run("sudo", "-E", "-u", "stampzilla", "-H", gobin, "get", u, url)
+		if update {
+			out, err = Run("sudo", "-E", "-u", "stampzilla", "-H", gobin, "get", "-u", url)
+		} else {
+			out, err = Run("sudo", "-E", "-u", "stampzilla", "-H", gobin, "get", url)
+		}
 	}
 
 	if err != nil {

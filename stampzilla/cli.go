@@ -61,6 +61,12 @@ func main() {
 				},
 			},
 		},
+		{
+			Name:      "updateconfig",
+			ShortName: "uc",
+			Usage:     "Generates new /etc/stampzilla/nodes.conf merging new nodes with existing config",
+			Action:    cliHandler.UpdateConfig,
+		},
 	}
 
 	app.Run(os.Args)

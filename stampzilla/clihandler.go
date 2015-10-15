@@ -18,6 +18,27 @@ type cliHandler struct {
 	Installer *installer.Installer
 }
 
+func (t *cliHandler) UpdateConfig(c *cli.Context) {
+	requireRoot()
+
+	oldConfig := &installer.Config{}
+	oldConfig.ReadConfigFromFile("/etc/stampzilla/nodes.conf")
+
+	newConfig := &installer.Config{}
+	newConfig.GenerateDefault()
+	for _, n := range newConfig.Daemons {
+		if old := oldConfig.GetConfigForNode(n.Name); old != nil {
+			n.Autostart = old.Autostart
+			n.Config = old.Config
+		}
+	}
+	err := newConfig.SaveToFile("/etc/stampzilla/nodes.conf")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+}
+
 func (t *cliHandler) Install(c *cli.Context) {
 	requireRoot()
 
@@ -51,6 +72,11 @@ func (t *cliHandler) Install(c *cli.Context) {
 		return
 	}
 
+	if len(c.Args()) != 0 {
+		t.installSpecificNodesFromArguments(c)
+		return
+	}
+
 	for _, node := range nodes {
 		if !strings.Contains(node.Name(), "stampzilla-") {
 			continue
@@ -58,10 +84,6 @@ func (t *cliHandler) Install(c *cli.Context) {
 
 		//Skip telldus-events since it contains C bindings if we dont explicly requests it to install
 		if len(c.Args()) == 0 && node.Name() == "stampzilla-telldus-events" {
-			continue
-		}
-
-		if len(c.Args()) != 0 && !t.findNodeInArgs(c, node.Name()) {
 			continue
 		}
 
@@ -76,13 +98,11 @@ func (t *cliHandler) Install(c *cli.Context) {
 	return
 }
 
-func (t *cliHandler) findNodeInArgs(c *cli.Context, node string) bool {
-	for _, requestedNode := range c.Args() {
-		if node == "stampzilla-"+requestedNode {
-			return true
-		}
+func (t *cliHandler) installSpecificNodesFromArguments(c *cli.Context) {
+	for _, name := range c.Args() {
+		node := "stampzilla-" + name
+		t.Installer.GoGet("github.com/stampzilla/stampzilla-go/nodes/"+node, c.Bool("u"))
 	}
-	return false
 }
 
 func (t *cliHandler) Start(c *cli.Context) {
