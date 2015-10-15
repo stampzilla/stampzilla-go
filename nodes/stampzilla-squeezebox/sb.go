@@ -21,7 +21,7 @@ func NewSqueezebox() *squeezebox {
 	return &squeezebox{
 		read:     make(chan string, 100),
 		write:    make(chan string, 100),
-		response: make(chan struct{}, 100),
+		response: make(chan struct{}),
 	}
 
 }
@@ -83,13 +83,13 @@ func (s *squeezebox) reader() {
 	connbuf := bufio.NewReader(s.conn)
 	for {
 		str, err := connbuf.ReadString('\n')
-		if len(str) > 0 {
-			s.response <- struct{}{}
-			s.read <- str
-		}
 		if err != nil {
 			log.Error(err)
 			break
+		}
+		if len(str) > 0 {
+			s.response <- struct{}{}
+			s.read <- str
 		}
 	}
 }
