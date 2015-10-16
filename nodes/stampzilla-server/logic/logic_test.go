@@ -14,9 +14,13 @@ type ruleActionStub struct {
 	actionCount *int
 }
 
-func (ra *ruleActionStub) RunCommand() {
+func (ra *ruleActionStub) Run() {
 	fmt.Println("RuleActionStubRAN")
 	*ra.actionCount++
+}
+func (ra *ruleActionStub) Uuid() string {
+	return ""
+
 }
 
 func NewRuleActionStub(actionCount *int) *ruleActionStub {

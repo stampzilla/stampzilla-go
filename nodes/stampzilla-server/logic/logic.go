@@ -207,8 +207,8 @@ func (l *Logic) RestoreRulesFromFile(path string) {
 		Name         string           `json:"name"`
 		Uuid         string           `json:"uuid"`
 		Conditions_  []*ruleCondition `json:"conditions"`
-		EnterActions []*ruleAction    `json:"enterActions"`
-		ExitActions  []*ruleAction    `json:"exitActions"`
+		EnterActions []*command       `json:"enterActions"`
+		ExitActions  []*command       `json:"exitActions"`
 	}
 
 	var rules []*local_rule

@@ -82,7 +82,7 @@ func (s *Scheduler) RemoveTask(uuid string) error {
 func (s *Scheduler) CreateExampleFile() {
 	task := s.AddTask("Test1")
 	cmd := &protocol.Command{Cmd: "testCMD"}
-	action := NewRuleAction(cmd, "simple")
+	action := NewCommand(cmd, "simple")
 	task.AddAction(action)
 	task.Schedule("0 * * * * *")
 
@@ -113,10 +113,10 @@ func (s *Scheduler) loadFromFile(filepath string) {
 	}
 
 	type local_tasks struct {
-		Name     string        `json:"name"`
-		Uuid     string        `json:"uuid"`
-		Actions  []*ruleAction `json:"actions"`
-		CronWhen string        `json:"when"`
+		Name     string     `json:"name"`
+		Uuid     string     `json:"uuid"`
+		Actions  []*command `json:"actions"`
+		CronWhen string     `json:"when"`
 	}
 
 	var tasks []*local_tasks

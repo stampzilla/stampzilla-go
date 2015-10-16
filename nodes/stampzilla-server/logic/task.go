@@ -11,9 +11,9 @@ import (
 )
 
 type task struct {
-	Name_    string       `json:"name"`
-	Uuid_    string       `json:"uuid"`
-	Actions  []RuleAction `json:"actions"`
+	Name_    string    `json:"name"`
+	Uuid_    string    `json:"uuid"`
+	Actions  []Command `json:"actions"`
 	cronId   int
 	CronWhen string `json:"when"`
 	sync.RWMutex
@@ -28,7 +28,7 @@ type Task interface {
 	Uuid() string
 	Name() string
 	CronId() int
-	AddAction(a RuleAction)
+	AddAction(a Command)
 	Schedule(string)
 }
 
@@ -56,7 +56,7 @@ func (r *task) CronId() int {
 func (t *task) Run() {
 	t.RLock()
 	for _, action := range t.Actions {
-		action.RunCommand()
+		action.Run()
 	}
 	t.RUnlock()
 
@@ -74,8 +74,8 @@ func (t *task) Schedule(when string) {
 	t.Unlock()
 }
 
-func (r *task) AddAction(a RuleAction) {
-	if a, ok := a.(*ruleAction); ok {
+func (r *task) AddAction(a Command) {
+	if a, ok := a.(*command); ok {
 		a.nodes = r.nodes
 	}
 	r.Lock()

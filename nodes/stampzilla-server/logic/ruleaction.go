@@ -8,36 +8,40 @@ import (
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
-type RuleAction interface {
-	RunCommand()
+type Command interface {
+	Run()
+	Uuid() string
 }
-type ruleAction struct {
+type command struct {
 	Command *protocol.Command `json:"command"`
-	Uuid    string            `json:"uuid"`
+	Uuid_   string            `json:"uuid"`
 	nodes   *serverprotocol.Nodes
 }
 
-func NewRuleAction(cmd *protocol.Command, uuid string) RuleAction {
-	return &ruleAction{Command: cmd, Uuid: uuid}
+func NewCommand(cmd *protocol.Command, uuid string) *command {
+	return &command{Command: cmd, Uuid_: uuid}
 }
-func (ra *ruleAction) RunCommand() {
-	if ra.nodes == nil {
-		log.Warn("Node ", ra.Uuid, " - No nodes connected when tried to send: ", ra.Command)
+func (c *command) Uuid() string {
+	return c.Uuid_
+}
+func (c *command) Run() {
+	if c.nodes == nil {
+		log.Warn("Node ", c.Uuid(), " - No nodes connected when tried to send: ", c.Command)
 		return
 	}
-	node := ra.nodes.Search(ra.Uuid)
+	node := c.nodes.Search(c.Uuid())
 	if node != nil {
-		jsonToSend, err := json.Marshal(&ra.Command)
+		jsonToSend, err := json.Marshal(&c.Command)
 		if err != nil {
-			log.Warn("Node ", ra.Uuid, " - Failed to marshal command: ", ra.Command)
+			log.Warn("Node ", c.Uuid(), " - Failed to marshal command: ", c.Command)
 			log.Error(err)
 			return
 		}
 
-		log.Info("Running command ", ra.Command, " to ", ra.Uuid)
+		log.Info("Running command ", c.Command, " to ", c.Uuid())
 		node.Write(jsonToSend)
 
 		return
 	}
-	log.Warn("Node ", ra.Uuid, " not found :/,  lost command", ra.Command)
+	log.Warn("Node ", c.Uuid(), " not found :/,  lost command", c.Command)
 }

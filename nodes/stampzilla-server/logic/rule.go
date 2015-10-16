@@ -14,8 +14,8 @@ type Rule interface {
 	SetCondState(bool)
 	RunEnter()
 	RunExit()
-	AddExitAction(RuleAction)
-	AddEnterAction(RuleAction)
+	AddExitAction(Command)
+	AddEnterAction(Command)
 	AddCondition(RuleCondition)
 	Conditions() []RuleCondition
 }
@@ -24,8 +24,8 @@ type rule struct {
 	Name_         string          `json:"name"`
 	Uuid_         string          `json:"uuid"`
 	Conditions_   []RuleCondition `json:"conditions"`
-	EnterActions_ []RuleAction    `json:"enterActions"`
-	ExitActions_  []RuleAction    `json:"exitActions"`
+	EnterActions_ []Command       `json:"enterActions"`
+	ExitActions_  []Command       `json:"exitActions"`
 	condState     bool
 	sync.RWMutex
 	nodes *protocol.Nodes
@@ -63,24 +63,24 @@ func (r *rule) SetCondState(cond bool) {
 }
 func (r *rule) RunEnter() {
 	for _, a := range r.EnterActions_ {
-		a.RunCommand()
+		a.Run()
 	}
 }
 func (r *rule) RunExit() {
 	for _, a := range r.ExitActions_ {
-		a.RunCommand()
+		a.Run()
 	}
 }
-func (r *rule) AddExitAction(a RuleAction) {
-	if a, ok := a.(*ruleAction); ok {
+func (r *rule) AddExitAction(a Command) {
+	if a, ok := a.(*command); ok {
 		a.nodes = r.nodes
 	}
 	r.Lock()
 	r.ExitActions_ = append(r.ExitActions_, a)
 	r.Unlock()
 }
-func (r *rule) AddEnterAction(a RuleAction) {
-	if a, ok := a.(*ruleAction); ok {
+func (r *rule) AddEnterAction(a Command) {
+	if a, ok := a.(*command); ok {
 		a.nodes = r.nodes
 	}
 	r.Lock()
