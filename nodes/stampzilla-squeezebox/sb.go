@@ -88,7 +88,10 @@ func (s *squeezebox) reader() {
 			break
 		}
 		if len(str) > 0 {
-			s.response <- struct{}{}
+			select {
+			case s.response <- struct{}{}:
+			default:
+			}
 			s.read <- str
 		}
 	}
