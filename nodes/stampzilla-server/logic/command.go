@@ -15,7 +15,7 @@ type Command interface {
 type command struct {
 	Command *protocol.Command `json:"command"`
 	Uuid_   string            `json:"uuid"`
-	nodes   *serverprotocol.Nodes
+	nodes   serverprotocol.Searchable
 }
 
 func NewCommand(cmd *protocol.Command, uuid string) *command {

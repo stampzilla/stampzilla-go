@@ -6,12 +6,12 @@ type Action interface {
 	Run()
 	Uuid() string
 	Name() string
-	SetNodes(*serverprotocol.Nodes)
+	SetNodes(serverprotocol.Searchable)
 }
 
 type action struct {
 	Commands []*command `json:"commands"`
-	nodes    *serverprotocol.Nodes
+	nodes    serverprotocol.Searchable
 	Uuid_    string `json:"uuid"`
 	Name_    string `json:"name"`
 }
@@ -27,6 +27,6 @@ func (a *action) Run() {
 		v.Run()
 	}
 }
-func (a *action) SetNodes(n *serverprotocol.Nodes) {
+func (a *action) SetNodes(n serverprotocol.Searchable) {
 	a.nodes = n
 }

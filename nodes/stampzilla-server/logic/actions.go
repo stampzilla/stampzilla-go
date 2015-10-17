@@ -35,6 +35,9 @@ func (a *actions) UnmarshalJSON(b []byte) (err error) {
 	if err = json.Unmarshal(b, &la); err == nil {
 		for _, action := range la.Actions {
 			action.SetNodes(a.nodes)
+			for _, c := range action.Commands {
+				c.nodes = a.nodes
+			}
 			a.Actions = append(a.Actions, action)
 		}
 		return

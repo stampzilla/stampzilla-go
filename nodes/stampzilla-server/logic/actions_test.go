@@ -43,7 +43,7 @@ func TestActionsMapperLoad(t *testing.T) {
 
 	assert.Equal(t, "nodeuuid", a.nodes.ByName("nodename").Uuid())
 	assert.NotNil(t, a.nodes)
-	assert.NotNil(t, a.nodes.ByUuid("nodeuuid"))
+	assert.NotNil(t, a.nodes.Search("nodeuuid"))
 
 	assert.Equal(t, "actionuuid1", a.Actions[0].Uuid())
 	assert.Equal(t, "actionuuid2", a.Actions[1].Uuid())
@@ -56,7 +56,24 @@ func TestActionsMapperLoad(t *testing.T) {
 	assert.Equal(t, "uuid1", a.Actions[1].Commands[0].Uuid())
 	assert.Equal(t, "uuid2", a.Actions[1].Commands[1].Uuid())
 
-	assert.Equal(t, "nodename", a.Actions[1].nodes.ByUuid("nodeuuid").Name())
+	assert.Equal(t, "nodename", a.Actions[1].nodes.Search("nodeuuid").Name())
+
+	//fmt.Printf("%#v\n", a)
+}
+func TestActionsRun(t *testing.T) {
+
+	mapper := newActionsMapper()
+	a := &actions{}
+	a.nodes = serverprotocol.NewNodes()
+	node := serverprotocol.NewNode()
+	node.SetName("nodename")
+	node.SetUuid("nodeuuid")
+	a.nodes.Add(node)
+	mapper.Load(a)
+
+	a.Run()
+
+	//TODO assert things here!
 
 	//fmt.Printf("%#v\n", a)
 }
