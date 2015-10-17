@@ -48,8 +48,15 @@ func TestActionsMapperLoad(t *testing.T) {
 	assert.Equal(t, "actionuuid1", a.Actions[0].Uuid())
 	assert.Equal(t, "actionuuid2", a.Actions[1].Uuid())
 
+	assert.Equal(t, "actionuuid1", a.GetByUuid("actionuuid1").Uuid())
+	assert.Equal(t, "actionuuid2", a.GetByUuid("actionuuid2").Uuid())
+
+	assert.Nil(t, a.GetByUuid("unknown"))
+
 	assert.Equal(t, "uuid1", a.Actions[1].Commands[0].Uuid())
 	assert.Equal(t, "uuid2", a.Actions[1].Commands[1].Uuid())
+
+	assert.Equal(t, "nodename", a.Actions[1].nodes.ByUuid("nodeuuid").Name())
 
 	//fmt.Printf("%#v\n", a)
 }
