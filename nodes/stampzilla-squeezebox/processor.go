@@ -59,9 +59,14 @@ func (p *Processor) ProcessSqueezeboxCommand(cmd string) {
 				p.connection.Send(p.node.Node())
 			case rest == "play":
 				player.Playing = true
+				player.Power = true
 				p.connection.Send(p.node.Node())
 			case strings.Contains(rest, "power"):
 				player.Power = parser.Power(rest)
+				if !player.Power {
+					player.Playing = false
+					player.Title = ""
+				}
 				p.connection.Send(p.node.Node())
 			}
 
