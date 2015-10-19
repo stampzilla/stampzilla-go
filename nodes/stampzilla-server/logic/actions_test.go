@@ -60,20 +60,21 @@ func TestActionsMapperLoad(t *testing.T) {
 
 	//fmt.Printf("%#v\n", a)
 }
-func TestActionsRun(t *testing.T) {
 
-	mapper := newActionsMapper()
-	a := &actions{}
-	a.nodes = serverprotocol.NewNodes()
-	node := serverprotocol.NewNode()
-	node.SetName("nodename")
-	node.SetUuid("nodeuuid")
-	a.nodes.Add(node)
-	mapper.Load(a)
+//func TestActionsRun(t *testing.T) {
 
-	a.Run()
+//mapper := newActionsMapper()
+//a := &actions{}
+//a.nodes = serverprotocol.NewNodes()
+//node := serverprotocol.NewNode()
+//node.SetName("nodename")
+//node.SetUuid("nodeuuid")
+//a.nodes.Add(node)
+//mapper.Load(a)
 
-	//TODO assert things here!
+//a.Run()
 
-	//fmt.Printf("%#v\n", a)
-}
+//TODO assert things here!
+
+//fmt.Printf("%#v\n", a)
+//}
