@@ -2,13 +2,14 @@ package logic
 
 import (
 	"testing"
-	"time"
 
 	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
+	"github.com/stretchr/testify/assert"
 )
 
 type nodeStub struct {
 	serverprotocol.Node
+	written [][]byte
 }
 
 func (n *nodeStub) Name() string {
@@ -16,20 +17,20 @@ func (n *nodeStub) Name() string {
 }
 
 func (n *nodeStub) Write(b []byte) {
-
+	n.written = append(n.written, b)
 }
 
 type nodesStub struct {
+	node *nodeStub
 }
 
 func (n *nodesStub) Search(what string) serverprotocol.Node {
-	return &nodeStub{}
-	return nil
+	return n.node
 }
 
 func TestRunCommand(t *testing.T) {
-
 	nodes := &nodesStub{}
+	nodes.node = &nodeStub{}
 
 	command := &command{}
 	command.Uuid_ = "cmduuid"
@@ -37,6 +38,5 @@ func TestRunCommand(t *testing.T) {
 
 	command.Run()
 
-	time.Sleep(time.Second)
-	//fmt.Printf("%#v\n", a)
+	assert.Equal(t, 1, len(nodes.node.written))
 }
