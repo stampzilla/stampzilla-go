@@ -10,7 +10,7 @@ type Actions interface {
 
 type actions struct {
 	Actions []*action
-	Nodes   *serverprotocol.Nodes `inject:""`
+	Nodes   *serverprotocol.Nodes `json:"-" inject:""`
 }
 
 func NewActions() *actions {
