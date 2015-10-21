@@ -82,6 +82,10 @@ func (wh *WebHandler) CommandToNodeGet(c *gin.Context) {
 func (wh *WebHandler) GetActions(c *gin.Context) {
 	c.JSON(200, wh.ActionsService.Actions())
 }
+func (wh *WebHandler) ReloadActions(c *gin.Context) {
+	wh.ActionsService.Start()
+	c.JSON(200, wh.ActionsService.Actions())
+}
 func (wh *WebHandler) GetRules(c *gin.Context) {
 	c.JSON(200, wh.Logic.Rules())
 }

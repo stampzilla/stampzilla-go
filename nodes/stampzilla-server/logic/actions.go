@@ -27,7 +27,8 @@ func (a *Actions) Actions() []*action {
 	return a.Actions_
 }
 func (a *Actions) Start() {
-	mapper := newActionsMapper()
+	a.Actions_ = make([]*action, 0)
+	mapper := NewActionsMapper()
 	mapper.Load(a)
 }
 
@@ -42,10 +43,10 @@ func (a *Actions) GetByUuid(uuid string) Action {
 }
 
 func (a *Actions) UnmarshalJSON(b []byte) (err error) {
-	type localActions Actions
+	type localActions []*action
 	la := localActions{}
 	if err = json.Unmarshal(b, &la); err == nil {
-		for _, action := range la.Actions_ {
+		for _, action := range la {
 			action.SetNodes(a.Nodes)
 			for _, c := range action.Commands {
 				c.nodes = a.Nodes
@@ -54,5 +55,10 @@ func (a *Actions) UnmarshalJSON(b []byte) (err error) {
 		}
 		return
 	}
+	return
+}
+
+func (a *Actions) MarshalJSON() (res []byte, err error) {
+	res, err = json.Marshal(a.Actions_)
 	return
 }

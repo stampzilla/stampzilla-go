@@ -16,12 +16,13 @@ type ActionsMapper interface {
 type actionsMapper struct {
 }
 
-func newActionsMapper() ActionsMapper {
+func NewActionsMapper() ActionsMapper {
 	return &actionsMapper{}
 
 }
 
 func (am *actionsMapper) Save(actions *Actions) {
+	log.Info("Saving actions to actions.json")
 	configFile, err := os.Create("actions.json")
 	if err != nil {
 		log.Error("creating config file", err.Error())
@@ -36,6 +37,7 @@ func (am *actionsMapper) Save(actions *Actions) {
 	out.WriteTo(configFile)
 }
 func (am *actionsMapper) Load(actions *Actions) {
+	log.Info("loading actions from actions.json")
 	file, err := os.Open("actions.json")
 	if err != nil {
 		log.Warn("opening config file", err.Error())

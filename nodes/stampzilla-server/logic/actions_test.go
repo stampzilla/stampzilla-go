@@ -9,7 +9,7 @@ import (
 )
 
 func TestActionsMapperSave(t *testing.T) {
-	mapper := newActionsMapper()
+	mapper := NewActionsMapper()
 
 	actions := &Actions{}
 	actions.Actions_ = []*action{
@@ -32,7 +32,7 @@ func TestActionsMapperSave(t *testing.T) {
 }
 func TestActionsMapperLoad(t *testing.T) {
 
-	mapper := newActionsMapper()
+	mapper := NewActionsMapper()
 	a := &Actions{}
 	a.Nodes = serverprotocol.NewNodes()
 	node := serverprotocol.NewNode()
@@ -67,7 +67,7 @@ func TestActionsMapperLoad(t *testing.T) {
 
 //func TestActionsRun(t *testing.T) {
 
-//mapper := newActionsMapper()
+//mapper := NewActionsMapper()
 //a := &actions{}
 //a.nodes = serverprotocol.NewNodes()
 //node := serverprotocol.NewNode()
