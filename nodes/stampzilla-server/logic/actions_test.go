@@ -11,8 +11,8 @@ import (
 func TestActionsMapperSave(t *testing.T) {
 	mapper := newActionsMapper()
 
-	actions := &actions{}
-	actions.Actions = []*action{
+	actions := &Actions{}
+	actions.Actions_ = []*action{
 		&action{
 			Commands: []*command{
 				NewCommand(&protocol.Command{}, "uuid1"),
@@ -33,7 +33,7 @@ func TestActionsMapperSave(t *testing.T) {
 func TestActionsMapperLoad(t *testing.T) {
 
 	mapper := newActionsMapper()
-	a := &actions{}
+	a := &Actions{}
 	a.Nodes = serverprotocol.NewNodes()
 	node := serverprotocol.NewNode()
 	node.SetName("nodename")
@@ -45,22 +45,22 @@ func TestActionsMapperLoad(t *testing.T) {
 	assert.NotNil(t, a.Nodes)
 	assert.NotNil(t, a.Nodes.Search("nodeuuid"))
 
-	assert.Equal(t, "actionuuid1", a.Actions[0].Uuid())
-	assert.Equal(t, "actionuuid2", a.Actions[1].Uuid())
+	assert.Equal(t, "actionuuid1", a.Actions_[0].Uuid())
+	assert.Equal(t, "actionuuid2", a.Actions_[1].Uuid())
 
 	assert.Equal(t, "actionuuid1", a.GetByUuid("actionuuid1").Uuid())
 	assert.Equal(t, "actionuuid2", a.GetByUuid("actionuuid2").Uuid())
 
 	assert.Nil(t, a.GetByUuid("unknown"))
 
-	assert.Equal(t, "uuid1", a.Actions[1].Commands[0].Uuid())
-	assert.Equal(t, "uuid2", a.Actions[1].Commands[1].Uuid())
+	assert.Equal(t, "uuid1", a.Actions_[1].Commands[0].Uuid())
+	assert.Equal(t, "uuid2", a.Actions_[1].Commands[1].Uuid())
 
 	//assert we set nodes dependency correctly on Action 1
-	assert.Equal(t, "nodename", a.Actions[1].nodes.Search("nodeuuid").Name())
+	assert.Equal(t, "nodename", a.Actions_[1].nodes.Search("nodeuuid").Name())
 
 	//assert we set nodes dependency correctly on Command
-	assert.Equal(t, "nodename", a.Actions[1].Commands[0].nodes.Search("nodeuuid").Name())
+	assert.Equal(t, "nodename", a.Actions_[1].Commands[0].nodes.Search("nodeuuid").Name())
 
 	//fmt.Printf("%#v\n", a)
 }

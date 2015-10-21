@@ -50,6 +50,9 @@ func (ws *WebServer) Start() {
 	r.PUT("/api/nodes/:id/cmd", ws.WebHandler.CommandToNodePut)
 	r.GET("/api/nodes/:id/cmd/*cmd", ws.WebHandler.CommandToNodeGet)
 
+	//Actions
+	r.GET("/api/actions", ws.WebHandler.GetActions)
+
 	//Rules
 	r.GET("/api/rules", ws.WebHandler.GetRules)
 	r.GET("/api/rules/:id/:action", ws.WebHandler.GetRunRules)

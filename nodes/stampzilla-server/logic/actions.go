@@ -3,32 +3,36 @@ package logic
 import "encoding/json"
 import serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 
-type Actions interface {
-	Run()
-	GetByUuid(string) Action
+//type Actions interface {
+//Run()
+//GetByUuid(string) Action
+//Actions() []Action
+//}
+
+type Actions struct {
+	Actions_ []*action             `json:"actions"`
+	Nodes    *serverprotocol.Nodes `json:"-" inject:""`
 }
 
-type actions struct {
-	Actions []*action
-	Nodes   *serverprotocol.Nodes `json:"-" inject:""`
+func NewActions() *Actions {
+	return &Actions{}
 }
 
-func NewActions() *actions {
-	return &actions{}
-}
-
-func (a *actions) Run() {
-	for _, v := range a.Actions {
+func (a *Actions) Run() {
+	for _, v := range a.Actions_ {
 		v.Run()
 	}
 }
-func (a *actions) Start() {
+func (a *Actions) Actions() []*action {
+	return a.Actions_
+}
+func (a *Actions) Start() {
 	mapper := newActionsMapper()
 	mapper.Load(a)
 }
 
-func (a *actions) GetByUuid(uuid string) Action {
-	for _, v := range a.Actions {
+func (a *Actions) GetByUuid(uuid string) Action {
+	for _, v := range a.Actions_ {
 		if v.Uuid() == uuid {
 			return v
 		}
@@ -37,16 +41,16 @@ func (a *actions) GetByUuid(uuid string) Action {
 	return nil
 }
 
-func (a *actions) UnmarshalJSON(b []byte) (err error) {
-	type localActions actions
+func (a *Actions) UnmarshalJSON(b []byte) (err error) {
+	type localActions Actions
 	la := localActions{}
 	if err = json.Unmarshal(b, &la); err == nil {
-		for _, action := range la.Actions {
+		for _, action := range la.Actions_ {
 			action.SetNodes(a.Nodes)
 			for _, c := range action.Commands {
 				c.nodes = a.Nodes
 			}
-			a.Actions = append(a.Actions, action)
+			a.Actions_ = append(a.Actions_, action)
 		}
 		return
 	}
