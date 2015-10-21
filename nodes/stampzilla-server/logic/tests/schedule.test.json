@@ -3,14 +3,8 @@
 		"name": "Test1",
 		"uuid": "7298ad6b-6827-4faa-9896-05ee61397b17",
 		"actions": [
-			{
-				"command": {
-					"cmd": "testCMD",
-					"args": null,
-					"params": null
-				},
-				"uuid": "simple"
-			}
+			"uuid1",
+			"uuid2"
 		],
 		"when": "0 * * * * *"
 	}

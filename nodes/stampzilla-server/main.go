@@ -102,7 +102,19 @@ func main() {
 	notify = notifier.New(notificationRouter)
 
 	// Register the rest of the services
-	services = append(services, &WebsocketHandler{}, config, protocol.NewNodes(), logic.NewLogic(), logic.NewScheduler(), websocket.NewRouter(), NewNodeServer(), NewWebServer(), notificationRouter)
+	services = append(
+		services,
+		logic.NewActions(),
+		&WebsocketHandler{},
+		config,
+		protocol.NewNodes(),
+		logic.NewLogic(),
+		logic.NewScheduler(),
+		websocket.NewRouter(),
+		NewNodeServer(),
+		NewWebServer(),
+		notificationRouter,
+	)
 
 	//Add metrics service if we have any loggers (Elasticsearch, influxdb, graphite etc)
 	if loggers := getLoggers(services); len(loggers) != 0 {

@@ -34,16 +34,16 @@ func TestActionsMapperLoad(t *testing.T) {
 
 	mapper := newActionsMapper()
 	a := &actions{}
-	a.nodes = serverprotocol.NewNodes()
+	a.Nodes = serverprotocol.NewNodes()
 	node := serverprotocol.NewNode()
 	node.SetName("nodename")
 	node.SetUuid("nodeuuid")
-	a.nodes.Add(node)
+	a.Nodes.Add(node)
 	mapper.Load(a)
 
-	assert.Equal(t, "nodeuuid", a.nodes.ByName("nodename").Uuid())
-	assert.NotNil(t, a.nodes)
-	assert.NotNil(t, a.nodes.Search("nodeuuid"))
+	assert.Equal(t, "nodeuuid", a.Nodes.ByName("nodename").Uuid())
+	assert.NotNil(t, a.Nodes)
+	assert.NotNil(t, a.Nodes.Search("nodeuuid"))
 
 	assert.Equal(t, "actionuuid1", a.Actions[0].Uuid())
 	assert.Equal(t, "actionuuid2", a.Actions[1].Uuid())
@@ -56,7 +56,11 @@ func TestActionsMapperLoad(t *testing.T) {
 	assert.Equal(t, "uuid1", a.Actions[1].Commands[0].Uuid())
 	assert.Equal(t, "uuid2", a.Actions[1].Commands[1].Uuid())
 
+	//assert we set nodes dependency correctly on Action 1
 	assert.Equal(t, "nodename", a.Actions[1].nodes.Search("nodeuuid").Name())
+
+	//assert we set nodes dependency correctly on Command
+	assert.Equal(t, "nodename", a.Actions[1].Commands[0].nodes.Search("nodeuuid").Name())
 
 	//fmt.Printf("%#v\n", a)
 }

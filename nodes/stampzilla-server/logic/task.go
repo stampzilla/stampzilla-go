@@ -7,17 +7,16 @@ import (
 
 	log "github.com/cihub/seelog"
 	"github.com/jonaz/cron"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 )
 
 type task struct {
-	Name_    string    `json:"name"`
-	Uuid_    string    `json:"uuid"`
-	Actions  []Command `json:"actions"`
+	Name_    string   `json:"name"`
+	Uuid_    string   `json:"uuid"`
+	Actions  []string `json:"actions"`
+	actions  []Action `json:"actions"`
 	cronId   int
 	CronWhen string `json:"when"`
 	sync.RWMutex
-	nodes     *protocol.Nodes
 	cron      *cron.Cron
 	entryTime time.Time
 }
@@ -28,7 +27,7 @@ type Task interface {
 	Uuid() string
 	Name() string
 	CronId() int
-	AddAction(a Command)
+	AddAction(a Action)
 	Schedule(string)
 }
 
@@ -55,7 +54,7 @@ func (r *task) CronId() int {
 
 func (t *task) Run() {
 	t.RLock()
-	for _, action := range t.Actions {
+	for _, action := range t.actions {
 		action.Run()
 	}
 	t.RUnlock()
@@ -74,12 +73,17 @@ func (t *task) Schedule(when string) {
 	t.Unlock()
 }
 
-func (r *task) AddAction(a Command) {
-	if a, ok := a.(*command); ok {
-		a.nodes = r.nodes
+func (r *task) AddAction(a Action) {
+	//if a, ok := a.(*command); ok {
+	//a.nodes = r.nodes
+	//}
+	if a == nil {
+		log.Error("Action is nil")
+		return
 	}
 	r.Lock()
-	r.Actions = append(r.Actions, a)
+	r.actions = append(r.actions, a)
+	r.Actions = append(r.Actions, a.Uuid())
 	r.Unlock()
 }
 

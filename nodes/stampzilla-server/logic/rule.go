@@ -3,6 +3,7 @@ package logic
 import (
 	"sync"
 
+	"github.com/coreos/fleet/log"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 )
 
@@ -14,8 +15,8 @@ type Rule interface {
 	SetCondState(bool)
 	RunEnter()
 	RunExit()
-	AddExitAction(Command)
-	AddEnterAction(Command)
+	AddExitAction(Action)
+	AddEnterAction(Action)
 	AddCondition(RuleCondition)
 	Conditions() []RuleCondition
 }
@@ -24,8 +25,10 @@ type rule struct {
 	Name_         string          `json:"name"`
 	Uuid_         string          `json:"uuid"`
 	Conditions_   []RuleCondition `json:"conditions"`
-	EnterActions_ []Command       `json:"enterActions"`
-	ExitActions_  []Command       `json:"exitActions"`
+	EnterActions_ []string        `json:"enterActions"`
+	ExitActions_  []string        `json:"exitActions"`
+	enterActions_ []Action
+	exitActions_  []Action
 	condState     bool
 	sync.RWMutex
 	nodes *protocol.Nodes
@@ -62,29 +65,33 @@ func (r *rule) SetCondState(cond bool) {
 	r.RUnlock()
 }
 func (r *rule) RunEnter() {
-	for _, a := range r.EnterActions_ {
+	for _, a := range r.enterActions_ {
 		a.Run()
 	}
 }
 func (r *rule) RunExit() {
-	for _, a := range r.ExitActions_ {
+	for _, a := range r.exitActions_ {
 		a.Run()
 	}
 }
-func (r *rule) AddExitAction(a Command) {
-	if a, ok := a.(*command); ok {
-		a.nodes = r.nodes
+func (r *rule) AddExitAction(a Action) {
+	if a == nil {
+		log.Error("Error adding ExitAction. Action is nil")
+		return
 	}
 	r.Lock()
-	r.ExitActions_ = append(r.ExitActions_, a)
+	r.exitActions_ = append(r.exitActions_, a)
+	r.ExitActions_ = append(r.ExitActions_, a.Uuid())
 	r.Unlock()
 }
-func (r *rule) AddEnterAction(a Command) {
-	if a, ok := a.(*command); ok {
-		a.nodes = r.nodes
+func (r *rule) AddEnterAction(a Action) {
+	if a == nil {
+		log.Error("Error adding EnterAction. Action is nil")
+		return
 	}
 	r.Lock()
-	r.EnterActions_ = append(r.EnterActions_, a)
+	r.enterActions_ = append(r.enterActions_, a)
+	r.EnterActions_ = append(r.EnterActions_, a.Uuid())
 	r.Unlock()
 }
 func (r *rule) AddCondition(a RuleCondition) {

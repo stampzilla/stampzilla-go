@@ -10,13 +10,21 @@ type Actions interface {
 
 type actions struct {
 	Actions []*action
-	nodes   *serverprotocol.Nodes
+	Nodes   *serverprotocol.Nodes `inject:""`
+}
+
+func NewActions() *actions {
+	return &actions{}
 }
 
 func (a *actions) Run() {
 	for _, v := range a.Actions {
 		v.Run()
 	}
+}
+func (a *actions) Start() {
+	mapper := newActionsMapper()
+	mapper.Load(a)
 }
 
 func (a *actions) GetByUuid(uuid string) Action {
@@ -34,9 +42,9 @@ func (a *actions) UnmarshalJSON(b []byte) (err error) {
 	la := localActions{}
 	if err = json.Unmarshal(b, &la); err == nil {
 		for _, action := range la.Actions {
-			action.SetNodes(a.nodes)
+			action.SetNodes(a.Nodes)
 			for _, c := range action.Commands {
-				c.nodes = a.nodes
+				c.nodes = a.Nodes
 			}
 			a.Actions = append(a.Actions, action)
 		}

@@ -1,0 +1,48 @@
+{
+    "Actions": [
+        {
+            "commands": [
+                {
+                    "command": {
+                        "cmd": "UUID1-cmd0",
+                        "args": null,
+                        "params": null
+                    },
+                    "uuid": "simple"
+                },
+                {
+                    "command": {
+                        "cmd": "UUID1-cmd1",
+                        "args": null,
+                        "params": null
+                    },
+                    "uuid": "simple"
+                }
+            ],
+            "uuid": "uuid1",
+            "name": ""
+        },
+        {
+            "commands": [
+                {
+                    "command": {
+                        "cmd": "UUID2-cmd0",
+                        "args": null,
+                        "params": null
+                    },
+                    "uuid": "simple"
+                },
+                {
+                    "command": {
+                        "cmd": "UUID2-cmd1",
+                        "args": null,
+                        "params": null
+                    },
+                    "uuid": "simple"
+                }
+            ],
+            "uuid": "uuid2",
+            "name": ""
+        }
+    ]
+}

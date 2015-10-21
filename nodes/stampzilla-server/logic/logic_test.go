@@ -21,7 +21,11 @@ func (ra *ruleActionStub) Run() {
 }
 func (ra *ruleActionStub) Uuid() string {
 	return ""
-
+}
+func (ra *ruleActionStub) Name() string {
+	return ""
+}
+func (ra *ruleActionStub) SetNodes(n serverprotocol.Searchable) {
 }
 
 func NewRuleActionStub(actionCount *int) *ruleActionStub {
