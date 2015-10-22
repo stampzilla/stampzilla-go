@@ -25,8 +25,6 @@ func (ra *ruleActionStub) Uuid() string {
 func (ra *ruleActionStub) Name() string {
 	return ""
 }
-func (ra *ruleActionStub) SetNodes(n serverprotocol.Searchable) {
-}
 
 func NewRuleActionStub(actionCount *int) *ruleActionStub {
 	return &ruleActionStub{actionCount}

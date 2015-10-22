@@ -56,9 +56,6 @@ func TestActionsMapperLoad(t *testing.T) {
 	assert.Equal(t, "uuid1", a.Actions_[1].Commands[0].Uuid())
 	assert.Equal(t, "uuid2", a.Actions_[1].Commands[1].Uuid())
 
-	//assert we set nodes dependency correctly on Action 1
-	assert.Equal(t, "nodename", a.Actions_[1].nodes.Search("nodeuuid").Name())
-
 	//assert we set nodes dependency correctly on Command
 	assert.Equal(t, "nodename", a.Actions_[1].Commands[0].nodes.Search("nodeuuid").Name())
 

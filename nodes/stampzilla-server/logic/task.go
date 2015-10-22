@@ -13,7 +13,7 @@ type task struct {
 	Name_    string   `json:"name"`
 	Uuid_    string   `json:"uuid"`
 	Actions  []string `json:"actions"`
-	actions  []Action `json:"actions"`
+	actions  []Action
 	cronId   int
 	CronWhen string `json:"when"`
 	sync.RWMutex
