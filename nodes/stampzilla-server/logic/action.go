@@ -7,9 +7,9 @@ type Action interface {
 }
 
 type action struct {
-	Commands []*command `json:"commands"`
-	Uuid_    string     `json:"uuid"`
 	Name_    string     `json:"name"`
+	Uuid_    string     `json:"uuid"`
+	Commands []*command `json:"commands"`
 }
 
 func (a *action) Uuid() string {

@@ -1,5 +1,7 @@
 [
 	{
+		"name": "",
+		"uuid": "uuid1",
 		"commands": [
 			{
 				"command": {
@@ -17,11 +19,11 @@
 				},
 				"uuid": "simple"
 			}
-		],
-		"uuid": "uuid1",
-		"name": ""
+		]
 	},
 	{
+		"name": "",
+		"uuid": "uuid2",
 		"commands": [
 			{
 				"command": {
@@ -39,8 +41,6 @@
 				},
 				"uuid": "simple"
 			}
-		],
-		"uuid": "uuid2",
-		"name": ""
+		]
 	}
 ]
