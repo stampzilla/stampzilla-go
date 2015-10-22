@@ -15,26 +15,10 @@
 			}
 		],
 		"enterActions": [
-			{
-				"command": {
-					"cmd": "testar1ENTER",
-					"args": [
-						"0186ff7d"
-					]
-				},
-				"uuid": "enocean"
-			}
+			"uuid1"
 		],
 		"exitActions": [
-			{
-				"command": {
-					"cmd": "testar1EXIT",
-					"args": [
-						"0186ff7d"
-					]
-				},
-				"uuid": "enocean"
-			}
+			"uuid2"
 		]
 	}
 ]

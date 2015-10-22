@@ -14,10 +14,11 @@ import (
 )
 
 type WebHandler struct {
-	Logic      *logic.Logic          `inject:""`
-	Scheduler  *logic.Scheduler      `inject:""`
-	Nodes      *serverprotocol.Nodes `inject:""`
-	NodeServer *NodeServer           `inject:""`
+	Logic          *logic.Logic          `inject:""`
+	Scheduler      *logic.Scheduler      `inject:""`
+	Nodes          *serverprotocol.Nodes `inject:""`
+	NodeServer     *NodeServer           `inject:""`
+	ActionsService *logic.ActionService        `inject:""`
 }
 
 func (wh *WebHandler) GetNodes(c *gin.Context) {
@@ -78,6 +79,13 @@ func (wh *WebHandler) CommandToNodeGet(c *gin.Context) {
 	c.JSON(200, protocol.Command{Cmd: "testresponse"})
 }
 
+func (wh *WebHandler) GetActions(c *gin.Context) {
+	c.JSON(200, wh.ActionsService.Get())
+}
+func (wh *WebHandler) ReloadActions(c *gin.Context) {
+	wh.ActionsService.Start()
+	c.JSON(200, wh.ActionsService.Get())
+}
 func (wh *WebHandler) GetRules(c *gin.Context) {
 	c.JSON(200, wh.Logic.Rules())
 }

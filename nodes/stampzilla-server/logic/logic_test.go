@@ -8,15 +8,22 @@ import (
 	"time"
 
 	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
+	"github.com/stretchr/testify/assert"
 )
 
 type ruleActionStub struct {
 	actionCount *int
 }
 
-func (ra *ruleActionStub) RunCommand() {
+func (ra *ruleActionStub) Run() {
 	fmt.Println("RuleActionStubRAN")
 	*ra.actionCount++
+}
+func (ra *ruleActionStub) Uuid() string {
+	return ""
+}
+func (ra *ruleActionStub) Name() string {
+	return ""
 }
 
 func NewRuleActionStub(actionCount *int) *ruleActionStub {
@@ -382,4 +389,13 @@ func TestParseRuleEnterExitActionsWithoutConditions(t *testing.T) {
 		return
 	}
 	t.Errorf("actionRunCount wrong expected: %s got %s", 0, actionRunCount)
+}
+func TestEmptyRules(t *testing.T) {
+
+	logic := NewLogic()
+	logic.AddRule("test rule 1")
+
+	assert.Len(t, logic.Rules_, 1)
+	logic.EmptyRules()
+	assert.Len(t, logic.Rules_, 0)
 }

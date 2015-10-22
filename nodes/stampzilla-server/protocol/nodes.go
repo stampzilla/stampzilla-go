@@ -99,6 +99,10 @@ type Nodes struct {
 	sync.RWMutex
 }
 
+type Searchable interface {
+	Search(string) Node
+}
+
 func NewNodes() *Nodes {
 	n := &Nodes{}
 	n.nodes = make(map[string]Node)

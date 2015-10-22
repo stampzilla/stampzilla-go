@@ -50,16 +50,19 @@ func (ws *WebServer) Start() {
 	r.PUT("/api/nodes/:id/cmd", ws.WebHandler.CommandToNodePut)
 	r.GET("/api/nodes/:id/cmd/*cmd", ws.WebHandler.CommandToNodeGet)
 
+	//Actions
+	r.GET("/api/actions", ws.WebHandler.GetActions)
+	r.GET("/api/actions/reload", ws.WebHandler.ReloadActions)
+
 	//Rules
 	r.GET("/api/rules", ws.WebHandler.GetRules)
 	r.GET("/api/rules/:id/:action", ws.WebHandler.GetRunRules)
+	r.GET("/api/reload", ws.WebHandler.GetReload)
 
 	//Schedule
 	r.GET("/api/schedule", ws.WebHandler.GetScheduleTasks)
 	r.GET("/api/schedule/entries", ws.WebHandler.GetScheduleEntries)
 	r.GET("/api/schedule/reload", ws.WebHandler.GetScheduleReload)
-
-	r.GET("/api/reload", ws.WebHandler.GetReload)
 
 	// Server state methods
 	r.GET("/api/trigger/:key/:value", ws.WebHandler.GetServerTrigger)
