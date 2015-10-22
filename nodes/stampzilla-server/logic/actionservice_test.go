@@ -11,7 +11,7 @@ import (
 func TestActionsMapperSave(t *testing.T) {
 	mapper := NewActionsMapper()
 
-	actions := &Actions{}
+	actions := &ActionService{}
 	actions.Actions_ = []*action{
 		&action{
 			Commands: []*command{
@@ -33,7 +33,7 @@ func TestActionsMapperSave(t *testing.T) {
 func TestActionsMapperLoad(t *testing.T) {
 
 	mapper := NewActionsMapper()
-	a := &Actions{}
+	a := &ActionService{}
 	a.Nodes = serverprotocol.NewNodes()
 	node := serverprotocol.NewNode()
 	node.SetName("nodename")

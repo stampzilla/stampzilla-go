@@ -22,7 +22,7 @@ type Logic struct {
 	re     *regexp.Regexp
 	sync.RWMutex
 	Nodes         *serverprotocol.Nodes `inject:""`
-	ActionService *Actions              `inject:""`
+	ActionService *ActionService              `inject:""`
 }
 
 func NewLogic() *Logic {

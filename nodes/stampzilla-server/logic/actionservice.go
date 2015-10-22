@@ -9,30 +9,30 @@ import serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-serv
 //Actions() []Action
 //}
 
-type Actions struct {
+type ActionService struct {
 	Actions_ []*action             `json:"actions"`
 	Nodes    *serverprotocol.Nodes `json:"-" inject:""`
 }
 
-func NewActions() *Actions {
-	return &Actions{}
+func NewActions() *ActionService {
+	return &ActionService{}
 }
 
-func (a *Actions) Run() {
+func (a *ActionService) Run() {
 	for _, v := range a.Actions_ {
 		v.Run()
 	}
 }
-func (a *Actions) Actions() []*action {
+func (a *ActionService) Get() []*action {
 	return a.Actions_
 }
-func (a *Actions) Start() {
+func (a *ActionService) Start() {
 	a.Actions_ = make([]*action, 0)
 	mapper := NewActionsMapper()
 	mapper.Load(a)
 }
 
-func (a *Actions) GetByUuid(uuid string) Action {
+func (a *ActionService) GetByUuid(uuid string) Action {
 	for _, v := range a.Actions_ {
 		if v.Uuid() == uuid {
 			return v
@@ -42,7 +42,7 @@ func (a *Actions) GetByUuid(uuid string) Action {
 	return nil
 }
 
-func (a *Actions) UnmarshalJSON(b []byte) (err error) {
+func (a *ActionService) UnmarshalJSON(b []byte) (err error) {
 	type localActions []*action
 	la := localActions{}
 	if err = json.Unmarshal(b, &la); err == nil {
@@ -57,7 +57,7 @@ func (a *Actions) UnmarshalJSON(b []byte) (err error) {
 	return
 }
 
-func (a *Actions) MarshalJSON() (res []byte, err error) {
+func (a *ActionService) MarshalJSON() (res []byte, err error) {
 	res, err = json.Marshal(a.Actions_)
 	return
 }

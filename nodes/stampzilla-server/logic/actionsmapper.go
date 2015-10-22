@@ -9,8 +9,8 @@ import (
 )
 
 type ActionsMapper interface {
-	Save(*Actions)
-	Load(*Actions)
+	Save(*ActionService)
+	Load(*ActionService)
 }
 
 type actionsMapper struct {
@@ -21,7 +21,7 @@ func NewActionsMapper() ActionsMapper {
 
 }
 
-func (am *actionsMapper) Save(actions *Actions) {
+func (am *actionsMapper) Save(actions *ActionService) {
 	log.Info("Saving actions to actions.json")
 	configFile, err := os.Create("actions.json")
 	if err != nil {
@@ -36,7 +36,7 @@ func (am *actionsMapper) Save(actions *Actions) {
 	json.Indent(&out, b, "", "    ")
 	out.WriteTo(configFile)
 }
-func (am *actionsMapper) Load(actions *Actions) {
+func (am *actionsMapper) Load(actions *ActionService) {
 	log.Info("loading actions from actions.json")
 	file, err := os.Open("actions.json")
 	if err != nil {
