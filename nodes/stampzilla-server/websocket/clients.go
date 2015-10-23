@@ -34,7 +34,7 @@ type Clients struct {
 	Router  *Router `inject:""`
 }
 type Client struct {
-	out        chan<- *Message
+	out        chan *Message
 	done       <-chan bool
 	err        <-chan error
 	Id         string
