@@ -52,17 +52,16 @@ func (ws *WebServer) Start() {
 
 	//Actions
 	r.GET("/api/actions", ws.WebHandler.GetActions)
-	r.GET("/api/actions/reload", ws.WebHandler.ReloadActions)
+	r.GET("/api/actions/:uuid/run", ws.WebHandler.RunAction)
+	r.GET("/api/actions/:uuid", ws.WebHandler.GetAction)
 
 	//Rules
 	r.GET("/api/rules", ws.WebHandler.GetRules)
 	r.GET("/api/rules/:id/:action", ws.WebHandler.GetRunRules)
-	r.GET("/api/reload", ws.WebHandler.GetReload)
 
 	//Schedule
 	r.GET("/api/schedule", ws.WebHandler.GetScheduleTasks)
 	r.GET("/api/schedule/entries", ws.WebHandler.GetScheduleEntries)
-	r.GET("/api/schedule/reload", ws.WebHandler.GetScheduleReload)
 
 	// Server state methods
 	r.GET("/api/trigger/:key/:value", ws.WebHandler.GetServerTrigger)
