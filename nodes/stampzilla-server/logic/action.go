@@ -28,6 +28,10 @@ func (a *action) Cancel() {
 	}
 }
 func (a *action) Run() {
+	a.Cancel()
+	a.run()
+}
+func (a *action) run() {
 	ctx, cancel := context.WithCancel(context.Background())
 	a.cancel = cancel
 	queue := make(chan Command)
