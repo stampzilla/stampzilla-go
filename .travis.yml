@@ -6,7 +6,7 @@ addons:
     - libev-dev
 
 go:
-  - 1.4
+  - 1.5
 
 install: 
   - go get golang.org/x/tools/cmd/cover
