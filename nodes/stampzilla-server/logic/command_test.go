@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"sync"
 	"testing"
 
 	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
@@ -10,6 +11,7 @@ import (
 type nodeStub struct {
 	serverprotocol.Node
 	written [][]byte
+	wg      *sync.WaitGroup
 }
 
 func (n *nodeStub) Name() string {
@@ -18,6 +20,9 @@ func (n *nodeStub) Name() string {
 
 func (n *nodeStub) Write(b []byte) {
 	n.written = append(n.written, b)
+	if n.wg != nil {
+		n.wg.Done()
+	}
 }
 
 type nodesStub struct {

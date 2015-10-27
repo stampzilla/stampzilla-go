@@ -17,7 +17,7 @@ import (
 type Scheduler struct {
 	tasks         []Task
 	Nodes         *serverprotocol.Nodes `inject:""`
-	ActionService *ActionService              `inject:""`
+	ActionService *ActionService        `inject:""`
 	Cron          *cron.Cron
 	sync.RWMutex
 }

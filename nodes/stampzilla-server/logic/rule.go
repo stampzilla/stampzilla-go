@@ -3,7 +3,7 @@ package logic
 import (
 	"sync"
 
-	"github.com/coreos/fleet/log"
+	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 )
 

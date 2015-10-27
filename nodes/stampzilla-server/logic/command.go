@@ -11,6 +11,7 @@ import (
 type Command interface {
 	Run()
 	Uuid() string
+	SetNodes(serverprotocol.Searchable)
 }
 type command struct {
 	Command *protocol.Command `json:"command"`
@@ -23,6 +24,9 @@ func NewCommand(cmd *protocol.Command, uuid string) *command {
 }
 func (c *command) Uuid() string {
 	return c.Uuid_
+}
+func (c *command) SetNodes(nodes serverprotocol.Searchable) {
+	c.nodes = nodes
 }
 func (c *command) Run() {
 	if c.nodes == nil {

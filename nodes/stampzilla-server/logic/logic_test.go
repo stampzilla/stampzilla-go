@@ -19,6 +19,8 @@ func (ra *ruleActionStub) Run() {
 	fmt.Println("RuleActionStubRAN")
 	*ra.actionCount++
 }
+func (ra *ruleActionStub) Cancel() {
+}
 func (ra *ruleActionStub) Uuid() string {
 	return ""
 }
