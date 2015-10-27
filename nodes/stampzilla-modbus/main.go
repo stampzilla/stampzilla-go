@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/binary"
 	"flag"
 	"log"
@@ -153,11 +154,18 @@ func fetchRegisters(registers *Registers, connection *Modbus) {
 		}
 
 		if v.Base != 0 {
-			v.Value = float64(binary.BigEndian.Uint16(data)) / float64(v.Base)
+			v.Value = decode(data) / float64(v.Base)
 			continue
 		}
-		v.Value = binary.BigEndian.Uint16(data)
+		v.Value = decode(data)
 	}
+}
+
+func decode(data []byte) float64 {
+	var i int16
+	buf := bytes.NewBuffer(data)
+	binary.Read(buf, binary.BigEndian, &i)
+	return float64(i)
 }
 
 // WORKER that recives all incomming commands
