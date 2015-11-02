@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net"
 
 	log "github.com/cihub/seelog"
@@ -71,7 +70,7 @@ func (c *Chromecast) Event(event events.Event) {
 		log.Info(c.Name(), "- App stopped:", data.DisplayName, "(", data.AppID, ")")
 	//gocast.MediaEvent:
 	default:
-		fmt.Printf("unexpected event %T: %#v\n", data, data)
+		log.Warn("unexpected event %T: %#v\n", data, data)
 	}
 
 	c.publish()

@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"time"
 
 	log "github.com/cihub/seelog"
@@ -53,7 +52,7 @@ func main() { /*{{{*/
 
 func discoveryListner(discovery *discovery.Service) {
 	for device := range discovery.Found() {
-		fmt.Printf("New device discoverd: %#v \n", device)
+		log.Debugf("New device discoverd: %s", device.String())
 
 		NewChromecast(device)
 	}
