@@ -28,18 +28,18 @@ func (s *State) Add(c *Chromecast) {
 	}
 
 	s.Lock()
-	s.Devices[c.Name()] = c
+	s.Devices[c.Uuid()] = c
 	s.Unlock()
 
 	s.Publish()
 }
 
 func (s *State) Remove(c *Chromecast) {
-	_, ok := s.Devices[c.Name()]
+	_, ok := s.Devices[c.Uuid()]
 
 	if ok {
 		s.Lock()
-		delete(s.Devices, c.Name())
+		delete(s.Devices, c.Uuid())
 		s.Unlock()
 	}
 
