@@ -49,9 +49,9 @@ func (c *Chromecast) Event(event events.Event) {
 	case events.Connected:
 		log.Info(c.Name(), "- Connected, weeihoo")
 
-		c.Addr = c.Device.GetIp()
-		c.Port = c.Device.GetPort()
-		c.Id = c.Device.GetUuid()
+		c.Addr = c.Device.Ip()
+		c.Port = c.Device.Port()
+		c.Id = c.Device.Uuid()
 
 		state.Add(c)
 	case events.Disconnected:
