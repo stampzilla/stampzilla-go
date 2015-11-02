@@ -2,13 +2,18 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"time"
 
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/stampzilla/stampzilla-go/protocol"
+
+	"github.com/stampzilla/gocast/discovery"
 )
 
-// MAIN - This is run when the init function is done
+var state State
+
 func main() { /*{{{*/
 	log.Info("Starting CHROMECAST node")
 
@@ -32,43 +37,27 @@ func main() { /*{{{*/
 	// This worker recives all incomming commands
 	go serverRecv(connection.Receive())
 
-	//Start chromecast monitoring
-	chromecast := NewChromecast()
-	node.SetState(chromecast.Devices)
+	state = State{
+		connection: &connection,
+		node:       node,
+	}
+	node.SetState(&state.Devices)
 
-	go func() {
-		for {
-			event := <-chromecast.Events
-			if chromecast.Events == nil {
-				return
-			}
+	discovery := discovery.NewService()
 
-			log.Warn("EVENT: ", event.Name)
-			switch event.Name {
-			case "Added":
-				dev := chromecast.Devices.Get(event.Args[0])
-
-				node.AddElement(&protocol.Element{
-					Type: protocol.ElementTypeText,
-					Name: dev.Name,
-					Command: &protocol.Command{
-						Cmd:  "toggle",
-						Args: []string{dev.Id},
-					},
-					Feedback: `Devices["` + dev.Id + `"].PrimaryApp`,
-				})
-			case "Updated":
-				connection.Send(node.Node())
-			default:
-				log.Warn("Unknown event: ", event.Name)
-			}
-		}
-	}()
-
-	chromecast.Listen()
+	go discoveryListner(discovery)
+	discovery.Periodic(time.Second * 10)
 
 	select {}
 } /*}}}*/
+
+func discoveryListner(discovery *discovery.Service) {
+	for device := range discovery.Found() {
+		fmt.Printf("New device discoverd: %#v \n", device)
+
+		NewChromecast(device)
+	}
+}
 
 // WORKER that monitors the current connection state
 func monitorState(node *protocol.Node, connection basenode.Connection) {
