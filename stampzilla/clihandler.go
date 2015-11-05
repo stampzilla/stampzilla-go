@@ -40,6 +40,13 @@ func (t *cliHandler) UpdateConfig(c *cli.Context) {
 }
 
 func (t *cliHandler) Install(c *cli.Context) {
+	t.install(c, c.Bool("u"))
+}
+func (t *cliHandler) Upgrade(c *cli.Context) {
+	t.install(c, true)
+}
+
+func (t *cliHandler) install(c *cli.Context, upgrade bool) {
 	requireRoot()
 
 	nodes, err := ioutil.ReadDir("/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/")
@@ -47,10 +54,10 @@ func (t *cliHandler) Install(c *cli.Context) {
 		fmt.Println("Found no nodes. installing stampzilla cli first!")
 		t.Installer.CreateUser("stampzilla")
 		t.Installer.CreateDirAsUser("/home/stampzilla/go", "stampzilla")
-		t.Installer.GoGet("github.com/stampzilla/stampzilla-go/stampzilla", c.Bool("u"))
+		t.Installer.GoGet("github.com/stampzilla/stampzilla-go/stampzilla", upgrade)
 	}
 
-	if c.Bool("u") {
+	if upgrade {
 		fmt.Println("Updating stampzilla")
 	} else {
 		fmt.Println("Installing stampzilla")
@@ -73,7 +80,7 @@ func (t *cliHandler) Install(c *cli.Context) {
 	}
 
 	if len(c.Args()) != 0 {
-		t.installSpecificNodesFromArguments(c)
+		t.installSpecificNodesFromArguments(c, upgrade)
 		return
 	}
 
@@ -87,10 +94,10 @@ func (t *cliHandler) Install(c *cli.Context) {
 			continue
 		}
 
-		t.Installer.GoGet("github.com/stampzilla/stampzilla-go/nodes/"+node.Name(), c.Bool("u"))
+		t.Installer.GoGet("github.com/stampzilla/stampzilla-go/nodes/"+node.Name(), upgrade)
 
 		//Run bower install to set up javascript and polymer if we are installing the server.
-		if node.Name() == "stampzilla-server" && !c.Bool("u") {
+		if node.Name() == "stampzilla-server" && !upgrade {
 			t.Installer.Bower()
 		}
 	}
@@ -98,10 +105,10 @@ func (t *cliHandler) Install(c *cli.Context) {
 	return
 }
 
-func (t *cliHandler) installSpecificNodesFromArguments(c *cli.Context) {
+func (t *cliHandler) installSpecificNodesFromArguments(c *cli.Context, upgrade bool) {
 	for _, name := range c.Args() {
 		node := "stampzilla-" + name
-		t.Installer.GoGet("github.com/stampzilla/stampzilla-go/nodes/"+node, c.Bool("u"))
+		t.Installer.GoGet("github.com/stampzilla/stampzilla-go/nodes/"+node, upgrade)
 	}
 }
 

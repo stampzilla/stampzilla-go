@@ -22,7 +22,7 @@ type ServerConfig struct {
 	Uuid             string
 	NodePort         string `default:"8282"`
 	WebPort          string `default:"8080"`
-	WebRoot          string `default:"public"`
+	WebRoot          string `default:"public/dist"`
 	ElasticSearch    string
 	InfluxDbServer   string
 	InfluxDbUser     string

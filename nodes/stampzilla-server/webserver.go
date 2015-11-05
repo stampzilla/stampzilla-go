@@ -38,8 +38,8 @@ func (ws *WebServer) Start() {
 	//})
 
 	r := gin.Default()
-	r.Use(static.Serve("/", static.LocalFile("./public/dist", false)))
-	r.StaticFile("/", "./public/dist/index.html")
+	r.Use(static.Serve("/", static.LocalFile(ws.Config.WebRoot, false)))
+	r.StaticFile("/", ws.Config.WebRoot+"/index.html")
 
 	//m.Get("/socket", sockets.JSON(websocket.Message{}, &sockets.Options{AllowedOrigin: "https?://(localhost:5000|{{host}})$"}), ws.WsClients.WebsocketRoute)
 	r.GET("/socket", ws.WsClients.WebsocketRoute)
