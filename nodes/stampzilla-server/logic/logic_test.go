@@ -2,8 +2,6 @@ package logic
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
 	"testing"
 	"time"
 
@@ -13,10 +11,11 @@ import (
 
 type ruleActionStub struct {
 	actionCount *int
+	t           *testing.T
 }
 
 func (ra *ruleActionStub) Run() {
-	fmt.Println("RuleActionStubRAN")
+	ra.t.Log("RuleActionStubRAN")
 	*ra.actionCount++
 }
 func (ra *ruleActionStub) Cancel() {
@@ -28,8 +27,8 @@ func (ra *ruleActionStub) Name() string {
 	return ""
 }
 
-func NewRuleActionStub(actionCount *int) *ruleActionStub {
-	return &ruleActionStub{actionCount}
+func NewRuleActionStub(actionCount *int, t *testing.T) *ruleActionStub {
+	return &ruleActionStub{actionCount, t}
 }
 
 func TestParseRuleEnterExitActionsEvaluateTrue(t *testing.T) {
@@ -39,7 +38,7 @@ func TestParseRuleEnterExitActionsEvaluateTrue(t *testing.T) {
 	rule := logic.AddRule("test rule 1")
 
 	actionRunCount := 0
-	action := NewRuleActionStub(&actionRunCount)
+	action := NewRuleActionStub(&actionRunCount, t)
 	rule.AddEnterAction(action)
 	rule.AddExitAction(action)
 
@@ -94,7 +93,6 @@ func TestParseRuleEnterExitActionsEvaluateTrue(t *testing.T) {
 		t.Errorf("length of logic.States should be 1. got: %s", len(logic.States()))
 	}
 
-	fmt.Println(actionRunCount)
 	if actionRunCount == 2 {
 		return
 	}
@@ -108,7 +106,7 @@ func TestParseRuleEnterExitActionsEvaluateFalse(t *testing.T) {
 	rule := logic.AddRule("test rule 1")
 
 	actionRunCount := 0
-	action := NewRuleActionStub(&actionRunCount)
+	action := NewRuleActionStub(&actionRunCount, t)
 	rule.AddEnterAction(action)
 	rule.AddExitAction(action)
 
@@ -163,7 +161,6 @@ func TestParseRuleEnterExitActionsEvaluateFalse(t *testing.T) {
 		t.Errorf("length of logic.States should be 1. got: %s", len(logic.States()))
 	}
 
-	fmt.Println(actionRunCount)
 	if actionRunCount == 0 {
 		return
 	}
@@ -177,7 +174,7 @@ func TestParseRuleEnterExitActionsWithoutUuid(t *testing.T) {
 	rule := logic.AddRule("test rule 1")
 
 	actionRunCount := 0
-	action := NewRuleActionStub(&actionRunCount)
+	action := NewRuleActionStub(&actionRunCount, t)
 	rule.AddEnterAction(action)
 	rule.AddExitAction(action)
 
@@ -232,7 +229,6 @@ func TestParseRuleEnterExitActionsWithoutUuid(t *testing.T) {
 		t.Errorf("length of logic.States should be 1. got: %s", len(logic.States()))
 	}
 
-	fmt.Println(actionRunCount)
 	if actionRunCount == 0 {
 		return
 	}
@@ -246,7 +242,7 @@ func TestListenForChanges(t *testing.T) {
 	rule := logic.AddRule("test rule 1")
 
 	actionRunCount := 0
-	action := NewRuleActionStub(&actionRunCount)
+	action := NewRuleActionStub(&actionRunCount, t)
 	rule.AddEnterAction(action)
 	rule.AddExitAction(action)
 
@@ -304,7 +300,7 @@ func TestListenForChanges(t *testing.T) {
 	err := json.Unmarshal([]byte(state), &tmp)
 	node.SetState(tmp)
 	if err != nil {
-		log.Println(err)
+		t.Error(err)
 		return
 	}
 
@@ -317,7 +313,6 @@ func TestListenForChanges(t *testing.T) {
 		t.Errorf("length of logic.States should be 1. got: %s", len(logic.States()))
 	}
 
-	fmt.Println(actionRunCount)
 	if actionRunCount == 2 {
 		return
 	}
@@ -331,7 +326,7 @@ func TestParseRuleEnterExitActionsWithoutConditions(t *testing.T) {
 	rule := logic.AddRule("test rule without conditions")
 
 	actionRunCount := 0
-	action := NewRuleActionStub(&actionRunCount)
+	action := NewRuleActionStub(&actionRunCount, t)
 	rule.AddEnterAction(action)
 	rule.AddExitAction(action)
 
@@ -386,7 +381,6 @@ func TestParseRuleEnterExitActionsWithoutConditions(t *testing.T) {
 		t.Errorf("length of logic.States should be 1. got: %s", len(logic.States()))
 	}
 
-	fmt.Println(actionRunCount)
 	if actionRunCount == 0 {
 		return
 	}

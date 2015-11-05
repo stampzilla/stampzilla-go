@@ -14,14 +14,15 @@ func TestActionsMapperSave(t *testing.T) {
 	actions := &ActionService{}
 	actions.Actions_ = []*action{
 		&action{
-			Commands: []*command{
+			Commands: []Command{
 				NewCommand(&protocol.Command{}, "uuid1"),
+				NewPause("10ms"),
 				NewCommand(&protocol.Command{}, "uuid2"),
 			},
 			Uuid_: "actionuuid1",
 		},
 		&action{
-			Commands: []*command{
+			Commands: []Command{
 				NewCommand(&protocol.Command{}, "uuid1"),
 				NewCommand(&protocol.Command{}, "uuid2"),
 			},
@@ -53,12 +54,28 @@ func TestActionsMapperLoad(t *testing.T) {
 
 	assert.Nil(t, a.GetByUuid("unknown"))
 
-	assert.Equal(t, "uuid1", a.Actions_[1].Commands[0].Uuid())
-	assert.Equal(t, "uuid2", a.Actions_[1].Commands[1].Uuid())
+	assert.IsType(t, &command{}, a.Actions_[0].Commands[0])
+	assert.Equal(t, "uuid1", a.Actions_[0].Commands[0].Uuid())
 
-	assert.Equal(t, "nodename", a.Actions_[1].Commands[0].nodes.Search("nodeuuid").Name())
+	assert.IsType(t, &pause{}, a.Actions_[0].Commands[1])
+
+	assert.IsType(t, &command{}, a.Actions_[0].Commands[2])
+	assert.Equal(t, "uuid2", a.Actions_[0].Commands[2].Uuid())
+
+	if cmd, ok := a.Actions_[1].Commands[0].(*command); ok {
+		assert.Equal(t, "nodename", cmd.nodes.Search("nodeuuid").Name())
+	} else {
+		t.Error("Wrong type for command, should be *command")
+	}
 
 	//fmt.Printf("%#v\n", a)
+}
+
+func TestActionServiceRun(t *testing.T) {
+	a := &ActionService{}
+	a.Start()
+
+	assert.Len(t, a.Get(), 2)
 }
 
 //func TestActionsRun(t *testing.T) {

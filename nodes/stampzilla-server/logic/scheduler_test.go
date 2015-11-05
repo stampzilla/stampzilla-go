@@ -10,7 +10,7 @@ func TestSchedulerAddTask(t *testing.T) {
 
 	scheduler := NewScheduler()
 	actionRunCount := 0
-	action := NewRuleActionStub(&actionRunCount)
+	action := NewRuleActionStub(&actionRunCount, t)
 
 	//Add first task.
 	task := scheduler.AddTask("Test1")
@@ -36,7 +36,7 @@ func TestSchedulerRemoveTask(t *testing.T) {
 
 	scheduler := NewScheduler()
 	actionRunCount := 0
-	action := NewRuleActionStub(&actionRunCount)
+	action := NewRuleActionStub(&actionRunCount, t)
 
 	//Add first task.
 	task := scheduler.AddTask("Test1")
@@ -95,7 +95,7 @@ func TestSchedulersaveToFile(t *testing.T) {
 	scheduler.ActionService = NewActions()
 
 	actionRunCount := 0
-	action := NewRuleActionStub(&actionRunCount)
+	action := NewRuleActionStub(&actionRunCount, t)
 
 	task1 := scheduler.AddTask("Test1")
 	task1.AddAction(action)
