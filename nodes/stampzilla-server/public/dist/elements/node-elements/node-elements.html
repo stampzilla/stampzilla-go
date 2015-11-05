@@ -8,7 +8,7 @@
 		</style>
 		Nod: <span class="paper-font-body1">{{ node.Name }}</span>
 		<template is="dom-repeat" items="{{node.Elements}}">
-			<node-element node=[[node]] element={{item}}></node-element>
+			<node-element element={{item}}></node-element>
 		</template>
 
 	</template>
@@ -20,7 +20,8 @@
 				properties: {
 					nodes: {
 						type: Array,
-						notify: true
+						notify: true,
+						observer: 'nodesUpdated'
 					},
 					uuid: {
 						type: String,
@@ -29,16 +30,14 @@
 					},
 					node: {
 						type: Object,
-						notify: true
+						notify: true,
+						observer: 'changeNode'
 					}
 				},
-				observers: [
-					'nodesChanged(nodes.*)'
-				],
-				nodesChanged: function() {
+				nodesUpdated: function() {
 					this.nodes.forEach(function(el){
 						if( el.Uuid === this.uuid){
-							this.setNode(el);
+							this.set('node', el);
 						}
 					}, this);
 				},
@@ -46,13 +45,12 @@
 					if ( this.nodes !== undefined ) {
 						this.nodes.forEach(function(el){
 							if( el.Uuid === this.uuid){
-								this.setNode(el);
+								this.set('node', el);
 							}
 						}, this);
 					}
 				},
-				setNode: function(node){
-					this.set('node', node);
+				changeNode: function() {
 				},
 				ready: function() {
 				}
