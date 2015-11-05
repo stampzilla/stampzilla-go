@@ -84,7 +84,7 @@ func (s *Scheduler) CreateExampleFile() {
 	task := s.AddTask("Test1")
 	cmd := &protocol.Command{Cmd: "testCMD"}
 	action := &action{
-		Commands: []*command{NewCommand(cmd, "simple")},
+		Commands: []Command{NewCommand(cmd, "simple")},
 	}
 	task.AddAction(action)
 	task.Schedule("0 * * * * *")

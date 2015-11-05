@@ -32,6 +32,7 @@ func (am *actionsMapper) Save(actions *ActionService) {
 	b, err := json.Marshal(actions)
 	if err != nil {
 		log.Error("error marshal json", err)
+		return
 	}
 	json.Indent(&out, b, "", "    ")
 	out.WriteTo(configFile)

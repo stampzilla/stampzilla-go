@@ -12,10 +12,6 @@ type ruleCondition struct {
 	Uuid_      string      `json:"uuid"`
 }
 
-func NewRuleCondition(path, comp string, val interface{}, uuid string) RuleCondition {
-	return &ruleCondition{path, comp, val, uuid}
-}
-
 //TODO add rlock here
 func (r *ruleCondition) StatePath() string {
 	return r.StatePath_
