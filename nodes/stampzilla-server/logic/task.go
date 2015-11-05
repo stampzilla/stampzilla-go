@@ -1,7 +1,6 @@
 package logic
 
 import (
-	"strings"
 	"sync"
 	"time"
 
@@ -85,20 +84,4 @@ func (r *task) AddAction(a Action) {
 	r.actions = append(r.actions, a)
 	r.Actions = append(r.Actions, a.Uuid())
 	r.Unlock()
-}
-
-func (t *task) IsSunBased(when string) string {
-	codes := []string{
-		"sunset",
-		"sunrise",
-		"dusk",
-		"dawn",
-	}
-
-	for _, v := range codes {
-		if strings.Contains(when, v) {
-			return v
-		}
-	}
-	return ""
 }

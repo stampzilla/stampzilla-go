@@ -18,11 +18,6 @@ func NewActions() *ActionService {
 	return &ActionService{}
 }
 
-func (a *ActionService) Run() {
-	for _, v := range a.Actions_ {
-		v.Run()
-	}
-}
 func (a *ActionService) Get() []*action {
 	return a.Actions_
 }
@@ -58,6 +53,5 @@ func (a *ActionService) UnmarshalJSON(b []byte) (err error) {
 }
 
 func (a *ActionService) MarshalJSON() (res []byte, err error) {
-	res, err = json.Marshal(a.Actions_)
-	return
+	return json.Marshal(a.Actions_)
 }

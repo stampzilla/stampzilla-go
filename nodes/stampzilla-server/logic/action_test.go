@@ -3,6 +3,7 @@ package logic
 import (
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -50,4 +51,37 @@ func TestCancelAction(t *testing.T) {
 	action.Run()
 	action.Cancel()
 	assert.Equal(t, 3, len(nodes.node.written))
+}
+
+type pauseStub struct {
+	pause
+
+	wg *sync.WaitGroup
+}
+
+func (p *pauseStub) Run() {
+	p.pause.Run()
+	p.wg.Done()
+}
+
+func TestPauseAction(t *testing.T) {
+	cmd := &pauseStub{}
+	cmd.SetDuration("100ms")
+	cmd.wg = &sync.WaitGroup{}
+	cmd.wg.Add(5)
+
+	action := &action{}
+	action.Commands = append(action.Commands, cmd)
+	action.Commands = append(action.Commands, cmd)
+	action.Commands = append(action.Commands, cmd)
+	action.Commands = append(action.Commands, cmd)
+	action.Commands = append(action.Commands, cmd)
+
+	t0 := time.Now()
+	action.Run()
+
+	cmd.wg.Wait()
+	t1 := time.Now()
+
+	assert.WithinDuration(t, t0.Add(time.Millisecond*500), t1, time.Millisecond*10)
 }
