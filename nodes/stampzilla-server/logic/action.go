@@ -103,5 +103,10 @@ func (a *action) unmarshalJSONcommands(b []byte) (cmd Command, err error) {
 
 	err = json.Unmarshal(b, cmd)
 
+	switch c := cmd.(type) {
+	case *pause:
+		c.SetDuration(c.Pause)
+	}
+
 	return cmd, err
 }
