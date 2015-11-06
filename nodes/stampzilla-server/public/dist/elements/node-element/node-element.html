@@ -28,32 +28,27 @@
 	<template>
 		<paper-shadow z="1"></paper-shadow>
 			<template is="dom-if" if="{{isText}}">
-				<div id="state">{{element.State}}</div>
-				<div id="action" style="width:200px;">
-						Text
-				</div>
+				<div id="action" style="width:200px;">{{element.State}}</div>
 				<div id="title">{{element.Name}}</div>
 				<div id="type">TEXT</div>
 			</template>
 			<template is="dom-if" if="{{isButton}}">
-				<div id="state">{{element.State}}</div>
 				<div id="action" style="width:200px;">
 						<paper-button raised>{{element.Name}}</paper-button>
 				</div>
 				<div id="title">{{element.Name}}</div>
-				<div id="type">BUTTON</div>
+				<div id="type">(<span>{{element.State}}</span>) BUTTON</div>
 			</template>
 			<template is="dom-if" if="{{isToggle}}">
-				<div id="state">{{element.State}}</div>
 				<div id="action" style="width:200px;">
-						<paper-checkbox>{{element.Name}}</paper-checkbox>
+					<paper-checkbox checked="{{element.State}}">{{element.Name}}</paper-checkbox>
 				</div>
 				<div id="title">{{element.Name}}</div>
-				<div id="type">TOGGLE</div>
+				<div id="type">(<span>{{element.State}}</span>) TOGGLE</div>
 			</template>
 			<template is="dom-if" if="{{isSlider}}">
 				<div id="action" style="width:200px;">
-						<paper-slider pin>{{element.Name}}</paper-slider>
+					<paper-slider pin value="{{element.State}}">{{element.Name}}</paper-slider>
 				</div>
 				<div id="title">{{element.Name}}</div>
 				<div id="type">SLIDER</div>
@@ -63,7 +58,7 @@
 						colorpick
 				</div>
 				<div id="title">{{element.Name}}</div>
-				<div id="type">COLORPICK</div>
+				<div id="type">(<span>{{element.State}}</span>) COLORPICK</div>
 			</template>
 	</template>
 	<script>
