@@ -55,6 +55,25 @@ func (ns *NodeServer) Start() {
 	}()
 }
 
+func (ns *NodeServer) NodeDisconnected(uuid, name string) {
+	ns.WebsocketHandler.SendDisconnectedNode(uuid)
+	ns.Nodes.Delete(uuid)
+	log.Info(name, " - Removing node from nodes list")
+
+	// Span a goroutine to check if node is disconnected after a delay
+	go func() {
+		<-time.After(time.Minute)
+
+		if ns.Nodes.ByUuid(uuid) != nil {
+			// Everything is great, node connected igain
+			return
+		}
+
+		// Bad, node still not connected
+		notify.Warn("Node disconnected -> " + name + "(" + uuid + ")")
+	}()
+}
+
 func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 	// Recive data
 	log.Trace("New client connected (", connection.RemoteAddr(), ")")
@@ -76,14 +95,10 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 			if neterr, ok := err.(net.Error); (ok && !neterr.Temporary()) || err == io.EOF || err == syscall.ECONNRESET || err == syscall.EPIPE {
 				log.Info(name, " - Client disconnected with error:", err.Error())
 				connection.Close()
+
 				if uuid != "" {
-					ns.WebsocketHandler.SendDisconnectedNode(uuid)
-					ns.Nodes.Delete(uuid)
 					close(logicChannel)
-					log.Info(name, " - Removing node from nodes list")
-
-					notify.Warn("Node disconnected -> " + name + "(" + uuid + ")")
-
+					ns.NodeDisconnected(uuid, name)
 					return
 				}
 				// No uuid available, send the whole node list to webclients

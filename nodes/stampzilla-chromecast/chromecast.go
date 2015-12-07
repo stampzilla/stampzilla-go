@@ -1,74 +1,77 @@
 package main
 
 import (
-	"strings"
-	"time"
+	"net"
 
-	"github.com/jonaz/mdns"
+	log "github.com/cihub/seelog"
+	"github.com/stampzilla/gocast"
+	"github.com/stampzilla/gocast/events"
 )
 
 type Chromecast struct {
-	Events  chan *Event `json:"-"`
-	Devices *Devices
+	Id string
+
+	PrimaryApp      string
+	PrimaryEndpoint string
+	//PlaybackActive  bool
+	//Paused          bool
+
+	//IsStandBy     bool
+	//IsActiveInput bool
+
+	//Volume float64
+	//Muted  bool
+
+	Addr net.IP
+	Port int
+
+	publish func()
+
+	*gocast.Device
 }
 
-type Event struct {
-	Name string
-	Args []string
-}
-
-func NewChromecast() *Chromecast {
+func NewChromecast(d *gocast.Device) *Chromecast {
 	c := &Chromecast{
-		Events: make(chan *Event, 10),
+		Device: d,
 	}
-	c.Devices = &Devices{}
+
+	d.OnEvent(c.Event)
+	d.Connect()
+
 	return c
 }
 
 func (c *Chromecast) Listen() {
-	entriesCh := make(chan *mdns.ServiceEntry, 4)
-	go c.listen(entriesCh)
-	go c.mdnsPeridicalFetcher(entriesCh)
 }
 
-func (c *Chromecast) listen(entriesCh chan *mdns.ServiceEntry) {
-	// Make a channel for results and start listening
-	for entry := range entriesCh {
-		// Only match chromecasts
-		if !strings.Contains(entry.Name, "_googlecast._tcp") {
-			continue
-		}
+func (c *Chromecast) Event(event events.Event) {
+	switch data := event.(type) {
+	case events.Connected:
+		log.Info(c.Name(), "- Connected, weeihoo")
 
-		// Ignore devices that already are initiated
-		if device := c.Devices.GetByName(entry.Host); device != nil {
-			continue
-		}
+		c.Addr = c.Device.Ip()
+		c.Port = c.Device.Port()
+		c.Id = c.Device.Uuid()
 
-		// Add the new device
-		c.Devices.AddMdnsEntry(entry, c.Events)
+		state.Add(c)
+	case events.Disconnected:
+		log.Warn(c.Name(), "- Disconnected, bah :/")
+
+		state.Remove(c)
+
+		c.Device.Connect()
+	case events.AppStarted:
+		c.PrimaryApp = data.DisplayName
+		c.PrimaryEndpoint = data.TransportId
+
+		log.Info(c.Name(), "- App started:", data.DisplayName, "(", data.AppID, ")")
+	case events.AppStopped:
+		c.PrimaryApp = ""
+		log.Info(c.Name(), "- App stopped:", data.DisplayName, "(", data.AppID, ")")
+	//gocast.MediaEvent:
+	default:
+		log.Warn("unexpected event %T: %#v\n", data, data)
 	}
-}
 
-func (c *Chromecast) mdnsPeridicalFetcher(entriesCh chan *mdns.ServiceEntry) {
-	ticker := time.NewTicker(10 * time.Second)
-	quit := make(chan struct{})
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				go func() {
-					mdns.Query(&mdns.QueryParam{
-						Service: "_googlecast._tcp",
-						Domain:  "local",
-						Timeout: time.Second * 5,
-						Entries: entriesCh,
-					})
-				}()
-			case <-quit:
-				ticker.Stop()
-				return
-			}
-		}
-	}()
-
+	c.publish()
 }

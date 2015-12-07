@@ -14,10 +14,11 @@ import (
 )
 
 type WebHandler struct {
-	Logic      *logic.Logic          `inject:""`
-	Scheduler  *logic.Scheduler      `inject:""`
-	Nodes      *serverprotocol.Nodes `inject:""`
-	NodeServer *NodeServer           `inject:""`
+	Logic          *logic.Logic          `inject:""`
+	Scheduler      *logic.Scheduler      `inject:""`
+	Nodes          *serverprotocol.Nodes `inject:""`
+	NodeServer     *NodeServer           `inject:""`
+	ActionsService *logic.ActionService  `inject:""`
 }
 
 func (wh *WebHandler) GetNodes(c *gin.Context) {
@@ -78,20 +79,70 @@ func (wh *WebHandler) CommandToNodeGet(c *gin.Context) {
 	c.JSON(200, protocol.Command{Cmd: "testresponse"})
 }
 
+func (wh *WebHandler) GetActions(c *gin.Context) {
+	if p := c.Request.URL.Query()["reload"]; len(p) > 0 {
+		wh.ActionsService.Start()
+	}
+	c.JSON(200, wh.ActionsService.Get())
+}
+func (wh *WebHandler) ReloadActions(c *gin.Context) {
+	wh.ActionsService.Start()
+	c.JSON(200, wh.ActionsService.Get())
+}
+
+func (wh *WebHandler) RunAction(c *gin.Context) {
+	uuid := c.Param("uuid")
+	if a := wh.ActionsService.GetByUuid(uuid); a != nil {
+		a.Run()
+		c.JSON(200, "ok")
+		return
+	}
+	c.String(404, "Action not found")
+}
+
+func (wh *WebHandler) GetAction(c *gin.Context) {
+	uuid := c.Param("uuid")
+	if a := wh.ActionsService.GetByUuid(uuid); a != nil {
+		c.JSON(200, a)
+		return
+	}
+	c.String(404, "Action not found")
+}
 func (wh *WebHandler) GetRules(c *gin.Context) {
+	if p := c.Request.URL.Query()["reload"]; len(p) > 0 {
+		wh.Logic.RestoreRulesFromFile("rules.json")
+	}
 	c.JSON(200, wh.Logic.Rules())
+}
+func (wh *WebHandler) GetRunRules(c *gin.Context) {
+	id := c.Param("id")
+	action := c.Param("action")
+	for _, rule := range wh.Logic.Rules() {
+		if rule.Uuid() == id {
+			switch action {
+			case "enter":
+				rule.RunEnter()
+				c.JSON(200, "ok")
+				return
+			case "exit":
+				rule.RunExit()
+				c.JSON(200, "ok")
+				return
+
+			}
+		}
+	}
+	c.String(404, "Rule not found")
 }
 
 func (wh *WebHandler) GetScheduleTasks(c *gin.Context) {
+	if p := c.Request.URL.Query()["reload"]; len(p) > 0 {
+		wh.Scheduler.Reload()
+	}
 	c.JSON(200, wh.Scheduler.Tasks())
 }
 func (wh *WebHandler) GetScheduleEntries(c *gin.Context) {
 	c.JSON(200, wh.Scheduler.Cron.Entries())
-}
-
-func (wh *WebHandler) GetReload(c *gin.Context) {
-	wh.Logic.RestoreRulesFromFile("rules.json")
-	c.JSON(200, wh.Logic.Rules())
 }
 
 func (wh *WebHandler) GetServerTrigger(c *gin.Context) {

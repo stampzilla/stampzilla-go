@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"time"
 
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
@@ -135,6 +136,8 @@ func main() { /*{{{*/
 	state.AddDevice("1", "Dev1", false)
 	state.AddDevice("2", "Dev2", true)
 
+	go startToggler(node, connection, "1", time.Second)
+
 	// This worker recives all incomming commands
 	go serverRecv(node, connection)
 	select {}
@@ -194,6 +197,22 @@ func processCommand(node *protocol.Node, connection basenode.Connection, cmd pro
 			} else {
 				device.SetState(true)
 			}
+			connection.Send(node.Node())
+		}
+	}
+}
+
+func startToggler(node *protocol.Node, connection basenode.Connection, deviceName string, interval time.Duration) {
+	for {
+		<-time.After(interval)
+		if s, ok := node.State().(*State); ok {
+			device := s.Device(deviceName)
+			if device.State {
+				device.SetState(false)
+			} else {
+				device.SetState(true)
+			}
+
 			connection.Send(node.Node())
 		}
 	}

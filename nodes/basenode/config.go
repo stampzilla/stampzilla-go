@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"flag"
 	"os"
+	"fmt"
 
 	log "github.com/cihub/seelog"
 	"github.com/pborman/uuid"
@@ -117,6 +118,15 @@ type Config struct {
 	Host string
 	Port string
 	Uuid string
+	Node *json.RawMessage `json:"Node,omitempty"`
+}
+
+func (c *Config) NodeSpecific(i interface{}) error {
+	if c.Node != nil  {
+		return json.Unmarshal(*c.Node, &i)
+	}
+
+	return fmt.Errorf("No node specific config exist")
 }
 
 func (c *Config) GetUuid() string {
@@ -133,5 +143,5 @@ func (c *Config) Merge(c2 *Config) {
 	}
 
 	c.Uuid = c2.Uuid
-
+	c.Node = c2.Node
 }

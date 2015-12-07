@@ -15,9 +15,10 @@ import (
 
 // Schedular that schedule ruleActions
 type Scheduler struct {
-	tasks []Task
-	Nodes *serverprotocol.Nodes `inject:""`
-	Cron  *cron.Cron
+	tasks         []Task
+	Nodes         *serverprotocol.Nodes `inject:""`
+	ActionService *ActionService        `inject:""`
+	Cron          *cron.Cron
 	sync.RWMutex
 }
 
@@ -34,6 +35,18 @@ func (s *Scheduler) Start() {
 	s.Cron.Start()
 }
 
+func (s *Scheduler) Reload() {
+	//TODO verify the the new JSON is valid before unloading the existing schedule
+	s.Lock()
+	s.tasks = nil
+	s.Unlock()
+	for _, job := range s.Cron.Entries() {
+		s.Cron.RemoveJob(job.Id)
+	}
+	s.Cron.Stop()
+	s.Start()
+}
+
 func (s *Scheduler) Tasks() []Task {
 	s.RLock()
 	defer s.RUnlock()
@@ -44,7 +57,7 @@ func (s *Scheduler) AddTask(name string) Task {
 	var err error
 
 	task := &task{Name_: name, Uuid_: uuid.New()}
-	task.nodes = s.Nodes
+	//task.nodes = s.Nodes
 	task.cron = s.Cron
 	if err != nil {
 		log.Error(err)
@@ -60,7 +73,7 @@ func (s *Scheduler) RemoveTask(uuid string) error {
 	defer s.Unlock()
 	for i, task := range s.tasks {
 		if task.Uuid() == uuid {
-			s.Cron.RemoveFunc(task.CronId())
+			s.Cron.RemoveJob(task.CronId())
 			s.tasks = append(s.tasks[:i], s.tasks[i+1:]...)
 			return nil
 		}
@@ -70,7 +83,9 @@ func (s *Scheduler) RemoveTask(uuid string) error {
 func (s *Scheduler) CreateExampleFile() {
 	task := s.AddTask("Test1")
 	cmd := &protocol.Command{Cmd: "testCMD"}
-	action := NewRuleAction(cmd, "simple")
+	action := &action{
+		Commands: []Command{NewCommand(cmd, "simple")},
+	}
 	task.AddAction(action)
 	task.Schedule("0 * * * * *")
 
@@ -101,10 +116,10 @@ func (s *Scheduler) loadFromFile(filepath string) {
 	}
 
 	type local_tasks struct {
-		Name     string        `json:"name"`
-		Uuid     string        `json:"uuid"`
-		Actions  []*ruleAction `json:"actions"`
-		CronWhen string        `json:"when"`
+		Name     string   `json:"name"`
+		Uuid     string   `json:"uuid"`
+		Actions  []string `json:"actions"`
+		CronWhen string   `json:"when"`
 	}
 
 	var tasks []*local_tasks
@@ -120,8 +135,9 @@ func (s *Scheduler) loadFromFile(filepath string) {
 		if task.Uuid != "" {
 			t.SetUuid(task.Uuid)
 		}
-		for _, cond := range task.Actions {
-			t.AddAction(cond)
+		for _, uuid := range task.Actions {
+			a := s.ActionService.GetByUuid(uuid)
+			t.AddAction(a)
 		}
 		//Schedule the task!
 		t.Schedule(task.CronWhen)

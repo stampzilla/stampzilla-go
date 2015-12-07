@@ -18,7 +18,35 @@ type cliHandler struct {
 	Installer *installer.Installer
 }
 
+func (t *cliHandler) UpdateConfig(c *cli.Context) {
+	requireRoot()
+
+	oldConfig := &installer.Config{}
+	oldConfig.ReadConfigFromFile("/etc/stampzilla/nodes.conf")
+
+	newConfig := &installer.Config{}
+	newConfig.GenerateDefault()
+	for _, n := range newConfig.Daemons {
+		if old := oldConfig.GetConfigForNode(n.Name); old != nil {
+			n.Autostart = old.Autostart
+			n.Config = old.Config
+		}
+	}
+	err := newConfig.SaveToFile("/etc/stampzilla/nodes.conf")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+}
+
 func (t *cliHandler) Install(c *cli.Context) {
+	t.install(c, c.Bool("u"))
+}
+func (t *cliHandler) Upgrade(c *cli.Context) {
+	t.install(c, true)
+}
+
+func (t *cliHandler) install(c *cli.Context, upgrade bool) {
 	requireRoot()
 
 	nodes, err := ioutil.ReadDir("/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/")
@@ -26,10 +54,10 @@ func (t *cliHandler) Install(c *cli.Context) {
 		fmt.Println("Found no nodes. installing stampzilla cli first!")
 		t.Installer.CreateUser("stampzilla")
 		t.Installer.CreateDirAsUser("/home/stampzilla/go", "stampzilla")
-		t.Installer.GoGet("github.com/stampzilla/stampzilla-go/stampzilla", c.Bool("u"))
+		t.Installer.GoGet("github.com/stampzilla/stampzilla-go/stampzilla", upgrade)
 	}
 
-	if c.Bool("u") {
+	if upgrade {
 		fmt.Println("Updating stampzilla")
 	} else {
 		fmt.Println("Installing stampzilla")
@@ -51,6 +79,11 @@ func (t *cliHandler) Install(c *cli.Context) {
 		return
 	}
 
+	if len(c.Args()) != 0 {
+		t.installSpecificNodesFromArguments(c, upgrade)
+		return
+	}
+
 	for _, node := range nodes {
 		if !strings.Contains(node.Name(), "stampzilla-") {
 			continue
@@ -61,14 +94,10 @@ func (t *cliHandler) Install(c *cli.Context) {
 			continue
 		}
 
-		if len(c.Args()) != 0 && !t.findNodeInArgs(c, node.Name()) {
-			continue
-		}
-
-		t.Installer.GoGet("github.com/stampzilla/stampzilla-go/nodes/"+node.Name(), c.Bool("u"))
+		t.Installer.GoGet("github.com/stampzilla/stampzilla-go/nodes/"+node.Name(), upgrade)
 
 		//Run bower install to set up javascript and polymer if we are installing the server.
-		if node.Name() == "stampzilla-server" && !c.Bool("u") {
+		if node.Name() == "stampzilla-server" && !upgrade {
 			t.Installer.Bower()
 		}
 	}
@@ -76,13 +105,11 @@ func (t *cliHandler) Install(c *cli.Context) {
 	return
 }
 
-func (t *cliHandler) findNodeInArgs(c *cli.Context, node string) bool {
-	for _, requestedNode := range c.Args() {
-		if node == "stampzilla-"+requestedNode {
-			return true
-		}
+func (t *cliHandler) installSpecificNodesFromArguments(c *cli.Context, upgrade bool) {
+	for _, name := range c.Args() {
+		node := "stampzilla-" + name
+		t.Installer.GoGet("github.com/stampzilla/stampzilla-go/nodes/"+node, upgrade)
 	}
-	return false
 }
 
 func (t *cliHandler) Start(c *cli.Context) {

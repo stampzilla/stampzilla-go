@@ -10,7 +10,7 @@ func TestSchedulerAddTask(t *testing.T) {
 
 	scheduler := NewScheduler()
 	actionRunCount := 0
-	action := NewRuleActionStub(&actionRunCount)
+	action := NewRuleActionStub(&actionRunCount, t)
 
 	//Add first task.
 	task := scheduler.AddTask("Test1")
@@ -36,7 +36,7 @@ func TestSchedulerRemoveTask(t *testing.T) {
 
 	scheduler := NewScheduler()
 	actionRunCount := 0
-	action := NewRuleActionStub(&actionRunCount)
+	action := NewRuleActionStub(&actionRunCount, t)
 
 	//Add first task.
 	task := scheduler.AddTask("Test1")
@@ -67,6 +67,7 @@ func TestSchedulerRemoveTask(t *testing.T) {
 }
 func TestSchedulerLoadFromFile(t *testing.T) {
 	scheduler := NewScheduler()
+	scheduler.ActionService = NewActions()
 	scheduler.loadFromFile("tests/schedule.test.json")
 
 	if len(scheduler.Tasks()) != 1 {
@@ -91,9 +92,10 @@ func TestSchedulerLoadFromFile(t *testing.T) {
 }
 func TestSchedulersaveToFile(t *testing.T) {
 	scheduler := NewScheduler()
+	scheduler.ActionService = NewActions()
 
 	actionRunCount := 0
-	action := NewRuleActionStub(&actionRunCount)
+	action := NewRuleActionStub(&actionRunCount, t)
 
 	task1 := scheduler.AddTask("Test1")
 	task1.AddAction(action)
@@ -102,6 +104,7 @@ func TestSchedulersaveToFile(t *testing.T) {
 	scheduler.saveToFile("tests/schedule.json.tmp")
 
 	scheduler = NewScheduler()
+	scheduler.ActionService = NewActions()
 	scheduler.loadFromFile("tests/schedule.json.tmp")
 
 	if len(scheduler.Tasks()) != 1 {

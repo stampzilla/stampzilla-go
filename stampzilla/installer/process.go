@@ -101,7 +101,7 @@ func Run(head string, parts ...string) (string, error) { // {{{
 	cmd.Env = []string{
 		"GOPATH=/home/stampzilla/go",
 		"PATH=" + os.Getenv("PATH"),
-		"STAMPZILLA_WEBROOT=/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/public",
+		"STAMPZILLA_WEBROOT=/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/public/dist",
 	}
 	out, err = cmd.CombinedOutput()
 	if err != nil {

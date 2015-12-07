@@ -38,8 +38,8 @@ func (ws *WebServer) Start() {
 	//})
 
 	r := gin.Default()
-	r.Use(static.Serve("/", static.LocalFile("./public/dist", false)))
-	r.StaticFile("/", "./public/dist/index.html")
+	r.Use(static.Serve("/", static.LocalFile(ws.Config.WebRoot, false)))
+	r.StaticFile("/", ws.Config.WebRoot+"/index.html")
 
 	//m.Get("/socket", sockets.JSON(websocket.Message{}, &sockets.Options{AllowedOrigin: "https?://(localhost:5000|{{host}})$"}), ws.WsClients.WebsocketRoute)
 	r.GET("/socket", ws.WsClients.WebsocketRoute)
@@ -50,14 +50,18 @@ func (ws *WebServer) Start() {
 	r.PUT("/api/nodes/:id/cmd", ws.WebHandler.CommandToNodePut)
 	r.GET("/api/nodes/:id/cmd/*cmd", ws.WebHandler.CommandToNodeGet)
 
+	//Actions
+	r.GET("/api/actions", ws.WebHandler.GetActions)
+	r.GET("/api/actions/:uuid/run", ws.WebHandler.RunAction)
+	r.GET("/api/actions/:uuid", ws.WebHandler.GetAction)
+
 	//Rules
 	r.GET("/api/rules", ws.WebHandler.GetRules)
+	r.GET("/api/rules/:id/:action", ws.WebHandler.GetRunRules)
 
 	//Schedule
 	r.GET("/api/schedule", ws.WebHandler.GetScheduleTasks)
 	r.GET("/api/schedule/entries", ws.WebHandler.GetScheduleEntries)
-
-	r.GET("/api/reload", ws.WebHandler.GetReload)
 
 	// Server state methods
 	r.GET("/api/trigger/:key/:value", ws.WebHandler.GetServerTrigger)

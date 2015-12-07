@@ -21,7 +21,8 @@ type Logic struct {
 	Rules_ []Rule
 	re     *regexp.Regexp
 	sync.RWMutex
-	Nodes *serverprotocol.Nodes `inject:""`
+	Nodes         *serverprotocol.Nodes `inject:""`
+	ActionService *ActionService              `inject:""`
 }
 
 func NewLogic() *Logic {
@@ -85,6 +86,10 @@ func (l *Logic) EvaluateRules() {
 }
 func (l *Logic) evaluateRule(r Rule) bool {
 	var state string
+	if len(r.Conditions()) == 0 {
+		return false
+	}
+
 	for _, cond := range r.Conditions() {
 		//fmt.Println(cond.StatePath())
 		//for _, state := range l.States() {
@@ -203,8 +208,8 @@ func (l *Logic) RestoreRulesFromFile(path string) {
 		Name         string           `json:"name"`
 		Uuid         string           `json:"uuid"`
 		Conditions_  []*ruleCondition `json:"conditions"`
-		EnterActions []*ruleAction    `json:"enterActions"`
-		ExitActions  []*ruleAction    `json:"exitActions"`
+		EnterActions []string         `json:"enterActions"`
+		ExitActions  []string         `json:"exitActions"`
 	}
 
 	var rules []*local_rule
@@ -225,10 +230,12 @@ func (l *Logic) RestoreRulesFromFile(path string) {
 		for _, cond := range rule.Conditions_ {
 			r.AddCondition(cond)
 		}
-		for _, a := range rule.EnterActions {
+		for _, uuid := range rule.EnterActions {
+			a := l.ActionService.GetByUuid(uuid)
 			r.AddEnterAction(a)
 		}
-		for _, a := range rule.ExitActions {
+		for _, uuid := range rule.ExitActions {
+			a := l.ActionService.GetByUuid(uuid)
 			r.AddExitAction(a)
 		}
 	}
