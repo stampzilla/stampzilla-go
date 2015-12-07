@@ -38,7 +38,10 @@ func (c *connection) State() chan int {
 	return c.state
 }
 func (c *connection) Send(data interface{}) {
-	c.send <- data
+	select {
+	case c.send <- data:
+	case <-time.After(time.Minute):
+	}
 }
 
 func Connect() Connection {
