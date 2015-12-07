@@ -214,7 +214,7 @@ func processArduinoData(msg string, connection basenode.Connection) { // {{{
 	values := strings.Split(msg, "|")
 	if len(values) != 12 {
 		printTerminalStatus("Invalid length")
-		//log.Warn("Invalid message: ", msg)
+		log.Warn("Invalid message: ", msg)
 		return
 	}
 
@@ -500,23 +500,23 @@ func processCommand(cmd protocol.Command) error { // {{{
 	switch cmd.Cmd {
 	case "CirculationPumps":
 		if target {
-			ard.Port.Write([]byte{0x02, 0x01, 0x01, 0x03}) // Turn on
+			ard.Port.Write([]byte{0x02, 0x01, 0x00, 0x01, 0x03}) // Turn on
 		} else {
-			ard.Port.Write([]byte{0x02, 0x01, 0x00, 0x03}) // Turn off
+			ard.Port.Write([]byte{0x02, 0x01, 0x00, 0x00, 0x03}) // Turn off
 		}
 		break
 	case "Skimmer":
 		if target {
-			ard.Port.Write([]byte{0x02, 0x02, 0x01, 0x03}) // Turn on
+			ard.Port.Write([]byte{0x02, 0x02, 0x00, 0x01, 0x03}) // Turn on
 		} else {
-			ard.Port.Write([]byte{0x02, 0x02, 0x00, 0x03}) // Turn off
+			ard.Port.Write([]byte{0x02, 0x02, 0x00, 0x00, 0x03}) // Turn off
 		}
 		break
 	case "Heating":
 		if target {
-			ard.Port.Write([]byte{0x02, 0x03, 0x01, 0x03}) // Turn on
+			ard.Port.Write([]byte{0x02, 0x03, 0x00, 0x01, 0x03}) // Turn on
 		} else {
-			ard.Port.Write([]byte{0x02, 0x03, 0x00, 0x03}) // Turn off
+			ard.Port.Write([]byte{0x02, 0x03, 0x00, 0x00, 0x03}) // Turn off
 		}
 		break
 	case "CoolingP":
@@ -525,7 +525,7 @@ func processCommand(cmd protocol.Command) error { // {{{
 			return fmt.Errorf("Failed to decode arg[0] to int %s %s", err, cmd.Args[0])
 		}
 
-		ard.Port.Write([]byte{0x02, 0x04, byte(i), 0x03}) // Turn on
+		ard.Port.Write([]byte{0x02, 0x04, 0x00, byte(i), 0x03}) // Turn on
 		break
 	case "CoolingI":
 		i, err := strconv.Atoi(cmd.Args[0])
@@ -533,7 +533,7 @@ func processCommand(cmd protocol.Command) error { // {{{
 			return fmt.Errorf("Failed to decode arg[0] to int %s %s", err, cmd.Args[0])
 		}
 
-		ard.Port.Write([]byte{0x02, 0x05, byte(i), 0x03}) // Turn on
+		ard.Port.Write([]byte{0x02, 0x05, 0x00, byte(i), 0x03}) // Turn on
 		break
 	case "CoolingD":
 		i, err := strconv.Atoi(cmd.Args[0])
@@ -541,7 +541,7 @@ func processCommand(cmd protocol.Command) error { // {{{
 			return fmt.Errorf("Failed to decode arg[0] to int %s %s", err, cmd.Args[0])
 		}
 
-		ard.Port.Write([]byte{0x02, 0x06, byte(i), 0x03}) // Turn on
+		ard.Port.Write([]byte{0x02, 0x06, 0x00, byte(i), 0x03}) // Turn on
 		break
 	case "dim":
 		var i int
@@ -563,13 +563,13 @@ func processCommand(cmd protocol.Command) error { // {{{
 
 		switch cmd.Args[0] {
 		case "red":
-			ard.Port.Write([]byte{0x02, 0x07, byte(i), 0x03}) // Turn on
+			ard.Port.Write([]byte{0x02, 0x07, 0x00, byte(i), 0x03}) // Turn on
 		case "green":
-			ard.Port.Write([]byte{0x02, 0x08, byte(i), 0x03}) // Turn on
+			ard.Port.Write([]byte{0x02, 0x08, 0x00, byte(i), 0x03}) // Turn on
 		case "blue":
-			ard.Port.Write([]byte{0x02, 0x09, byte(i), 0x03}) // Turn on
+			ard.Port.Write([]byte{0x02, 0x09, 0x00, byte(i), 0x03}) // Turn on
 		case "white":
-			ard.Port.Write([]byte{0x02, 0x0A, byte(i), 0x03}) // Turn on
+			ard.Port.Write([]byte{0x02, 0x0A, 0x00, byte(i), 0x03}) // Turn on
 		}
 	case "cooling":
 		i, err := strconv.Atoi(cmd.Args[0])
@@ -577,7 +577,15 @@ func processCommand(cmd protocol.Command) error { // {{{
 			return fmt.Errorf("Failed to decode arg[0] to int %s %s", err, cmd.Args[0])
 		}
 
-		ard.Port.Write([]byte{0x02, 0x0B, byte(i), 0x03}) // Turn on
+		ard.Port.Write([]byte{0x02, 0x0B, 0x00, byte(i), 0x03}) // Turn on
+		break
+	case "dose":
+		i, err := strconv.Atoi(cmd.Args[0])
+		if err != nil {
+			return fmt.Errorf("Failed to decode arg[0] to int %s %s", err, cmd.Args[0])
+		}
+
+		ard.Port.Write([]byte{0x02, 0x0C, byte(i >> 8), byte(i), 0x03}) // command dose
 		break
 	}
 	return nil
@@ -665,11 +673,11 @@ func (config *SerialConnection) connect(connection basenode.Connection, callback
 	close(connected)
 	<-time.After(time.Second)
 
-	config.Port.Write([]byte{0x02, 0x07, byte(red), 0x03})     // red
-	config.Port.Write([]byte{0x02, 0x08, byte(green), 0x03})   // green
-	config.Port.Write([]byte{0x02, 0x09, byte(blue), 0x03})    // blue
-	config.Port.Write([]byte{0x02, 0x0A, byte(white), 0x03})   // white
-	config.Port.Write([]byte{0x02, 0x0B, byte(cooling), 0x03}) // cooling
+	config.Port.Write([]byte{0x02, 0x07, 0x00, byte(red), 0x03})     // red
+	config.Port.Write([]byte{0x02, 0x08, 0x00, byte(green), 0x03})   // green
+	config.Port.Write([]byte{0x02, 0x09, 0x00, byte(blue), 0x03})    // blue
+	config.Port.Write([]byte{0x02, 0x0A, 0x00, byte(white), 0x03})   // white
+	config.Port.Write([]byte{0x02, 0x0B, 0x00, byte(cooling), 0x03}) // cooling
 
 	var incomming string = ""
 
