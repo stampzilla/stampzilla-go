@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"syscall"
 )
 
 type Process struct {
@@ -35,9 +36,19 @@ func NewProcess(name, configDir string) *Process {
 
 func (p *Process) Start() {
 
-	if p.Pidfile.Read() != 0 {
-		fmt.Println("Process " + p.Name + " already running!")
-		return
+	if pid := p.Pidfile.Read(); pid != 0 {
+		fmt.Println("Found pid file, checking if pid exists")
+
+		// Read pid and try to find it
+		process, err := os.FindProcess(int(pid))
+		if err == nil {
+			// Try to signal the process
+			err = process.Signal(syscall.Signal(0))
+			if err == nil {
+				fmt.Println("Process "+p.Name+" (pid ", pid, ") already running!")
+				return
+			}
+		}
 	}
 
 	shbin, err := exec.LookPath("sh")
