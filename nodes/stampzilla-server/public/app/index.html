@@ -48,6 +48,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 		<!-- build:js bower_components/webcomponentsjs/webcomponents-lite.min.js -->
 		<script src="bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+		<script src="../../../bower_components/moment/min/moment.min.js"></script>
 		<!-- endbuild -->
 
 		<!-- will be replaced with elements/elements.vulcanized.html -->
@@ -181,11 +182,20 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 							</section>
 
 							<section data-route="node-info">
+								<node-selector nodes={{nodes}} uuid={{params.name}} node={{node}}></node-selector>
+
+								<span style="float:right;">
+									<div><time-ago datetime="{{node.LastSeen}}" refresh="1000"></time-ago></div>
+									<div>{{node.Host}}</div>
+								</span>
+								<h2 class="paper-font-display2">
+									<span>{{node.Name}} <small>({{params.name}})</small></span>
+								</h2>
 								<paper-material elevation="1">
-									<h2 class="paper-font-display2">
-										Node:<span>{{params.name}}</span>
-									</h2>
-									<node-elements nodes={{nodes}} uuid={{params.name}}></node-elements>
+									<node-elements node={{node}}></node-elements>
+								</paper-material>
+								<paper-material elevation="1">
+									<x-json data="{{node.State}}"></x-json>
 								</paper-material>
 							</section>
 

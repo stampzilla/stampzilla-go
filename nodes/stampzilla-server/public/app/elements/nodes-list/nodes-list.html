@@ -14,7 +14,9 @@
 					</a>
 
 					<span class="paper-font-body1">{{item.Host}}</span>
-					<span class="paper-font-body1">{{item.LastSeen}}</span>
+					<span class="paper-font-body1" style="float:right;">
+						<time-ago datetime="{{item.LastSeen}}" refresh="1000"></time-ago>
+					</span>
 				</li>
 			</template>
 		</ul>

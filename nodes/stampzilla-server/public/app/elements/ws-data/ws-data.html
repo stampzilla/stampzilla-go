@@ -1,13 +1,3 @@
-<!--
-@license
-Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
-This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
-The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
-The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
-Code distributed by Google as part of the polymer project is also
-subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
--->
-
 <dom-module id="ws-data">
 	<template>
 		<style>
@@ -55,11 +45,18 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 					console.log(d);
 
 					if(d.type === 'all'){
-						this.nodes = this._toArray(d.data);
+						var ts = moment().format('YYYY-MM-DD HH:mm:ss');
+						console.log(ts);
+
+						var tmp = this._toArray(d.data);
+						tmp.forEach(function(el,index){
+							tmp[index].LastSeen = ts;
+						});
+						this.nodes = tmp;
 						return;
 					}
 					if(d.type === 'singlenode'){
-						d.data.LastSeen = Math.floor(Date.now() / 1000); // <-- Todo: remove, test update // stamp
+						d.data.LastSeen = moment().format('YYYY-MM-DD HH:mm:ss');
 					
 						this.nodes.forEach(function(el,index){
 							if( d.data !== undefined && el.Uuid === d.data.Uuid){
