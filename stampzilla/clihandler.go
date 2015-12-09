@@ -116,6 +116,7 @@ func (t *cliHandler) Start(c *cli.Context) {
 	requireRoot()
 
 	t.Installer.Config.ReadConfigFromFile("/etc/stampzilla/nodes.conf")
+	t.Installer.CreateDirAsUser("/var/log/stampzilla", "stampzilla")
 
 	if c.Args().First() != "" {
 		for _, what := range c.Args() {
