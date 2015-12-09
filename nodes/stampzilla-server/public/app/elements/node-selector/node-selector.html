@@ -20,6 +20,9 @@
 						observer: 'changeNode'
 					}
 				},
+				observers: [
+					'nodesUpdated(nodes.*)'
+				],
 				nodesUpdated: function() {
 					this.nodes.forEach(function(el){
 						if( el.Uuid === this.uuid){
