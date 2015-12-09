@@ -15,8 +15,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		<meta charset="utf-8">
 		<meta name="description" content="">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<meta name="generator" content="Polymer Starter Kit" />
-		<title>Polymer Starter Kit</title>
+		<title>Stampzilla</title>
 		<!-- Place favicon.ico in the `app/` directory -->
 
 		<!-- Chrome for Android theme color -->
@@ -109,21 +108,23 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 						<!-- Application name -->
 						<div class="middle middle-container center horizontal layout">
-							<div class="app-name">Polymer Starter Kit</div>
+							<div class="app-name">
+								{{selectedPage.title}}
+							</div>
 						</div>
 
 						<!-- Application sub title -->
 						<div class="bottom bottom-container center horizontal layout">
-							<div class="bottom-title paper-font-subhead">The future of the web today</div>
+							<div class="bottom-title paper-font-subhead">{{selectedPage.subtitle}}</div>
 						</div>
 
 					</paper-toolbar>
 
 					<!-- Main Content -->
 					<div class="content">
-						<iron-pages attr-for-selected="data-route" selected="{{route}}">
+						<iron-pages attr-for-selected="data-route" selected="{{route}}" selected-item="{{selectedPage}}">
 
-							<section data-route="home">
+							<section data-route="home" title="stampzilla">
 								<paper-material elevation="1">
 									<my-greeting></my-greeting>
 
@@ -157,7 +158,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 							</section>
 
-							<section data-route="users">
+							<section data-route="users" title="Users">
 								<paper-material elevation="1">
 									<h2 class="paper-font-display2">Users</h2>
 									<p>This is the users section</p>
@@ -165,7 +166,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 								</paper-material>
 							</section>
 
-							<section data-route="user-info">
+							<section data-route="user-info" title="User info">
 								<paper-material elevation="1">
 									<h2 class="paper-font-display2">
 										User:<span>{{params.name}}</span>
@@ -174,32 +175,32 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 								</paper-material>
 							</section>
 
-							<section data-route="nodes">
+							<section data-route="nodes" title="Nodes">
 								<paper-material elevation="1">
 									<h2 class="paper-font-display2">Nodes</h2>
 									<nodes-list nodes={{nodes}}></nodes-list>
 								</paper-material>
 							</section>
 
-							<section data-route="node-info">
+							<section 
+								data-route="node-info" 
+								title="{{node.Name}}" 
+								subtitle="{{node.Uuid}}">
 								<node-selector nodes={{nodes}} uuid={{params.name}} node={{node}}></node-selector>
 
-								<span style="float:right;">
-									<div><time-ago datetime="{{node.LastSeen}}" refresh="1000"></time-ago></div>
-									<div>{{node.Host}}</div>
-								</span>
-								<h2 class="paper-font-display2">
-									<span>{{node.Name}} <small>({{params.name}})</small></span>
-								</h2>
 								<paper-material elevation="1">
 									<node-elements node={{node}}></node-elements>
 								</paper-material>
 								<paper-material elevation="1">
 									<x-json data="{{node.State}}"></x-json>
 								</paper-material>
+								<paper-material elevation="1">
+									<div><time-ago datetime="{{node.LastSeen}}" refresh="1000"></time-ago></div>
+									<div>{{node.Host}}</div>
+								</paper-material>
 							</section>
 
-							<section data-route="contact">
+							<section data-route="contact" title="Contact">
 								<paper-material elevation="1">
 									<h2 class="paper-font-display2">Contact</h2>
 									<p>This is the contact section</p>
