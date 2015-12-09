@@ -18,41 +18,10 @@
 			Polymer({
 				is: 'node-elements',
 				properties: {
-					nodes: {
-						type: Array,
-						notify: true
-					},
-					uuid: {
-						type: String,
-						notify: true,
-						observer: 'changeUuid'
-					},
 					node: {
 						type: Object,
-						notify: true
+						notify: true,
 					}
-				},
-				observers: [
-					'nodesChanged(nodes.*)'
-				],
-				nodesChanged: function() {
-					this.nodes.forEach(function(el){
-						if( el.Uuid === this.uuid){
-							this.setNode(el);
-						}
-					}, this);
-				},
-				changeUuid: function() {
-					if ( this.nodes !== undefined ) {
-						this.nodes.forEach(function(el){
-							if( el.Uuid === this.uuid){
-								this.setNode(el);
-							}
-						}, this);
-					}
-				},
-				setNode: function(node){
-					this.set('node', node);
 				},
 				ready: function() {
 				}
