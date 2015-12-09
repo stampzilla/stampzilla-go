@@ -628,13 +628,13 @@ func printWithLimit(msg string, length int) { // {{{
 }                               // }}}
 func getWindowSize() *winsize { // {{{
 	ws := &winsize{}
-	retCode, _, errno := syscall.Syscall(syscall.SYS_IOCTL,
+	retCode, _, _ := syscall.Syscall(syscall.SYS_IOCTL,
 		uintptr(syscall.Stdin),
 		uintptr(syscall.TIOCGWINSZ),
 		uintptr(unsafe.Pointer(ws)))
 
 	if int(retCode) == -1 {
-		panic(errno)
+		ws.Col = 0
 	}
 	return ws
 } // }}}
