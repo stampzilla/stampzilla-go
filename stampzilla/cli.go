@@ -7,10 +7,13 @@ import (
 	"github.com/stampzilla/stampzilla-go/stampzilla/installer"
 )
 
+var buildstamp = "No build timestamp provided"
+var githash = "No githash provided"
+
 func main() {
 	app := cli.NewApp()
 	app.Name = "stampzilla"
-	app.Version = "0.0.1"
+	app.Version = "GitCommit: " + githash + "\n   BuildDate: " + buildstamp
 	app.Usage = "Manage stampzilla on the command line"
 
 	cliHandler := &cliHandler{installer.NewInstaller()}
