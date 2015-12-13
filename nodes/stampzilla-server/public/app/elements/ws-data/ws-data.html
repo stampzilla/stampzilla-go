@@ -5,7 +5,7 @@
 				display: none;
 			}
 		</style>
-		<x-websocket json auto url="{{url}}" message="{{message}}"></x-websocket>
+		<x-websocket id="socket" json auto url="{{url}}" message="{{message}}"></x-websocket>
 	</template>
 
 	<script>
@@ -90,6 +90,10 @@
 
 				},
 				ready: function() {
+					var self = this;
+					app.addEventListener('ws-send', function (e) {
+						self.$.socket.send(e.detail);
+					});
 				}
 			});
 		})();

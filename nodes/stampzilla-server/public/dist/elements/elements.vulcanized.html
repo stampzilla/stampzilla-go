@@ -21922,9 +21922,6 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 		}
 		#title {
 			@apply(--layout-flex);
-		}
-		#type {
-			@apply(--layout-flex-2);
 			text-align:right;
 		}
 
@@ -21934,40 +21931,35 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 			<template is="dom-if" if="{{isText}}">
 				<div id="action" style="width:200px;">{{State}}</div>
 				<div id="title">{{element.Name}}</div>
-				<div id="type">TEXT</div>
 			</template>
 			<template is="dom-if" if="{{isButton}}">
 				<div id="action" style="width:200px;">
-						<paper-button raised="">{{element.Name}}</paper-button>
+						<paper-button raised="" on-click="handleClick">{{element.Name}}</paper-button>
 				</div>
-				<div id="title">{{element.Name}}</div>
-				<div id="type">(<span>{{State}}</span>) BUTTON</div>
 			</template>
 			<template is="dom-if" if="{{isToggle}}">
 				<div id="action" style="width:200px;">
-					<paper-checkbox checked="{{State}}">{{element.Name}}</paper-checkbox>
+					<paper-checkbox on-change="handleToggle" checked="{{State}}"></paper-checkbox>
 				</div>
 				<div id="title">{{element.Name}}</div>
-				<div id="type">(<span>{{State}}</span>) TOGGLE</div>
 			</template>
 			<template is="dom-if" if="{{isSlider}}">
-				<div id="action" style="width:200px;">
-					<paper-slider pin="" value="{{State}}">{{element.Name}}</paper-slider>
+				<div id="action">
+					<paper-slider on-immediate-value-change="handleSlide" pin="" immediatevalue="{{immediateValue}}" value="{{State}}"></paper-slider>
 				</div>
 				<div id="title">{{element.Name}}</div>
-				<div id="type">SLIDER</div>
 			</template>
 			<template is="dom-if" if="{{isColorpick}}">
 				<div id="action" style="width:200px;">
 						colorpick
 				</div>
 				<div id="title">{{element.Name}}</div>
-				<div id="type">(<span>{{State}}</span>) COLORPICK</div>
 			</template>
 	</template>
 	<script>
 		(function () {
 			Polymer({
+				immediateValue:0,
 				isText: false,
 				is: 'node-element',
 				properties: {
@@ -22020,6 +22012,46 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 						}
 					}
 					return o;
+				},
+
+
+
+
+				handleClick: function() {
+					var cmd = this.element.Command;
+					cmd.params = null;
+
+					var pkg = {
+						type: 'cmd',
+						data: cmd, 
+						to: this.node.Uuid,
+					};
+
+					app.fire('ws-send', pkg);
+				},
+				handleToggle: function() {
+					var cmd = this.element.Command;
+					cmd.params = [this.State];
+
+					var pkg = {
+						type: 'cmd',
+						data: cmd, 
+						to: this.node.Uuid,
+					};
+
+					app.fire('ws-send', pkg);
+				},
+				handleSlide: function(e) {
+					var cmd = this.element.Command;
+					cmd.params = [e.target.immediateValue];
+
+					var pkg = {
+						type: 'cmd',
+						data: cmd, 
+						to: this.node.Uuid
+					};
+
+					app.fire('ws-send', pkg);
 				}
 			});
 		})();
@@ -22115,7 +22147,7 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 				display: none;
 			}
 		</style>
-		<x-websocket json="" auto="" url="{{url}}" message="{{message}}"></x-websocket>
+		<x-websocket id="socket" json="" auto="" url="{{url}}" message="{{message}}"></x-websocket>
 	</template>
 
 	<script>
@@ -22200,6 +22232,10 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 
 				},
 				ready: function() {
+					var self = this;
+					app.addEventListener('ws-send', function (e) {
+						self.$.socket.send(e.detail);
+					});
 				}
 			});
 		})();

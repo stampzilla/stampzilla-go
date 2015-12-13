@@ -60,6 +60,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		<template is="dom-bind" id="app">
 			<!--<x-websocket json auto url="ws://{{wsLocation}}/socket"></x-websocket>-->
 			<ws-data nodes={{nodes}}></ws-data>
+			<node-selector nodes={{nodes}} uuid={{params.name}} node={{node}}></node-selector>
 
 			<paper-drawer-panel id="paperDrawerPanel">
 				<!-- Drawer Scroll Header Panel -->
@@ -184,9 +185,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 							<section 
 								data-route="node-info" 
-								title="{{node.Name}}" 
-								subtitle="{{node.Uuid}}">
-								<node-selector nodes={{nodes}} uuid={{params.name}} node={{node}}></node-selector>
+								title="[[node.Name]]" 
+								subtitle="[[node.Uuid]]">
 
 								<paper-material elevation="1">
 									<node-elements node={{node}}></node-elements>
