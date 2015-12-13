@@ -22031,7 +22031,7 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 				},
 				handleToggle: function() {
 					var cmd = this.element.Command;
-					cmd.params = [this.State];
+					cmd.params = [this.State.toString()];
 
 					var pkg = {
 						type: 'cmd',
@@ -22043,7 +22043,7 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 				},
 				handleSlide: function(e) {
 					var cmd = this.element.Command;
-					cmd.params = [e.target.immediateValue];
+					cmd.params = [e.target.immediateValue.toString()];
 
 					var pkg = {
 						type: 'cmd',
