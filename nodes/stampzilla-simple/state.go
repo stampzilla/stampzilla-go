@@ -22,7 +22,7 @@ func (s *State) Device(id string) *Device {
 	}
 	return nil
 }
-func (s *State) AddDevice(id, name string, state bool) *Device {
+func (s *State) AddDevice(id, name string, state interface{}) *Device {
 	d := NewDevice(id, name, state, "")
 	s.Lock()
 	defer s.Unlock()
@@ -36,7 +36,7 @@ func (s *State) RemoveDevice(id [4]byte) {
 	delete(s.Devices, senderId)
 }
 
-func NewDevice(id, name string, state bool, dtype string) *Device {
+func NewDevice(id, name string, state interface{}, dtype string) *Device {
 	d := &Device{Name: name, State: state, Type: dtype}
 	d.SetId(id)
 	return d
@@ -45,7 +45,7 @@ func NewDevice(id, name string, state bool, dtype string) *Device {
 type Device struct {
 	Id    string
 	Name  string
-	State bool
+	State interface{}
 	Type  string
 	sync.Mutex
 }
@@ -55,7 +55,7 @@ func (d *Device) SetId(id string) {
 	defer d.Unlock()
 	d.Id = id
 }
-func (d *Device) SetState(state bool) {
+func (d *Device) SetState(state interface{}) {
 	d.Lock()
 	defer d.Unlock()
 	d.State = state

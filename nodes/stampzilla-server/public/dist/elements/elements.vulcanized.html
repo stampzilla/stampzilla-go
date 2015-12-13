@@ -21903,7 +21903,7 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 
 </dom-module>
 <dom-module id="node-element" assetpath="node-element/">
-	<style>
+	<style is="custom-style">
 		:host {
 			@apply(--layout-horizontal);
 			@apply(--shadow-elevation-2dp);
@@ -21925,11 +21925,16 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 			text-align:right;
 		}
 
+		paper-slider {
+			--paper-slider-active-color: transparent;
+			--paper-slider-secondary-color: var(--google-blue-700);
+		}
+
 	</style>
 	<template>
 		<paper-shadow z="1"></paper-shadow>
 			<template is="dom-if" if="{{isText}}">
-				<div id="action" style="width:200px;">{{State}}</div>
+				<div id="action" style="width:200px;">{{PrimaryState}}</div>
 				<div id="title">{{element.Name}}</div>
 			</template>
 			<template is="dom-if" if="{{isButton}}">
@@ -21939,13 +21944,14 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 			</template>
 			<template is="dom-if" if="{{isToggle}}">
 				<div id="action" style="width:200px;">
-					<paper-checkbox on-change="handleToggle" checked="{{State}}"></paper-checkbox>
+					<paper-checkbox class="slider" on-change="handleToggle" checked="{{PrimaryState}}"></paper-checkbox>
 				</div>
 				<div id="title">{{element.Name}}</div>
 			</template>
 			<template is="dom-if" if="{{isSlider}}">
 				<div id="action">
-					<paper-slider on-immediate-value-change="handleSlide" pin="" immediatevalue="{{immediateValue}}" value="{{State}}"></paper-slider>
+					<paper-slider on-immediate-value-change="handleSlide" on-change="handleSlideEnd" pin="" immediatevalue="{{immediateValue}}" value="[[PrimaryState]]" secondary-progress="[[SecondaryState]]">
+					</paper-slider>
 				</div>
 				<div id="title">{{element.Name}}</div>
 			</template>
@@ -21959,7 +21965,6 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 	<script>
 		(function () {
 			Polymer({
-				immediateValue:0,
 				isText: false,
 				is: 'node-element',
 				properties: {
@@ -21986,7 +21991,10 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 					var state = this.byString(this.node.State,this.element.Feedback);
 					// Only update state when we have a valid state and it is changed
 					if( state !== undefined && (this.prevState === undefined || state !== this.prevState) ) {
-						this.set('State', state);
+						if (!this.blocked) {
+							this.set('PrimaryState', state);
+						}
+						this.set('SecondaryState', state);
 						this.prevState = state;
 					} 
 
@@ -22014,8 +22022,8 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 					return o;
 				},
 
-
-
+				blocked: false,
+				immediateValue:0,
 
 				handleClick: function() {
 					var cmd = this.element.Command;
@@ -22044,6 +22052,22 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 				handleSlide: function(e) {
 					var cmd = this.element.Command;
 					cmd.params = [e.target.immediateValue.toString()];
+
+					this.blocked = true;
+
+					var pkg = {
+						type: 'cmd',
+						data: cmd, 
+						to: this.node.Uuid
+					};
+
+					app.fire('ws-send', pkg);
+				},
+				handleSlideEnd: function(e) {
+					var cmd = this.element.Command;
+					cmd.params = [e.target.immediateValue.toString()];
+
+					this.blocked = false;
 
 					var pkg = {
 						type: 'cmd',

@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"strconv"
 	"time"
 
 	log "github.com/cihub/seelog"
@@ -82,7 +83,7 @@ func main() { /*{{{*/
 		Name: "Example slider",
 		Command: &protocol.Command{
 			Cmd:  "slider",
-			Args: []string{"1"},
+			Args: []string{"3"},
 		},
 		Feedback: "Devices[3].State",
 	})
@@ -135,6 +136,7 @@ func main() { /*{{{*/
 
 	state.AddDevice("1", "Dev1", false)
 	state.AddDevice("2", "Dev2", true)
+	state.AddDevice("3", "Slider", 33)
 
 	go startToggler(node, connection, "1", time.Second)
 
@@ -190,12 +192,20 @@ func processCommand(node *protocol.Node, connection basenode.Connection, cmd pro
 			log.Info("got off")
 			device.SetState(false)
 			connection.Send(node.Node())
+		case "slider":
+			i, err := strconv.Atoi(cmd.Params[0])
+			if err == nil {
+				device.SetState(i)
+				connection.Send(node.Node())
+			}
 		case "toggle":
 			log.Info("got toggle")
-			if device.State {
-				device.SetState(false)
-			} else {
-				device.SetState(true)
+			if v, ok := device.State.(bool); ok {
+				if v {
+					device.SetState(false)
+				} else {
+					device.SetState(true)
+				}
 			}
 			connection.Send(node.Node())
 		}
@@ -207,10 +217,12 @@ func startToggler(node *protocol.Node, connection basenode.Connection, deviceNam
 		<-time.After(interval)
 		if s, ok := node.State().(*State); ok {
 			device := s.Device(deviceName)
-			if device.State {
-				device.SetState(false)
-			} else {
-				device.SetState(true)
+			if v, ok := device.State.(bool); ok {
+				if v {
+					device.SetState(false)
+				} else {
+					device.SetState(true)
+				}
 			}
 
 			connection.Send(node.Node())
