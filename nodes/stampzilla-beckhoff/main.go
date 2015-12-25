@@ -8,6 +8,7 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	"strconv"
 
 	"github.com/stamp/goADS"
 
@@ -21,23 +22,25 @@ var node *protocol.Node
 var state *State = &State{}
 var serverConnection basenode.Connection
 var symbols map[string]goADS.ADSSymbol
+var settings *Config
 
 func main() {
 	config := basenode.NewConfig()
 	basenode.SetConfig(config)
 
-	settings := NewConfig()
+	settings = NewConfig()
 	SetConfig(settings)
 
 	flag.Parse()
 
 	goADS.UseLogger(log.Current)
-	log.Info("Starting Aquarium node")
+	log.Info("Starting beckhoff node")
 
 	// Create new node description
 	node = protocol.NewNode("beckhoff")
 	state.Values = make(map[string]StateValue, 0)
 	node.SetState(state)
+
 
 	serverConnection = basenode.Connect()
 	go monitorState(serverConnection)
@@ -55,13 +58,18 @@ func main() {
 
 	go shutdownRoutine(connection)
 
+	connection.Connect()
+
 	if settings.Tpy != "" {
 		symbols = connection.ParseTPY(settings.Tpy)
 	} else {
 		symbols, _ = connection.UploadSymbolInfo()
-	}
 
-	connection.Connect()
+		log.Debug("Symbols uploaded:");
+		for key, _ := range(symbols) {
+			log.Debug(" - ", key);
+		}
+	}
 
 	// Check what device are we connected to/*{{{*/
 	data, e := connection.ReadDeviceInfo()
@@ -71,13 +79,24 @@ func main() {
 	}
 	log.Infof("Successfully conncected to \"%s\" version %d.%d (build %d)", data.DeviceName, data.MajorVersion, data.MinorVersion, data.BuildVersion) /*}}}*/
 
-	iface, ok := symbols[".Interface"]
-	if ok {
-		iface.AddDeviceNotification(func(symbol *goADS.ADSSymbol) {
-			WalkSymbol(symbol)
-			serverConnection.Send(node.Node())
-		})
+	for variableName, variable := range(settings.Variables) {
+		foundSymbol := Find(variableName)
+		if foundSymbol != nil {
+			foundSymbol.Read();
+			WalkSymbol(variable, foundSymbol)
+
+			variable.symbol = foundSymbol
+			variable.symbolCtrl = Find(variable.Ctrl)
+
+			foundSymbol.AddDeviceNotification(func(symbol *goADS.ADSSymbol) {
+				WalkSymbol(variable, symbol)
+				serverConnection.Send(node.Node())
+			})
+			
+		}
 	}
+	
+	serverConnection.Send(node.Node())
 
 	go func() {
 		for {
@@ -91,6 +110,38 @@ func main() {
 	WaitGroup.Wait()
 	connection.Wait()
 }
+
+func Find(variableName string) *goADS.ADSSymbol {
+	for _, symbol := range(symbols) {
+		if len(variableName) < len(symbol.FullName) {
+			continue
+		}
+		if symbol.FullName != variableName[:len(symbol.FullName)] {
+			continue;
+		}
+
+		found := symbol.Find(variableName)
+		if len(found) > 0 {
+			return found[0];
+		}
+	}
+
+	return nil;
+}
+
+/*
+type Symbol goADS.ADSSymbol;
+func (data *Symbol) Find(name string) *Symbol {
+	/*if len(data.Childs) == 0 {
+
+	} else {
+		for i, _ := range data.Childs {
+		}
+	}
+
+	return nil;
+}
+*/
 
 // WORKER that monitors the current connection state
 func monitorState(connection basenode.Connection) {
@@ -116,29 +167,50 @@ func processCommand(cmd protocol.Command) error {
 	switch cmd.Cmd {
 	case "set":
 		name := strings.Replace(cmd.Args[0], "_", ".", -1)
-		iface, ok := symbols[".Interface"]
+		variable, ok := settings.Variables[name]
 		if ok {
-			log.Info("Found .interface")
+			var target string
+
 			if len(cmd.Params) == 1 {
-				WriteSymbol(&iface, name, cmd.Params[0])
+				target = cmd.Params[0]
+				//WriteSymbol(&iface, name, cmd.Params[0])
 			} else if len(cmd.Args) == 2 {
-				WriteSymbol(&iface, name, cmd.Args[1])
+				target = cmd.Args[1]
+				//WriteSymbol(&iface, name, cmd.Args[1])
+			}
+
+
+			if variable.Max != 0 || variable.Min != 0 {
+				i, _ := strconv.Atoi(target)
+				var tmp float64;
+				tmp = (float64(i)/100) * (variable.Max - variable.Min) + variable.Min;
+				i = int(tmp)
+				target = strconv.Itoa(i);
+			}
+
+			if variable.symbol != nil {
+				variable.symbol.Write(target)
+			}
+
+			if variable.symbolCtrl != nil {
+				variable.symbolCtrl.Write(target)
 			}
 		} else {
-			log.Critical("Tag .interface not found")
+			log.Warn("Tag ",name," not found in beckhoff.json")
 		}
 	}
 
 	return nil
 }
 
-func WalkSymbol(data *goADS.ADSSymbol) { /*{{{*/
+func WalkSymbol(variable *Variable, data *goADS.ADSSymbol) { /*{{{*/
 	if len(data.Childs) == 0 {
+
 		name := strings.Replace(data.FullName, ".", "_", -1)
 		val, ok := state.Values[name]
 
 		if !ok {
-			val = StateValue{}
+			val = StateValue{symbol: data}
 		}
 
 		if !data.Valid {
@@ -148,10 +220,34 @@ func WalkSymbol(data *goADS.ADSSymbol) { /*{{{*/
 			val.String = data.Value
 			val.Bool = data.Value == "True"
 
-			if !ok {
+			switch(data.DataType) {
+			case "UINT":
+				val.Int, _ = strconv.Atoi(data.Value)
+				if variable.Max != 0 || variable.Min != 0 {
+					var tmp float64;
+					tmp = (float64(val.Int)-variable.Min) / (variable.Max - variable.Min) * 100;
+					val.Int = int(tmp);
+					val.Bool = (float64(val.Int)-variable.Min) > 0
+				}
+			}
+		}
+
+		if !ok {
+			switch(variable.Type) {
+			case "slider":
+				node.AddElement(&protocol.Element{
+					Type: protocol.ElementTypeSlider,
+					Name: variable.Name,
+					Command: &protocol.Command{
+						Cmd:  "set",
+						Args: []string{name},
+					},
+					Feedback: "Values." + name + ".Int",
+				})
+			case "toggle":
 				node.AddElement(&protocol.Element{
 					Type: protocol.ElementTypeToggle,
-					Name: data.FullName,
+					Name: variable.Name,
 					Command: &protocol.Command{
 						Cmd:  "set",
 						Args: []string{name},
@@ -165,7 +261,7 @@ func WalkSymbol(data *goADS.ADSSymbol) { /*{{{*/
 	} else {
 		//log.Error("TYPE (", data.Area, ":", data.Offset, "): ", path, " [", data.DataType, "] = ", data.Value)
 		for i, _ := range data.Childs {
-			WalkSymbol(data.Childs[i].Self)
+			WalkSymbol(variable, data.Childs[i].Self)
 		}
 	}
 }                                                            /*}}}*/

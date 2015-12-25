@@ -6,6 +6,8 @@ import (
 	"flag"
 	"os"
 
+	"github.com/stamp/goADS"
+
 	log "github.com/cihub/seelog"
 )
 
@@ -16,7 +18,7 @@ var port int
 var tpy string
 
 func init() {
-	flag.StringVar(&ip, "ads-ip","","the address to the AMS router")
+    flag.StringVar(&ip, "ads-ip","","the address to the AMS router")
     flag.StringVar(&netid, "ads-netid","","AMS NetID of the target")
     flag.IntVar(&port, "ads-port",801,"AMS Port of the target")
     flag.StringVar(&tpy, "tpy","","Xml program description file (.tpy)")
@@ -79,6 +81,18 @@ type Config struct {
 	Netid string
 	Port int
 	Tpy string
+	Variables map[string]*Variable
+}
+
+type Variable struct {
+	Ctrl string
+	Name string
+	Type string
+	Min float64
+	Max float64
+
+	symbol *goADS.ADSSymbol
+	symbolCtrl *goADS.ADSSymbol
 }
 
 func (c *Config) Merge(c2 *Config) {
@@ -95,5 +109,7 @@ func (c *Config) Merge(c2 *Config) {
 	if c2.Tpy != "" {
 		c.Tpy = c2.Tpy
 	}
+
+	c.Variables = c2.Variables
 
 }
