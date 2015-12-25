@@ -11,7 +11,7 @@ type Node struct { /*{{{*/
 	Host     string
 	Actions  []*Action
 	Layout   []*Layout
-	Elements []*Element
+	Elements_ []*Element `json:"Elements"`
 	State_   interface{} `json:"State"`
 	sync.RWMutex
 } /*}}}*/
@@ -24,7 +24,9 @@ func NewNode(name string) *Node {
 	return &Node{
 		Name_:   name,
 		Actions: []*Action{},
-		Layout:  []*Layout{}}
+		Elements_: []*Element{},
+		Layout:  []*Layout{},
+	}
 }
 
 func (n *Node) AddAction(id, name string, args []string) {
@@ -45,7 +47,7 @@ func (n *Node) AddLayout(id, atype, action, using string, filter []string, secti
 
 func (n *Node) AddElement(el *Element) {
 	n.Lock()
-	n.Elements = append(n.Elements, el)
+	n.Elements_ = append(n.Elements_, el)
 	n.Unlock()
 }
 
@@ -58,6 +60,16 @@ func (n *Node) State() interface{} {
 	n.RLock()
 	defer n.RUnlock()
 	return n.State_
+}
+func (n *Node) SetElements(elements []*Element) {
+	n.Lock()
+	n.Elements_ = elements
+	n.Unlock()
+}
+func (n *Node) Elements() []*Element {
+	n.RLock()
+	defer n.RUnlock()
+	return n.Elements_
 }
 func (n *Node) Node() *Node {
 	n.RLock()

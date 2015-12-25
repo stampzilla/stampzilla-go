@@ -132,6 +132,8 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 
 			existingNode.SetState(node.State())
 			ns.updateState(logicChannel, existingNode)
+
+			existingNode.SetElements(node.Elements());
 		} else {
 			name = node.Name()
 			uuid = node.Uuid()

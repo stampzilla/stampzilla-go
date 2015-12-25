@@ -17,6 +17,10 @@ var nodes *Nodes
 type Node interface {
 	SetState(interface{})
 	State() interface{}
+
+	SetElements([]*protocol.Element)
+	Elements() []*protocol.Element
+
 	Uuid() string
 	Name() string
 	SetUuid(string)
