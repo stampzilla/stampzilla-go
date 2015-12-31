@@ -46,5 +46,6 @@ func (p *pause) UnmarshalJSON(b []byte) (err error) {
 	cmd := localCmd{}
 	err = json.Unmarshal(b, &cmd)
 	p.SetDuration(cmd.Pause)
+	p.Pause = cmd.Pause
 	return
 }
