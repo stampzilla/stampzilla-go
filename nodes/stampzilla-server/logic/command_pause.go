@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"encoding/json"
 	"time"
 
 	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
@@ -36,4 +37,14 @@ func (p *pause) SetDuration(duration string) error {
 	p.Pause = duration
 	p.pause = d
 	return nil
+}
+
+func (p *pause) UnmarshalJSON(b []byte) (err error) {
+	type localCmd struct {
+		Pause string `json:"pause"`
+	}
+	cmd := localCmd{}
+	err = json.Unmarshal(b, &cmd)
+	p.SetDuration(cmd.Pause)
+	return
 }
