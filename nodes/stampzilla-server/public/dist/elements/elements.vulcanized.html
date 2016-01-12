@@ -22506,7 +22506,7 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 </dom-module>
 <dom-module id="favorites-storage" assetpath="favorites-storage/">
 	<template>
-      <iron-localstorage name="stampzilla-favorites" value="{{favorites}}"></iron-localstorage>
+      <iron-localstorage name="stampzilla-favorites" value="{{favorites}}" on-iron-localstorage-load-empty="initializeDefaultValue"></iron-localstorage>
 	</template>
 
 	<script>
@@ -22518,12 +22518,11 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 			type: Object,
 			notify: true,
 			value: {}
-		  },
-
-		  error: {
-			type: Object,
-			observer: 'failed'
 		  }
+		},
+		initializeDefaultValue: function() {
+			console.log('initialize favorite localstorage');
+			this.value = {};
 		}
 	  });
 	})();

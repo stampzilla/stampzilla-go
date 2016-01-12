@@ -3,7 +3,8 @@
 	<template>
       <iron-localstorage
         name="stampzilla-favorites"
-        value="{{favorites}}"
+		value="{{favorites}}"
+		on-iron-localstorage-load-empty="initializeDefaultValue"
       ></iron-localstorage>
 	</template>
 
@@ -16,12 +17,11 @@
 			type: Object,
 			notify: true,
 			value: {}
-		  },
-
-		  error: {
-			type: Object,
-			observer: 'failed'
 		  }
+		},
+		initializeDefaultValue: function() {
+			console.log('initialize favorite localstorage');
+			this.value = {};
 		}
 	  });
 	})();
