@@ -8,7 +8,7 @@
 		</style>
 		Nod: <span class="paper-font-body1">{{ node.Name }}</span>
 		<template is="dom-repeat" items="{{node.Elements}}">
-			<node-element node=[[node]] element={{item}}></node-element>
+			<node-element node=[[node]] element={{item}} favorites="{{favorites}}"></node-element>
 		</template>
 
 	</template>
@@ -21,9 +21,15 @@
 					node: {
 						type: Object,
 						notify: true,
+					},
+					favorites: {
+						type: Object,
+						notify: true,
 					}
 				},
+
 				ready: function() {
+					//this.favoritesOut = {test: 123};
 				}
 			});
 		})();

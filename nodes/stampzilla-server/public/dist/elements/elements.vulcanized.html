@@ -8,14 +8,6 @@ Code distributed by Google as part of the polymer project is also
 subject to an additional IP rights grant found at http://polymer.github.io/PATENTS
 --><!--
 @license
-Copyright (c) 2014 The Polymer Project Authors. All rights reserved.
-This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
-The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
-The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
-Code distributed by Google as part of the polymer project is also
-subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
---><!--
-@license
 Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
 This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
 The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
@@ -1298,9 +1290,7 @@ this._marshalHostAttributes();
 this._setupDebouncers();
 this._marshalBehaviors();
 }
-});</script>
-
-<script>Polymer.Base._addFeature({
+});</script><script>Polymer.Base._addFeature({
 _prepTemplate: function () {
 if (this._template === undefined) {
 this._template = Polymer.DomModule.import(this.is, 'template');
@@ -3196,9 +3186,7 @@ this._tryReady();
 },
 _marshalBehavior: function (b) {
 }
-});</script>
-
-<script>Polymer.nar = [];
+});</script><script>Polymer.nar = [];
 Polymer.Annotations = {
 parseAnnotations: function (template) {
 var list = [];
@@ -7874,7 +7862,6 @@ this._insertChildren();
 this.fire('dom-change');
 }
 });</script>
-
 
 <script>
 
@@ -14918,30 +14905,15 @@ module.exports = Array.isArray || function (arr) {
     // client-side router inspired by the Express router
     // More info: https://visionmedia.github.io/page.js/
     page('/', function () {
-      app.route = 'home';
-    });
-
-    page('/users', function () {
-      app.route = 'users';
-    });
-
-    page('/users/:name', function (data) {
-      app.route = 'user-info';
-      app.params = data.params;
-    });
-
-	page('/nodes', function () {
-      app.route = 'nodes';
+		app.route = 'home';
+		app.params = {};
     });
 
     page('/nodes/:name', function (data) {
-      app.route = 'node-info';
-      app.params = data.params;
+		app.route = 'node-info';
+		app.params = data.params;
     });
 
-    page('/contact', function () {
-      app.route = 'contact';
-    });
 
     // add #! before urls
     page({
@@ -14989,6 +14961,14 @@ module.exports = Array.isArray || function (arr) {
     --menu-link-color: #111111;
   }
 
+  paper-toolbar iron-selector * {
+	display:none;
+}
+
+  paper-toolbar iron-selector .iron-selected {
+	display:block;
+  }
+
   /* General styles */
 
   #drawerToolbar {
@@ -15010,16 +14990,19 @@ module.exports = Array.isArray || function (arr) {
     background: white;
   }
 
-  paper-menu iron-icon {
+  paper-menu iron-icon,
+  nodes-list /deep/ iron-icon {
     margin-right: 33px;
     opacity: 0.54;
   }
 
-  .paper-menu > .iron-selected {
+  .paper-menu > .iron-selected,
+  nodes-list /deep/ .paper-menu > .iron-selected {
     color: var(--default-primary-color);
   }
 
-  paper-menu a {
+  paper-menu a,
+  nodes-list /deep/ a {
     text-decoration: none;
     color: var(--menu-link-color);
     display: -ms-flexbox;
@@ -15040,6 +15023,7 @@ module.exports = Array.isArray || function (arr) {
     min-height: 48px;
     padding: 0 16px;
   }
+  
 
   paper-toolbar.tall .app-name {
     font-size: 40px;
@@ -16817,7 +16801,176 @@ module.exports = Array.isArray || function (arr) {
 })();
 
 </script>
-<dom-module id="paper-drawer-panel" assetpath="../bower_components/paper-drawer-panel/">
+<dom-module id="iron-localstorage" assetpath="../bower_components/iron-localstorage/"></dom-module><script>
+
+  Polymer({
+    is: 'iron-localstorage',
+
+    properties: {
+      /**
+       * localStorage item key
+       */
+      name: {
+        type: String,
+        value: ''
+      },
+      /**
+       * The data associated with this storage.
+       * If set to null item will be deleted.
+       * @type {*}
+       */
+      value: {
+        type: Object,
+        notify: true
+      },
+
+      /**
+       * If true: do not convert value to JSON on save/load
+       */
+      useRaw: {
+        type: Boolean,
+        value: false
+      },
+
+      /**
+       * Value will not be saved automatically if true. You'll have to do it manually with `save()`
+       */
+      autoSaveDisabled: {
+        type: Boolean,
+        value: false
+      },
+      /**
+       * Last error encountered while saving/loading items
+       */
+      errorMessage: {
+        type: String,
+        notify: true
+      },
+
+      /** True if value has been loaded */
+      _loaded: {
+        type: Boolean,
+        value: false
+      }
+    },
+
+    observers: [
+      '_debounceReload(name,useRaw)',
+      '_trySaveValue(autoSaveDisabled)',
+      '_trySaveValue(value.*)'
+    ],
+
+    ready: function() {
+      this._boundHandleStorage = this._handleStorage.bind(this);
+    },
+
+    attached: function() {
+      window.addEventListener('storage', this._boundHandleStorage);
+    },
+
+    detached: function() {
+      window.removeEventListener('storage', this._boundHandleStorage);
+    },
+
+    _handleStorage: function(ev) {
+      if (ev.key == this.name) {
+        this._load(true);
+      }
+    },
+
+    _trySaveValue: function() {
+      if (this._doNotSave) {
+        return;
+      }
+      if (this._loaded && !this.autoSaveDisabled) {
+        this.debounce('save', this.save);
+      }
+    },
+
+    _debounceReload: function() {
+      this.debounce('reload', this.reload);
+    },
+
+    /**
+     * Loads the value again. Use if you modify
+     * localStorage using DOM calls, and want to
+     * keep this element in sync.
+     */
+    reload: function() {
+      this._loaded = false;
+      this._load();
+    },
+
+    /**
+     * loads value from local storage
+     * @param {boolean=} externalChange true if loading changes from a different window
+     */
+    _load: function(externalChange) {
+      var v = window.localStorage.getItem(this.name);
+
+      if (v === null) {
+        this._loaded = true;
+        this._doNotSave = true;  // guard for save watchers
+        this.value = null;
+        this._doNotSave = false;
+        this.fire('iron-localstorage-load-empty', { externalChange: externalChange});
+      } else {
+        if (!this.useRaw) {
+          try { // parse value as JSON
+            v = JSON.parse(v);
+          } catch(x) {
+            this.errorMessage = "Could not parse local storage value";
+            console.error("could not parse local storage value", v);
+            v = null;
+          }
+        }
+        this._loaded = true;
+        this._doNotSave = true;
+        this.value = v;
+        this._doNotSave = false;
+        this.fire('iron-localstorage-load', { externalChange: externalChange});
+      }
+    },
+
+    /**
+     * Saves the value to localStorage. Call to save if autoSaveDisabled is set.
+     * If `value` is null or undefined, deletes localStorage.
+     */
+    save: function() {
+      var v = this.useRaw ? this.value : JSON.stringify(this.value);
+      try {
+        if (this.value === null || this.value === undefined) {
+          window.localStorage.removeItem(this.name);
+        } else {
+          window.localStorage.setItem(this.name, /** @type {string} */ (v));
+        }
+      }
+      catch(ex) {
+        // Happens in Safari incognito mode,
+        this.errorMessage = ex.message;
+        console.error("localStorage could not be saved. Safari incoginito mode?", ex);
+      }
+    }
+
+    /**
+     * Fired when value loads from localStorage.
+     *
+     * @event iron-localstorage-load
+     * @param {{externalChange:boolean}} detail -
+     *     externalChange: true if change occured in different window.
+     */
+
+    /**
+     * Fired when loaded value does not exist.
+     * Event handler can be used to initialize default value.
+     *
+     * @event iron-localstorage-load-empty
+     * @param {{externalChange:boolean}} detail -
+     *     externalChange: true if change occured in different window.
+     */
+  });
+
+</script><dom-module id="paper-drawer-panel" assetpath="../bower_components/paper-drawer-panel/">
   <template>
     <style>
       :host {
@@ -21847,25 +22000,14 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 </dom-module>
 <dom-module id="nodes-list" assetpath="nodes-list/">
 	<template>
-		<style>
-			:host {
-				display: block;
-			}
-		</style>
-		<ul>
-			<template is="dom-repeat" items="{{nodes}}">
-				<li>
-					<a href="{{_getHref(item.Uuid)}}">
-						<span class="paper-font-body1">{{item.Name}}</span>
-					</a>
-
-					<span class="paper-font-body1">{{item.Host}}</span>
-					<span class="paper-font-body1" style="float:right;">
-						<time-ago datetime="{{item.LastSeen}}" refresh="1000"></time-ago>
-					</span>
-				</li>
-			</template>
-		</ul>
+		<paper-menu class="list" attr-for-selected="data-uuid" selected="[[selectedLocal]]">
+		<template is="dom-repeat" items="{{nodes}}">
+			<a data-uuid$="[[item.Uuid]]" href="{{_getHref(item.Uuid)}}">
+				<iron-icon icon="label"></iron-icon>
+				<span>{{item.Name}}</span>
+			</a>
+		</template>
+		</paper-menu>
 	</template>
 
 	<script>
@@ -21876,26 +22018,38 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 					nodes: {
 						type: Array,
 						notify: true,
-						observer: 'newMessage'
+					},
+					selected: {
+						type: String,
+						notify: true
+					},
+					route: {
+						type: String,
+						notify: true
+					},
+					selectedLocal: {
+						type: String
 					}
 				},
-				//observers: [
-				//	'nodesChanged(nodes.*)'
-				//],
+				observers: [
+					'selectedChanged(selected,route)',
+					'triggerSort(nodes)'
+				],
 				_getHref: function(myAttrib) {
 					return '/nodes/' + myAttrib;
 				},
-				newMessage: function(d) {
-					console.log('new nodes',d);
-				},
-				//nodesChanged: function(d){
-			//		console.log("nodes changed",d);
-			//	},
-				ready: function() {
-					//var self = this;
-					//NOTE we must use notifyPath(path, value) OR set(path, value) and we dont need custom observers. dom-repeat is happy just using set or notifyPath
-					//setInterval(function(){self.set('nodes.0.Name', 'TESTAR');},3000);
+				selectedChanged: function() {
+					if ( this.route !== 'node-info' ) {
+						this.selectedLocal = '';
+						return;
+					}
 
+					this.selectedLocal = this.selected;
+				},
+				triggerSort: function() {
+					this.nodes.sort(function (a, b) {
+						return a.Name.localeCompare(b.Name);
+					});
 				}
 			});
 		})();
@@ -21961,6 +22115,7 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 				</div>
 				<div id="title">{{element.Name}}</div>
 			</template>
+			<iron-icon icon="[[favoriteIcon]]" on-click="toggleFavorite"></iron-icon>
 	</template>
 	<script>
 		(function () {
@@ -21975,13 +22130,33 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 					node: {
 						type: Object,
 						notify: true
-					}
+					},
+					favorite: {
+						type: Boolean,
+						notify: true,
+						value: false
+					},
+					favoriteIcon: {
+						type: String,
+						notify: true,
+						value: 'star-border'
+					},
+				  	favorites: {
+						type: Object,
+						notify: true
+				  	},
 				},
 				observers: [
-					'stateChanged(node)',
-					'elementChanged(element)'
+					'nodeChanged(node)',
+					'elementChanged(element)',
+					'favoriteChanged(favorite)',
+					'favoritesChanged(favorites)'
 				],
-				stateChanged: function() {
+				ready: function() {
+					this.updateType();
+				},
+				nodeChanged: function() {
+					this.favoritesChanged();
 				},
 				elementChanged: function() {
 					if(!this.node){
@@ -21998,14 +22173,30 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 						this.prevState = state;
 					} 
 
-					this.ready();
+					this.updateType();
 				},
-				ready: function() {
+				updateType: function() {
 					this.isText = this.element.Type === 0;
 					this.isButton = this.element.Type === 1;
 					this.isToggle = this.element.Type === 2;
 					this.isSlider = this.element.Type === 3;
 					this.isColorpick = this.element.Type === 4;
+				},
+				toggleFavorite: function() {
+					this.favorite = !this.favorite;
+					
+					var tmp = this.favorites;
+					this.favorites[this.node.Uuid+':'+this.element.Name] = this.favorite;
+					this.set('favorites',{});
+					this.set('favorites',tmp);
+				},
+				favoriteChanged: function() {
+					this.favoriteIcon = this.favorite?'star':'star-border';
+				},
+				favoritesChanged: function() {
+					if ( this.node !== undefined && this.element !== undefined ) {
+						this.favorite = ( this.favorites[this.node.Uuid+':'+this.element.Name] !== undefined && this.favorites[this.node.Uuid+':'+this.element.Name] );
+					}
 				},
 				byString: function(o,s){
 					s = s.replace(/\[(\w+)\]/g, '.$1'); // convert indexes to properties
@@ -22092,7 +22283,7 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 		</style>
 		Nod: <span class="paper-font-body1">{{ node.Name }}</span>
 		<template is="dom-repeat" items="{{node.Elements}}">
-			<node-element node="[[node]]" element="{{item}}"></node-element>
+			<node-element node="[[node]]" element="{{item}}" favorites="{{favorites}}"></node-element>
 		</template>
 
 	</template>
@@ -22105,9 +22296,15 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 					node: {
 						type: Object,
 						notify: true,
+					},
+					favorites: {
+						type: Object,
+						notify: true,
 					}
 				},
+
 				ready: function() {
+					//this.favoritesOut = {test: 123};
 				}
 			});
 		})();
@@ -22164,6 +22361,50 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 	</script>
 
 </dom-module>
+<dom-module id="node-favorites" assetpath="node-favorites/">
+	<template>
+		<style>
+			:host {
+				@apply(--layout-flex);
+				display: block;
+			}
+		</style>
+		<template is="dom-repeat" items="{{nodes}}" as="node">
+			<h1>{{ node.Name }}</h1>
+			<template is="dom-repeat" items="{{node.Elements}}">
+				<template is="dom-if" if="_checkFavorite(item)">
+					<node-element node="[[node]]" element="{{item}}" favorites="{{favorites}}">
+					</node-element>
+				</template>
+			</template>
+		</template>
+
+	</template>
+
+	<script>
+		(function () {
+			Polymer({
+				is: 'node-favorites',
+				properties: {
+					nodes: {
+						type: Object,
+						notify: true,
+					},
+					favorites: {
+						type: Object,
+						notify: true,
+					}
+				},
+				_checkFavorite: function(item) {
+					console.log(item);
+					return true;
+					//this.favoritesOut = {test: 123};
+				}
+			});
+		})();
+	</script>
+
+</dom-module>
 <dom-module id="ws-data" assetpath="ws-data/">
 	<template>
 		<style>
@@ -22208,12 +22449,9 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 				},
 				//https://www.polymer-project.org/1.0/docs/devguide/properties.html 
 				newMessage: function(d) {
-					console.log(d);
-
 					if(d.type === 'all'){
 						var ts = moment().format('YYYY-MM-DD HH:mm:ss');
-						console.log(ts);
-
+						
 						var tmp = this._toArray(d.data);
 						tmp.forEach(function(el,index){
 							tmp[index].LastSeen = ts;
@@ -22265,5 +22503,30 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 		})();
 	</script>
 
+</dom-module>
+<dom-module id="favorites-storage" assetpath="favorites-storage/">
+	<template>
+      <iron-localstorage name="stampzilla-favorites" value="{{favorites}}"></iron-localstorage>
+	</template>
+
+	<script>
+	(function () {
+	  Polymer({
+		is: 'favorites-storage',
+		properties: {
+		  favorites: {
+			type: Object,
+			notify: true,
+			value: {}
+		  },
+
+		  error: {
+			type: Object,
+			observer: 'failed'
+		  }
+		}
+	  });
+	})();
+	</script>
 </dom-module>
 </div></body></html>

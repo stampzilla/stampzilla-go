@@ -1,0 +1,29 @@
+
+<dom-module id="favorites-storage">
+	<template>
+      <iron-localstorage
+        name="stampzilla-favorites"
+        value="{{favorites}}"
+      ></iron-localstorage>
+	</template>
+
+	<script>
+	(function () {
+	  Polymer({
+		is: 'favorites-storage',
+		properties: {
+		  favorites: {
+			type: Object,
+			notify: true,
+			value: {}
+		  },
+
+		  error: {
+			type: Object,
+			observer: 'failed'
+		  }
+		}
+	  });
+	})();
+	</script>
+</dom-module>

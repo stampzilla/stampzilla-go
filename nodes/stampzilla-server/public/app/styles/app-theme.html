@@ -45,6 +45,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     --menu-link-color: #111111;
   }
 
+  paper-toolbar iron-selector * {
+	display:none;
+}
+
+  paper-toolbar iron-selector .iron-selected {
+	display:block;
+  }
+
   /* General styles */
 
   #drawerToolbar {
@@ -66,16 +74,19 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     background: white;
   }
 
-  paper-menu iron-icon {
+  paper-menu iron-icon,
+  nodes-list /deep/ iron-icon {
     margin-right: 33px;
     opacity: 0.54;
   }
 
-  .paper-menu > .iron-selected {
+  .paper-menu > .iron-selected,
+  nodes-list /deep/ .paper-menu > .iron-selected {
     color: var(--default-primary-color);
   }
 
-  paper-menu a {
+  paper-menu a,
+  nodes-list /deep/ a {
     text-decoration: none;
     color: var(--menu-link-color);
     display: -ms-flexbox;
@@ -96,6 +107,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     min-height: 48px;
     padding: 0 16px;
   }
+  
 
   paper-toolbar.tall .app-name {
     font-size: 40px;

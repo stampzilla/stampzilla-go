@@ -56,10 +56,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	</head>
 
 	<body unresolved class="fullbleed layout vertical">
+
 		<span id="browser-sync-binding"></span>
 		<template is="dom-bind" id="app">
+			<favorites-storage favorites="{{favs}}"></favorites-storage>
 			<!--<x-websocket json auto url="ws://{{wsLocation}}/socket"></x-websocket>-->
-			<ws-data nodes={{nodes}}></ws-data>
+			<ws-data nodes={{nodes}} url="ws://10.21.10.1:8080/socket"></ws-data>
 			<node-selector nodes={{nodes}} uuid={{params.name}} node={{node}}></node-selector>
 
 			<paper-drawer-panel id="paperDrawerPanel">
@@ -68,31 +70,18 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 					<!-- Drawer Toolbar -->
 					<paper-toolbar id="drawerToolbar">
-						<span class="paper-font-title">Menu</span>
+						<span class="paper-font-title">STAMPZILLA</span>
 					</paper-toolbar>
 
 					<!-- Drawer Content -->
 					<paper-menu class="list" attr-for-selected="data-route" selected="[[route]]">
 						<a data-route="home" href="/" on-click="onDataRouteClick">
-							<iron-icon icon="home"></iron-icon>
-							<span>Home</span>
-						</a>
-
-						<a data-route="nodes" href="/nodes" on-click="onDataRouteClick">
-							<iron-icon icon="info"></iron-icon>
-							<span>Nodes</span>
-						</a>
-
-						<a data-route="users" href="/users" on-click="onDataRouteClick">
-							<iron-icon icon="info"></iron-icon>
-							<span>Users</span>
-						</a>
-
-						<a data-route="contact" href="/contact" on-click="onDataRouteClick">
-							<iron-icon icon="mail"></iron-icon>
-							<span>Contact</span>
+							<iron-icon icon="star"></iron-icon>
+							<span>Favorites</span>
 						</a>
 					</paper-menu>
+
+					<nodes-list nodes={{nodes}} selected="[[params.name]]" route="[[route]]"></nodes-list>
 				</paper-scroll-header-panel>
 
 				<!-- Main Area -->
@@ -103,20 +92,22 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 						<paper-icon-button id="paperToggle" icon="menu" paper-drawer-toggle></paper-icon-button>
 						<span class="flex"></span>
 
-						<!-- Toolbar icons -->
-						<paper-icon-button icon="refresh"></paper-icon-button>
-						<paper-icon-button icon="search"></paper-icon-button>
-
 						<!-- Application name -->
 						<div class="middle middle-container center horizontal layout">
 							<div class="app-name">
-								{{selectedPage.title}}
+								<iron-selector attr-for-selected="data-route" selected="{{route}}">
+									<section data-route="home">Favorites</section>
+									<section data-route="node-info">{{node.Name}}</section>
+								</iron-selector>
 							</div>
 						</div>
 
 						<!-- Application sub title -->
 						<div class="bottom bottom-container center horizontal layout">
-							<div class="bottom-title paper-font-subhead">{{selectedPage.subtitle}}</div>
+							<iron-selector attr-for-selected="data-route" selected="{{route}}">
+								<div class="bottom-title paper-font-subhead" data-route="home">Stampzilla home automation</div>
+								<div class="bottom-title paper-font-subhead" data-route="node-info">UUID: {{node.Uuid}}</div>
+							</iron-selector>
 						</div>
 
 					</paper-toolbar>
@@ -125,71 +116,16 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 					<div class="content">
 						<iron-pages attr-for-selected="data-route" selected="{{route}}" selected-item="{{selectedPage}}">
 
-							<section data-route="home" title="stampzilla">
+							<section data-route="home">
 								<paper-material elevation="1">
-									<my-greeting></my-greeting>
-
-									<p class="paper-font-subhead">You now have:</p>
-									<my-list></my-list>
-
-									<p class="paper-font-body2">Looking for more Web App layouts? Check out our <a href="https://github.com/PolymerElements/app-layout-templates">layouts</a> collection. You can also <a href="http://polymerelements.github.io/app-layout-templates/">preview</a> them live.</p>
-								</paper-material>
-								<paper-material elevation="1">
-									<p class="paper-font-body2">This is another card.</p>
-								</paper-material>
-
-								<paper-material elevation="1" class="paper-font-body2">
-									<h1 id="license">License</h1>
-									<p>Everything in this repo is BSD style license unless otherwise specified.</p>
-									<p>Copyright (c) 2015 The Polymer Authors. All rights reserved.</p>
-									<p>Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:</p>
-									<ul>
-										<li>Redistributions of source code must retain the above copyright
-											notice, this list of conditions and the following disclaimer.</li>
-										<li>Redistributions in binary form must reproduce the above
-											copyright notice, this list of conditions and the following disclaimer
-											in the documentation and/or other materials provided with the
-											distribution.</li>
-										<li>Neither the name of Google Inc. nor the names of its
-											contributors may be used to endorse or promote products derived from
-											this software without specific prior written permission.</li>
-									</ul>
-									<p>THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</p>
-								</paper-material>
-
-							</section>
-
-							<section data-route="users" title="Users">
-								<paper-material elevation="1">
-									<h2 class="paper-font-display2">Users</h2>
-									<p>This is the users section</p>
-									<a href="/users/Rob">Rob</a>
+									<node-favorites nodes="{{nodes}}" favorites="{{favs}}"></node-favorites>
 								</paper-material>
 							</section>
 
-							<section data-route="user-info" title="User info">
-								<paper-material elevation="1">
-									<h2 class="paper-font-display2">
-										User:<span>{{params.name}}</span>
-									</h2>
-									<div>This is <span>{{params.name}}</span>'s section</div>
-								</paper-material>
-							</section>
-
-							<section data-route="nodes" title="Nodes">
-								<paper-material elevation="1">
-									<h2 class="paper-font-display2">Nodes</h2>
-									<nodes-list nodes={{nodes}}></nodes-list>
-								</paper-material>
-							</section>
-
-							<section 
-								data-route="node-info" 
-								title="[[node.Name]]" 
-								subtitle="[[node.Uuid]]">
+							<section data-route="node-info">
 
 								<paper-material elevation="1">
-									<node-elements node={{node}}></node-elements>
+									<node-elements node={{node}} favorites="{{favs}}"></node-elements>
 								</paper-material>
 								<paper-material elevation="1">
 									<x-json data="{{node.State}}"></x-json>
@@ -197,13 +133,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 								<paper-material elevation="1">
 									<div><time-ago datetime="{{node.LastSeen}}" refresh="1000"></time-ago></div>
 									<div>{{node.Host}}</div>
-								</paper-material>
-							</section>
-
-							<section data-route="contact" title="Contact">
-								<paper-material elevation="1">
-									<h2 class="paper-font-display2">Contact</h2>
-									<p>This is the contact section</p>
 								</paper-material>
 							</section>
 

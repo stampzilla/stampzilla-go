@@ -63,6 +63,7 @@
 				</div>
 				<div id="title">{{element.Name}}</div>
 			</template>
+			<iron-icon icon="[[favoriteIcon]]" on-click="toggleFavorite"></iron-icon>
 	</template>
 	<script>
 		(function () {
@@ -77,13 +78,33 @@
 					node: {
 						type: Object,
 						notify: true
-					}
+					},
+					favorite: {
+						type: Boolean,
+						notify: true,
+						value: false
+					},
+					favoriteIcon: {
+						type: String,
+						notify: true,
+						value: 'star-border'
+					},
+				  	favorites: {
+						type: Object,
+						notify: true
+				  	},
 				},
 				observers: [
-					'stateChanged(node)',
-					'elementChanged(element)'
+					'nodeChanged(node)',
+					'elementChanged(element)',
+					'favoriteChanged(favorite)',
+					'favoritesChanged(favorites)'
 				],
-				stateChanged: function() {
+				ready: function() {
+					this.updateType();
+				},
+				nodeChanged: function() {
+					this.favoritesChanged();
 				},
 				elementChanged: function() {
 					if(!this.node){
@@ -100,14 +121,30 @@
 						this.prevState = state;
 					} 
 
-					this.ready();
+					this.updateType();
 				},
-				ready: function() {
+				updateType: function() {
 					this.isText = this.element.Type === 0;
 					this.isButton = this.element.Type === 1;
 					this.isToggle = this.element.Type === 2;
 					this.isSlider = this.element.Type === 3;
 					this.isColorpick = this.element.Type === 4;
+				},
+				toggleFavorite: function() {
+					this.favorite = !this.favorite;
+					
+					var tmp = this.favorites;
+					this.favorites[this.node.Uuid+':'+this.element.Name] = this.favorite;
+					this.set('favorites',{});
+					this.set('favorites',tmp);
+				},
+				favoriteChanged: function() {
+					this.favoriteIcon = this.favorite?'star':'star-border';
+				},
+				favoritesChanged: function() {
+					if ( this.node !== undefined && this.element !== undefined ) {
+						this.favorite = ( this.favorites[this.node.Uuid+':'+this.element.Name] !== undefined && this.favorites[this.node.Uuid+':'+this.element.Name] );
+					}
 				},
 				byString: function(o,s){
 					s = s.replace(/\[(\w+)\]/g, '.$1'); // convert indexes to properties

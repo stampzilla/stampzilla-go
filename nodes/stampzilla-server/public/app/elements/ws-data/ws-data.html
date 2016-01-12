@@ -42,12 +42,9 @@
 				},
 				//https://www.polymer-project.org/1.0/docs/devguide/properties.html 
 				newMessage: function(d) {
-					console.log(d);
-
 					if(d.type === 'all'){
 						var ts = moment().format('YYYY-MM-DD HH:mm:ss');
-						console.log(ts);
-
+						
 						var tmp = this._toArray(d.data);
 						tmp.forEach(function(el,index){
 							tmp[index].LastSeen = ts;

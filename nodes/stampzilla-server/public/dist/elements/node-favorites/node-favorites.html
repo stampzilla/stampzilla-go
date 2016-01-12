@@ -1,0 +1,44 @@
+<dom-module id="node-favorites">
+	<template>
+		<style>
+			:host {
+				@apply(--layout-flex);
+				display: block;
+			}
+		</style>
+		<template is="dom-repeat" items="{{nodes}}" as="node">
+			<h1>{{ node.Name }}</h1>
+			<template is="dom-repeat" items="{{node.Elements}}">
+				<template is="dom-if" if="_checkFavorite(item)">
+					<node-element node=[[node]] element={{item}} favorites="{{favorites}}">
+					</node-element>
+				</template>
+			</template>
+		</template>
+
+	</template>
+
+	<script>
+		(function () {
+			Polymer({
+				is: 'node-favorites',
+				properties: {
+					nodes: {
+						type: Object,
+						notify: true,
+					},
+					favorites: {
+						type: Object,
+						notify: true,
+					}
+				},
+				_checkFavorite: function(item) {
+					console.log(item);
+					return true;
+					//this.favoritesOut = {test: 123};
+				}
+			});
+		})();
+	</script>
+
+</dom-module>
