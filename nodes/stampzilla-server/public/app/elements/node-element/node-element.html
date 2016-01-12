@@ -132,7 +132,10 @@
 				},
 				toggleFavorite: function() {
 					this.favorite = !this.favorite;
-					
+
+					if ( this.favorites === null ) {
+						this.favorites = {};
+					}
 					var tmp = this.favorites;
 					this.favorites[this.node.Uuid+':'+this.element.Name] = this.favorite;
 					this.set('favorites',{});
@@ -142,7 +145,7 @@
 					this.favoriteIcon = this.favorite?'star':'star-border';
 				},
 				favoritesChanged: function() {
-					if ( this.node !== undefined && this.element !== undefined ) {
+					if ( this.node !== undefined && this.element !== undefined && this.favorites !== null ) {
 						this.favorite = ( this.favorites[this.node.Uuid+':'+this.element.Name] !== undefined && this.favorites[this.node.Uuid+':'+this.element.Name] );
 					}
 				},
