@@ -61,7 +61,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		<template is="dom-bind" id="app">
 			<favorites-storage favorites="{{favs}}"></favorites-storage>
 			<!--<x-websocket json auto url="ws://{{wsLocation}}/socket"></x-websocket>-->
-			<ws-data nodes={{nodes}}></ws-data>
+			<ws-data nodes={{nodes}} ></ws-data>
 			<node-selector nodes={{nodes}} uuid={{params.name}} node={{node}}></node-selector>
 
 			<paper-drawer-panel id="paperDrawerPanel">

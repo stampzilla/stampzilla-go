@@ -96,7 +96,8 @@
 				},
 				observers: [
 					'nodeChanged(node)',
-					'elementChanged(element)',
+					//'elementChanged(element)',
+					'elementChanged(node.State)',
 					'favoriteChanged(favorite)',
 					'favoritesChanged(favorites)'
 				],
@@ -181,7 +182,8 @@
 				},
 				handleToggle: function() {
 					var cmd = this.element.Command;
-					cmd.params = [this.State.toString()];
+					//cmd.params = [this.State.toString()];
+					cmd.params = null;
 
 					var pkg = {
 						type: 'cmd',
