@@ -1,41 +1,28 @@
 package logic
 
 import (
-	"time"
-
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/notifications"
 	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 )
 
-type notify struct {
-	Notify string `json:"notify"`
-	notify time.Duration
-	nodes  serverprotocol.Searchable
+type command_notify struct {
+	Notify             string                          `json:"notify"`
+	Level              notifications.NotificationLevel `json:"level"`
+	NotificationRouter *notifications.Router           `json:"-" inject:""`
 }
 
-func NewNotify(duration string) *notify {
-	p := &notify{}
-	p.SetDuration(duration)
+func NewNotify(duration string) *command_notify {
+	p := &command_notify{}
 	return p
 }
 
-func (p *notify) Uuid() string {
-	return ""
+func (p *command_notify) Run() {
+	//notify := notifier.New(p.NotificationRouter)
+	//notify.Critical
+	p.NotificationRouter.Send(notifications.Notification{
+		Level:   p.Level,
+		Message: p.Notify,
+	})
 }
-func (p *notify) Run() {
-	<-time.After(p.notify)
-}
-func (p *notify) SetNodes(nodes serverprotocol.Searchable) {
-	p.nodes = nodes
-}
-
-func (p *notify) SetDuration(duration string) error {
-	d, err := time.ParseDuration(duration)
-
-	if err != nil {
-		return err
-	}
-
-	p.Notify = duration
-	p.notify = d
-	return nil
+func (p *command_notify) SetNodes(nodes serverprotocol.Searchable) {
 }

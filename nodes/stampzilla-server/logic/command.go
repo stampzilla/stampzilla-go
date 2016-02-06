@@ -10,7 +10,6 @@ import (
 
 type Command interface {
 	Run()
-	Uuid() string
 	SetNodes(serverprotocol.Searchable)
 }
 type command struct {

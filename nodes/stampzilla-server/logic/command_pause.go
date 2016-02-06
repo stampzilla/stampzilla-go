@@ -7,27 +7,24 @@ import (
 	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 )
 
-type pause struct {
+type command_pause struct {
 	Pause string `json:"pause"`
 	pause time.Duration
 }
 
-func NewPause(duration string) *pause {
-	p := &pause{}
+func NewPause(duration string) *command_pause {
+	p := &command_pause{}
 	p.SetDuration(duration)
 	return p
 }
 
-func (p *pause) Uuid() string {
-	return ""
-}
-func (p *pause) Run() {
+func (p *command_pause) Run() {
 	<-time.After(p.pause)
 }
-func (p *pause) SetNodes(nodes serverprotocol.Searchable) {
+func (p *command_pause) SetNodes(nodes serverprotocol.Searchable) {
 }
 
-func (p *pause) SetDuration(duration string) error {
+func (p *command_pause) SetDuration(duration string) error {
 	d, err := time.ParseDuration(duration)
 
 	if err != nil {
@@ -39,7 +36,7 @@ func (p *pause) SetDuration(duration string) error {
 	return nil
 }
 
-func (p *pause) UnmarshalJSON(b []byte) (err error) {
+func (p *command_pause) UnmarshalJSON(b []byte) (err error) {
 	type localCmd struct {
 		Pause string `json:"pause"`
 	}

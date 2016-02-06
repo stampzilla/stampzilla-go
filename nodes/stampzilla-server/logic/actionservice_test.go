@@ -55,12 +55,12 @@ func TestActionsMapperLoad(t *testing.T) {
 	assert.Nil(t, a.GetByUuid("unknown"))
 
 	assert.IsType(t, &command{}, a.Actions_[0].Commands[0])
-	assert.Equal(t, "uuid1", a.Actions_[0].Commands[0].Uuid())
+	assert.Equal(t, "uuid1", a.Actions_[0].Commands[0].(*command).Uuid_)
 
-	assert.IsType(t, &pause{}, a.Actions_[0].Commands[1])
+	assert.IsType(t, &command_pause{}, a.Actions_[0].Commands[1])
 
 	assert.IsType(t, &command{}, a.Actions_[0].Commands[2])
-	assert.Equal(t, "uuid2", a.Actions_[0].Commands[2].Uuid())
+	assert.Equal(t, "uuid2", a.Actions_[0].Commands[2].(*command).Uuid_)
 
 	if cmd, ok := a.Actions_[1].Commands[0].(*command); ok {
 		assert.Equal(t, "nodename", cmd.nodes.Search("nodeuuid").Name())

@@ -54,13 +54,13 @@ func TestCancelAction(t *testing.T) {
 }
 
 type pauseStub struct {
-	pause
+	command_pause
 
 	wg *sync.WaitGroup
 }
 
 func (p *pauseStub) Run() {
-	p.pause.Run()
+	p.command_pause.Run()
 	p.wg.Done()
 }
 
