@@ -23,7 +23,7 @@ type NodeServer struct {
 	WebsocketHandler *WebsocketHandler     `inject:""`
 	ElasticSearch    *ElasticSearch        `inject:""`
 	Metrics          *metrics.Metrics      `inject:""`
-	Notifications    *notifications.Router `inject:""`
+	Notifications    notifications.Router  `inject:""`
 }
 
 func NewNodeServer() *NodeServer {
@@ -133,7 +133,7 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 			existingNode.SetState(node.State())
 			ns.updateState(logicChannel, existingNode)
 
-			existingNode.SetElements(node.Elements());
+			existingNode.SetElements(node.Elements())
 		} else {
 			name = node.Name()
 			uuid = node.Uuid()

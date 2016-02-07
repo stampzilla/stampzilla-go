@@ -97,6 +97,8 @@ func (a *action) unmarshalJSONcommands(b []byte) (cmd Command, err error) {
 
 	if _, ok := test["pause"]; ok {
 		cmd = &command_pause{}
+	} else if _, ok := test["notify"]; ok {
+		cmd = &command_notify{}
 	} else {
 		cmd = &command{}
 	}

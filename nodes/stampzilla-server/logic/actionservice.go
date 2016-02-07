@@ -16,7 +16,7 @@ import (
 type ActionService struct {
 	Actions_           []*action             `json:"actions"`
 	Nodes              *serverprotocol.Nodes `json:"-" inject:""`
-	NotificationRouter *notifications.Router `json:"-" inject:""`
+	NotificationRouter notifications.Router  `json:"-" inject:""`
 }
 
 func NewActions() *ActionService {
@@ -59,10 +59,9 @@ func (a *ActionService) UnmarshalJSON(b []byte) (err error) {
 func (a *ActionService) SetCommandDependencies(cmd Command) {
 	switch c := cmd.(type) {
 	case *command:
-		c.SetNodes(a.Nodes)
+		c.nodes = a.Nodes
 	case *command_notify:
 		c.NotificationRouter = a.NotificationRouter
-
 	}
 }
 

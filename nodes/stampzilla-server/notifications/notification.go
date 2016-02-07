@@ -8,11 +8,11 @@ import (
 type NotificationLevel uint8
 
 const (
-	InfoLevel = iota
+	UnknownLevel = iota
+	InfoLevel
 	WarnLevel
 	ErrorLevel
 	CriticalLevel
-	UnknownLevel
 )
 
 type Notification struct {

@@ -18,6 +18,7 @@ func TestActionsMapperSave(t *testing.T) {
 				NewCommand(&protocol.Command{}, "uuid1"),
 				NewPause("10ms"),
 				NewCommand(&protocol.Command{}, "uuid2"),
+				&command_notify{},
 			},
 			Uuid_: "actionuuid1",
 		},
@@ -67,6 +68,8 @@ func TestActionsMapperLoad(t *testing.T) {
 	} else {
 		t.Error("Wrong type for command, should be *command")
 	}
+
+	assert.IsType(t, &command_notify{}, a.Actions_[0].Commands[3])
 
 	//fmt.Printf("%#v\n", a)
 }

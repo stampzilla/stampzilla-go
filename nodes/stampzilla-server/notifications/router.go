@@ -9,23 +9,28 @@ import (
 	"github.com/koding/multiconfig"
 )
 
-type Router struct {
+type Router interface {
+	Dispatch(msg Notification)
+	Send(data interface{})
+}
+
+type router struct {
 	Uuid   string
 	Name   string
-	Config *RouterConfig
+	Config *routerConfig
 
 	transports map[NotificationLevel][]Transport
 }
 
-type RouterConfig struct {
+type routerConfig struct {
 	Transports map[string]interface{}
 	Routes     map[string][]string
 }
 
-func NewRouter() *Router {
-	return &Router{
+func NewRouter() *router {
+	return &router{
 		transports: make(map[NotificationLevel][]Transport),
-		Config: &RouterConfig{
+		Config: &routerConfig{
 			Transports: make(map[string]interface{}),
 			Routes:     make(map[string][]string),
 		},
@@ -38,7 +43,7 @@ type Transport interface {
 	Stop()
 }
 
-func (self *Router) Load(configFileName string) error {
+func (self *router) Load(configFileName string) error {
 	log.Info("Load notifications config: ", configFileName)
 	m := multiconfig.NewWithPath(configFileName)
 	err := m.Load(self.Config)
@@ -83,7 +88,7 @@ func (self *Router) Load(configFileName string) error {
 	return err
 }
 
-func (self *Router) Save(configFileName string) error {
+func (self *router) Save(configFileName string) error {
 	log.Info("Save notifications config: ", configFileName)
 
 	configFile, err := os.Create(configFileName)
@@ -104,7 +109,7 @@ func (self *Router) Save(configFileName string) error {
 	return nil
 }
 
-func (self *Router) Start() {
+func (self *router) Start() {
 	err := self.Load("notifications.json")
 
 	// Dont resave if we failed to load the file
@@ -113,7 +118,7 @@ func (self *Router) Start() {
 	}
 }
 
-func (self *Router) AddTransport(transport Transport, levels []string) {
+func (self *router) AddTransport(transport Transport, levels []string) {
 	for _, level := range levels {
 		l := NewNotificationLevel(level)
 		log.Infof("Notifications - added transport (%T) for level %s", transport, l)
@@ -125,7 +130,7 @@ func (self *Router) AddTransport(transport Transport, levels []string) {
 
 }
 
-func (self *Router) Dispatch(msg Notification) {
+func (self *router) Dispatch(msg Notification) {
 	if transports, ok := self.transports[msg.Level]; ok {
 		for _, t := range transports {
 			t.Dispatch(msg)
@@ -136,7 +141,7 @@ func (self *Router) Dispatch(msg Notification) {
 	log.Warnf("Notification type \"%s\" dropped, no one is listening", msg.Level)
 }
 
-func (self *Router) Send(data interface{}) {
+func (self *router) Send(data interface{}) {
 	if n, ok := data.(Notification); ok {
 		n.SourceUuid = self.Uuid
 		n.Source = self.Name

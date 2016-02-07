@@ -1,28 +1,16 @@
 package logic
 
-import (
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/notifications"
-	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
-)
+import "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/notifications"
 
 type command_notify struct {
 	Notify             string                          `json:"notify"`
 	Level              notifications.NotificationLevel `json:"level"`
-	NotificationRouter *notifications.Router           `json:"-" inject:""`
-}
-
-func NewNotify(duration string) *command_notify {
-	p := &command_notify{}
-	return p
+	NotificationRouter notifications.Router            `json:"-" inject:""`
 }
 
 func (p *command_notify) Run() {
-	//notify := notifier.New(p.NotificationRouter)
-	//notify.Critical
-	p.NotificationRouter.Send(notifications.Notification{
+	p.NotificationRouter.Dispatch(notifications.Notification{
 		Level:   p.Level,
 		Message: p.Notify,
 	})
-}
-func (p *command_notify) SetNodes(nodes serverprotocol.Searchable) {
 }
