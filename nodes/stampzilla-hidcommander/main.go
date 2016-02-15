@@ -50,13 +50,14 @@ func main() {
 		if key.State != evdev.KeyDown {
 			continue
 		}
+		keyPressed := evdev.KEY[int(key.Scancode)]
+		log.Debugf("Button pressed: %s", keyPressed)
 		for k, v := range nc.Keys {
-			if k == evdev.KEY[int(key.Scancode)] {
+			if k == keyPressed {
 				getRequest(config, v)
 			}
 		}
 	}
-	//select {}
 }
 
 func getRequest(config *basenode.Config, cmd string) {
