@@ -5,7 +5,7 @@ import (
 	"time"
 
 	log "github.com/cihub/seelog"
-	client "github.com/influxdb/influxdb/client/v2"
+	client "github.com/influxdata/influxdb/client/v2"
 	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 )
 
