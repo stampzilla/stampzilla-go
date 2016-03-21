@@ -65,11 +65,17 @@ func (r *rule) SetCondState(cond bool) {
 	r.RUnlock()
 }
 func (r *rule) RunEnter() {
+	for _, a := range r.exitActions_ {
+		a.Cancel()
+	}
 	for _, a := range r.enterActions_ {
 		a.Run()
 	}
 }
 func (r *rule) RunExit() {
+	for _, a := range r.enterActions_ {
+		a.Cancel()
+	}
 	for _, a := range r.exitActions_ {
 		a.Run()
 	}
