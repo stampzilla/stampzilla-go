@@ -1,6 +1,9 @@
 package logic
 
-import "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/notifications"
+import (
+	log "github.com/cihub/seelog"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/notifications"
+)
 
 type command_notify struct {
 	Notify             string                          `json:"notify"`
@@ -9,6 +12,8 @@ type command_notify struct {
 }
 
 func (p *command_notify) Run() {
+	log.Infof("Running notification %#v", p)
+
 	p.NotificationRouter.Dispatch(notifications.Notification{
 		Level:   p.Level,
 		Message: p.Notify,

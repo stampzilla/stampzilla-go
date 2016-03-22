@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	log "github.com/cihub/seelog"
 	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 )
 
@@ -19,6 +20,7 @@ func NewPause(duration string) *command_pause {
 }
 
 func (p *command_pause) Run() {
+	log.Infof("Pausing for %s", p.Pause)
 	<-time.After(p.pause)
 }
 func (p *command_pause) SetNodes(nodes serverprotocol.Searchable) {

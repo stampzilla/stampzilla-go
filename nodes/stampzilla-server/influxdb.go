@@ -5,7 +5,7 @@ import (
 	"time"
 
 	log "github.com/cihub/seelog"
-	client "github.com/influxdb/influxdb/client/v2"
+	client "github.com/influxdata/influxdb/client/v2"
 	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 )
 
@@ -68,7 +68,7 @@ func (self *InfluxDb) Log(key string, value interface{}) {
 	bp.AddPoint(pt)
 	err = self.conn.Write(bp)
 	if err != nil {
-		log.Error(err)
+		log.Error("Failed to log ", key, "=", value, " reason:", err)
 	}
 }
 func (self *InfluxDb) Commit(s interface{}) {

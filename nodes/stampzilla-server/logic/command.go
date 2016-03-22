@@ -41,7 +41,7 @@ func (c *command) Run() {
 			return
 		}
 
-		log.Info("Running command ", c.Command, " to ", c.Uuid())
+		log.Infof("Running command %#v to %s", c.Command, c.Uuid())
 		node.Write(jsonToSend)
 
 		return
