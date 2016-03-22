@@ -1,7 +1,11 @@
 package logic
 
 import "encoding/json"
-import serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
+
+import (
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/notifications"
+	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
+)
 
 //type Actions interface {
 //Run()
@@ -10,8 +14,9 @@ import serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-serv
 //}
 
 type ActionService struct {
-	Actions_ []*action             `json:"actions"`
-	Nodes    *serverprotocol.Nodes `json:"-" inject:""`
+	Actions_           []*action             `json:"actions"`
+	Nodes              *serverprotocol.Nodes `json:"-" inject:""`
+	NotificationRouter notifications.Router  `json:"-" inject:""`
 }
 
 func NewActions() *ActionService {
@@ -43,13 +48,21 @@ func (a *ActionService) UnmarshalJSON(b []byte) (err error) {
 	if err = json.Unmarshal(b, &la); err == nil {
 		for _, action := range la {
 			for _, c := range action.Commands {
-				c.SetNodes(a.Nodes)
+				a.SetCommandDependencies(c)
 			}
 			a.Actions_ = append(a.Actions_, action)
 		}
 		return
 	}
 	return
+}
+func (a *ActionService) SetCommandDependencies(cmd Command) {
+	switch c := cmd.(type) {
+	case *command:
+		c.nodes = a.Nodes
+	case *command_notify:
+		c.NotificationRouter = a.NotificationRouter
+	}
 }
 
 func (a *ActionService) MarshalJSON() (res []byte, err error) {

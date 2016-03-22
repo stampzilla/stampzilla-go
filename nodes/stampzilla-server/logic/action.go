@@ -3,6 +3,7 @@ package logic
 import (
 	"encoding/json"
 
+	log "github.com/cihub/seelog"
 	"golang.org/x/net/context"
 )
 
@@ -27,6 +28,7 @@ func (a *action) Name() string {
 	return a.Name_
 }
 func (a *action) Cancel() {
+	log.Debugf("Cancel action %s", a.Uuid())
 	if a.cancel != nil {
 		a.cancel()
 	}
@@ -36,6 +38,7 @@ func (a *action) Run() {
 	a.run()
 }
 func (a *action) run() {
+	log.Debugf("Running action %s", a.Uuid())
 	ctx, cancel := context.WithCancel(context.Background())
 	a.cancel = cancel
 	queue := make(chan Command)
@@ -96,7 +99,9 @@ func (a *action) unmarshalJSONcommands(b []byte) (cmd Command, err error) {
 	}
 
 	if _, ok := test["pause"]; ok {
-		cmd = &pause{}
+		cmd = &command_pause{}
+	} else if _, ok := test["notify"]; ok {
+		cmd = &command_notify{}
 	} else {
 		cmd = &command{}
 	}

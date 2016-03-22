@@ -65,6 +65,7 @@ func (r *rule) SetCondState(cond bool) {
 	r.RUnlock()
 }
 func (r *rule) RunEnter() {
+	log.Debugf("Rule enter: %s", r.Uuid())
 	for _, a := range r.exitActions_ {
 		a.Cancel()
 	}
@@ -73,6 +74,7 @@ func (r *rule) RunEnter() {
 	}
 }
 func (r *rule) RunExit() {
+	log.Debugf("Rule exit: %s", r.Uuid())
 	for _, a := range r.enterActions_ {
 		a.Cancel()
 	}

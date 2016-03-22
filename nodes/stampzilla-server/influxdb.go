@@ -68,7 +68,7 @@ func (self *InfluxDb) Log(key string, value interface{}) {
 	bp.AddPoint(pt)
 	err = self.conn.Write(bp)
 	if err != nil {
-		log.Error(err)
+		log.Error("Failed to log ", key, "=", value, " reason:", err)
 	}
 }
 func (self *InfluxDb) Commit(s interface{}) {
