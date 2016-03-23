@@ -12,7 +12,9 @@ type Notify struct {
 }
 
 func New(output basenode.Sendable) *Notify {
-	return &Notify{output, "", ""}
+	return &Notify{
+		output: output,
+	}
 }
 
 type Identity interface {

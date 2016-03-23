@@ -10,8 +10,6 @@ import (
 
 type Command interface {
 	Run()
-	Uuid() string
-	SetNodes(serverprotocol.Searchable)
 }
 type command struct {
 	Command *protocol.Command `json:"command"`
@@ -25,9 +23,10 @@ func NewCommand(cmd *protocol.Command, uuid string) *command {
 func (c *command) Uuid() string {
 	return c.Uuid_
 }
-func (c *command) SetNodes(nodes serverprotocol.Searchable) {
-	c.nodes = nodes
-}
+
+//func (c *command) SetNodes(nodes serverprotocol.Searchable) {
+//c.nodes = nodes
+//}
 func (c *command) Run() {
 	if c.nodes == nil {
 		log.Warn("Node ", c.Uuid(), " - No nodes connected when tried to send: ", c.Command)
@@ -42,7 +41,7 @@ func (c *command) Run() {
 			return
 		}
 
-		log.Info("Running command ", c.Command, " to ", c.Uuid())
+		log.Infof("Running command %#v to %s", c.Command, c.Uuid())
 		node.Write(jsonToSend)
 
 		return
