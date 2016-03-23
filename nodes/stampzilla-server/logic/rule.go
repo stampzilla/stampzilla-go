@@ -66,12 +66,18 @@ func (r *rule) SetCondState(cond bool) {
 }
 func (r *rule) RunEnter() {
 	log.Debugf("Rule enter: %s", r.Uuid())
+	for _, a := range r.exitActions_ {
+		a.Cancel()
+	}
 	for _, a := range r.enterActions_ {
 		a.Run()
 	}
 }
 func (r *rule) RunExit() {
 	log.Debugf("Rule exit: %s", r.Uuid())
+	for _, a := range r.enterActions_ {
+		a.Cancel()
+	}
 	for _, a := range r.exitActions_ {
 		a.Run()
 	}
