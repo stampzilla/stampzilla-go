@@ -9,6 +9,8 @@ import (
 	"unsafe"
 
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-telldus-events/sensormonitor"
+	"github.com/stampzilla/stampzilla-go/pkg/notifier"
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
@@ -27,6 +29,7 @@ import "C"
 var node *protocol.Node
 var state *State = &State{make(map[string]*Device), make(map[string]*Sensor, 0)}
 var serverConnection basenode.Connection
+var sensorMonitor sensorMonitor.Monitor
 
 func main() {
 	// Load logger
@@ -84,6 +87,12 @@ func main() {
 
 	// Start the connection
 	//go connection(host, port, node)
+
+	notify = notifier.New(connection)
+	notify.SetSource(node)
+
+	sensorMonitor = sensormonitor.New(notify)
+	sensorMonitor.Start()
 
 	serverConnection = basenode.Connect()
 	go monitorState(serverConnection)
@@ -227,6 +236,7 @@ func sensorEvent(protocol, model *C.char, sensorId, dataType int, value *C.char)
 	if s = state.GetSensor(sensorId); s == nil {
 		s = state.AddSensor(sensorId, "UNKNOWN")
 	}
+	sensorMonitor.Alive(s.Id)
 
 	if dataType == C.TELLSTICK_TEMPERATURE {
 		t, _ := strconv.ParseFloat(C.GoString(value), 64)
