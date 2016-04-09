@@ -29,7 +29,7 @@ import "C"
 var node *protocol.Node
 var state *State = &State{make(map[string]*Device), make(map[string]*Sensor, 0)}
 var serverConnection basenode.Connection
-var sensorMonitor sensorMonitor.Monitor
+var sensorMonitor sensormonitor.Monitor
 
 func main() {
 	// Load logger
