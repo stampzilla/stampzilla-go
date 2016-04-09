@@ -88,13 +88,13 @@ func main() {
 	// Start the connection
 	//go connection(host, port, node)
 
-	notify := notifier.New(connection)
+	serverConnection = basenode.Connect()
+	notify := notifier.New(serverConnection)
 	notify.SetSource(node)
 
 	sensorMonitor = sensormonitor.New(notify)
 	sensorMonitor.Start()
 
-	serverConnection = basenode.Connect()
 	go monitorState(serverConnection)
 
 	// This worker recives all incomming commands
