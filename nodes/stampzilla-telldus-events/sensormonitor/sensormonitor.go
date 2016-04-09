@@ -29,11 +29,13 @@ func (s Monitor) Start() {
 
 func (s Monitor) worker() {
 	ticker := time.NewTicker(5 * time.Minute)
-	select {
-	case id := <-s.alive:
-		s.sensors[id] = time.Now()
-	case <-ticker.C:
-		s.CheckDead("1h")
+	for {
+		select {
+		case id := <-s.alive:
+			s.sensors[id] = time.Now()
+		case <-ticker.C:
+			s.CheckDead("1h")
+		}
 	}
 }
 func (s Monitor) CheckDead(dur string) {
