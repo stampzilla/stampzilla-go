@@ -88,7 +88,7 @@ func main() {
 	// Start the connection
 	//go connection(host, port, node)
 
-	notify = notifier.New(connection)
+	notify := notifier.New(connection)
 	notify.SetSource(node)
 
 	sensorMonitor = sensormonitor.New(notify)
