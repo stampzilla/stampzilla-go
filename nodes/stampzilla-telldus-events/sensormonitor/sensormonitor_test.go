@@ -30,7 +30,6 @@ func TestSensorDead(t *testing.T) {
 	time.Sleep(20 * time.Millisecond)
 
 	sm.CheckDead("10ms")
-	t.Log(sm.sensors)
 	assert.Equal(t, "Sensor 10 has not been updated in 10ms", sender.log[0])
 }
 
@@ -46,6 +45,24 @@ func TestSensorNotDead(t *testing.T) {
 
 	sm.CheckDead("20ms")
 
-	t.Log(sm.sensors)
 	assert.Empty(t, sender.log)
+}
+func TestNotificationSendOnlyOnce(t *testing.T) {
+
+	sender := &senderStub{}
+	notify := notifier.New(sender)
+	sm := New(notify)
+	sm.Start()
+
+	sm.Alive(10)
+	time.Sleep(20 * time.Millisecond)
+
+	sm.CheckDead("10ms")
+	sm.CheckDead("10ms")
+	assert.Len(t, sender.log, 1, "Ran two CheckDead, should notify only once")
+
+	sm.Alive(10)
+	time.Sleep(20 * time.Millisecond)
+	sm.CheckDead("10ms")
+	assert.Len(t, sender.log, 2)
 }
