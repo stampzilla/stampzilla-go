@@ -210,7 +210,7 @@ func (t *cliHandler) Debug(c *cli.Context) {
 
 func (t *cliHandler) Log(c *cli.Context) {
 	follow := c.Bool("f")
-	cmd := exec.Command("less", "/var/log/stampzilla/stampzilla-"+c.Args().First())
+	cmd := exec.Command("less", "-R", "/var/log/stampzilla/stampzilla-"+c.Args().First())
 	if follow {
 		cmd = exec.Command("tail", "-f", "/var/log/stampzilla/stampzilla-"+c.Args().First())
 	}
