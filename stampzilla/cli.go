@@ -49,8 +49,14 @@ func main() {
 		{
 			Name:      "log",
 			ShortName: "l",
-			Usage:     "Tail the log of the supplied process",
+			Usage:     "Open the log of the supplied process in less",
 			Action:    cliHandler.Log,
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "f",
+					Usage: "follow the log in real time",
+				},
+			},
 		},
 		{
 			Name:      "install",
@@ -67,6 +73,7 @@ func main() {
 		{
 			Name:      "upgrade",
 			ShortName: "u",
+			Aliases:   []string{"update"},
 			Usage:     "upgrades currently installed nodes and the server",
 			Action:    cliHandler.Upgrade,
 		},
