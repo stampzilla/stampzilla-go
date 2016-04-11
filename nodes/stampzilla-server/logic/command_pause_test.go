@@ -1,7 +1,6 @@
 package logic
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -16,7 +15,7 @@ func TestPauseCommandFromJson(t *testing.T) {
 
 	if a, ok := a.GetByUuid("actionuuid1").(*action); ok {
 		if c, ok := a.Commands[1].(*command_pause); ok {
-			fmt.Printf("%v", c.pause)
+			t.Logf("%v", c.pause)
 			assert.Equal(t, time.Duration(10000000), c.pause)
 			return
 		}
