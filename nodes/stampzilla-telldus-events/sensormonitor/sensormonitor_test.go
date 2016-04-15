@@ -24,6 +24,7 @@ func TestSensorDead(t *testing.T) {
 	sender := &senderStub{}
 	notify := notifier.New(sender)
 	sm := New(notify)
+	sm.MonitorSensors = []int{10}
 	sm.Start()
 
 	sm.Alive(10)
@@ -38,6 +39,7 @@ func TestSensorNotDead(t *testing.T) {
 	sender := &senderStub{}
 	notify := notifier.New(sender)
 	sm := New(notify)
+	sm.MonitorSensors = []int{10}
 	sm.Start()
 
 	sm.Alive(10)
@@ -52,6 +54,7 @@ func TestNotificationSendOnlyOnce(t *testing.T) {
 	sender := &senderStub{}
 	notify := notifier.New(sender)
 	sm := New(notify)
+	sm.MonitorSensors = []int{10}
 	sm.Start()
 
 	sm.Alive(10)
@@ -65,4 +68,17 @@ func TestNotificationSendOnlyOnce(t *testing.T) {
 	time.Sleep(20 * time.Millisecond)
 	sm.CheckDead("10ms")
 	assert.Len(t, sender.log, 2)
+}
+func TestSensorOnlyMonitorSelected(t *testing.T) {
+
+	sender := &senderStub{}
+	notify := notifier.New(sender)
+	sm := New(notify)
+	sm.Start()
+
+	sm.Alive(10)
+	time.Sleep(20 * time.Millisecond)
+
+	sm.CheckDead("10ms")
+	assert.Empty(t, sender.log)
 }

@@ -31,6 +31,10 @@ var state *State = &State{make(map[string]*Device), make(map[string]*Sensor, 0)}
 var serverConnection basenode.Connection
 var sensorMonitor *sensormonitor.Monitor
 
+type Config struct {
+	MonitorSensors []int
+}
+
 func main() {
 	// Load logger
 	//logger, err := log.LoggerFromConfigAsFile("../logconfig.xml")
@@ -42,6 +46,12 @@ func main() {
 	//Get a config with the correct parameters
 	config := basenode.NewConfig()
 	basenode.SetConfig(config)
+	nc := &Config{}
+	err := config.NodeSpecific(&nc)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
 	// Load flags
 	//var host string
@@ -93,7 +103,9 @@ func main() {
 	notify.SetSource(node)
 
 	sensorMonitor = sensormonitor.New(notify)
+	sensorMonitor.MonitorSensors = nc.MonitorSensors
 	sensorMonitor.Start()
+	log.Println("Monitoring Sensors: ", nc.MonitorSensors)
 
 	go monitorState(serverConnection)
 

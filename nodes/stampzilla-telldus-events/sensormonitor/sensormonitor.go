@@ -14,10 +14,11 @@ type sensor struct {
 }
 
 type Monitor struct {
-	notify  *notifier.Notify
-	sensors map[int]*sensor
-	alive   chan (int)
-	timeout string
+	notify         *notifier.Notify
+	sensors        map[int]*sensor
+	alive          chan (int)
+	timeout        string
+	MonitorSensors []int
 }
 
 func New(notify *notifier.Notify) *Monitor {
@@ -81,5 +82,10 @@ func (s *Monitor) CheckDead(dur string) {
 }
 
 func (s *Monitor) Alive(id int) {
-	s.alive <- id
+	for _, sensor := range s.MonitorSensors {
+		if id == sensor {
+			s.alive <- id
+			return
+		}
+	}
 }
