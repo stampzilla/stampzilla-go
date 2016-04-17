@@ -4,6 +4,7 @@ import (
 	"net/url"
 	"strings"
 
+	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
@@ -83,8 +84,14 @@ func (p *Processor) ProcessSqueezeboxCommand(cmd string) {
 }
 func (p *Processor) ProcessServerCommand(cmd protocol.Command) {
 
+	if len(cmd.Args) == 0 {
+		log.Error("Missing argument 0 (which player?)")
+		return
+	}
+
 	player := p.state.Device(cmd.Args[0])
 	if player == nil {
+		log.Errorf("Player with id %s not found", cmd.Args[0])
 		return
 	}
 	switch cmd.Cmd {
@@ -98,6 +105,11 @@ func (p *Processor) ProcessServerCommand(cmd protocol.Command) {
 		p.squeezeboxConn.SendTo(player, "stop")
 	case "play":
 		if len(cmd.Args) > 1 {
+			// if its an URL we play it. It will be split by / so we need to join the url back to a whole string
+			if strings.HasPrefix(cmd.Args[1], "http") {
+				p.squeezeboxConn.SendTo(player, "playlist play "+url.QueryEscape(strings.Join(cmd.Args[1:], "/")))
+				return
+			}
 			p.squeezeboxConn.SendTo(player, "play "+url.QueryEscape(cmd.Args[1]))
 			return
 		}

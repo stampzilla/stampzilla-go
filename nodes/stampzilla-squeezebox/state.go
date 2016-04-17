@@ -22,6 +22,7 @@ func (s *State) Device(id string) *Device {
 	if _, ok := s.Devices[id]; ok {
 		return s.Devices[id]
 	}
+	//TODO also check the name!
 	return nil
 }
 func (s *State) AddDevice(d *Device) {
