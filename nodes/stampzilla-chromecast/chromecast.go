@@ -6,6 +6,7 @@ import (
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/gocast"
 	"github.com/stampzilla/gocast/events"
+	"github.com/stampzilla/gocast/handlers"
 )
 
 type Chromecast struct {
@@ -28,6 +29,9 @@ type Chromecast struct {
 
 	publish func()
 
+	mediaHandler           gocast.Handler
+	mediaConnectionHandler gocast.Handler
+
 	*gocast.Device
 }
 
@@ -38,6 +42,9 @@ func NewChromecast(d *gocast.Device) *Chromecast {
 
 	d.OnEvent(c.Event)
 	d.Connect()
+
+	c.mediaHandler = &handlers.Media{}
+	c.mediaConnectionHandler = &handlers.Connection{}
 
 	return c
 }
@@ -66,9 +73,13 @@ func (c *Chromecast) Event(event events.Event) {
 		c.PrimaryApp = data.DisplayName
 		c.PrimaryEndpoint = data.TransportId
 
+		c.Subscribe("urn:x-cast:com.google.cast.tp.connection", data.TransportId, c.mediaConnectionHandler)
+		c.Subscribe("urn:x-cast:com.google.cast.media", data.TransportId, c.mediaHandler)
+
 		log.Info(c.Name(), "- App started:", data.DisplayName, "(", data.AppID, ")")
 	case events.AppStopped:
 		c.PrimaryApp = ""
+		c.PrimaryEndpoint = ""
 		log.Info(c.Name(), "- App stopped:", data.DisplayName, "(", data.AppID, ")")
 
 	case events.ReceiverStatus:

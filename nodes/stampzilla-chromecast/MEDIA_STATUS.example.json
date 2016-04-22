@@ -1,0 +1,106 @@
+{
+  "type": "MEDIA_STATUS",
+  "status": [
+    {
+      "mediaSessionId": 1,
+      "playbackRate": 1,
+      "playerState": "PAUSED",
+      "currentTime": 43.886499,
+      "supportedMediaCommands": 15,
+      "volume": {
+        "level": 1,
+        "muted": false
+      },
+      "media": {
+        "contentId": "https:\/\/mclients.googleapis.com\/music\/mplay?mjck=T37ck4ijh7xqzhivdw5ylo67w4a&pt=a&dv=1&slt=1461362427752&sig=2mYxewsJWL8rCp25iDm0gEp9iHc",
+        "streamType": "BUFFERED",
+        "contentType": "audio\/mpeg",
+        "metadata": {
+          "metadataType": 3,
+          "title": "Heroes (we could be) (feat. Tove Lo)",
+          "albumName": "Forever",
+          "albumArtist": "Alesso",
+          "artist": "Alesso",
+          "images": [
+            {
+              "url": "http:\/\/lh3.googleusercontent.com\/3YOhDvpJwvlJ5vtl9pjJMAlmv1OebfCV7L29nxzRwKdusQk5p644AgHwm9_lv0qsXeVShQbN5A",
+              "height": 0,
+              "width": 0
+            }
+          ]
+        },
+        "duration": 210
+      },
+      "currentItemId": 1,
+      "items": [
+        {
+          "itemId": 1,
+          "media": {
+            "contentId": "https:\/\/mclients.googleapis.com\/music\/mplay?mjck=T37ck4ijh7xqzhivdw5ylo67w4a&pt=a&dv=1&slt=1461362427752&sig=2mYxewsJWL8rCp25iDm0gEp9iHc",
+            "streamType": "BUFFERED",
+            "contentType": "audio\/mpeg",
+            "metadata": {
+              "metadataType": 3,
+              "title": "Heroes (we could be) (feat. Tove Lo)",
+              "albumName": "Forever",
+              "albumArtist": "Alesso",
+              "artist": "Alesso",
+              "images": [
+                {
+                  "url": "http:\/\/lh3.googleusercontent.com\/3YOhDvpJwvlJ5vtl9pjJMAlmv1OebfCV7L29nxzRwKdusQk5p644AgHwm9_lv0qsXeVShQbN5A",
+                  "height": 0,
+                  "width": 0
+                }
+              ]
+            },
+            "duration": 210
+          },
+          "autoplay": false,
+          "customData": {
+            "httpHeaders": {
+              "Authorization": "playon=ABHW6GFKKKVULLBEWSAMVVNBPLG5EA7YW7AMJQT6V2C5QLQHHPAVVWJQWFWYGQ6GRO4VRR3DJ6AIHCQ4G5Z7LKAQXZ65IYLXWUURYAPTLQRKB53EOF3A4HIJAFGDCSCBFR3PVGWJ3S3EDVFVWHUJHS4C5HMOYFJGSP324UYZYKUFQGVW5WXDSYXDNT3RZ5IUBOHP5JOKSXRK3YRFDL4G4W522Y2337E2SOHOMAJZLU6QURRJTDWWGI7JFMGSLWGHKRDMS36G5PKUIBZQU4ZTOUIQ22VHHXKURTQUU4UFK6PLKLDY3GZFWKNC5ULASIJBMGE7D3B3UKPEJDE2WTGECLPGI3RHEKZIWZZFR5NHRF53JRP5BFHEHTLALMJEISCWLPLVEU7TPMITBC4A6QAPCYRR2CXDTRAIENQ6Z2V5AIZ3QXON52QEKW454KLHOOQCAOXGK2VDOLAI73EWY2OHLBAX5CLW5RPPWQH4EKSKM7OVAOMDV23OVB36GZIMI66L4L4YNCR5BPZRGL7WG4357HEODU3P3THKOGMOMMBVYMHTBYNCJ5V5CIL6VN2YSWEMNCZ25FYFWBSXONQKTBPOFGLE2E3JBFV4XSCRC26J6CBIRXONR4WCSFUEJL2W3OG43TO7U62F2KAROR3GTUNYVNJV5MK573CBJ3CSCSLFYUX4RBY62SR6OBMG3GXGYLHFNODCY33E3B3VBMPOVIOCJW7YKEUVODCQ5Y2DZ3X4MVKIWNW37GYI656SOY5TKIBAS6ESDTCKB2FKIZSY5C2TWFP734KA656GTZP27U5TS72YLPXBUGICOSO2OVVVLHHXD4URWJDWB6KJC4AN4CGLCTCR4YYPHE4JDP2SY6AZZCA6DR35ONBL56244OBHORY2TH26AGRNGS7AVR4BLP54OVYXQXFZQ26SNMUBS2BZ"
+            },
+            "itemId": "73b5aa13-7da9-4276-8f3a-f8f257b68e64",
+            "queueBaseUrl": "https:\/\/www.googleapis.com\/musicqueue\/v1.0\/",
+            "contentType": "application\/x-cloud-queue"
+          }
+        }
+      ],
+      "repeatMode": "REPEAT_OFF",
+      "customData": {
+        "queueVersion": "33",
+        "itemId": "73b5aa13-7da9-4276-8f3a-f8f257b68e64",
+        "canSkip": true
+      }
+    }
+  ],
+  "requestId": 4
+}
+
+
+
+
+{
+  "type": "MEDIA_STATUS",
+  "status": [
+    {
+      "mediaSessionId": 1,
+      "playbackRate": 1,
+      "playerState": "PLAYING",
+      "currentTime": 43.886499,
+      "supportedMediaCommands": 15,
+      "volume": {
+        "level": 1,
+        "muted": false
+      },
+      "currentItemId": 1,
+      "repeatMode": "REPEAT_OFF",
+      "customData": {
+        "queueVersion": "33",
+        "itemId": "73b5aa13-7da9-4276-8f3a-f8f257b68e64",
+        "canSkip": true
+      }
+    }
+  ],
+  "requestId": 0
+}
