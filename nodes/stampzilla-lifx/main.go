@@ -22,7 +22,7 @@ var serverSendChannel chan interface{}
 var serverRecvChannel chan protocol.Command
 var lifxClient *client.Client
 
-func init() { // {{{
+func main() { // {{{
 	// Parse all commandline arguments, host and port parameters are added in the basenode init function
 	flag.Parse()
 
@@ -42,25 +42,21 @@ func init() { // {{{
 
 	// This worker recives all incomming commands
 	go serverRecv(connection)
-} // }}}
 
-// MAIN - This is run when the init function is done
-func main() { /*{{{*/
 	// Create new node description
-
 	state = NewState()
 	node.SetState(state)
 
 	lifxClient = client.New()
-	go discoverWorker(lifxClient)
+	go discoverWorker(lifxClient, connection)
 
 	select {}
 
 } /*}}}*/
 
-func discoverWorker(client *client.Client) {
+func discoverWorker(client *client.Client, connection basenode.Connection) {
 
-	go monitorLampCollection(client.Lights)
+	go monitorLampCollection(client.Lights, connection)
 
 	for {
 		log.Info("Try to discover bulbs:")
@@ -72,10 +68,14 @@ func discoverWorker(client *client.Client) {
 }
 
 // WORKER that monitors the list of lamps
-func monitorLampCollection(lights *client.LightCollection) {
+func monitorLampCollection(lights *client.LightCollection, connection basenode.Connection) {
 	for s := range lights.Lights.Changes {
 		switch s.Event {
 		case client.LampAdded:
+			log.Warnf("Added: %s (%s)", s.Lamp.Id(), s.Lamp.Label())
+
+			state.AddDevice(s.Lamp)
+
 			node.AddElement(&protocol.Element{
 				Type: protocol.ElementTypeToggle,
 				Name: s.Lamp.Label(),
@@ -94,14 +94,15 @@ func monitorLampCollection(lights *client.LightCollection) {
 				},
 				Feedback: "Devices[4].State",
 			})
+			//log.Infof("Collection: %#v", lights.Lights)
+			connection.Send(node)
 
-			serverSendChannel <- node.Node()
-
-			log.Warn("Added: ", s.Lamp.Id())
 		case client.LampUpdated:
-			log.Warn("Changed: ", s.Lamp.Id())
+			log.Warnf("Changed: %s (%s)", s.Lamp.Id(), s.Lamp.Label())
 		case client.LampRemoved:
-			log.Warn("Removed: ", s.Lamp.Id())
+			log.Warnf("Removed: %s (%s)", s.Lamp.Id(), s.Lamp.Label())
+		default:
+			log.Infof("Received unknown event: %d", s.Event)
 		}
 	}
 }
