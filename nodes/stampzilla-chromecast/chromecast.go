@@ -29,7 +29,7 @@ type Chromecast struct {
 
 	publish func()
 
-	mediaHandler           gocast.Handler
+	mediaHandler           *handlers.Media
 	mediaConnectionHandler gocast.Handler
 
 	*gocast.Device
@@ -47,6 +47,29 @@ func NewChromecast(d *gocast.Device) *Chromecast {
 	c.mediaConnectionHandler = &handlers.Connection{}
 
 	return c
+}
+
+func (c *Chromecast) Play() {
+	c.mediaHandler.Play()
+}
+func (c *Chromecast) Pause() {
+	c.mediaHandler.Pause()
+}
+func (c *Chromecast) Stop() {
+	c.mediaHandler.Stop()
+}
+
+func (c *Chromecast) PlayUrl(url string, contentType string) {
+	c.Device.ReceiverHandler.LaunchApp(gocast.AppMedia)
+	if contentType == "" {
+		contentType = "audio/mpeg"
+	}
+	item := handlers.MediaItem{
+		ContentId:   url,
+		StreamType:  "BUFFERED",
+		ContentType: contentType,
+	}
+	c.mediaHandler.LoadMedia(item, 0, true, map[string]interface{}{})
 }
 
 func (c *Chromecast) Listen() {
@@ -70,11 +93,16 @@ func (c *Chromecast) Event(event events.Event) {
 
 		c.Device.Connect()
 	case events.AppStarted:
+
+		log.Info(data)
 		c.PrimaryApp = data.DisplayName
 		c.PrimaryEndpoint = data.TransportId
 
-		c.Subscribe("urn:x-cast:com.google.cast.tp.connection", data.TransportId, c.mediaConnectionHandler)
-		c.Subscribe("urn:x-cast:com.google.cast.media", data.TransportId, c.mediaHandler)
+		//If the app supports media controls lets subscribe to it
+		if data.HasNamespace("urn:x-cast:com.google.cast.media") {
+			c.Subscribe("urn:x-cast:com.google.cast.tp.connection", data.TransportId, c.mediaConnectionHandler)
+			c.Subscribe("urn:x-cast:com.google.cast.media", data.TransportId, c.mediaHandler)
+		}
 
 		log.Info(c.Name(), "- App started:", data.DisplayName, "(", data.AppID, ")")
 	case events.AppStopped:
