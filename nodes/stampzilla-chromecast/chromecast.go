@@ -30,7 +30,7 @@ type Chromecast struct {
 	publish func()
 
 	mediaHandler           *handlers.Media
-	mediaConnectionHandler gocast.Handler
+	mediaConnectionHandler *handlers.Connection
 
 	*gocast.Device
 }
@@ -41,7 +41,11 @@ func NewChromecast(d *gocast.Device) *Chromecast {
 	}
 
 	d.OnEvent(c.Event)
-	d.Connect()
+	err := d.Connect()
+	if err != nil {
+		log.Error(err)
+		return c
+	}
 
 	c.mediaHandler = &handlers.Media{}
 	c.mediaConnectionHandler = &handlers.Connection{}
@@ -93,8 +97,9 @@ func (c *Chromecast) Event(event events.Event) {
 
 		c.Device.Connect()
 	case events.AppStarted:
+		log.Info(c.Name(), "- App started:", data.DisplayName, "(", data.AppID, ")")
+		//spew.Dump("Data:", data)
 
-		log.Info(data)
 		c.PrimaryApp = data.DisplayName
 		c.PrimaryEndpoint = data.TransportId
 
@@ -104,11 +109,19 @@ func (c *Chromecast) Event(event events.Event) {
 			c.Subscribe("urn:x-cast:com.google.cast.media", data.TransportId, c.mediaHandler)
 		}
 
-		log.Info(c.Name(), "- App started:", data.DisplayName, "(", data.AppID, ")")
 	case events.AppStopped:
+		log.Info(c.Name(), "- App stopped:", data.DisplayName, "(", data.AppID, ")")
+		//spew.Dump("Data:", data)
+
+		//unsubscribe from old channels
+		for _, v := range data.Namespaces {
+			if v.Name == "urn:x-cast:com.google.cast.media" {
+				c.mediaConnectionHandler.Disconnect()
+			}
+			c.UnsubscribeByUrnAndDestinationId(v.Name, data.TransportId)
+		}
 		c.PrimaryApp = ""
 		c.PrimaryEndpoint = ""
-		log.Info(c.Name(), "- App stopped:", data.DisplayName, "(", data.AppID, ")")
 
 	case events.ReceiverStatus:
 		c.IsStandBy = data.Status.IsStandBy

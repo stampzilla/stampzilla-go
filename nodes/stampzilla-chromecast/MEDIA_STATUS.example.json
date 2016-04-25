@@ -187,3 +187,64 @@
     ],
     "requestId": 1
 }
+
+
+
+{
+    "type": "MEDIA_STATUS",
+    "status": [
+        {
+            "mediaSessionId": 1,
+            "playbackRate": 1,
+            "playerState": "BUFFERING",
+            "currentTime": 0,
+            "supportedMediaCommands": 15,
+            "volume": {
+                "level": 1,
+                "muted": false
+            },
+            "media": {
+                "contentId": "http://http-live.sr.se/p3-mp3-192",
+                "streamType": "BUFFERED",
+                "contentType": "audio/mpeg",
+                "duration": null
+            },
+            "currentItemId": 1,
+            "items": [
+                {
+                    "itemId": 1,
+                    "media": {
+                        "contentId": "http://http-live.sr.se/p3-mp3-192",
+                        "streamType": "BUFFERED",
+                        "contentType": "audio/mpeg",
+                        "duration": null
+                    },
+                    "autoplay": true,
+                    "customData": {}
+                }
+            ],
+            "repeatMode": "REPEAT_OFF"
+        }
+    ],
+    "requestId": 3
+}
+
+{
+    "type": "MEDIA_STATUS",
+    "status": [
+        {
+            "mediaSessionId": 1,
+            "playbackRate": 1,
+            "playerState": "PLAYING",
+            "currentTime": 0.853653,
+            "supportedMediaCommands": 15,
+            "volume": {
+                "level": 1,
+                "muted": false
+            },
+            "currentItemId": 1,
+            "repeatMode": "REPEAT_OFF"
+        }
+    ],
+    "requestId": 0
+}
