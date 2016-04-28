@@ -54,6 +54,7 @@ func (p *Processor) ProcessSqueezeboxCommand(cmd string) {
 			case strings.Contains(rest, "playlist newsong"):
 				player.Title = parser.Song(rest)
 				player.Playing = true
+				player.Power = true
 				p.connection.Send(p.node.Node())
 			case rest == "pause" || rest == "stop":
 				player.Playing = false

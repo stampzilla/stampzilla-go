@@ -11,13 +11,22 @@ type State struct {
 	Devices    map[string]*Chromecast
 	connection *basenode.Connection
 	node       *protocol.Node
-	sync.Mutex
+	sync.RWMutex
 }
 
 func (s *State) Publish() {
 	if s.node != nil {
 		(*s.connection).Send(s.node.Node())
 	}
+}
+
+func (s *State) GetByUUID(uuid string) *Chromecast {
+	s.RLock()
+	defer s.RUnlock()
+	if val, ok := s.Devices[uuid]; ok {
+		return val
+	}
+	return nil
 }
 
 func (s *State) Add(c *Chromecast) {

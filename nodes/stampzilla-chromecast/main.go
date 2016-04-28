@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"strings"
 	"time"
 
 	log "github.com/cihub/seelog"
@@ -79,4 +80,26 @@ func serverRecv(recv chan protocol.Command) {
 // THis is called on each incomming command
 func processCommand(cmd protocol.Command) {
 	log.Info("Incoming command from server:", cmd)
+	if len(cmd.Args) == 0 {
+		log.Error("Missing argument 0 (which player?)")
+		return
+	}
+	player := state.GetByUUID(cmd.Args[0])
+	if player == nil {
+		log.Errorf("Player with id %s not found", cmd.Args[0])
+		return
+	}
+
+	switch cmd.Cmd {
+	case "play":
+		if len(cmd.Args) > 1 && strings.HasPrefix(cmd.Args[1], "http") {
+			player.PlayUrl(strings.Join(cmd.Args[1:], "/"), "")
+			return
+		}
+		player.Play()
+	case "pause":
+		player.Pause()
+	case "stop":
+		player.Stop()
+	}
 }

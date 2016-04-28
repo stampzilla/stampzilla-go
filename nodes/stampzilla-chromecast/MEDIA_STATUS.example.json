@@ -1,0 +1,250 @@
+{
+  "type": "MEDIA_STATUS",
+  "status": [
+    {
+      "mediaSessionId": 1,
+      "playbackRate": 1,
+      "playerState": "PAUSED",
+      "currentTime": 43.886499,
+      "supportedMediaCommands": 15,
+      "volume": {
+        "level": 1,
+        "muted": false
+      },
+      "media": {
+        "contentId": "https:\/\/mclients.googleapis.com\/music\/mplay?mjck=T37ck4ijh7xqzhivdw5ylo67w4a&pt=a&dv=1&slt=1461362427752&sig=2mYxewsJWL8rCp25iDm0gEp9iHc",
+        "streamType": "BUFFERED",
+        "contentType": "audio\/mpeg",
+        "metadata": {
+          "metadataType": 3,
+          "title": "Heroes (we could be) (feat. Tove Lo)",
+          "albumName": "Forever",
+          "albumArtist": "Alesso",
+          "artist": "Alesso",
+          "images": [
+            {
+              "url": "http:\/\/lh3.googleusercontent.com\/3YOhDvpJwvlJ5vtl9pjJMAlmv1OebfCV7L29nxzRwKdusQk5p644AgHwm9_lv0qsXeVShQbN5A",
+              "height": 0,
+              "width": 0
+            }
+          ]
+        },
+        "duration": 210
+      },
+      "currentItemId": 1,
+      "items": [
+        {
+          "itemId": 1,
+          "media": {
+            "contentId": "https:\/\/mclients.googleapis.com\/music\/mplay?mjck=T37ck4ijh7xqzhivdw5ylo67w4a&pt=a&dv=1&slt=1461362427752&sig=2mYxewsJWL8rCp25iDm0gEp9iHc",
+            "streamType": "BUFFERED",
+            "contentType": "audio\/mpeg",
+            "metadata": {
+              "metadataType": 3,
+              "title": "Heroes (we could be) (feat. Tove Lo)",
+              "albumName": "Forever",
+              "albumArtist": "Alesso",
+              "artist": "Alesso",
+              "images": [
+                {
+                  "url": "http:\/\/lh3.googleusercontent.com\/3YOhDvpJwvlJ5vtl9pjJMAlmv1OebfCV7L29nxzRwKdusQk5p644AgHwm9_lv0qsXeVShQbN5A",
+                  "height": 0,
+                  "width": 0
+                }
+              ]
+            },
+            "duration": 210
+          },
+          "autoplay": false,
+          "customData": {
+            "httpHeaders": {
+              "Authorization": "playon=A"
+            },
+            "itemId": "73b5aa13-7da9-4276-8f3a-f8f257b68e64",
+            "queueBaseUrl": "https:\/\/www.googleapis.com\/musicqueue\/v1.0\/",
+            "contentType": "application\/x-cloud-queue"
+          }
+        }
+      ],
+      "repeatMode": "REPEAT_OFF",
+      "customData": {
+        "queueVersion": "33",
+        "itemId": "73b5aa13-7da9-4276-8f3a-f8f257b68e64",
+        "canSkip": true
+      }
+    }
+  ],
+  "requestId": 4
+}
+
+
+
+
+{
+  "type": "MEDIA_STATUS",
+  "status": [
+    {
+      "mediaSessionId": 1,
+      "playbackRate": 1,
+      "playerState": "PLAYING",
+      "currentTime": 43.886499,
+      "supportedMediaCommands": 15,
+      "volume": {
+        "level": 1,
+        "muted": false
+      },
+      "currentItemId": 1,
+      "repeatMode": "REPEAT_OFF",
+      "customData": {
+        "queueVersion": "33",
+        "itemId": "73b5aa13-7da9-4276-8f3a-f8f257b68e64",
+        "canSkip": true
+      }
+    }
+  ],
+  "requestId": 0
+}
+
+
+{
+    "type": "MEDIA_STATUS",
+    "status": [
+        {
+            "mediaSessionId": 2,
+            "playbackRate": 1,
+            "playerState": "PLAYING",
+            "currentTime": 2437.323039,
+            "supportedMediaCommands": 15,
+            "volume": {
+                "level": 1,
+                "muted": false
+            },
+            "media": {
+                "contentId": "http://svtplay4j-f.akamaihd.net/i/se/open/20160422/1373446-004A/PG-1373446-004A-UPPTILLBEVIS-01_,988,240,348,456,636,1680,2796,.mp4.csmil/master.m3u8?alt=http%3A%2F%2Fswitcher.cdn.svt.se%2F1373446-004A.m3u8&cc1=name=Svenska~default=yes~forced=no~uri=http://media.svt.se/download/mcc/test/core-prd/SUB-1373446-004A-UPPTILLBEVIS/index.m3u8~lang=sv&__b__=3000&b=0-9000",
+                "streamType": "NONE",
+                "contentType": "application/vnd.apple.mpegurl",
+                "metadata": {
+                    "metadataType": 0,
+                    "images": [
+                        {
+                            "url": "http://www.svt.se/cachable_image/1461340790000/svtplay/article8021950.svt/ALTERNATES/extralarge/svt-upptillbevis-2016-e04-78a4-jpg",
+                            "width": 0,
+                            "height": 0
+                        },
+                        {
+                            "url": "http://www.svt.se/cachable_image/1461340790000/svtplay/article8021950.svt/ALTERNATES/extralarge/svt-upptillbevis-2016-e04-78a4-jpg",
+                            "width": 0,
+                            "height": 0
+                        }
+                    ],
+                    "title": "Upp till bevis",
+                    "subtitle": "Avsnitt 4"
+                },
+                "duration": 3486.8799,
+                "customData": {
+                    "videoId": 1373446004,
+                    "statisticsData": "{\"broadcastDate\":\"000000\",\"broadcastTime\":\"000000\",\"category\":\"1140-blandat-noje\",\"client\":\"svt-play\",\"context\":null,\"folderStructure\":\"upp-till-bevis\",\"mmsCategory\":\"1\",\"mmsClientNr\":\"1001001\",\"programId\":\"1373446-004A\",\"statisticsUrl\":\"http://ld.svt.se/svt/app/s?svt-play.upp-till-bevis.avsnitt-4\",\"title\":\"avsnitt-4\",\"viewerId\":null,\"isLive\":\"0\",\"mediaPlayerName\":\"Android-1.2.9\",\"mediaPlayerVersion\":\"svtlib-svtplayer-android-1.2.9-svt-play\",\"show\":\"upp-till-bevis\",\"subSite\":\"svtplay.android\",\"clip\":false}",
+                    "showSubtitles": false
+                }
+            },
+            "currentItemId": 1,
+            "items": [
+                {
+                    "itemId": 1,
+                    "media": {
+                        "contentId": "http://svtplay4j-f.akamaihd.net/i/se/open/20160422/1373446-004A/PG-1373446-004A-UPPTILLBEVIS-01_,988,240,348,456,636,1680,2796,.mp4.csmil/master.m3u8?alt=http%3A%2F%2Fswitcher.cdn.svt.se%2F1373446-004A.m3u8&cc1=name=Svenska~default=yes~forced=no~uri=http://media.svt.se/download/mcc/test/core-prd/SUB-1373446-004A-UPPTILLBEVIS/index.m3u8~lang=sv&__b__=3000&b=0-9000",
+                        "streamType": "NONE",
+                        "contentType": "application/vnd.apple.mpegurl",
+                        "metadata": {
+                            "metadataType": 0,
+                            "images": [
+                                {
+                                    "url": "http://www.svt.se/cachable_image/1461340790000/svtplay/article8021950.svt/ALTERNATES/extralarge/svt-upptillbevis-2016-e04-78a4-jpg",
+                                    "width": 0,
+                                    "height": 0
+                                },
+                                {
+                                    "url": "http://www.svt.se/cachable_image/1461340790000/svtplay/article8021950.svt/ALTERNATES/extralarge/svt-upptillbevis-2016-e04-78a4-jpg",
+                                    "width": 0,
+                                    "height": 0
+                                }
+                            ],
+                            "title": "Upp till bevis",
+                            "subtitle": "Avsnitt 4"
+                        },
+                        "duration": 3486.8799,
+                        "customData": {
+                            "videoId": 1373446004,
+                            "statisticsData": "{\"broadcastDate\":\"000000\",\"broadcastTime\":\"000000\",\"category\":\"1140-blandat-noje\",\"client\":\"svt-play\",\"context\":null,\"folderStructure\":\"upp-till-bevis\",\"mmsCategory\":\"1\",\"mmsClientNr\":\"1001001\",\"programId\":\"1373446-004A\",\"statisticsUrl\":\"http://ld.svt.se/svt/app/s?svt-play.upp-till-bevis.avsnitt-4\",\"title\":\"avsnitt-4\",\"viewerId\":null,\"isLive\":\"0\",\"mediaPlayerName\":\"Android-1.2.9\",\"mediaPlayerVersion\":\"svtlib-svtplayer-android-1.2.9-svt-play\",\"show\":\"upp-till-bevis\",\"subSite\":\"svtplay.android\",\"clip\":false}",
+                            "showSubtitles": false
+                        }
+                    },
+                    "autoplay": true
+                }
+            ],
+            "repeatMode": "REPEAT_OFF"
+        }
+    ],
+    "requestId": 1
+}
+
+
+
+{
+    "type": "MEDIA_STATUS",
+    "status": [
+        {
+            "mediaSessionId": 1,
+            "playbackRate": 1,
+            "playerState": "BUFFERING",
+            "currentTime": 0,
+            "supportedMediaCommands": 15,
+            "volume": {
+                "level": 1,
+                "muted": false
+            },
+            "media": {
+                "contentId": "http://http-live.sr.se/p3-mp3-192",
+                "streamType": "BUFFERED",
+                "contentType": "audio/mpeg",
+                "duration": null
+            },
+            "currentItemId": 1,
+            "items": [
+                {
+                    "itemId": 1,
+                    "media": {
+                        "contentId": "http://http-live.sr.se/p3-mp3-192",
+                        "streamType": "BUFFERED",
+                        "contentType": "audio/mpeg",
+                        "duration": null
+                    },
+                    "autoplay": true,
+                    "customData": {}
+                }
+            ],
+            "repeatMode": "REPEAT_OFF"
+        }
+    ],
+    "requestId": 3
+}
+
+{
+    "type": "MEDIA_STATUS",
+    "status": [
+        {
+            "mediaSessionId": 1,
+            "playbackRate": 1,
+            "playerState": "PLAYING",
+            "currentTime": 0.853653,
+            "supportedMediaCommands": 15,
+            "volume": {
+                "level": 1,
+                "muted": false
+            },
+            "currentItemId": 1,
+            "repeatMode": "REPEAT_OFF"
+        }
+    ],
+    "requestId": 0
+}
