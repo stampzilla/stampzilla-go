@@ -22,7 +22,7 @@ type Logic struct {
 	re     *regexp.Regexp
 	sync.RWMutex
 	Nodes         *serverprotocol.Nodes `inject:""`
-	ActionService *ActionService              `inject:""`
+	ActionService *ActionService        `inject:""`
 }
 
 func NewLogic() *Logic {
@@ -205,11 +205,13 @@ func (l *Logic) RestoreRulesFromFile(path string) {
 	}
 
 	type local_rule struct {
-		Name         string           `json:"name"`
-		Uuid         string           `json:"uuid"`
-		Conditions_  []*ruleCondition `json:"conditions"`
-		EnterActions []string         `json:"enterActions"`
-		ExitActions  []string         `json:"exitActions"`
+		Name               string           `json:"name"`
+		Uuid               string           `json:"uuid"`
+		Conditions_        []*ruleCondition `json:"conditions"`
+		EnterActions       []string         `json:"enterActions"`
+		ExitActions        []string         `json:"exitActions"`
+		EnterCancelActions []string         `json:"enterCancelActions"`
+		ExitCancelActions  []string         `json:"exitCancelActions"`
 	}
 
 	var rules []*local_rule
@@ -237,6 +239,14 @@ func (l *Logic) RestoreRulesFromFile(path string) {
 		for _, uuid := range rule.ExitActions {
 			a := l.ActionService.GetByUuid(uuid)
 			r.AddExitAction(a)
+		}
+		for _, uuid := range rule.EnterCancelActions {
+			a := l.ActionService.GetByUuid(uuid)
+			r.AddEnterCancelAction(a)
+		}
+		for _, uuid := range rule.ExitCancelActions {
+			a := l.ActionService.GetByUuid(uuid)
+			r.AddExitCancelAction(a)
 		}
 	}
 }
