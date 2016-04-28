@@ -17,19 +17,25 @@ type Rule interface {
 	RunExit()
 	AddExitAction(Action)
 	AddEnterAction(Action)
+	AddExitCancelAction(Action)
+	AddEnterCancelAction(Action)
 	AddCondition(RuleCondition)
 	Conditions() []RuleCondition
 }
 
 type rule struct {
-	Name_         string          `json:"name"`
-	Uuid_         string          `json:"uuid"`
-	Conditions_   []RuleCondition `json:"conditions"`
-	EnterActions_ []string        `json:"enterActions"`
-	ExitActions_  []string        `json:"exitActions"`
-	enterActions_ []Action
-	exitActions_  []Action
-	condState     bool
+	Name_               string          `json:"name"`
+	Uuid_               string          `json:"uuid"`
+	Conditions_         []RuleCondition `json:"conditions"`
+	EnterActions_       []string        `json:"enterActions"`
+	ExitActions_        []string        `json:"exitActions"`
+	EnterCancelActions_ []string        `json:"enterCancelActions"`
+	ExitCancelActions_  []string        `json:"exitCancelActions"`
+	enterActions_       []Action
+	exitActions_        []Action
+	enterCancelActions_ []Action
+	exitCancelActions_  []Action
+	condState           bool
 	sync.RWMutex
 	nodes *protocol.Nodes
 }
@@ -66,6 +72,9 @@ func (r *rule) SetCondState(cond bool) {
 }
 func (r *rule) RunEnter() {
 	log.Debugf("Rule enter: %s", r.Uuid())
+	for _, a := range r.enterCancelActions_ {
+		a.Cancel()
+	}
 	for _, a := range r.exitActions_ {
 		a.Cancel()
 	}
@@ -75,6 +84,9 @@ func (r *rule) RunEnter() {
 }
 func (r *rule) RunExit() {
 	log.Debugf("Rule exit: %s", r.Uuid())
+	for _, a := range r.exitCancelActions_ {
+		a.Cancel()
+	}
 	for _, a := range r.enterActions_ {
 		a.Cancel()
 	}
@@ -100,6 +112,26 @@ func (r *rule) AddEnterAction(a Action) {
 	r.Lock()
 	r.enterActions_ = append(r.enterActions_, a)
 	r.EnterActions_ = append(r.EnterActions_, a.Uuid())
+	r.Unlock()
+}
+func (r *rule) AddExitCancelAction(a Action) {
+	if a == nil {
+		log.Error("Error adding ExitAction. Action is nil")
+		return
+	}
+	r.Lock()
+	r.exitCancelActions_ = append(r.exitCancelActions_, a)
+	r.ExitCancelActions_ = append(r.ExitCancelActions_, a.Uuid())
+	r.Unlock()
+}
+func (r *rule) AddEnterCancelAction(a Action) {
+	if a == nil {
+		log.Error("Error adding EnterAction. Action is nil")
+		return
+	}
+	r.Lock()
+	r.enterCancelActions_ = append(r.enterCancelActions_, a)
+	r.EnterCancelActions_ = append(r.EnterCancelActions_, a.Uuid())
 	r.Unlock()
 }
 func (r *rule) AddCondition(a RuleCondition) {

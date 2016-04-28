@@ -14,7 +14,8 @@ func TestTaskSetUuid(t *testing.T) {
 func TestTaskRunAndAddActions(t *testing.T) {
 	task := &task{}
 	actionRunCount := 0
-	action := NewRuleActionStub(&actionRunCount, t)
+	actionCancelCount := 0
+	action := NewRuleActionStub(&actionRunCount, &actionCancelCount, t)
 	task.AddAction(action)
 	task.AddAction(action)
 	task.Run()
