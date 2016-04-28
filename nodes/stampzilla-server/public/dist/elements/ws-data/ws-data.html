@@ -2,10 +2,30 @@
 	<template>
 		<style>
 			:host {
-				display: none;
+				display: block;
+			}
+			#dialog {
+				width:400px;
 			}
 		</style>
-		<x-websocket id="socket" json auto url="{{url}}" message="{{message}}"></x-websocket>
+
+		<paper-dialog 
+			id="dialog"
+			modal="true" 
+			entry-animation="scale-up-animation"
+			exit-animation="fade-out-animation"
+			on-iron-overlay-closed="setNewUrl"
+		>
+			<h2>Change connection url</h2>
+			<paper-checkbox checked="[[connected]]" disabled> Connected</paper-checkbox>
+			<paper-input label="text input" value="{{newUrl}}"></paper-input>
+	  	  <div class="buttons">
+			<paper-button dialog-dismiss>Cancel</paper-button>
+			<paper-button dialog-confirm>Done</paper-button>
+		  </div>
+		</paper-dialog>
+
+		<x-websocket id="socket" json auto={{auto}} url="{{url}}" message="{{message}}"></x-websocket>
 	</template>
 
 	<script>
@@ -16,7 +36,11 @@
 				properties: {
 					url: {
 						type: String,
-						value: 'ws://'+location.hostname+':8080/socket',
+						notify: true,
+						observer: 'urlChanged'
+					},
+					newUrl: {
+						type: String,
 						notify: true
 					},
 					nodes: {
@@ -28,6 +52,14 @@
 						type: Object,
 						notify: true,
 						observer: 'newMessage'
+					},
+					connected: {
+						type: Boolean,
+						notify: true
+					},
+					auto: {
+						type: Boolean,
+						notify: true
 					}
 				},
 				_toArray: function(obj) {
@@ -92,6 +124,38 @@
 					app.addEventListener('ws-send', function (e) {
 						self.$.socket.send(e.detail);
 					});
+
+					this.addEventListener('open',function() {
+						self.$.dialog.open();
+					});
+
+					this.$.socket.addEventListener('open',function(event) {
+						event.stopPropagation();
+						self.connected = true;
+					});
+					this.$.socket.addEventListener('close',function() {
+						self.connected = false;
+					});
+
+
+					this.auto = true;
+					var url = window.localStorage.getItem('stampzilla-url');
+					if ( !url ) {
+						this.url = 'ws://'+location.hostname+':8080/socket';
+					} else {
+						this.url = url;
+					}
+
+				},
+				urlChanged: function() {
+					this.newUrl = this.url;
+				},
+				setNewUrl: function(c, d) {
+					if ( !d.confirmed ) {
+						return;
+					}
+					window.localStorage.setItem('stampzilla-url', /** @type {string} */ (this.newUrl));
+					this.url = this.newUrl;
 				}
 			});
 		})();

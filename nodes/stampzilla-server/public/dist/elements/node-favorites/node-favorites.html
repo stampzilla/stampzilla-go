@@ -6,10 +6,9 @@
 				display: block;
 			}
 		</style>
-		<template is="dom-repeat" items="{{nodes}}" as="node">
-			<h1>{{ node.Name }}</h1>
+		<template is="dom-repeat" items="{{nodes}}" as="node" index-as="node_index">
 			<template is="dom-repeat" items="{{node.Elements}}">
-				<template is="dom-if" if="_checkFavorite(item)">
+				<template is="dom-if" if="{{_checkFavorite(node_index, item)}}">
 					<node-element node=[[node]] element={{item}} favorites="{{favorites}}">
 					</node-element>
 				</template>
@@ -32,9 +31,8 @@
 						notify: true,
 					}
 				},
-				_checkFavorite: function(item) {
-					console.log(item);
-					return true;
+				_checkFavorite: function(uuid, item) {
+					return( this.favorites[this.nodes[uuid].Uuid+':'+item.Name] !== undefined && this.favorites[this.nodes[uuid].Uuid+':'+item.Name] );
 					//this.favoritesOut = {test: 123};
 				}
 			});
