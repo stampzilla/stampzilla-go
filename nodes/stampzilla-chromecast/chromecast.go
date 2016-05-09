@@ -64,7 +64,12 @@ func (c *Chromecast) Stop() {
 }
 
 func (c *Chromecast) PlayUrl(url string, contentType string) {
-	c.Device.ReceiverHandler.LaunchApp(gocast.AppMedia)
+	err := c.Device.ReceiverHandler.LaunchApp(gocast.AppMedia)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
 	if contentType == "" {
 		contentType = "audio/mpeg"
 	}
@@ -74,6 +79,10 @@ func (c *Chromecast) PlayUrl(url string, contentType string) {
 		ContentType: contentType,
 	}
 	c.mediaHandler.LoadMedia(item, 0, true, map[string]interface{}{})
+	if err != nil {
+		log.Error(err)
+		return
+	}
 }
 
 func (c *Chromecast) Listen() {
