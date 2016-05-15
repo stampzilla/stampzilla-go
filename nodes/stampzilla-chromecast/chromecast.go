@@ -100,8 +100,8 @@ func (c *Chromecast) waitForAppLaunch(app string) error {
 			return nil
 		}
 		return fmt.Errorf("Wrong app launched. Expected %s got %s", app, launchedApp)
-	case <-time.After(time.Second * 10):
-		return fmt.Errorf("timeout waiting for app launch after 10 seconds")
+	case <-time.After(time.Second * 20):
+		return fmt.Errorf("timeout waiting for app launch after 20 seconds")
 
 	}
 
