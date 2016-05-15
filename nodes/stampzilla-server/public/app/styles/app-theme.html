@@ -21,33 +21,66 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
   /* Application theme */
 
-  :root {
+ /* :root {
     --dark-primary-color: #303F9F;
     --default-primary-color: #3F51B5;
     --light-primary-color: #C5CAE9;
-    --text-primary-color: #ffffff; /*text/icons*/
+    --text-primary-color: #ffffff; 
     --accent-color: #FF4081;
     --primary-background-color: #c5cae9;
     --primary-text-color: #212121;
     --secondary-text-color: #727272;
     --disabled-text-color: #bdbdbd;
-    --divider-color: #B6B6B6;
+	--divider-color: #B6B6B6;
 
+	--dark-primary-color    : #388E3C; 
+	--default-primary-color : #4CAF50; 
+	--light-primary-color   : #C8E6C9; 
+	--text-primary-color    : #FFFFFF; 
+	--accent-color          : #795548;
+	--primary-text-color    : #212121; 
+	--secondary-text-color  : #727272;
+	--divider-color         : #B6B6B6; 
     /* Components */
 
-    /* paper-drawer-panel */
+    /* paper-drawer-panel *
     --drawer-menu-color: #ffffff;
     --drawer-border-color: 1px solid #ccc;
     --drawer-toolbar-border-color: 1px solid rgba(0, 0, 0, 0.22);
 
-    /* paper-menu */
+    /* paper-menu *
     --paper-menu-background-color: #fff;
     --menu-link-color: #111111;
+  }*/
+
+  :root {
+    --dark-primary-color:       #5D4037;
+    --default-primary-color:    #795548;
+    --light-primary-color:      #D7CCC8;
+    --text-primary-color:       #FFFFFF;
+    --accent-color:             #536DFE;
+    --primary-background-color: #ffffff;
+    --primary-text-color:       #212121;
+    --secondary-text-color:     #727272;
+    --disabled-text-color:      #BDBDBD;
+    --divider-color:            #B6B6B6;
+
+
+    /* Components */
+
+    /* paper-drawer-panel */
+    --drawer-menu-color:           #ffffff;
+    --drawer-border-color:         1px solid #ccc;
+    --drawer-toolbar-border-color: 1px solid rgba(0, 0, 0, 0.22);
+
+    /* paper-menu */
+    --paper-menu-background-color: #fff;
+    --menu-link-color:             #111111;
   }
 
   paper-toolbar iron-selector * {
 	display:none;
-}
+  }
 
   paper-toolbar iron-selector .iron-selected {
 	display:block;
@@ -133,6 +166,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     -webkit-transform-origin: left center;
     transform-origin: left center;
   }
+
+
 
   /* Height of the scroll area */
   .content {

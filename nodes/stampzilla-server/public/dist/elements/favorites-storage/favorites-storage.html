@@ -16,8 +16,12 @@
 		  favorites: {
 			type: Object,
 			notify: true,
-			value: {}
+			value: {},
+			observer: 'changed'
 		  }
+		},
+		changed: function(){
+			console.log('Favorites changed', this.favorites);
 		},
 		initializeDefaultValue: function() {
 			console.log('initialize favorite localstorage');

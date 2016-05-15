@@ -11,6 +11,7 @@ import (
 
 type ruleActionStub struct {
 	actionCount *int
+	cancelCount *int
 	t           *testing.T
 }
 
@@ -19,6 +20,7 @@ func (ra *ruleActionStub) Run() {
 	*ra.actionCount++
 }
 func (ra *ruleActionStub) Cancel() {
+	*ra.cancelCount++
 }
 func (ra *ruleActionStub) Uuid() string {
 	return ""
@@ -27,8 +29,8 @@ func (ra *ruleActionStub) Name() string {
 	return ""
 }
 
-func NewRuleActionStub(actionCount *int, t *testing.T) *ruleActionStub {
-	return &ruleActionStub{actionCount, t}
+func NewRuleActionStub(actionCount, actionCancelCount *int, t *testing.T) *ruleActionStub {
+	return &ruleActionStub{actionCount, actionCancelCount, t}
 }
 
 func TestParseRuleEnterExitActionsEvaluateTrue(t *testing.T) {
@@ -38,9 +40,12 @@ func TestParseRuleEnterExitActionsEvaluateTrue(t *testing.T) {
 	rule := logic.AddRule("test rule 1")
 
 	actionRunCount := 0
-	action := NewRuleActionStub(&actionRunCount, t)
+	actionCancelCount := 0
+	action := NewRuleActionStub(&actionRunCount, &actionCancelCount, t)
 	rule.AddEnterAction(action)
 	rule.AddExitAction(action)
+	rule.AddEnterCancelAction(action)
+	rule.AddExitCancelAction(action)
 
 	rule.AddCondition(&ruleCondition{`Devices[1].State`, "==", true, "uuid1234"})
 	rule.AddCondition(&ruleCondition{`Devices[2].State`, "!=", "OFF", "uuid1234"})
@@ -90,13 +95,16 @@ func TestParseRuleEnterExitActionsEvaluateTrue(t *testing.T) {
 	logic.EvaluateRules()
 
 	if len(logic.States()) != 1 {
-		t.Errorf("length of logic.States should be 1. got: %s", len(logic.States()))
+		t.Errorf("length of logic.States should be 1. got: %d", len(logic.States()))
 	}
 
-	if actionRunCount == 2 {
-		return
+	if actionRunCount != 2 {
+		t.Errorf("actionRunCount wrong expected: %d got %d", 2, actionRunCount)
 	}
-	t.Errorf("actionRunCount wrong expected: %s got %s", 2, actionRunCount)
+	if actionCancelCount != 4 {
+		t.Errorf("actionCancelCount wrong expected: %d got %d", 4, actionCancelCount)
+	}
+	return
 }
 
 func TestParseRuleEnterExitActionsEvaluateFalse(t *testing.T) {
@@ -106,7 +114,8 @@ func TestParseRuleEnterExitActionsEvaluateFalse(t *testing.T) {
 	rule := logic.AddRule("test rule 1")
 
 	actionRunCount := 0
-	action := NewRuleActionStub(&actionRunCount, t)
+	actionCancelCount := 0
+	action := NewRuleActionStub(&actionRunCount, &actionCancelCount, t)
 	rule.AddEnterAction(action)
 	rule.AddExitAction(action)
 
@@ -174,7 +183,8 @@ func TestParseRuleEnterExitActionsWithoutUuid(t *testing.T) {
 	rule := logic.AddRule("test rule 1")
 
 	actionRunCount := 0
-	action := NewRuleActionStub(&actionRunCount, t)
+	actionCancelCount := 0
+	action := NewRuleActionStub(&actionRunCount, &actionCancelCount, t)
 	rule.AddEnterAction(action)
 	rule.AddExitAction(action)
 
@@ -242,7 +252,8 @@ func TestListenForChanges(t *testing.T) {
 	rule := logic.AddRule("test rule 1")
 
 	actionRunCount := 0
-	action := NewRuleActionStub(&actionRunCount, t)
+	actionCancelCount := 0
+	action := NewRuleActionStub(&actionRunCount, &actionCancelCount, t)
 	rule.AddEnterAction(action)
 	rule.AddExitAction(action)
 
@@ -326,7 +337,8 @@ func TestParseRuleEnterExitActionsWithoutConditions(t *testing.T) {
 	rule := logic.AddRule("test rule without conditions")
 
 	actionRunCount := 0
-	action := NewRuleActionStub(&actionRunCount, t)
+	actionCancelCount := 0
+	action := NewRuleActionStub(&actionRunCount, &actionCancelCount, t)
 	rule.AddEnterAction(action)
 	rule.AddExitAction(action)
 

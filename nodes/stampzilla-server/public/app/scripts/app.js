@@ -25,7 +25,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
   // Listen for template bound event to know when bindings
   // have resolved and content has been stamped to the page
   app.addEventListener('dom-change', function() {
-    console.log('Our app is ready to rock!');
+	var t = document.querySelector('#drawerToolbar');
+	t.addEventListener('click',function() {
+		var dialog = document.getElementById('socket');
+		dialog.fire('open');
+	});
   });
 
   // See https://github.com/Polymer/polymer/issues/1381
