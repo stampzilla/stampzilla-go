@@ -9,6 +9,7 @@ import (
 	"github.com/stampzilla/gocast"
 	"github.com/stampzilla/gocast/events"
 	"github.com/stampzilla/gocast/handlers"
+	"github.com/stampzilla/gocast/responses"
 )
 
 type Chromecast struct {
@@ -17,7 +18,7 @@ type Chromecast struct {
 
 	PrimaryApp      string
 	PrimaryEndpoint string
-	//PlaybackActive  bool
+	Playing         bool
 	//Paused          bool
 
 	IsStandBy     bool
@@ -81,7 +82,7 @@ func (c *Chromecast) PlayUrl(url string, contentType string) {
 	if contentType == "" {
 		contentType = "audio/mpeg"
 	}
-	item := handlers.MediaItem{
+	item := responses.MediaItem{
 		ContentId:   url,
 		StreamType:  "BUFFERED",
 		ContentType: contentType,
@@ -158,6 +159,19 @@ func (c *Chromecast) Event(event events.Event) {
 		c.IsActiveInput = data.Status.IsActiveInput
 		c.Volume = data.Status.Volume.Level
 		c.Muted = data.Status.Volume.Muted
+	case events.Media:
+		playing := c.Playing
+		if data.PlayerState == "PLAYING" {
+			c.Playing = true
+		} else {
+			c.Playing = false
+		}
+
+		//Only publish if playing state changed
+		if playing != c.Playing {
+			c.publish()
+		}
+		return
 
 	//gocast.MediaEvent:
 	default:
