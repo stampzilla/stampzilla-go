@@ -54,8 +54,13 @@ func main() { /*{{{*/
 func discoveryListner(discovery *discovery.Service) {
 	for device := range discovery.Found() {
 		log.Debugf("New device discoverd: %s", device.String())
-
 		NewChromecast(device)
+		go func() {
+			err := device.Connect()
+			if err != nil {
+				log.Error(err)
+			}
+		}()
 	}
 }
 

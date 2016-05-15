@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"net"
+	"time"
 
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/gocast"
@@ -32,6 +34,8 @@ type Chromecast struct {
 	mediaHandler           *handlers.Media
 	mediaConnectionHandler *handlers.Connection
 
+	appLaunch chan string
+
 	*gocast.Device
 }
 
@@ -41,14 +45,10 @@ func NewChromecast(d *gocast.Device) *Chromecast {
 	}
 
 	d.OnEvent(c.Event)
-	err := d.Connect()
-	if err != nil {
-		log.Error(err)
-		return c
-	}
 
 	c.mediaHandler = &handlers.Media{}
 	c.mediaConnectionHandler = &handlers.Connection{}
+	c.appLaunch = make(chan string)
 
 	return c
 }
@@ -65,9 +65,17 @@ func (c *Chromecast) Stop() {
 
 func (c *Chromecast) PlayUrl(url string, contentType string) {
 	err := c.Device.ReceiverHandler.LaunchApp(gocast.AppMedia)
-	if err != nil {
+	if err != nil && err != handlers.ErrAppAlreadyLaunched {
 		log.Error(err)
 		return
+	}
+
+	if err != handlers.ErrAppAlreadyLaunched {
+		//Wait for new media connection to launched app
+		if err := c.waitForAppLaunch(gocast.AppMedia); err != nil {
+			log.Error(err)
+			return
+		}
 	}
 
 	if contentType == "" {
@@ -78,20 +86,37 @@ func (c *Chromecast) PlayUrl(url string, contentType string) {
 		StreamType:  "BUFFERED",
 		ContentType: contentType,
 	}
-	c.mediaHandler.LoadMedia(item, 0, true, map[string]interface{}{})
+	err = c.mediaHandler.LoadMedia(item, 0, true, map[string]interface{}{})
 	if err != nil {
 		log.Error(err)
 		return
 	}
 }
 
-func (c *Chromecast) Listen() {
+func (c *Chromecast) waitForAppLaunch(app string) error {
+	select {
+	case launchedApp := <-c.appLaunch:
+		if app == launchedApp {
+			return nil
+		}
+		return fmt.Errorf("Wrong app launched. Expected %s got %s", app, launchedApp)
+	case <-time.After(time.Second * 10):
+		return fmt.Errorf("timeout waiting for app launch after 10 seconds")
+
+	}
+
+}
+func (c *Chromecast) appLaunched(app string) {
+	select {
+	case c.appLaunch <- app:
+	default:
+	}
 }
 
 func (c *Chromecast) Event(event events.Event) {
 	switch data := event.(type) {
 	case events.Connected:
-		log.Info(c.Name(), "- Connected, weeihoo")
+		log.Info(c.Name(), "- Connected")
 
 		c.Addr = c.Ip()
 		c.Port = c.Device.Port()
@@ -100,7 +125,7 @@ func (c *Chromecast) Event(event events.Event) {
 
 		state.Add(c)
 	case events.Disconnected:
-		log.Warn(c.Name(), "- Disconnected, bah :/")
+		log.Warn(c.Name(), "- Disconnected")
 
 		state.Remove(c)
 	case events.AppStarted:
@@ -115,6 +140,7 @@ func (c *Chromecast) Event(event events.Event) {
 			c.Subscribe("urn:x-cast:com.google.cast.tp.connection", data.TransportId, c.mediaConnectionHandler)
 			c.Subscribe("urn:x-cast:com.google.cast.media", data.TransportId, c.mediaHandler)
 		}
+		c.appLaunched(data.AppID)
 
 	case events.AppStopped:
 		log.Info(c.Name(), "- App stopped:", data.DisplayName, "(", data.AppID, ")")
@@ -122,9 +148,6 @@ func (c *Chromecast) Event(event events.Event) {
 
 		//unsubscribe from old channels
 		for _, v := range data.Namespaces {
-			if v.Name == "urn:x-cast:com.google.cast.media" {
-				c.mediaConnectionHandler.Disconnect()
-			}
 			c.UnsubscribeByUrnAndDestinationId(v.Name, data.TransportId)
 		}
 		c.PrimaryApp = ""
