@@ -94,8 +94,6 @@ func (c *Chromecast) Event(event events.Event) {
 		log.Warn(c.Name(), "- Disconnected, bah :/")
 
 		state.Remove(c)
-
-		c.Device.Connect()
 	case events.AppStarted:
 		log.Info(c.Name(), "- App started:", data.DisplayName, "(", data.AppID, ")")
 		//spew.Dump("Data:", data)
