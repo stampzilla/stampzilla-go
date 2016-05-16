@@ -153,6 +153,7 @@ func (c *Chromecast) Event(event events.Event) {
 		}
 		c.PrimaryApp = ""
 		c.PrimaryEndpoint = ""
+		c.Playing = false
 
 	case events.ReceiverStatus:
 		c.IsStandBy = data.Status.IsStandBy
