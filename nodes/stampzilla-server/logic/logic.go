@@ -58,7 +58,7 @@ func (l *Logic) Rules() []*rule {
 	defer l.RUnlock()
 	return l.Rules_
 }
-func (l *Logic) AddRule(name string) Rule {
+func (l *Logic) AddRule(name string) *rule {
 	r := &rule{Name_: name, Uuid_: uuid.New(), nodes: l.Nodes}
 	l.Lock()
 	defer l.Unlock()
