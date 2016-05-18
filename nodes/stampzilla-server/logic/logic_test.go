@@ -36,6 +36,11 @@ func NewRuleActionStub(actionCount, actionCancelCount *int, t *testing.T) *ruleA
 func TestParseRuleEnterExitActionsEvaluateTrue(t *testing.T) {
 
 	logic := NewLogic()
+	logic.Nodes = serverprotocol.NewNodes()
+	node := serverprotocol.NewNode()
+	node.SetName("one")
+	node.SetUuid("uuid1234")
+	logic.Nodes.Add(node)
 
 	rule := logic.AddRule("test rule 1")
 
@@ -110,6 +115,11 @@ func TestParseRuleEnterExitActionsEvaluateTrue(t *testing.T) {
 func TestParseRuleEnterExitActionsEvaluateFalse(t *testing.T) {
 
 	logic := NewLogic()
+	logic.Nodes = serverprotocol.NewNodes()
+	node := serverprotocol.NewNode()
+	node.SetName("one")
+	node.SetUuid("uuid1234")
+	logic.Nodes.Add(node)
 
 	rule := logic.AddRule("test rule 1")
 
@@ -179,6 +189,11 @@ func TestParseRuleEnterExitActionsEvaluateFalse(t *testing.T) {
 func TestParseRuleEnterExitActionsWithoutUuid(t *testing.T) {
 
 	logic := NewLogic()
+	logic.Nodes = serverprotocol.NewNodes()
+	node := serverprotocol.NewNode()
+	node.SetName("one")
+	node.SetUuid("uuid1234")
+	logic.Nodes.Add(node)
 
 	rule := logic.AddRule("test rule 1")
 
@@ -236,18 +251,23 @@ func TestParseRuleEnterExitActionsWithoutUuid(t *testing.T) {
 	logic.EvaluateRules()
 
 	if len(logic.States()) != 1 {
-		t.Errorf("length of logic.States should be 1. got: %s", len(logic.States()))
+		t.Errorf("length of logic.States should be 1. got: %d", len(logic.States()))
 	}
 
 	if actionRunCount == 0 {
 		return
 	}
-	t.Errorf("actionRunCount wrong expected: %s got %s", 0, actionRunCount)
+	t.Errorf("actionRunCount wrong expected: %d got %d", 0, actionRunCount)
 }
 
 func TestListenForChanges(t *testing.T) {
 
 	logic := NewLogic()
+	logic.Nodes = serverprotocol.NewNodes()
+	node1 := serverprotocol.NewNode()
+	node1.SetName("one")
+	node1.SetUuid("uuid1234")
+	logic.Nodes.Add(node1)
 
 	rule := logic.AddRule("test rule 1")
 

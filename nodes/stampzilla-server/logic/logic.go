@@ -38,6 +38,9 @@ func (l *Logic) States() map[string]string {
 }
 func (l *Logic) GetStateByUuid(uuid string) string {
 	node := l.Nodes.Search(uuid)
+	if node == nil {
+		return ""
+	}
 	l.RLock()
 	defer l.RUnlock()
 	if state, ok := l.states[node.Uuid()]; ok {
