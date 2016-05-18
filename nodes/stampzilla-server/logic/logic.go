@@ -137,10 +137,10 @@ func (l *Logic) evaluateRule(r Rule) bool {
 		return false
 	}
 
-	if r.Operator() == "and" || r.Operator() == "" {
+	if strings.ToLower(r.Operator()) == "and" || r.Operator() == "" {
 		return l.evaluateRuleAnd(r)
 	}
-	if r.Operator() == "or" {
+	if strings.ToLower(r.Operator()) == "or" {
 		return l.evaluateRuleOr(r)
 	}
 

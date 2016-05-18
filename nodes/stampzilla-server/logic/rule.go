@@ -22,6 +22,7 @@ type Rule interface {
 	AddCondition(RuleCondition)
 	Conditions() []RuleCondition
 	Operator() string
+	Active() bool
 }
 
 type rule struct {

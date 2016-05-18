@@ -78,6 +78,8 @@ func TestParseRuleEnterExitActionsEvaluateTrue(t *testing.T) {
 	logic.SetState("uuid1234", state)
 	logic.EvaluateRules()
 
+	assert.Equal(t, true, rule.Active())
+
 	state = `
 		{
 			"Devices": {
@@ -98,6 +100,8 @@ func TestParseRuleEnterExitActionsEvaluateTrue(t *testing.T) {
 	`
 	logic.SetState("uuid1234", state)
 	logic.EvaluateRules()
+
+	assert.Equal(t, false, rule.Active())
 
 	if len(logic.States()) != 1 {
 		t.Errorf("length of logic.States should be 1. got: %d", len(logic.States()))
