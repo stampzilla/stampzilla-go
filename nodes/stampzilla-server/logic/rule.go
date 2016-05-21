@@ -21,11 +21,16 @@ type Rule interface {
 	AddEnterCancelAction(Action)
 	AddCondition(RuleCondition)
 	Conditions() []RuleCondition
+	Operator() string
+	Active() bool
 }
 
 type rule struct {
 	Name_               string          `json:"name"`
 	Uuid_               string          `json:"uuid"`
+	Operator_           string          `json:"operator"`
+	Active_             bool            `json:"active"`
+	Enabled             bool            `json:"enabled"`
 	Conditions_         []RuleCondition `json:"conditions"`
 	EnterActions_       []string        `json:"enterActions"`
 	ExitActions_        []string        `json:"exitActions"`
@@ -40,6 +45,16 @@ type rule struct {
 	nodes *protocol.Nodes
 }
 
+func (r *rule) Operator() string {
+	r.RLock()
+	defer r.RUnlock()
+	return r.Operator_
+}
+func (r *rule) Active() bool {
+	r.RLock()
+	defer r.RUnlock()
+	return r.Active_
+}
 func (r *rule) Uuid() string {
 	r.RLock()
 	defer r.RUnlock()

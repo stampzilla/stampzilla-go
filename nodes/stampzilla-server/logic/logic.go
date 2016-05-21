@@ -18,7 +18,7 @@ import (
 
 type Logic struct {
 	states map[string]string
-	Rules_ []Rule
+	Rules_ []*rule
 	re     *regexp.Regexp
 	sync.RWMutex
 	Nodes         *serverprotocol.Nodes `inject:""`
@@ -37,9 +37,13 @@ func (l *Logic) States() map[string]string {
 	return l.states
 }
 func (l *Logic) GetStateByUuid(uuid string) string {
+	node := l.Nodes.Search(uuid)
+	if node == nil {
+		return ""
+	}
 	l.RLock()
 	defer l.RUnlock()
-	if state, ok := l.states[uuid]; ok {
+	if state, ok := l.states[node.Uuid()]; ok {
 		return state
 	}
 	return ""
@@ -49,12 +53,12 @@ func (l *Logic) SetState(uuid, jsonData string) {
 	l.states[uuid] = jsonData
 	l.Unlock()
 }
-func (l *Logic) Rules() []Rule {
+func (l *Logic) Rules() []*rule {
 	l.RLock()
 	defer l.RUnlock()
 	return l.Rules_
 }
-func (l *Logic) AddRule(name string) Rule {
+func (l *Logic) AddRule(name string) *rule {
 	r := &rule{Name_: name, Uuid_: uuid.New(), nodes: l.Nodes}
 	l.Lock()
 	defer l.Unlock()
@@ -64,7 +68,7 @@ func (l *Logic) AddRule(name string) Rule {
 func (self *Logic) EmptyRules() {
 	self.Lock()
 	defer self.Unlock()
-	self.Rules_ = make([]Rule, 0)
+	self.Rules_ = make([]*rule, 0)
 }
 
 func (l *Logic) EvaluateRules() {
@@ -76,24 +80,23 @@ func (l *Logic) EvaluateRules() {
 			if evaluation {
 				log.Info("Rule: ", rule.Name(), " (", rule.Uuid(), ") - running enter actions")
 				rule.RunEnter()
+				rule.Lock()
+				rule.Active_ = true
+				rule.Unlock()
 				continue
 			}
 
 			log.Info("Rule: ", rule.Name(), " (", rule.Uuid(), ") - running exit actions")
 			rule.RunExit()
+			rule.Lock()
+			rule.Active_ = false
+			rule.Unlock()
 		}
 	}
 }
-func (l *Logic) evaluateRule(r Rule) bool {
+func (l *Logic) evaluateRuleAnd(r Rule) bool {
 	var state string
-	if len(r.Conditions()) == 0 {
-		return false
-	}
-
 	for _, cond := range r.Conditions() {
-		//fmt.Println(cond.StatePath())
-		//for _, state := range l.States() {
-		//var value string
 		if state = l.GetStateByUuid(cond.Uuid()); state == "" {
 			return false
 		}
@@ -103,13 +106,45 @@ func (l *Logic) evaluateRule(r Rule) bool {
 			log.Error(err)
 		}
 
-		//fmt.Println("path output:", value)
-		// All conditions must evaluate to true
 		if !cond.Check(value) {
 			return false
 		}
 	}
 	return true
+}
+
+func (l *Logic) evaluateRuleOr(r Rule) bool {
+	var state string
+	for _, cond := range r.Conditions() {
+		if state = l.GetStateByUuid(cond.Uuid()); state == "" {
+			return false
+		}
+
+		value, err := l.path(state, cond.StatePath())
+		if err != nil {
+			log.Error(err)
+		}
+
+		if cond.Check(value) {
+			return true
+		}
+	}
+	return false
+}
+
+func (l *Logic) evaluateRule(r Rule) bool {
+	if len(r.Conditions()) == 0 {
+		return false
+	}
+
+	if strings.ToLower(r.Operator()) == "and" || r.Operator() == "" {
+		return l.evaluateRuleAnd(r)
+	}
+	if strings.ToLower(r.Operator()) == "or" {
+		return l.evaluateRuleOr(r)
+	}
+
+	return false
 }
 
 func (l *Logic) ListenForChanges(uuid string) chan string {
