@@ -182,8 +182,7 @@
 				},
 				handleToggle: function() {
 					var cmd = this.element.Command;
-					//cmd.params = [this.State.toString()];
-					cmd.params = null;
+					cmd.params = [this.PrimaryState.toString()];
 
 					var pkg = {
 						type: 'cmd',
