@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"regexp"
 	"strconv"
@@ -35,6 +36,17 @@ func (l *Logic) States() map[string]string {
 	l.RLock()
 	defer l.RUnlock()
 	return l.states
+}
+
+func (l *Logic) GetRuleByUuid(uuid string) *rule {
+	l.RLock()
+	defer l.RUnlock()
+	for _, v := range l.Rules_ {
+		if v.Uuid() == uuid {
+			return v
+		}
+	}
+	return nil
 }
 func (l *Logic) GetStateByUuid(uuid string) string {
 	node := l.Nodes.Search(uuid)
@@ -95,13 +107,8 @@ func (l *Logic) EvaluateRules() {
 	}
 }
 func (l *Logic) evaluateRuleAnd(r Rule) bool {
-	var state string
 	for _, cond := range r.Conditions() {
-		if state = l.GetStateByUuid(cond.Uuid()); state == "" {
-			return false
-		}
-
-		value, err := l.path(state, cond.StatePath())
+		value, err := l.getValueToEvaluate(cond)
 		if err != nil {
 			log.Error(err)
 		}
@@ -114,13 +121,8 @@ func (l *Logic) evaluateRuleAnd(r Rule) bool {
 }
 
 func (l *Logic) evaluateRuleOr(r Rule) bool {
-	var state string
 	for _, cond := range r.Conditions() {
-		if state = l.GetStateByUuid(cond.Uuid()); state == "" {
-			return false
-		}
-
-		value, err := l.path(state, cond.StatePath())
+		value, err := l.getValueToEvaluate(cond)
 		if err != nil {
 			log.Error(err)
 		}
@@ -132,7 +134,19 @@ func (l *Logic) evaluateRuleOr(r Rule) bool {
 	return false
 }
 
+func (l *Logic) getValueToEvaluate(cond RuleCondition) (interface{}, error) {
+	if cond.Uuid() == "server.logic" {
+		rule := l.GetRuleByUuid(cond.StatePath())
+		return rule.Active(), nil
+	}
+	if state := l.GetStateByUuid(cond.Uuid()); state != "" {
+		return l.path(state, cond.StatePath())
+	}
+	return nil, fmt.Errorf("Uuid %s not found", cond.Uuid())
+}
+
 func (l *Logic) evaluateRule(r Rule) bool {
+	//TODO if rule.enabled is false return false here??? default enabled to true in existing rules or do migration?
 	if len(r.Conditions()) == 0 {
 		return false
 	}
