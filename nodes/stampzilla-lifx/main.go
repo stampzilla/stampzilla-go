@@ -47,7 +47,12 @@ func main() { // {{{
 	state = NewState()
 	node.SetState(state)
 
-	lifxClient = client.New()
+	var err error
+	lifxClient, err = client.New()
+	if err != nil {
+		log.Error(err)
+		return
+	}
 	go discoverWorker(lifxClient, connection)
 
 	select {}
