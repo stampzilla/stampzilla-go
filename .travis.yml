@@ -16,5 +16,6 @@ install:
 
 script: 
   - go test -v `go list ./... | grep -v telldus-events | grep -v stampzilla-hidcommander`
-  - bash coverage  
+  - bash coverage
+after_success:
   - goveralls -coverprofile=./gover.coverprofile -service travis-ci
