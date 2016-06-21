@@ -171,6 +171,55 @@ func main() { // {{{
 		Feedback: `PH`,
 	})
 
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeButton,
+		Name: "Dose 1 (1s)",
+		Command: &protocol.Command{
+			Cmd:  "dose1",
+			Args: []string{"1000"},
+		},
+	})
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeButton,
+		Name: "Dose 2 (1s)",
+		Command: &protocol.Command{
+			Cmd:  "dose2",
+			Args: []string{"1000"},
+		},
+	})
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeButton,
+		Name: "Dose 3 (1s)",
+		Command: &protocol.Command{
+			Cmd:  "dose3",
+			Args: []string{"1000"},
+		},
+	})
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeButton,
+		Name: "Dose 4 (1s)",
+		Command: &protocol.Command{
+			Cmd:  "dose4",
+			Args: []string{"1000"},
+		},
+	})
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeButton,
+		Name: "Dose 5 (1s)",
+		Command: &protocol.Command{
+			Cmd:  "dose5",
+			Args: []string{"1000"},
+		},
+	})
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeButton,
+		Name: "Dose 6 (1s)",
+		Command: &protocol.Command{
+			Cmd:  "dose6",
+			Args: []string{"1000"},
+		},
+	})
+
 	serverConnection = basenode.Connect()
 	notify = notifier.New(serverConnection)
 	notify.SetSource(node)
@@ -212,7 +261,7 @@ func processArduinoData(msg string, connection basenode.Connection) { // {{{
 	var prevState State = *state
 
 	values := strings.Split(msg, "|")
-	if len(values) != 12 {
+	if len(values) < 13 {
 		printTerminalStatus("Invalid length")
 		log.Warn("Invalid message: ", msg)
 		return
@@ -360,6 +409,23 @@ func processArduinoData(msg string, connection basenode.Connection) { // {{{
 		}
 	} else {
 		state.WaterLevel = -1
+	}
+
+	state.Error, err = strconv.Atoi(values[12])
+	if prevState.Error != state.Error {
+		log.Critical("Error detected: !", state.Error)
+		switch state.Error {
+		case 0:
+			notify.Info("Errors was restored..")
+		case 1:
+			notify.Error("Low water temperature")
+		case 2:
+			notify.Error("High water temperature")
+		case 3:
+			notify.Error("Topup pump exeeded maximum run time")
+		default:
+			notify.Error("SYSTEM ERROR?! Super suspicious unknown error!?")
+		}
 	}
 
 	// Check if something have changed
@@ -579,13 +645,54 @@ func processCommand(cmd protocol.Command) error { // {{{
 
 		ard.Port.Write([]byte{0x02, 0x0B, 0x00, byte(i), 0x03}) // Turn on
 		break
-	case "dose":
+
+	case "dose1":
 		i, err := strconv.Atoi(cmd.Args[0])
 		if err != nil {
 			return fmt.Errorf("Failed to decode arg[0] to int %s %s", err, cmd.Args[0])
 		}
 
-		ard.Port.Write([]byte{0x02, 0x0C, byte(i >> 8), byte(i), 0x03}) // command dose
+		ard.Port.Write([]byte{0x02, 12, byte(i >> 8), byte(i), 0x03}) // command dose
+		break
+	case "dose2":
+		i, err := strconv.Atoi(cmd.Args[0])
+		if err != nil {
+			return fmt.Errorf("Failed to decode arg[0] to int %s %s", err, cmd.Args[0])
+		}
+
+		ard.Port.Write([]byte{0x02, 13, byte(i >> 8), byte(i), 0x03}) // command dose
+		break
+	case "dose3":
+		i, err := strconv.Atoi(cmd.Args[0])
+		if err != nil {
+			return fmt.Errorf("Failed to decode arg[0] to int %s %s", err, cmd.Args[0])
+		}
+
+		ard.Port.Write([]byte{0x02, 14, byte(i >> 8), byte(i), 0x03}) // command dose
+		break
+	case "dose4":
+		i, err := strconv.Atoi(cmd.Args[0])
+		if err != nil {
+			return fmt.Errorf("Failed to decode arg[0] to int %s %s", err, cmd.Args[0])
+		}
+
+		ard.Port.Write([]byte{0x02, 15, byte(i >> 8), byte(i), 0x03}) // command dose
+		break
+	case "dose5":
+		i, err := strconv.Atoi(cmd.Args[0])
+		if err != nil {
+			return fmt.Errorf("Failed to decode arg[0] to int %s %s", err, cmd.Args[0])
+		}
+
+		ard.Port.Write([]byte{0x02, 16, byte(i >> 8), byte(i), 0x03}) // command dose
+		break
+	case "dose6":
+		i, err := strconv.Atoi(cmd.Args[0])
+		if err != nil {
+			return fmt.Errorf("Failed to decode arg[0] to int %s %s", err, cmd.Args[0])
+		}
+
+		ard.Port.Write([]byte{0x02, 17, byte(i >> 8), byte(i), 0x03}) // command dose
 		break
 	}
 	return nil
@@ -666,7 +773,7 @@ func (config *SerialConnection) connect(connection basenode.Connection, callback
 
 	config.Port, err = serial.OpenPort(c)
 	if err != nil {
-		log.Error("Serial connect failed: ", err)
+		//log.Error("Serial connect failed: ", err)
 		return
 	}
 
