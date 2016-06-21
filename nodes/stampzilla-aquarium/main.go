@@ -54,6 +54,8 @@ var rateTimestamp int64
 var rateCount int64
 var rate int64
 
+var pumpStopTime time.Time
+
 func main() { // {{{
 	config := basenode.NewConfig()
 	basenode.SetConfig(config)
@@ -220,6 +222,15 @@ func main() { // {{{
 		},
 	})
 
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeButton,
+		Name: "Test trigger notification",
+		Command: &protocol.Command{
+			Cmd:  "notify",
+			Args: []string{"error"},
+		},
+	})
+
 	serverConnection = basenode.Connect()
 	notify = notifier.New(serverConnection)
 	notify.SetSource(node)
@@ -332,6 +343,21 @@ func processArduinoData(msg string, connection basenode.Connection) { // {{{
 		filterFillingAlarm = 0
 	}
 
+	if !CirculationPumps {
+		if (pumpStopTime.IsZero() || pumpStopTime == time.Unix(0, 0)) {
+			log.Critical("PUMPAR STOPPADE");
+			pumpStopTime = time.Now()
+		}
+		
+		if time.Now().Sub(pumpStopTime) > (time.Hour*1) {
+			log.Critical("PUMPAR STOPPADE - LARM");
+			pumpStopTime = time.Now();
+			notify.Error("Pumpar stoppade i 1 timme");
+		}
+	} else if CirculationPumps {
+		pumpStopTime = time.Unix(0, 0);
+	}
+
 	state.CirculationPumps = CirculationPumps
 	state.Skimmer = Skimmer
 	state.Heating = Heating
@@ -365,6 +391,7 @@ func processArduinoData(msg string, connection basenode.Connection) { // {{{
 		state.Lights.Temperature = -1
 	}
 
+	/*
 	pH := strings.Split(values[8], ":")
 	value, err = strconv.ParseFloat(pH[0], 64)
 	if err == nil {
@@ -375,7 +402,7 @@ func processArduinoData(msg string, connection basenode.Connection) { // {{{
 			phFilter = append(phFilter[1:], ph)
 			state.PH = toFixed(Average(phFilter), 2)
 		}
-	}
+	}*/
 
 	air := strings.Split(values[9], ",")
 	if len(air) == 2 {
@@ -694,6 +721,8 @@ func processCommand(cmd protocol.Command) error { // {{{
 
 		ard.Port.Write([]byte{0x02, 17, byte(i >> 8), byte(i), 0x03}) // command dose
 		break
+	case "notify":
+		notify.Error("Test trigger from Aquarium")
 	}
 	return nil
 } // }}}
