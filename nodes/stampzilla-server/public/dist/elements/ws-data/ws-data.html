@@ -26,6 +26,8 @@
 		</paper-dialog>
 
 		<x-websocket id="socket" json auto={{auto}} url="{{url}}" message="{{message}}"></x-websocket>
+
+		<paper-toast id="toast" duration="0" class="fit-bottom" text="Not connected"></paper-toast>
 	</template>
 
 	<script>
@@ -92,7 +94,10 @@
 				},
 				//https://www.polymer-project.org/1.0/docs/devguide/properties.html 
 				newMessage: function(d) {
-					if(d.type === 'all'){
+					switch(d.type) {
+					case undefined:
+						return;
+					case 'nodes/all':
 						var ts = moment().format('YYYY-MM-DD HH:mm:ss');
 						
 						var tmp = this._toArray(d.data);
@@ -101,8 +106,7 @@
 						});
 						this.nodes = tmp;
 						return;
-					}
-					if(d.type === 'singlenode'){
+					case 'nodes/single':
 						d.data.LastSeen = moment().format('YYYY-MM-DD HH:mm:ss');
 					
 						this.nodes.forEach(function(el,index){
@@ -117,11 +121,24 @@
 						if ( d.data !== undefined ) {
 							this.push('nodes',d.data);
 						}
-					}
-					if(d.type === 'disconnected'){
+						return;
+					case 'nodes/disconnected':
 						this.removeNode(d.data);
-					}
+						return;
 
+					case 'actions/all':
+						this.actions = d.data;
+						return;
+					case 'rules/all':
+						this.rules = d.data;
+						return;
+					case 'schedule/all':
+						this.schedule = d.data;
+						return;
+					default:
+						console.error('Lost websocket message type: '+ d.type, d);
+						break;
+					}
 				},
 				removeNode: function(uuid){
 					var i = -1;
@@ -148,9 +165,15 @@
 
 					this.$.socket.addEventListener('open',function(event) {
 						event.stopPropagation();
+						self.$.toast.close();
 						self.connected = true;
 					});
 					this.$.socket.addEventListener('close',function() {
+						self.$.toast.open();
+						self.connected = false;
+					});
+					this.$.socket.addEventListener('error',function() {
+						self.$.toast.open();
 						self.connected = false;
 					});
 

@@ -15654,16 +15654,17 @@ module.exports = Array.isArray || function (arr) {
   }*/
 
   :root {
-    --dark-primary-color:       #5D4037;
-    --default-primary-color:    #795548;
+    --dark-primary-color:       #5F4F84;
+    --default-primary-color:    #5F4F84;
     --light-primary-color:      #D7CCC8;
     --text-primary-color:       #FFFFFF;
-    --accent-color:             #536DFE;
+    --accent-color:             #5F4F84;
     --primary-background-color: #ffffff;
     --primary-text-color:       #212121;
     --secondary-text-color:     #727272;
     --disabled-text-color:      #BDBDBD;
     --divider-color:            #B6B6B6;
+
 
 
     /* Components */
@@ -15870,7 +15871,9 @@ module.exports = Array.isArray || function (arr) {
   @media all and (min-width: 1281px) and (max-width: 1600px) { }
   /* desktop-xlarge */
   @media all and (min-width: 1601px) and (max-width: 1920px) { }
-</style></head><body><div hidden="" by-vulcanize=""><dom-module id="iron-icon" assetpath="../bower_components/iron-icon/">
+</style><script>!function(a,b){"function"==typeof define&&define.amd?define([],b):"undefined"!=typeof module&&module.exports?module.exports=b():a.ReconnectingWebSocket=b()}(this,function(){function a(b,c,d){function l(a,b){var c=document.createEvent("CustomEvent");return c.initCustomEvent(a,!1,!1,b),c}var e={debug:!1,automaticOpen:!0,reconnectInterval:1e3,maxReconnectInterval:3e4,reconnectDecay:1.5,timeoutInterval:2e3};d||(d={});for(var f in e)this[f]="undefined"!=typeof d[f]?d[f]:e[f];this.url=b,this.reconnectAttempts=0,this.readyState=WebSocket.CONNECTING,this.protocol=null;var h,g=this,i=!1,j=!1,k=document.createElement("div");k.addEventListener("open",function(a){g.onopen(a)}),k.addEventListener("close",function(a){g.onclose(a)}),k.addEventListener("connecting",function(a){g.onconnecting(a)}),k.addEventListener("message",function(a){g.onmessage(a)}),k.addEventListener("error",function(a){g.onerror(a)}),this.addEventListener=k.addEventListener.bind(k),this.removeEventListener=k.removeEventListener.bind(k),this.dispatchEvent=k.dispatchEvent.bind(k),this.open=function(b){h=new WebSocket(g.url,c||[]),b||k.dispatchEvent(l("connecting")),(g.debug||a.debugAll)&&console.debug("ReconnectingWebSocket","attempt-connect",g.url);var d=h,e=setTimeout(function(){(g.debug||a.debugAll)&&console.debug("ReconnectingWebSocket","connection-timeout",g.url),j=!0,d.close(),j=!1},g.timeoutInterval);h.onopen=function(){clearTimeout(e),(g.debug||a.debugAll)&&console.debug("ReconnectingWebSocket","onopen",g.url),g.protocol=h.protocol,g.readyState=WebSocket.OPEN,g.reconnectAttempts=0;var d=l("open");d.isReconnect=b,b=!1,k.dispatchEvent(d)},h.onclose=function(c){if(clearTimeout(e),h=null,i)g.readyState=WebSocket.CLOSED,k.dispatchEvent(l("close"));else{g.readyState=WebSocket.CONNECTING;var d=l("connecting");d.code=c.code,d.reason=c.reason,d.wasClean=c.wasClean,k.dispatchEvent(d),b||j||((g.debug||a.debugAll)&&console.debug("ReconnectingWebSocket","onclose",g.url),k.dispatchEvent(l("close")));var e=g.reconnectInterval*Math.pow(g.reconnectDecay,g.reconnectAttempts);setTimeout(function(){g.reconnectAttempts++,g.open(!0)},e>g.maxReconnectInterval?g.maxReconnectInterval:e)}},h.onmessage=function(b){(g.debug||a.debugAll)&&console.debug("ReconnectingWebSocket","onmessage",g.url,b.data);var c=l("message");c.data=b.data,k.dispatchEvent(c)},h.onerror=function(b){(g.debug||a.debugAll)&&console.debug("ReconnectingWebSocket","onerror",g.url,b),k.dispatchEvent(l("error"))}},1==this.automaticOpen&&this.open(!1),this.send=function(b){if(h)return(g.debug||a.debugAll)&&console.debug("ReconnectingWebSocket","send",g.url,b),h.send(b);throw"INVALID_STATE_ERR : Pausing to reconnect websocket"},this.close=function(a,b){"undefined"==typeof a&&(a=1e3),i=!0,h&&h.close(a,b)},this.refresh=function(){h&&h.close()}}return a.prototype.onopen=function(){},a.prototype.onclose=function(){},a.prototype.onconnecting=function(){},a.prototype.onmessage=function(){},a.prototype.onerror=function(){},a.debugAll=!1,a.CONNECTING=WebSocket.CONNECTING,a.OPEN=WebSocket.OPEN,a.CLOSING=WebSocket.CLOSING,a.CLOSED=WebSocket.CLOSED,a});
+</script>
+</head><body><div hidden="" by-vulcanize=""><dom-module id="iron-icon" assetpath="../bower_components/iron-icon/">
 
   <style>
     :host {
@@ -22605,7 +22608,7 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 	</template>
 	<script type="text/javascript">
 		/* jshint newcap: false */
-		/*global Polymer */
+		/*global Polymer,ReconnectingWebSocket */
 		(function() {
 			'use strict';
 			Polymer({
@@ -22726,7 +22729,7 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 					if(this._ws) {
 						throw new Error('x-websocket.connect(...): already connected.');
 					}
-					this._ws = new WebSocket(this.url);
+					this._ws = new ReconnectingWebSocket(this.url, null, {reconnectDecay: 1});
 					this._ws.onopen = this._onwsopen.bind(this);
 					this._ws.onerror = this._onwserror.bind(this);
 					this._ws.onmessage = this._onwsmessage.bind(this);
@@ -23253,6 +23256,8 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 		</paper-dialog>
 
 		<x-websocket id="socket" json="" auto="{{auto}}" url="{{url}}" message="{{message}}"></x-websocket>
+
+		<paper-toast id="toast" duration="0" class="fit-bottom" text="Not connected"></paper-toast>
 	</template>
 
 	<script>
@@ -23319,7 +23324,10 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 				},
 				//https://www.polymer-project.org/1.0/docs/devguide/properties.html 
 				newMessage: function(d) {
-					if(d.type === 'all'){
+					switch(d.type) {
+					case undefined:
+						return;
+					case 'nodes/all':
 						var ts = moment().format('YYYY-MM-DD HH:mm:ss');
 						
 						var tmp = this._toArray(d.data);
@@ -23328,8 +23336,7 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 						});
 						this.nodes = tmp;
 						return;
-					}
-					if(d.type === 'singlenode'){
+					case 'nodes/single':
 						d.data.LastSeen = moment().format('YYYY-MM-DD HH:mm:ss');
 					
 						this.nodes.forEach(function(el,index){
@@ -23344,11 +23351,24 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 						if ( d.data !== undefined ) {
 							this.push('nodes',d.data);
 						}
-					}
-					if(d.type === 'disconnected'){
+						return;
+					case 'nodes/disconnected':
 						this.removeNode(d.data);
-					}
+						return;
 
+					case 'actions/all':
+						this.actions = d.data;
+						return;
+					case 'rules/all':
+						this.rules = d.data;
+						return;
+					case 'schedule/all':
+						this.schedule = d.data;
+						return;
+					default:
+						console.error('Lost websocket message type: '+ d.type, d);
+						break;
+					}
 				},
 				removeNode: function(uuid){
 					var i = -1;
@@ -23375,9 +23395,15 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 
 					this.$.socket.addEventListener('open',function(event) {
 						event.stopPropagation();
+						self.$.toast.close();
 						self.connected = true;
 					});
 					this.$.socket.addEventListener('close',function() {
+						self.$.toast.open();
+						self.connected = false;
+					});
+					this.$.socket.addEventListener('error',function() {
+						self.$.toast.open();
 						self.connected = false;
 					});
 
@@ -23424,10 +23450,10 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 		  }
 		},
 		changed: function(){
-			console.log('Favorites changed', this.favorites);
+			//console.log('Favorites changed', this.favorites);
 		},
 		initializeDefaultValue: function() {
-			console.log('initialize favorite localstorage');
+			//console.log('initialize favorite localstorage');
 			this.value = {};
 		}
 	  });

@@ -22,6 +22,10 @@ var serverSendChannel chan interface{}
 var serverRecvChannel chan protocol.Command
 var lifxClient *client.Client
 
+type Config struct {
+	BroadcastAddress string `json:"broadcastAddress"`
+}
+
 func main() { // {{{
 	// Parse all commandline arguments, host and port parameters are added in the basenode init function
 	flag.Parse()
@@ -31,6 +35,12 @@ func main() { // {{{
 
 	//Activate the config
 	basenode.SetConfig(config)
+	nc := &Config{}
+	err := config.NodeSpecific(&nc)
+	if err != nil {
+		log.Error(err)
+		return
+	}
 
 	node = protocol.NewNode("lifx")
 
@@ -47,7 +57,15 @@ func main() { // {{{
 	state = NewState()
 	node.SetState(state)
 
-	lifxClient = client.New()
+	if nc.BroadcastAddress != "" {
+		lifxClient, err = client.NewWithBroadcastAddress(nc.BroadcastAddress)
+	} else {
+		lifxClient, err = client.New()
+	}
+	if err != nil {
+		log.Error(err)
+		return
+	}
 	go discoverWorker(lifxClient, connection)
 
 	select {}
