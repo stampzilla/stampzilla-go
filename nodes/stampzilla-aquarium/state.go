@@ -28,5 +28,6 @@ type State struct { /*{{{*/
 		Cooling     float64
 	}
 
-	PH float64
+	PH    float64
+	Error int
 } /*}}}*/
