@@ -15564,6 +15564,33 @@ module.exports = Array.isArray || function (arr) {
     page('/', function () {
 		app.route = 'home';
 		app.params = {};
+	});
+
+    page('/actions', function () {
+		app.route = 'actions';
+		app.params = {};
+	});
+    page('/actions/:uuid', function (data) {
+		app.route = 'actions';
+		app.params = data.params;
+	});
+
+    page('/rules', function () {
+		app.route = 'rules';
+		app.params = {};
+	});
+    page('/rules/:uuid', function (data) {
+		app.route = 'rules';
+		app.params = data.params;
+	});
+
+    page('/schedule', function () {
+		app.route = 'schedule';
+		app.params = {};
+    });
+    page('/schedule/:uuid', function (data) {
+		app.route = 'schedule';
+		app.params = data.params;
     });
 
     page('/nodes/:name', function (data) {
@@ -23031,8 +23058,7 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 				},
 				handleToggle: function() {
 					var cmd = this.element.Command;
-					//cmd.params = [this.State.toString()];
-					cmd.params = null;
+					cmd.params = [this.PrimaryState.toString()];
 
 					var pkg = {
 						type: 'cmd',
@@ -23244,11 +23270,28 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 						type: String,
 						notify: true
 					},
+
 					nodes: {
 						type: Array,
 						value:[],
 						notify: true,
 					},
+					actions: {
+						type: Array,
+						value:[{'name':'actions-test'}, {'name':'test2'}],
+						notify: true,
+					},
+					rules: {
+						type: Array,
+						value:[{'name':'rules-test'}, {'name':'test2'}],
+						notify: true,
+					},
+					schedule: {
+						type: Array,
+						value:[{'name':'schedule-test'}, {'name':'test2'}],
+						notify: true,
+					},
+
 					message: {
 						type: Object,
 						notify: true,

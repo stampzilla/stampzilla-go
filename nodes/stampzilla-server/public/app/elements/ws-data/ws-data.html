@@ -1,3 +1,4 @@
+<script src="../../bower_components/reconnectingWebsocket/reconnecting-websocket.min.js"></script>
 <dom-module id="ws-data">
 	<template>
 		<style>
@@ -26,6 +27,8 @@
 		</paper-dialog>
 
 		<x-websocket id="socket" json auto={{auto}} url="{{url}}" message="{{message}}"></x-websocket>
+
+		<paper-toast id="toast" duration="0" class="fit-bottom" text="Not connected"></paper-toast>
 	</template>
 
 	<script>
@@ -51,17 +54,17 @@
 					},
 					actions: {
 						type: Array,
-						value:[{"name":"test"}, {"name":"test2"}],
+						value:[{'name':'actions-test'}, {'name':'test2'}],
 						notify: true,
 					},
 					rules: {
 						type: Array,
-						value:[],
+						value:[{'name':'rules-test'}, {'name':'test2'}],
 						notify: true,
 					},
 					schedule: {
 						type: Array,
-						value:[],
+						value:[{'name':'schedule-test'}, {'name':'test2'}],
 						notify: true,
 					},
 
@@ -148,9 +151,15 @@
 
 					this.$.socket.addEventListener('open',function(event) {
 						event.stopPropagation();
+						self.$.toast.close();
 						self.connected = true;
 					});
 					this.$.socket.addEventListener('close',function() {
+						self.$.toast.open();
+						self.connected = false;
+					});
+					this.$.socket.addEventListener('error',function() {
+						self.$.toast.open();
 						self.connected = false;
 					});
 

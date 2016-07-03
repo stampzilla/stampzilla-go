@@ -78,7 +78,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		<template is="dom-bind" id="app">
 			<favorites-storage favorites="{{favs}}"></favorites-storage>
 
-			<ws-data id="socket" nodes={{nodes}} actions={{actions}} rules={{rules}} schedule={{schedule}}></ws-data>
+			<ws-data id="socket" nodes={{nodes}} actions={{actions}} rules={{rules}} schedule={{schedule}} connected="[[wsConnected]]"></ws-data>
 			<node-selector nodes={{nodes}} uuid={{params.name}} node={{node}}></node-selector>
 
 			<paper-drawer-panel id="paperDrawerPanel">
@@ -115,6 +115,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 					<nodes-list nodes={{nodes}} selected="[[params.name]]" route="[[route]]"></nodes-list>
 				</paper-scroll-header-panel>
+
+
 
 				<!-- Main Area -->
 				<paper-scroll-header-panel main condenses keep-condensed-header>
@@ -166,6 +168,26 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 								</iron-list>
 							</section>
 
+							<section data-route="rules">
+								<iron-list items="[[rules]]" as="item">
+									<template>
+									 	<div>
+											Name: [[item.name]]
+									  	</div>
+									</template>
+								</iron-list>
+							</section>
+
+							<section data-route="schedule">
+								<iron-list items="[[schedule]]" as="item">
+									<template>
+									 	<div>
+											Name: [[item.name]]
+									  	</div>
+									</template>
+								</iron-list>
+							</section>
+
 							<section data-route="node-info">
 
 								<paper-material elevation="1">
@@ -184,6 +206,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 					</div>
 				</paper-scroll-header-panel>
 			</paper-drawer-panel>
+
 
 			<!-- Uncomment next block to enable Service Worker support (1/2) -->
 			<!--

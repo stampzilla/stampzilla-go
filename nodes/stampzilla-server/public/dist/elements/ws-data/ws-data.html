@@ -43,11 +43,28 @@
 						type: String,
 						notify: true
 					},
+
 					nodes: {
 						type: Array,
 						value:[],
 						notify: true,
 					},
+					actions: {
+						type: Array,
+						value:[{'name':'actions-test'}, {'name':'test2'}],
+						notify: true,
+					},
+					rules: {
+						type: Array,
+						value:[{'name':'rules-test'}, {'name':'test2'}],
+						notify: true,
+					},
+					schedule: {
+						type: Array,
+						value:[{'name':'schedule-test'}, {'name':'test2'}],
+						notify: true,
+					},
+
 					message: {
 						type: Object,
 						notify: true,
