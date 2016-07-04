@@ -1,3 +1,4 @@
+<script src="../../bower_components/reconnectingWebsocket/reconnecting-websocket.min.js"></script>
 <dom-module id="x-websocket" >
 	<template>
 		<style>
@@ -129,7 +130,7 @@
 					if(this._ws) {
 						throw new Error('x-websocket.connect(...): already connected.');
 					}
-					this._ws = new WebSocket(this.url);
+					this._ws = new ReconnectingWebSocket(this.url, null, {reconnectDecay: 1});
 					this._ws.onopen = this._onwsopen.bind(this);
 					this._ws.onerror = this._onwserror.bind(this);
 					this._ws.onmessage = this._onwsmessage.bind(this);

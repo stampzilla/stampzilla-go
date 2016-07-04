@@ -14,6 +14,7 @@ import (
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/notifications"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket/handlers"
 	"github.com/stampzilla/stampzilla-go/pkg/notifier"
 )
 
@@ -105,7 +106,10 @@ func main() {
 	services = append(
 		services,
 		logic.NewActions(),
-		&WebsocketHandler{},
+		&handlers.Nodes{},
+		&handlers.Actions{},
+		&handlers.Rules{},
+		&handlers.Schedule{},
 		config,
 		protocol.NewNodes(),
 		logic.NewLogic(),
