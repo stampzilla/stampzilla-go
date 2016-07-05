@@ -46,6 +46,13 @@
 						notify: true
 					},
 
+					parameters: {
+						type: Object,
+						value:{
+							version: ''
+						},
+						notify: true,
+					},
 					nodes: {
 						type: Array,
 						value:[],
@@ -54,6 +61,11 @@
 					actions: {
 						type: Array,
 						value:[{'name':'actions-test'}, {'name':'test2'}],
+						notify: true,
+					},
+					actionRunners: {
+						type: Array,
+						value:[],
 						notify: true,
 					},
 					rules: {
@@ -97,6 +109,9 @@
 					switch(d.type) {
 					case undefined:
 						return;
+					case 'parameters':
+						this.parameters = d.data;
+						return;
 					case 'nodes/all':
 						var ts = moment().format('YYYY-MM-DD HH:mm:ss');
 						
@@ -129,6 +144,10 @@
 					case 'actions/all':
 						this.actions = d.data;
 						return;
+					case 'actions/runners':
+						this.actionRunners = d.data;
+						return;
+
 					case 'rules/all':
 						this.rules = d.data;
 						return;

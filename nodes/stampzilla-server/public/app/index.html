@@ -19,13 +19,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		<!-- Place favicon.ico in the `app/` directory -->
 
 		<!-- Chrome for Android theme color -->
-		<meta name="theme-color" content="#303F9F">
+		<meta name="theme-color" content="#5F4F84">
 
 		<!-- Web Application Manifest -->
 		<link rel="manifest" href="manifest.json">
 
 		<!-- Tile color for Win8 -->
-		<meta name="msapplication-TileColor" content="#3372DF">
+		<meta name="msapplication-TileColor" content="#5F4F84">
 
 		<!-- Add to homescreen for Chrome on Android -->
 		<meta name="mobile-web-app-capable" content="yes">
@@ -78,7 +78,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		<template is="dom-bind" id="app">
 			<favorites-storage favorites="{{favs}}"></favorites-storage>
 
-			<ws-data id="socket" nodes={{nodes}} actions={{actions}} rules={{rules}} schedule={{schedule}} connected="[[wsConnected]]"></ws-data>
+			<ws-data id="socket" parameters={{parameters}} nodes={{nodes}} actions={{actions}} rules={{rules}} schedule={{schedule}} connected="[[wsConnected]]"></ws-data>
 			<node-selector nodes={{nodes}} uuid={{params.name}} node={{node}}></node-selector>
 
 			<paper-drawer-panel id="paperDrawerPanel">
@@ -87,7 +87,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 					<!-- Drawer Toolbar -->
 					<paper-toolbar id="drawerToolbar">
-						<span class="paper-font-title">STAMPZILLA</span>
+						<span class="paper-font-title">STAMPZILLA </span>
+						<span id="version">[[parameters.version]]</span>
 					</paper-toolbar>
 
 					<!-- Drawer Content -->
@@ -131,6 +132,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 							<div class="app-name">
 								<iron-selector attr-for-selected="data-route" selected="{{route}}">
 									<section data-route="home">Favorites</section>
+									<section data-route="actions">Actions</section>
+									<section data-route="rules">Rules</section>
+									<section data-route="schedule">Schedule</section>
 									<section data-route="node-info">{{node.Name}}</section>
 								</iron-selector>
 							</div>
@@ -159,13 +163,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 							</section>
 
 							<section data-route="actions">
-								<iron-list items="[[actions]]" as="item">
-									<template>
-									 	<div>
-											Name: [[item.name]]
-									  	</div>
-									</template>
-								</iron-list>
+								<template is="dom-repeat" items="[[actions]]" as="item">
+									<stampzilla-action data=[[item]] actions={{actions}}></stampzilla-action>
+								</template>
 							</section>
 
 							<section data-route="rules">

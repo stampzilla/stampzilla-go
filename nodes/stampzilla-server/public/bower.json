@@ -10,7 +10,8 @@
     "polymer": "Polymer/polymer#^1.2.0",
     "x-json": "~0.2.3",
     "time-element": "~1.0.1",
-    "reconnectingWebsocket": "^1.0.0"
+    "reconnectingWebsocket": "^1.0.0",
+    "vaadin-core-elements": "^1.1.0"
   },
   "devDependencies": {
     "test-fixture": "PolymerElements/test-fixture#^1.0.0",

@@ -44,7 +44,7 @@
   }*/
 
   :root {
-    --dark-primary-color:       #5F4F84;
+    --dark-primary-color:       #212121;
     --default-primary-color:    #5F4F84;
     --light-primary-color:      #D7CCC8;
     --text-primary-color:       #FFFFFF;
@@ -158,6 +158,11 @@
     transform-origin: left center;
   }
 
+  #version {
+      @apply(--layout-horizontal);
+	  @apply(--layout-center);
+	  margin-left:5px;
+  }
 
 
   /* Height of the scroll area */
