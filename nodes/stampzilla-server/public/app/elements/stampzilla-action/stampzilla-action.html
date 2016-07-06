@@ -47,7 +47,7 @@
 		<paper-shadow z="1"></paper-shadow>
 		<div class="layout horizontal title">
 			<div id="title" class="flex">{{data.name}}</div>
-			<div><paper-button raised uuid="[[data.uuid]]">Run</paper-button></div>
+			<div><paper-button raised id="trigger" uuid="[[data.uuid]]">Run</paper-button></div>
 		</div>
 		<div>
 			<template is="dom-repeat" items="[[data.commands]]" as="item">
@@ -81,12 +81,23 @@
 					actions: {
 						type: Object,
 						notify: true
+					},
+					runners: {
+						type: Object,
+						notify: true
 					}
 				},
 				observers: [
+					'actionRunnersChanged(runners.*)'
 				],
 				listeners: {
-					'click': 'handleClick',
+					'trigger.click': 'handleClick',
+				},
+				actionRunnersChanged: function() {
+					if (this.runners[this.data.uuid] === undefined) {
+						return;
+					}
+					//console.log("Runners changed detected:", this.runners);	
 				},
 				ready: function() {
 				},

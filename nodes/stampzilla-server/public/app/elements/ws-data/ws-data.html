@@ -60,22 +60,22 @@
 					},
 					actions: {
 						type: Array,
-						value:[{'name':'actions-test'}, {'name':'test2'}],
+						value:[],
 						notify: true,
 					},
-					actionRunners: {
-						type: Array,
-						value:[],
+					runners: {
+						type: Object,
+						value: {},
 						notify: true,
 					},
 					rules: {
 						type: Array,
-						value:[{'name':'rules-test'}, {'name':'test2'}],
+						value:[],
 						notify: true,
 					},
 					schedule: {
 						type: Array,
-						value:[{'name':'schedule-test'}, {'name':'test2'}],
+						value:[],
 						notify: true,
 					},
 
@@ -144,10 +144,23 @@
 					case 'actions/all':
 						this.actions = d.data;
 						return;
-					case 'actions/runners':
-						this.actionRunners = d.data;
-						return;
+					case 'actions/runner':
 
+						var r = JSON.parse(JSON.stringify(this.runners));
+
+						if (d.data.step < 0) { // Runner finished and exited
+							delete r[d.data.uuid][d.data.address];
+						} else { // New runner started or updated state
+							if ( r[d.data.uuid] === undefined ) {
+								r[d.data.uuid] = {};
+							}
+
+							r[d.data.uuid][d.data.address] = d.data.step;
+						}
+
+						this.runners = r;
+
+						return;
 					case 'rules/all':
 						this.rules = d.data;
 						return;
@@ -181,6 +194,7 @@
 					this.addEventListener('open',function() {
 						self.$.dialog.open();
 					});
+
 
 					this.$.socket.addEventListener('open',function(event) {
 						event.stopPropagation();

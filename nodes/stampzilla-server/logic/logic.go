@@ -15,6 +15,7 @@ import (
 
 	log "github.com/cihub/seelog"
 	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
 )
 
 type Logic struct {
@@ -24,12 +25,29 @@ type Logic struct {
 	sync.RWMutex
 	Nodes         *serverprotocol.Nodes `inject:""`
 	ActionService *ActionService        `inject:""`
+
+	Clients *websocket.Clients `inject:""`
+
+	ActionProgressChan chan ActionProgress
 }
 
 func NewLogic() *Logic {
 	l := &Logic{states: make(map[string]string)}
 	l.re = regexp.MustCompile(`^([^\s\[][^\s\[]*)?(\[.*?([0-9]).*?\])?$`)
 	return l
+}
+
+func (l *Logic) Start() {
+	l.ActionProgressChan = make(chan ActionProgress, 100)
+
+	go func() {
+		for {
+			msg := <-l.ActionProgressChan
+
+			l.Clients.SendToAll("actions/runner", msg)
+			log.Infof("STATE %#v", msg)
+		}
+	}()
 }
 
 func (l *Logic) States() map[string]string {
@@ -91,7 +109,7 @@ func (l *Logic) EvaluateRules() {
 			rule.SetCondState(evaluation)
 			if evaluation {
 				log.Info("Rule: ", rule.Name(), " (", rule.Uuid(), ") - running enter actions")
-				rule.RunEnter()
+				rule.RunEnter(l.ActionProgressChan)
 				rule.Lock()
 				rule.Active_ = true
 				rule.Unlock()
@@ -99,7 +117,7 @@ func (l *Logic) EvaluateRules() {
 			}
 
 			log.Info("Rule: ", rule.Name(), " (", rule.Uuid(), ") - running exit actions")
-			rule.RunExit()
+			rule.RunExit(l.ActionProgressChan)
 			rule.Lock()
 			rule.Active_ = false
 			rule.Unlock()
@@ -142,7 +160,7 @@ func (l *Logic) getValueToEvaluate(cond RuleCondition) (interface{}, error) {
 	if state := l.GetStateByUuid(cond.Uuid()); state != "" {
 		return l.path(state, cond.StatePath())
 	}
-	return nil, fmt.Errorf("Uuid %s not found", cond.Uuid())
+	return nil, fmt.Errorf("Rule condition UUID \"%s\" not found", cond.Uuid())
 }
 
 func (l *Logic) evaluateRule(r Rule) bool {

@@ -93,7 +93,7 @@ func (wh *WebHandler) ReloadActions(c *gin.Context) {
 func (wh *WebHandler) RunAction(c *gin.Context) {
 	uuid := c.Param("uuid")
 	if a := wh.ActionsService.GetByUuid(uuid); a != nil {
-		a.Run()
+		a.Run(wh.Logic.ActionProgressChan)
 		c.JSON(200, "ok")
 		return
 	}
@@ -121,11 +121,11 @@ func (wh *WebHandler) GetRunRules(c *gin.Context) {
 		if rule.Uuid() == id {
 			switch action {
 			case "enter":
-				rule.RunEnter()
+				rule.RunEnter(wh.Logic.ActionProgressChan)
 				c.JSON(200, "ok")
 				return
 			case "exit":
-				rule.RunExit()
+				rule.RunExit(wh.Logic.ActionProgressChan)
 				c.JSON(200, "ok")
 				return
 

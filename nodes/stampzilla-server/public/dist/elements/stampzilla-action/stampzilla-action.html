@@ -81,12 +81,20 @@
 					actions: {
 						type: Object,
 						notify: true
+					},
+					actionRunners: {
+						type: Object,
+						notify: true
 					}
 				},
 				observers: [
+					'actionRunnersChanged(actionRunners)'
 				],
 				listeners: {
 					'click': 'handleClick',
+				},
+				actionRunnersChanged: function() {
+					console.log(this.actionRunners);	
 				},
 				ready: function() {
 				},

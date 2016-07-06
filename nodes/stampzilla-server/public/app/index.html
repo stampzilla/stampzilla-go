@@ -78,7 +78,15 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		<template is="dom-bind" id="app">
 			<favorites-storage favorites="{{favs}}"></favorites-storage>
 
-			<ws-data id="socket" parameters={{parameters}} nodes={{nodes}} actions={{actions}} rules={{rules}} schedule={{schedule}} connected="[[wsConnected]]"></ws-data>
+			<ws-data id="socket" 
+				parameters={{parameters}} 
+				nodes={{nodes}} 
+				actions={{actions}} 
+				runners={{runners}} 
+				rules={{rules}} 
+				schedule={{schedule}} 
+				connected="[[wsConnected]]"
+			></ws-data>
 			<node-selector nodes={{nodes}} uuid={{params.name}} node={{node}}></node-selector>
 
 			<paper-drawer-panel id="paperDrawerPanel">
@@ -163,8 +171,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 							</section>
 
 							<section data-route="actions">
+								<span>[[runners.uuid1]]</span>
 								<template is="dom-repeat" items="[[actions]]" as="item">
-									<stampzilla-action data=[[item]] actions={{actions}}></stampzilla-action>
+									<stampzilla-action data=[[item]] actions={{actions}} runners=[[runners]]></stampzilla-action>
 								</template>
 							</section>
 

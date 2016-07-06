@@ -10,6 +10,7 @@ import (
 
 type Actions struct {
 	Actions *logic.ActionService `inject:""`
+	Logic   *logic.Logic         `inject:""`
 	Router  *websocket.Router    `inject:""`
 	Clients *websocket.Clients   `inject:""`
 }
@@ -44,7 +45,7 @@ func (wsa *Actions) Run(msg *websocket.Message) {
 		return
 	}
 
-	a.Run()
+	a.Run(wsa.Logic.ActionProgressChan)
 
 	//msg := wh.jsonDecode(str)
 	//node := wh.Nodes.Search(msg.To)

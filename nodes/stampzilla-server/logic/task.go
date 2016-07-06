@@ -18,6 +18,8 @@ type task struct {
 	sync.RWMutex
 	cron      *cron.Cron
 	entryTime time.Time
+
+	ActionProgressChan chan ActionProgress `json:"-"`
 }
 
 type Task interface {
@@ -54,7 +56,7 @@ func (r *task) CronId() int {
 func (t *task) Run() {
 	t.RLock()
 	for _, action := range t.actions {
-		action.Run()
+		action.Run(t.ActionProgressChan)
 	}
 	t.RUnlock()
 
