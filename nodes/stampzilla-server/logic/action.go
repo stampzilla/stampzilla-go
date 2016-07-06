@@ -45,11 +45,11 @@ func (a *action) run() {
 	go func() {
 		for {
 			select {
-			case cmd := <-queue:
-				cmd.Run()
 			case <-ctx.Done():
 				a.cancel = nil
 				return
+			case cmd := <-queue:
+				cmd.Run()
 			}
 		}
 	}()
@@ -57,10 +57,9 @@ func (a *action) run() {
 	go func() {
 		for _, cmd := range a.Commands {
 			select {
-			case queue <- cmd:
 			case <-ctx.Done():
 				return
-
+			case queue <- cmd:
 			}
 		}
 		cancel()

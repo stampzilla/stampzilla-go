@@ -34,23 +34,38 @@ func TestCancelAction(t *testing.T) {
 	nodes.node = &nodeStub{}
 	nodes.node.wg = &sync.WaitGroup{}
 
+	pause := &pauseStub{}
+	pause.SetDuration("20ms")
+	pause.wg = &sync.WaitGroup{}
+
 	cmd := &command{}
 	cmd.Uuid_ = "cmduuid"
 	cmd.nodes = nodes
+
 	action := &action{}
-	action.Commands = append(action.Commands, cmd)
-	action.Commands = append(action.Commands, cmd)
-	action.Commands = append(action.Commands, cmd)
+	action.Commands = append(action.Commands, cmd) // 0ms
+	action.Commands = append(action.Commands, pause)
+	action.Commands = append(action.Commands, cmd) // 20ms
+	action.Commands = append(action.Commands, pause)
+	action.Commands = append(action.Commands, cmd) // 40ms
+	action.Commands = append(action.Commands, pause)
+	action.Commands = append(action.Commands, cmd) // 60ms
 
-	nodes.node.wg.Add(3)
+	nodes.node.wg.Add(4)
+	pause.wg.Add(3)
 	action.Run()
+	pause.wg.Wait()
 
-	nodes.node.wg.Wait()
-	assert.Equal(t, 3, len(nodes.node.written))
+	assert.Equal(t, 4, len(nodes.node.written), "Not all commands did run")
 
+	nodes.node.wg.Add(4)
+	pause.wg.Add(3)
 	action.Run()
+	<-time.After(time.Millisecond * 30)
 	action.Cancel()
-	assert.Equal(t, 3, len(nodes.node.written))
+	<-time.After(time.Millisecond * 100)
+
+	assert.Equal(t, 6, len(nodes.node.written), "Action was NOT canceled")
 }
 
 type pauseStub struct {
