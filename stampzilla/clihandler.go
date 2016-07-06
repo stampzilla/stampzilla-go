@@ -95,11 +95,6 @@ func (t *cliHandler) install(c *cli.Context, upgrade bool) {
 		}
 
 		t.Installer.GoGet("github.com/stampzilla/stampzilla-go/nodes/"+node.Name(), upgrade)
-
-		//Run bower install to set up javascript and polymer if we are installing the server.
-		if node.Name() == "stampzilla-server" && !upgrade {
-			t.Installer.Bower()
-		}
 	}
 
 	return
