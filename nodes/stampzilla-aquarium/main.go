@@ -663,7 +663,6 @@ func processCommand(cmd protocol.Command) error { // {{{
 			}
 
 		}
-		return nil
 
 		switch cmd.Args[0] {
 		case "red":
@@ -735,7 +734,7 @@ func processCommand(cmd protocol.Command) error { // {{{
 	case "notify":
 		notify.Error("Test trigger from Aquarium")
 	}
-	return nil
+	return fmt.Errorf("Unknown command \"\", skipping", cmd.Cmd)
 } // }}}
 
 func printTerminalStatus(msg string) { // {{{
@@ -813,7 +812,7 @@ func (config *SerialConnection) connect(connection basenode.Connection, callback
 
 	config.Port, err = serial.OpenPort(c)
 	if err != nil {
-		log.Error("Serial connect failed: ", err)
+		//log.Error("Serial connect failed: ", err)
 		return
 	}
 
