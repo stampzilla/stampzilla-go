@@ -58,7 +58,10 @@ func (s *Scheduler) AddTask(name string) Task {
 	var err error
 
 	task := &task{Name_: name, Uuid_: uuid.New()}
-	task.ActionProgressChan = s.Logic.ActionProgressChan
+	if s.Logic != nil {
+		task.ActionProgressChan = s.Logic.ActionProgressChan
+	}
+
 	//task.nodes = s.Nodes
 	task.cron = s.Cron
 	if err != nil {
