@@ -63,9 +63,9 @@
 						value:[],
 						notify: true,
 					},
-					actionRunners: {
+					runners: {
 						type: Object,
-						value:{},
+						value: {},
 						notify: true,
 					},
 					rules: {
@@ -145,15 +145,21 @@
 						this.actions = d.data;
 						return;
 					case 'actions/runner':
+
+						var r = JSON.parse(JSON.stringify(this.runners));
+
 						if (d.data.step < 0) { // Runner finished and exited
-							delete this.actionRunners[d.data.uuid][d.data.address];
+							delete r[d.data.uuid][d.data.address];
 						} else { // New runner started or updated state
-							if ( this.actionRunners[d.data.uuid] === undefined ) {
-								this.actionRunners[d.data.uuid] = {};
+							if ( r[d.data.uuid] === undefined ) {
+								r[d.data.uuid] = {};
 							}
 
-							this.actionRunners[d.data.uuid][d.data.address] = d.data.step;
+							r[d.data.uuid][d.data.address] = d.data.step;
 						}
+
+						this.runners = r;
+
 						return;
 					case 'rules/all':
 						this.rules = d.data;
@@ -188,6 +194,7 @@
 					this.addEventListener('open',function() {
 						self.$.dialog.open();
 					});
+
 
 					this.$.socket.addEventListener('open',function(event) {
 						event.stopPropagation();

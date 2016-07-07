@@ -14328,182 +14328,6 @@ The `aria-labelledby` attribute will be set to the header element, if one exists
 
 <script>
 
- /**
- * `iron-range-behavior` provides the behavior for something with a minimum to maximum range.
- *
- * @demo demo/index.html
- * @polymerBehavior
- */
- Polymer.IronRangeBehavior = {
-
-  properties: {
-
-    /**
-     * The number that represents the current value.
-     */
-    value: {
-      type: Number,
-      value: 0,
-      notify: true,
-      reflectToAttribute: true
-    },
-
-    /**
-     * The number that indicates the minimum value of the range.
-     */
-    min: {
-      type: Number,
-      value: 0,
-      notify: true
-    },
-
-    /**
-     * The number that indicates the maximum value of the range.
-     */
-    max: {
-      type: Number,
-      value: 100,
-      notify: true
-    },
-
-    /**
-     * Specifies the value granularity of the range's value.
-     */
-    step: {
-      type: Number,
-      value: 1,
-      notify: true
-    },
-
-    /**
-     * Returns the ratio of the value.
-     */
-    ratio: {
-      type: Number,
-      value: 0,
-      readOnly: true,
-      notify: true
-    },
-  },
-
-  observers: [
-    '_update(value, min, max, step)'
-  ],
-
-  _calcRatio: function(value) {
-    return (this._clampValue(value) - this.min) / (this.max - this.min);
-  },
-
-  _clampValue: function(value) {
-    return Math.min(this.max, Math.max(this.min, this._calcStep(value)));
-  },
-
-  _calcStep: function(value) {
-   /**
-    * if we calculate the step using
-    * `Math.round(value / step) * step` we may hit a precision point issue
-    * eg. 0.1 * 0.2 =  0.020000000000000004
-    * http://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html
-    *
-    * as a work around we can divide by the reciprocal of `step`
-    */
-    // polymer/issues/2493
-    value = parseFloat(value);
-    return this.step ? (Math.round((value + this.min) / this.step) -
-        (this.min / this.step)) / (1 / this.step) : value;
-  },
-
-  _validateValue: function() {
-    var v = this._clampValue(this.value);
-    this.value = this.oldValue = isNaN(v) ? this.oldValue : v;
-    return this.value !== v;
-  },
-
-  _update: function() {
-    this._validateValue();
-    this._setRatio(this._calcRatio(this.value) * 100);
-  }
-
-};
-</script>
-
-
-<script>
-  /**
-  Polymer.IronFormElementBehavior enables a custom element to be included
-  in an `iron-form`.
-
-  @demo demo/index.html
-  @polymerBehavior
-  */
-  Polymer.IronFormElementBehavior = {
-
-    properties: {
-      /**
-       * Fired when the element is added to an `iron-form`.
-       *
-       * @event iron-form-element-register
-       */
-
-      /**
-       * Fired when the element is removed from an `iron-form`.
-       *
-       * @event iron-form-element-unregister
-       */
-
-      /**
-       * The name of this element.
-       */
-      name: {
-        type: String
-      },
-
-      /**
-       * The value for this element.
-       */
-      value: {
-        notify: true,
-        type: String
-      },
-
-      /**
-       * Set to true to mark the input as required. If used in a form, a
-       * custom element that uses this behavior should also use
-       * Polymer.IronValidatableBehavior and define a custom validation method.
-       * Otherwise, a `required` element will always be considered valid.
-       * It's also strongly recommended to provide a visual style for the element
-       * when its value is invalid.
-       */
-      required: {
-        type: Boolean,
-        value: false
-      },
-
-      /**
-       * The form that the element is registered to.
-       */
-      _parentForm: {
-        type: Object
-      }
-    },
-
-    attached: function() {
-      // Note: the iron-form that this element belongs to will set this
-      // element's _parentForm property when handling this event.
-      this.fire('iron-form-element-register');
-    },
-
-    detached: function() {
-      if (this._parentForm) {
-        this._parentForm.fire('iron-form-element-unregister', {target: this});
-      }
-    }
-
-  };
-
-</script>
-<script>
-
   /**
    * `Use Polymer.IronValidatableBehavior` to implement an element that validates user input.
    * Use the related `Polymer.IronValidatorBehavior` to add custom validation logic to an iron-input.
@@ -14623,6 +14447,336 @@ The `aria-labelledby` attribute will be set to the header element, if one exists
   };
 
 </script>
+<script>
+  /**
+  Polymer.IronFormElementBehavior enables a custom element to be included
+  in an `iron-form`.
+
+  @demo demo/index.html
+  @polymerBehavior
+  */
+  Polymer.IronFormElementBehavior = {
+
+    properties: {
+      /**
+       * Fired when the element is added to an `iron-form`.
+       *
+       * @event iron-form-element-register
+       */
+
+      /**
+       * Fired when the element is removed from an `iron-form`.
+       *
+       * @event iron-form-element-unregister
+       */
+
+      /**
+       * The name of this element.
+       */
+      name: {
+        type: String
+      },
+
+      /**
+       * The value for this element.
+       */
+      value: {
+        notify: true,
+        type: String
+      },
+
+      /**
+       * Set to true to mark the input as required. If used in a form, a
+       * custom element that uses this behavior should also use
+       * Polymer.IronValidatableBehavior and define a custom validation method.
+       * Otherwise, a `required` element will always be considered valid.
+       * It's also strongly recommended to provide a visual style for the element
+       * when its value is invalid.
+       */
+      required: {
+        type: Boolean,
+        value: false
+      },
+
+      /**
+       * The form that the element is registered to.
+       */
+      _parentForm: {
+        type: Object
+      }
+    },
+
+    attached: function() {
+      // Note: the iron-form that this element belongs to will set this
+      // element's _parentForm property when handling this event.
+      this.fire('iron-form-element-register');
+    },
+
+    detached: function() {
+      if (this._parentForm) {
+        this._parentForm.fire('iron-form-element-unregister', {target: this});
+      }
+    }
+
+  };
+
+</script>
+<script>
+
+  /**
+   * Use `Polymer.IronCheckedElementBehavior` to implement a custom element
+   * that has a `checked` property, which can be used for validation if the
+   * element is also `required`. Element instances implementing this behavior
+   * will also be registered for use in an `iron-form` element.
+   *
+   * @demo demo/index.html
+   * @polymerBehavior Polymer.IronCheckedElementBehavior
+   */
+  Polymer.IronCheckedElementBehaviorImpl = {
+
+    properties: {
+      /**
+       * Fired when the checked state changes.
+       *
+       * @event iron-change
+       */
+
+      /**
+       * Gets or sets the state, `true` is checked and `false` is unchecked.
+       */
+      checked: {
+        type: Boolean,
+        value: false,
+        reflectToAttribute: true,
+        notify: true,
+        observer: '_checkedChanged'
+      },
+
+      /**
+       * If true, the button toggles the active state with each tap or press
+       * of the spacebar.
+       */
+      toggles: {
+        type: Boolean,
+        value: true,
+        reflectToAttribute: true
+      },
+
+      /* Overriden from Polymer.IronFormElementBehavior */
+      value: {
+        type: String,
+        value: 'on',
+        observer: '_valueChanged'
+      }
+    },
+
+    observers: [
+      '_requiredChanged(required)'
+    ],
+
+    created: function() {
+      // Used by `iron-form` to handle the case that an element with this behavior
+      // doesn't have a role of 'checkbox' or 'radio', but should still only be
+      // included when the form is serialized if `this.checked === true`.
+      this._hasIronCheckedElementBehavior = true;
+    },
+
+    /**
+     * Returns false if the element is required and not checked, and true otherwise.
+     * @return {boolean} true if `required` is false, or if `required` and `checked` are both true.
+     */
+    _getValidity: function(_value) {
+      return this.disabled || !this.required || (this.required && this.checked);
+    },
+
+    /**
+     * Update the aria-required label when `required` is changed.
+     */
+    _requiredChanged: function() {
+      if (this.required) {
+        this.setAttribute('aria-required', 'true');
+      } else {
+        this.removeAttribute('aria-required');
+      }
+    },
+
+    /**
+     * Fire `iron-changed` when the checked state changes.
+     */
+    _checkedChanged: function() {
+      this.active = this.checked;
+      this.fire('iron-change');
+    },
+
+    /**
+     * Reset value to 'on' if it is set to `undefined`.
+     */
+    _valueChanged: function() {
+      if (this.value === undefined || this.value === null) {
+        this.value = 'on';
+      }
+    }
+  };
+
+  /** @polymerBehavior Polymer.IronCheckedElementBehavior */
+  Polymer.IronCheckedElementBehavior = [
+    Polymer.IronFormElementBehavior,
+    Polymer.IronValidatableBehavior,
+    Polymer.IronCheckedElementBehaviorImpl
+  ];
+
+</script>
+<script>
+
+  /**
+   * Use `Polymer.PaperCheckedElementBehavior` to implement a custom element
+   * that has a `checked` property similar to `Polymer.IronCheckedElementBehavior`
+   * and is compatible with having a ripple effect.
+   * @polymerBehavior Polymer.PaperCheckedElementBehavior
+   */
+  Polymer.PaperCheckedElementBehaviorImpl = {
+
+    /**
+     * Synchronizes the element's checked state with its ripple effect.
+     */
+    _checkedChanged: function() {
+      Polymer.IronCheckedElementBehaviorImpl._checkedChanged.call(this);
+      if (this.hasRipple()) {
+        if (this.checked) {
+          this._ripple.setAttribute('checked', '');
+        } else {
+          this._ripple.removeAttribute('checked');
+        }
+      }
+    },
+
+    /**
+     * Synchronizes the element's `active` and `checked` state.
+     */
+    _buttonStateChanged: function() {
+      Polymer.PaperRippleBehavior._buttonStateChanged.call(this);
+      if (this.disabled) {
+        return;
+      }
+      if (this.isAttached) {
+        this.checked = this.active;
+      }
+    }
+
+  };
+
+  /** @polymerBehavior Polymer.PaperCheckedElementBehavior */
+  Polymer.PaperCheckedElementBehavior = [
+    Polymer.PaperInkyFocusBehavior,
+    Polymer.IronCheckedElementBehavior,
+    Polymer.PaperCheckedElementBehaviorImpl
+  ];
+
+</script>
+
+
+<script>
+
+ /**
+ * `iron-range-behavior` provides the behavior for something with a minimum to maximum range.
+ *
+ * @demo demo/index.html
+ * @polymerBehavior
+ */
+ Polymer.IronRangeBehavior = {
+
+  properties: {
+
+    /**
+     * The number that represents the current value.
+     */
+    value: {
+      type: Number,
+      value: 0,
+      notify: true,
+      reflectToAttribute: true
+    },
+
+    /**
+     * The number that indicates the minimum value of the range.
+     */
+    min: {
+      type: Number,
+      value: 0,
+      notify: true
+    },
+
+    /**
+     * The number that indicates the maximum value of the range.
+     */
+    max: {
+      type: Number,
+      value: 100,
+      notify: true
+    },
+
+    /**
+     * Specifies the value granularity of the range's value.
+     */
+    step: {
+      type: Number,
+      value: 1,
+      notify: true
+    },
+
+    /**
+     * Returns the ratio of the value.
+     */
+    ratio: {
+      type: Number,
+      value: 0,
+      readOnly: true,
+      notify: true
+    },
+  },
+
+  observers: [
+    '_update(value, min, max, step)'
+  ],
+
+  _calcRatio: function(value) {
+    return (this._clampValue(value) - this.min) / (this.max - this.min);
+  },
+
+  _clampValue: function(value) {
+    return Math.min(this.max, Math.max(this.min, this._calcStep(value)));
+  },
+
+  _calcStep: function(value) {
+   /**
+    * if we calculate the step using
+    * `Math.round(value / step) * step` we may hit a precision point issue
+    * eg. 0.1 * 0.2 =  0.020000000000000004
+    * http://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html
+    *
+    * as a work around we can divide by the reciprocal of `step`
+    */
+    // polymer/issues/2493
+    value = parseFloat(value);
+    return this.step ? (Math.round((value + this.min) / this.step) -
+        (this.min / this.step)) / (1 / this.step) : value;
+  },
+
+  _validateValue: function() {
+    var v = this._clampValue(this.value);
+    this.value = this.oldValue = isNaN(v) ? this.oldValue : v;
+    return this.value !== v;
+  },
+
+  _update: function() {
+    this._validateValue();
+    this._setRatio(this._calcRatio(this.value) * 100);
+  }
+
+};
+</script>
+
+
 <script>
 
 /*
@@ -15487,158 +15641,6 @@ is separate from validation, and `allowed-pattern` does not affect how the input
 
 
 
-<script>
-
-  /**
-   * Use `Polymer.IronCheckedElementBehavior` to implement a custom element
-   * that has a `checked` property, which can be used for validation if the
-   * element is also `required`. Element instances implementing this behavior
-   * will also be registered for use in an `iron-form` element.
-   *
-   * @demo demo/index.html
-   * @polymerBehavior Polymer.IronCheckedElementBehavior
-   */
-  Polymer.IronCheckedElementBehaviorImpl = {
-
-    properties: {
-      /**
-       * Fired when the checked state changes.
-       *
-       * @event iron-change
-       */
-
-      /**
-       * Gets or sets the state, `true` is checked and `false` is unchecked.
-       */
-      checked: {
-        type: Boolean,
-        value: false,
-        reflectToAttribute: true,
-        notify: true,
-        observer: '_checkedChanged'
-      },
-
-      /**
-       * If true, the button toggles the active state with each tap or press
-       * of the spacebar.
-       */
-      toggles: {
-        type: Boolean,
-        value: true,
-        reflectToAttribute: true
-      },
-
-      /* Overriden from Polymer.IronFormElementBehavior */
-      value: {
-        type: String,
-        value: 'on',
-        observer: '_valueChanged'
-      }
-    },
-
-    observers: [
-      '_requiredChanged(required)'
-    ],
-
-    created: function() {
-      // Used by `iron-form` to handle the case that an element with this behavior
-      // doesn't have a role of 'checkbox' or 'radio', but should still only be
-      // included when the form is serialized if `this.checked === true`.
-      this._hasIronCheckedElementBehavior = true;
-    },
-
-    /**
-     * Returns false if the element is required and not checked, and true otherwise.
-     * @return {boolean} true if `required` is false, or if `required` and `checked` are both true.
-     */
-    _getValidity: function(_value) {
-      return this.disabled || !this.required || (this.required && this.checked);
-    },
-
-    /**
-     * Update the aria-required label when `required` is changed.
-     */
-    _requiredChanged: function() {
-      if (this.required) {
-        this.setAttribute('aria-required', 'true');
-      } else {
-        this.removeAttribute('aria-required');
-      }
-    },
-
-    /**
-     * Fire `iron-changed` when the checked state changes.
-     */
-    _checkedChanged: function() {
-      this.active = this.checked;
-      this.fire('iron-change');
-    },
-
-    /**
-     * Reset value to 'on' if it is set to `undefined`.
-     */
-    _valueChanged: function() {
-      if (this.value === undefined || this.value === null) {
-        this.value = 'on';
-      }
-    }
-  };
-
-  /** @polymerBehavior Polymer.IronCheckedElementBehavior */
-  Polymer.IronCheckedElementBehavior = [
-    Polymer.IronFormElementBehavior,
-    Polymer.IronValidatableBehavior,
-    Polymer.IronCheckedElementBehaviorImpl
-  ];
-
-</script>
-<script>
-
-  /**
-   * Use `Polymer.PaperCheckedElementBehavior` to implement a custom element
-   * that has a `checked` property similar to `Polymer.IronCheckedElementBehavior`
-   * and is compatible with having a ripple effect.
-   * @polymerBehavior Polymer.PaperCheckedElementBehavior
-   */
-  Polymer.PaperCheckedElementBehaviorImpl = {
-
-    /**
-     * Synchronizes the element's checked state with its ripple effect.
-     */
-    _checkedChanged: function() {
-      Polymer.IronCheckedElementBehaviorImpl._checkedChanged.call(this);
-      if (this.hasRipple()) {
-        if (this.checked) {
-          this._ripple.setAttribute('checked', '');
-        } else {
-          this._ripple.removeAttribute('checked');
-        }
-      }
-    },
-
-    /**
-     * Synchronizes the element's `active` and `checked` state.
-     */
-    _buttonStateChanged: function() {
-      Polymer.PaperRippleBehavior._buttonStateChanged.call(this);
-      if (this.disabled) {
-        return;
-      }
-      if (this.isAttached) {
-        this.checked = this.active;
-      }
-    }
-
-  };
-
-  /** @polymerBehavior Polymer.PaperCheckedElementBehavior */
-  Polymer.PaperCheckedElementBehavior = [
-    Polymer.PaperInkyFocusBehavior,
-    Polymer.IronCheckedElementBehavior,
-    Polymer.PaperCheckedElementBehaviorImpl
-  ];
-
-</script>
 
 
 
@@ -22306,6 +22308,200 @@ module.exports = Array.isArray || function (arr) {
     */
   });
 </script>
+<dom-module id="paper-toggle-button" assetpath="../bower_components/paper-toggle-button/">
+  <template strip-whitespace="">
+
+    <style>
+      :host {
+        display: inline-block;
+      }
+
+      :host([disabled]) {
+        pointer-events: none;
+      }
+
+      :host(:focus) {
+        outline:none;
+      }
+
+      .toggle-bar {
+        position: absolute;
+        height: 100%;
+        width: 100%;
+        border-radius: 8px;
+        pointer-events: none;
+        opacity: 0.4;
+        transition: background-color linear .08s;
+        background-color: var(--paper-toggle-button-unchecked-bar-color, #000000);
+        @apply(--paper-toggle-button-unchecked-bar);
+      }
+
+      .toggle-button {
+        position: absolute;
+        top: -3px;
+        height: 20px;
+        width: 20px;
+        border-radius: 50%;
+        box-shadow: 0 1px 5px 0 rgba(0, 0, 0, 0.6);
+        transition: -webkit-transform linear .08s, background-color linear .08s;
+        transition: transform linear .08s, background-color linear .08s;
+        will-change: transform;
+        background-color: var(--paper-toggle-button-unchecked-button-color, --paper-grey-50);
+        @apply(--paper-toggle-button-unchecked-button);
+      }
+
+      .toggle-button.dragging {
+        -webkit-transition: none;
+        transition: none;
+      }
+
+      :host([checked]:not([disabled])) .toggle-bar {
+        opacity: 0.5;
+        background-color: var(--paper-toggle-button-checked-bar-color, --default-primary-color);
+        @apply(--paper-toggle-button-checked-bar);
+      }
+
+      :host([disabled]) .toggle-bar {
+        background-color: #000;
+        opacity: 0.12;
+      }
+
+      :host([checked]) .toggle-button {
+        -webkit-transform: translate(16px, 0);
+        transform: translate(16px, 0);
+      }
+
+      :host([checked]:not([disabled])) .toggle-button {
+        background-color: var(--paper-toggle-button-checked-button-color, --default-primary-color);
+        @apply(--paper-toggle-button-checked-button);
+      }
+
+      :host([disabled]) .toggle-button {
+        background-color: #bdbdbd;
+        opacity: 1;
+      }
+
+      .toggle-ink {
+        position: absolute;
+        top: -14px;
+        left: -14px;
+        width: 48px;
+        height: 48px;
+        opacity: 0.5;
+        pointer-events: none;
+        color: var(--paper-toggle-button-unchecked-ink-color, --primary-text-color);
+      }
+
+      :host([checked]) .toggle-ink {
+        color: var(--paper-toggle-button-checked-ink-color, --default-primary-color);
+      }
+
+      .toggle-container {
+        display: inline-block;
+        position: relative;
+        width: 36px;
+        height: 14px;
+      }
+
+      .toggle-label {
+        position: relative;
+        top: -2px;
+        display: inline-block;
+        vertical-align: middle;
+        margin-left: 10px;
+        white-space: normal;
+        pointer-events: none;
+        color: var(--paper-toggle-button-label-color, --primary-text-color);
+      }
+    </style>
+
+    <div class="toggle-container">
+      <div id="toggleBar" class="toggle-bar"></div>
+      <div id="toggleButton" class="toggle-button"></div>
+    </div>
+
+    <div class="toggle-label"><content></content></div>
+
+  </template>
+
+  <script>
+    Polymer({
+      is: 'paper-toggle-button',
+
+      behaviors: [
+        Polymer.PaperCheckedElementBehavior
+      ],
+
+      hostAttributes: {
+        role: 'button',
+        'aria-pressed': 'false',
+        tabindex: 0
+      },
+
+      properties: {
+        /**
+         * Fired when the checked state changes due to user interaction.
+         *
+         * @event change
+         */
+        /**
+         * Fired when the checked state changes.
+         *
+         * @event iron-change
+         */
+      },
+
+      listeners: {
+        track: '_ontrack'
+      },
+
+      _ontrack: function(event) {
+        var track = event.detail;
+        if (track.state === 'start') {
+          this._trackStart(track);
+        } else if (track.state === 'track') {
+          this._trackMove(track);
+        } else if (track.state === 'end') {
+          this._trackEnd(track);
+        }
+      },
+
+      _trackStart: function(track) {
+        this._width = this.$.toggleBar.offsetWidth / 2;
+        /*
+         * keep an track-only check state to keep the dragging behavior smooth
+         * while toggling activations
+         */
+        this._trackChecked = this.checked;
+        this.$.toggleButton.classList.add('dragging');
+      },
+
+      _trackMove: function(track) {
+        var dx = track.dx;
+        this._x = Math.min(this._width,
+            Math.max(0, this._trackChecked ? this._width + dx : dx));
+        this.translate3d(this._x + 'px', 0, 0, this.$.toggleButton);
+        this._userActivate(this._x > (this._width / 2));
+      },
+
+      _trackEnd: function(track) {
+        this.$.toggleButton.classList.remove('dragging');
+        this.transform('', this.$.toggleButton);
+      },
+
+      // customize the element's ripple
+      _createRipple: function() {
+        this._rippleContainer = this.$.toggleButton;
+        var ripple = Polymer.PaperRippleBehavior._createRipple();
+        ripple.id = 'ink';
+        ripple.setAttribute('recenters', '');
+        ripple.classList.add('circle', 'toggle-ink');
+        return ripple;
+      }
+
+    });
+  </script>
+</dom-module>
 <dom-module id="paper-progress" assetpath="../bower_components/paper-progress/">
   <style>
     :host {
@@ -24762,7 +24958,7 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 					cmd.params = null;
 
 					var pkg = {
-						type: 'cmd',
+						type: 'nodes/cmd',
 						data: cmd, 
 						to: this.node.Uuid,
 					};
@@ -24774,7 +24970,7 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 					cmd.params = [this.PrimaryState.toString()];
 
 					var pkg = {
-						type: 'cmd',
+						type: 'nodes/cmd',
 						data: cmd, 
 						to: this.node.Uuid,
 					};
@@ -24788,7 +24984,7 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 					this.blocked = true;
 
 					var pkg = {
-						type: 'cmd',
+						type: 'nodes/cmd',
 						data: cmd, 
 						to: this.node.Uuid
 					};
@@ -24802,7 +24998,7 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 					this.blocked = false;
 
 					var pkg = {
-						type: 'cmd',
+						type: 'nodes/cmd',
 						data: cmd, 
 						to: this.node.Uuid
 					};
@@ -25003,9 +25199,9 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 						value:[],
 						notify: true,
 					},
-					actionRunners: {
+					runners: {
 						type: Object,
-						value:{},
+						value: {},
 						notify: true,
 					},
 					rules: {
@@ -25085,15 +25281,21 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 						this.actions = d.data;
 						return;
 					case 'actions/runner':
+
+						var r = JSON.parse(JSON.stringify(this.runners));
+
 						if (d.data.step < 0) { // Runner finished and exited
-							delete this.actionRunners[d.data.uuid][d.data.address];
+							delete r[d.data.uuid][d.data.address];
 						} else { // New runner started or updated state
-							if ( this.actionRunners[d.data.uuid] === undefined ) {
-								this.actionRunners[d.data.uuid] = {};
+							if ( r[d.data.uuid] === undefined ) {
+								r[d.data.uuid] = {};
 							}
 
-							this.actionRunners[d.data.uuid][d.data.address] = d.data.step;
+							r[d.data.uuid][d.data.address] = d.data.step;
 						}
+
+						this.runners = r;
+
 						return;
 					case 'rules/all':
 						this.rules = d.data;
@@ -25128,6 +25330,7 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 					this.addEventListener('open',function() {
 						self.$.dialog.open();
 					});
+
 
 					this.$.socket.addEventListener('open',function(event) {
 						event.stopPropagation();
@@ -25215,6 +25418,265 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 			font-size:20px;
 			font-family: 'Roboto', 'Noto', sans-serif;
 			margin-bottom:10px;
+			border-bottom: 1px solid rgba(0,0,0,0.22);
+		}
+
+		table {
+			margin-left:12px;
+		}
+
+		.row .cell {
+			padding: 5px;
+			text-align:left;
+		}
+
+		.row .cell .flex {
+			overflow-y:none;
+		}
+		.args {
+			color: #666666;
+			font-size:0.8em;
+		}
+	</style>
+	<template>
+		<paper-shadow z="1"></paper-shadow>
+		<div class="layout horizontal title">
+			<div id="title"><paper-toggle-button checked="" disabled=""></paper-toggle-button></div>
+			<div id="title" class="flex">{{data.name}}</div>
+			<div><paper-button raised="" id="trigger" uuid="[[data.uuid]]">Run</paper-button></div>
+		</div>
+		<div>
+			<template is="dom-repeat" items="{{data.commands}}" as="item" index-as="i">
+				<div class="horizontal layout row">
+					<template is="dom-repeat" items="[[myRunners]]" as="runner">
+						<div class="cell">
+							<template is="dom-if" if="{{greater(i,runner)}}">
+								<iron-icon icon="icons:radio-button-checked" title="Done"></iron-icon>
+							</template>
+							<template is="dom-if" if="{{equal(i,runner)}}">
+								<iron-icon icon="icons:cached" title="Running"></iron-icon>
+							</template>
+							<template is="dom-if" if="{{less(i,runner)}}">
+								<iron-icon icon="icons:radio-button-unchecked" title="Queued"></iron-icon>
+							</template>
+						</div>
+					</template>
+
+					<template is="dom-if" if="{{item.command}}">
+						<div class="cell"></div>
+						<div class="cell"><iron-icon icon="icons:send"></iron-icon></div>
+						<div class="cell"><span>[[item.uuid]]</span>:<span>[[item.command.cmd]]</span></div>
+						<div class="cell args flex"><div>[[item.command.args]]</div></div>
+					</template>
+					<template is="dom-if" if="{{item.pause}}">
+						<div class="cell"></div>
+						<div class="cell"><iron-icon icon="image:timer"></iron-icon></div>
+						<div class="cell">[[item.pause]]</div>
+						<div class="cell flex"></div>
+					</template>
+				</div>
+			</template>
+		</div>
+	</template>
+	<script>
+		(function () {
+			Polymer({
+				isText: false,
+				is: 'stampzilla-action',
+				properties: {
+					data: {
+						type: Object,
+						notify: true
+					},
+					actions: {
+						type: Object,
+						notify: true
+					},
+					runners: {
+						type: Object,
+						notify: true
+					},
+					myRunners: {
+						type: Array,
+						notify: true
+					}
+				},
+				observers: [
+					'actionRunnersChanged(runners.*)'
+				],
+				listeners: {
+					'trigger.click': 'handleClick',
+				},
+				actionRunnersChanged: function() {
+					if (this.runners[this.data.uuid] === undefined) {
+						this.myRunners = [];
+						return;
+					}
+
+					var data = this.runners[this.data.uuid];
+					this.myRunners = Object.keys(data).map(function (key) {return data[key];});
+				},
+				ready: function() {
+				},
+				handleClick: function(e) {
+					var pkg = {
+						type: 'actions/run',
+						data: e.target.uuid
+					};
+
+					app.fire('ws-send', pkg);
+				},
+
+				greater: function(index, step) {
+					return index+1 < step;
+				},
+				equal: function(index, step) {
+					return index+1 === step;
+				},
+				less: function(index, step) {
+					return index+1 > step;
+				}
+			});
+		})();
+	</script>
+
+</dom-module>
+<dom-module id="stampzilla-rule" assetpath="stampzilla-rule/">
+	<style is="custom-style">
+		:host {
+			@apply(--layout-vertical);
+			@apply(--shadow-elevation-2dp);
+
+			margin-bottom:10px;
+			padding:1em;
+		}
+
+		:host:hover {
+			@apply(--shadow-elevation-6dp);
+		}
+
+		#title {
+			color: #727272;
+			font-size:20px;
+			font-family: 'Roboto', 'Noto', sans-serif;
+			margin-bottom:10px;
+			border-bottom: 1px solid rgba(0,0,0,0.22);
+		}
+
+		table {
+			margin-left:12px;
+		}
+
+		.row .cell {
+			padding: 5px;
+			text-align:left;
+		}
+
+		.row .cell .flex {
+			overflow-y:none;
+		}
+		.args {
+			color: #666666;
+			font-size:0.8em;
+		}
+	</style>
+	<template>
+		<paper-shadow z="1"></paper-shadow>
+		<div class="layout horizontal title">
+			<div id="title"><paper-toggle-button checked="" disabled=""></paper-toggle-button></div>
+			<div id="title" class="flex">{{data.name}}</div>
+			<div><paper-button raised="" id="trigger1" uuid="[[data.uuid]]">Run Enter</paper-button></div>
+			<div><paper-button raised="" id="trigger2" uuid="[[data.uuid]]">Run Exit</paper-button></div>
+		</div>
+		<div>
+			<template is="dom-repeat" items="{{data.commands}}" as="item" index-as="i">
+				<div class="horizontal layout row">
+					<template is="dom-if" if="{{item.command}}">
+						<div class="cell"></div>
+						<div class="cell"><iron-icon icon="icons:send"></iron-icon></div>
+						<div class="cell"><span>[[item.uuid]]</span>:<span>[[item.command.cmd]]</span></div>
+						<div class="cell args flex"><div>[[item.command.args]]</div></div>
+					</template>
+					<template is="dom-if" if="{{item.pause}}">
+						<div class="cell"></div>
+						<div class="cell"><iron-icon icon="image:timer"></iron-icon></div>
+						<div class="cell">[[item.pause]]</div>
+						<div class="cell flex"></div>
+					</template>
+				</div>
+			</template>
+		</div>
+	</template>
+	<script>
+		(function () {
+			Polymer({
+				isText: false,
+				is: 'stampzilla-rule',
+				properties: {
+					data: {
+						type: Object,
+						notify: true
+					},
+					rules: {
+						type: Object,
+						notify: true
+					}
+				},
+				observers: [
+				],
+				listeners: {
+					'trigger1.click': 'handleClick',
+					'trigger2.click': 'handleClick2',
+				},
+				ready: function() {
+				},
+				handleClick: function(e) {
+					var pkg = {
+						type: 'rules/run',
+						data: {
+							'uuid': e.target.uuid,
+							'dir': 'enter'
+						}
+					};
+
+					app.fire('ws-send', pkg);
+				},
+				handleClick2: function(e) {
+					var pkg = {
+						type: 'rules/run',
+						data: {
+							'uuid': e.target.uuid,
+							'dir': 'exit'
+						}
+					};
+
+					app.fire('ws-send', pkg);
+				}
+			});
+		})();
+	</script>
+
+</dom-module>
+<dom-module id="stampzilla-schedule" assetpath="stampzilla-schedule/">
+	<style is="custom-style">
+		:host {
+			@apply(--layout-vertical);
+			@apply(--shadow-elevation-2dp);
+
+			margin-bottom:10px;
+			padding:1em;
+		}
+
+		:host:hover {
+			@apply(--shadow-elevation-6dp);
+		}
+
+		#title {
+			color: #727272;
+			font-size:20px;
+			font-family: 'Roboto', 'Noto', sans-serif;
+			margin-bottom:10px;
+			border-bottom: 1px solid rgba(0,0,0,0.22);
 		}
 
 		.title {
@@ -25223,9 +25685,6 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 
 		table {
 			margin-left:12px;
-		}
-		.hr {
-			border-bottom: 1px solid #727272;
 		}
 
 		.row .cell {
@@ -25245,65 +25704,31 @@ Nd.millisecond=Nd.milliseconds=Md,Nd.utcOffset=Na,Nd.utc=Pa,Nd.local=Qa,Nd.parse
 		<paper-shadow z="1"></paper-shadow>
 		<div class="layout horizontal title">
 			<div id="title" class="flex">{{data.name}}</div>
-			<div><paper-button raised="" uuid="[[data.uuid]]">Run</paper-button></div>
-		</div>
-		<div>
-			<template is="dom-repeat" items="[[data.commands]]" as="item">
-					<div class="horizontal layout row">
-						<template is="dom-if" if="{{item.command}}">
-							<div class="cell"></div>
-							<div class="cell"><iron-icon icon="icons:send"></iron-icon></div>
-							<div class="cell"><span>[[item.uuid]]</span>:<span>[[item.command.cmd]]</span></div>
-							<div class="cell args flex"><div>[[item.command.args]]</div></div>
-						</template>
-						<template is="dom-if" if="{{item.pause}}">
-							<div class="cell"></div>
-							<div class="cell"><iron-icon icon="image:timer"></iron-icon></div>
-							<div class="cell">[[item.pause]]</div>
-							<div class="cell flex"></div>
-						</template>
-					</div>
-			</template>
 		</div>
 	</template>
 	<script>
 		(function () {
 			Polymer({
 				isText: false,
-				is: 'stampzilla-action',
+				is: 'stampzilla-schedule',
 				properties: {
 					data: {
 						type: Object,
 						notify: true
 					},
-					actions: {
-						type: Object,
-						notify: true
-					},
-					actionRunners: {
+					schedule: {
 						type: Object,
 						notify: true
 					}
 				},
 				observers: [
-					'actionRunnersChanged(actionRunners)'
 				],
 				listeners: {
-					'click': 'handleClick',
 				},
-				actionRunnersChanged: function() {
-					console.log(this.actionRunners);	
-				},
+
 				ready: function() {
 				},
-				handleClick: function(e) {
-					var pkg = {
-						type: 'actions/run',
-						data: e.target.uuid
-					};
 
-					app.fire('ws-send', pkg);
-				}
 			});
 		})();
 	</script>
