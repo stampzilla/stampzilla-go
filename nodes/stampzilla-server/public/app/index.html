@@ -178,23 +178,15 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 							</section>
 
 							<section data-route="rules">
-								<iron-list items="[[rules]]" as="item">
-									<template>
-									 	<div>
-											Name: [[item.name]]
-									  	</div>
-									</template>
-								</iron-list>
+								<template is="dom-repeat" items="[[rules]]" as="item">
+									<stampzilla-rule data=[[item]] actions={{rules}}></stampzilla-rule>
+								</template>
 							</section>
 
 							<section data-route="schedule">
-								<iron-list items="[[schedule]]" as="item">
-									<template>
-									 	<div>
-											Name: [[item.name]]
-									  	</div>
-									</template>
-								</iron-list>
+								<template is="dom-repeat" items="[[schedule]]" as="item">
+									<stampzilla-schedule data=[[item]] schedule={{schedule}}></stampzilla-schedule>
+								</template>
 							</section>
 
 							<section data-route="node-info">

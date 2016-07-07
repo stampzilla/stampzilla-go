@@ -1,4 +1,4 @@
-<dom-module id="stampzilla-action">
+<dom-module id="stampzilla-rule">
 	<style is="custom-style">
 		:host {
 			@apply(--layout-vertical);
@@ -42,25 +42,12 @@
 		<div class="layout horizontal title">
 			<div id="title"><paper-toggle-button checked disabled></paper-toggle-button></div>
 			<div id="title" class="flex">{{data.name}}</div>
-			<div><paper-button raised id="trigger" uuid="[[data.uuid]]">Run</paper-button></div>
+			<div><paper-button raised id="trigger1" uuid="[[data.uuid]]">Run Enter</paper-button></div>
+			<div><paper-button raised id="trigger2" uuid="[[data.uuid]]">Run Exit</paper-button></div>
 		</div>
 		<div>
 			<template is="dom-repeat" items="{{data.commands}}" as="item" index-as="i">
 				<div class="horizontal layout row">
-					<template is="dom-repeat" items="[[myRunners]]" as="runner">
-						<div class="cell">
-							<template is="dom-if" if="{{greater(i,runner)}}">
-								<iron-icon icon="icons:radio-button-checked" title="Done"></iron-icon>
-							</template>
-							<template is="dom-if" if="{{equal(i,runner)}}">
-								<iron-icon icon="icons:cached" title="Running"></iron-icon>
-							</template>
-							<template is="dom-if" if="{{less(i,runner)}}">
-								<iron-icon icon="icons:radio-button-unchecked" title="Queued"></iron-icon>
-							</template>
-						</div>
-					</template>
-
 					<template is="dom-if" if="{{item.command}}">
 						<div class="cell"></div>
 						<div class="cell"><iron-icon icon="icons:send"></iron-icon></div>
@@ -81,59 +68,46 @@
 		(function () {
 			Polymer({
 				isText: false,
-				is: 'stampzilla-action',
+				is: 'stampzilla-rule',
 				properties: {
 					data: {
 						type: Object,
 						notify: true
 					},
-					actions: {
+					rules: {
 						type: Object,
-						notify: true
-					},
-					runners: {
-						type: Object,
-						notify: true
-					},
-					myRunners: {
-						type: Array,
 						notify: true
 					}
 				},
 				observers: [
-					'actionRunnersChanged(runners.*)'
 				],
 				listeners: {
-					'trigger.click': 'handleClick',
-				},
-				actionRunnersChanged: function() {
-					if (this.runners[this.data.uuid] === undefined) {
-						this.myRunners = [];
-						return;
-					}
-
-					var data = this.runners[this.data.uuid];
-					this.myRunners = Object.keys(data).map(function (key) {return data[key];});
+					'trigger1.click': 'handleClick',
+					'trigger2.click': 'handleClick2',
 				},
 				ready: function() {
 				},
 				handleClick: function(e) {
 					var pkg = {
-						type: 'actions/run',
-						data: e.target.uuid
+						type: 'rules/run',
+						data: {
+							'uuid': e.target.uuid,
+							'dir': 'enter'
+						}
 					};
 
 					app.fire('ws-send', pkg);
 				},
+				handleClick2: function(e) {
+					var pkg = {
+						type: 'rules/run',
+						data: {
+							'uuid': e.target.uuid,
+							'dir': 'exit'
+						}
+					};
 
-				greater: function(index, step) {
-					return index+1 < step;
-				},
-				equal: function(index, step) {
-					return index+1 === step;
-				},
-				less: function(index, step) {
-					return index+1 > step;
+					app.fire('ws-send', pkg);
 				}
 			});
 		})();

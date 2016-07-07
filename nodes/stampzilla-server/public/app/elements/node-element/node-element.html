@@ -173,7 +173,7 @@
 					cmd.params = null;
 
 					var pkg = {
-						type: 'cmd',
+						type: 'nodes/cmd',
 						data: cmd, 
 						to: this.node.Uuid,
 					};
@@ -185,7 +185,7 @@
 					cmd.params = [this.PrimaryState.toString()];
 
 					var pkg = {
-						type: 'cmd',
+						type: 'nodes/cmd',
 						data: cmd, 
 						to: this.node.Uuid,
 					};
@@ -199,7 +199,7 @@
 					this.blocked = true;
 
 					var pkg = {
-						type: 'cmd',
+						type: 'nodes/cmd',
 						data: cmd, 
 						to: this.node.Uuid
 					};
@@ -213,7 +213,7 @@
 					this.blocked = false;
 
 					var pkg = {
-						type: 'cmd',
+						type: 'nodes/cmd',
 						data: cmd, 
 						to: this.node.Uuid
 					};
