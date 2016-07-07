@@ -27,6 +27,8 @@ type SerialConnection struct {
 	Name string
 	Baud int
 	Port io.ReadWriteCloser
+
+	connected bool
 }
 
 type winsize struct {
@@ -53,6 +55,8 @@ var filterFillingAlarm int
 var rateTimestamp int64
 var rateCount int64
 var rate int64
+
+var pumpStopTime time.Time
 
 func main() { // {{{
 	config := basenode.NewConfig()
@@ -171,6 +175,64 @@ func main() { // {{{
 		Feedback: `PH`,
 	})
 
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeButton,
+		Name: "Dose 1 (1s)",
+		Command: &protocol.Command{
+			Cmd:  "dose1",
+			Args: []string{"1000"},
+		},
+	})
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeButton,
+		Name: "Dose 2 (1s)",
+		Command: &protocol.Command{
+			Cmd:  "dose2",
+			Args: []string{"1000"},
+		},
+	})
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeButton,
+		Name: "Dose 3 (1s)",
+		Command: &protocol.Command{
+			Cmd:  "dose3",
+			Args: []string{"1000"},
+		},
+	})
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeButton,
+		Name: "Dose 4 (1s)",
+		Command: &protocol.Command{
+			Cmd:  "dose4",
+			Args: []string{"1000"},
+		},
+	})
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeButton,
+		Name: "Dose 5 (1s)",
+		Command: &protocol.Command{
+			Cmd:  "dose5",
+			Args: []string{"1000"},
+		},
+	})
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeButton,
+		Name: "Dose 6 (1s)",
+		Command: &protocol.Command{
+			Cmd:  "dose6",
+			Args: []string{"1000"},
+		},
+	})
+
+	node.AddElement(&protocol.Element{
+		Type: protocol.ElementTypeButton,
+		Name: "Test trigger notification",
+		Command: &protocol.Command{
+			Cmd:  "notify",
+			Args: []string{"error"},
+		},
+	})
+
 	serverConnection = basenode.Connect()
 	notify = notifier.New(serverConnection)
 	notify.SetSource(node)
@@ -212,7 +274,7 @@ func processArduinoData(msg string, connection basenode.Connection) { // {{{
 	var prevState State = *state
 
 	values := strings.Split(msg, "|")
-	if len(values) != 12 {
+	if len(values) < 13 {
 		printTerminalStatus("Invalid length")
 		log.Warn("Invalid message: ", msg)
 		return
@@ -283,6 +345,21 @@ func processArduinoData(msg string, connection basenode.Connection) { // {{{
 		filterFillingAlarm = 0
 	}
 
+	if !CirculationPumps {
+		if pumpStopTime.IsZero() || pumpStopTime == time.Unix(0, 0) {
+			log.Critical("PUMPAR STOPPADE")
+			pumpStopTime = time.Now()
+		}
+
+		if time.Now().Sub(pumpStopTime) > (time.Hour * 1) {
+			log.Critical("PUMPAR STOPPADE - LARM")
+			pumpStopTime = time.Now()
+			notify.Error("Pumpar stoppade i 1 timme")
+		}
+	} else if CirculationPumps {
+		pumpStopTime = time.Unix(0, 0)
+	}
+
 	state.CirculationPumps = CirculationPumps
 	state.Skimmer = Skimmer
 	state.Heating = Heating
@@ -316,17 +393,18 @@ func processArduinoData(msg string, connection basenode.Connection) { // {{{
 		state.Lights.Temperature = -1
 	}
 
-	pH := strings.Split(values[8], ":")
-	value, err = strconv.ParseFloat(pH[0], 64)
-	if err == nil {
-		ph := ((673-value)/828*14+7)*1.5650273224 - 3.84
-		if len(phFilter) < 200 {
-			phFilter = append(phFilter, ph)
-		} else {
-			phFilter = append(phFilter[1:], ph)
-			state.PH = toFixed(Average(phFilter), 2)
-		}
-	}
+	/*
+		pH := strings.Split(values[8], ":")
+		value, err = strconv.ParseFloat(pH[0], 64)
+		if err == nil {
+			ph := ((673-value)/828*14+7)*1.5650273224 - 3.84
+			if len(phFilter) < 200 {
+				phFilter = append(phFilter, ph)
+			} else {
+				phFilter = append(phFilter[1:], ph)
+				state.PH = toFixed(Average(phFilter), 2)
+			}
+		}*/
 
 	air := strings.Split(values[9], ",")
 	if len(air) == 2 {
@@ -360,6 +438,23 @@ func processArduinoData(msg string, connection basenode.Connection) { // {{{
 		}
 	} else {
 		state.WaterLevel = -1
+	}
+
+	state.Error, err = strconv.Atoi(values[12])
+	if prevState.Error != state.Error {
+		log.Critical("Error detected: !", state.Error)
+		switch state.Error {
+		case 0:
+			notify.Info("Errors was restored..")
+		case 1:
+			notify.Error("Low water temperature")
+		case 2:
+			notify.Error("High water temperature")
+		case 3:
+			notify.Error("Topup pump exeeded maximum run time")
+		default:
+			notify.Error("SYSTEM ERROR?! Super suspicious unknown error!?")
+		}
 	}
 
 	// Check if something have changed
@@ -485,7 +580,12 @@ func serverRecv(connection basenode.Connection) { // {{{
 } // }}}
 
 func processCommand(cmd protocol.Command) error { // {{{
+	log.Infof("Received command: %#v", cmd)
 	var target bool
+
+	if !ard.connected {
+		return fmt.Errorf("Arduino is not connected!")
+	}
 
 	if len(cmd.Args) < 1 {
 		if len(cmd.Params) < 1 {
@@ -549,6 +649,9 @@ func processCommand(cmd protocol.Command) error { // {{{
 
 		switch {
 		case len(cmd.Args) == 1:
+			if len(cmd.Params) < 1 {
+				return fmt.Errorf("Missing param[0], skipping")
+			}
 			i, err = strconv.Atoi(cmd.Params[0])
 			if err != nil {
 				return fmt.Errorf("Failed to decode param[0] to int %s %s", err, cmd.Args[0])
@@ -579,16 +682,59 @@ func processCommand(cmd protocol.Command) error { // {{{
 
 		ard.Port.Write([]byte{0x02, 0x0B, 0x00, byte(i), 0x03}) // Turn on
 		break
-	case "dose":
+
+	case "dose1":
 		i, err := strconv.Atoi(cmd.Args[0])
 		if err != nil {
 			return fmt.Errorf("Failed to decode arg[0] to int %s %s", err, cmd.Args[0])
 		}
 
-		ard.Port.Write([]byte{0x02, 0x0C, byte(i >> 8), byte(i), 0x03}) // command dose
+		ard.Port.Write([]byte{0x02, 12, byte(i >> 8), byte(i), 0x03}) // command dose
 		break
+	case "dose2":
+		i, err := strconv.Atoi(cmd.Args[0])
+		if err != nil {
+			return fmt.Errorf("Failed to decode arg[0] to int %s %s", err, cmd.Args[0])
+		}
+
+		ard.Port.Write([]byte{0x02, 13, byte(i >> 8), byte(i), 0x03}) // command dose
+		break
+	case "dose3":
+		i, err := strconv.Atoi(cmd.Args[0])
+		if err != nil {
+			return fmt.Errorf("Failed to decode arg[0] to int %s %s", err, cmd.Args[0])
+		}
+
+		ard.Port.Write([]byte{0x02, 14, byte(i >> 8), byte(i), 0x03}) // command dose
+		break
+	case "dose4":
+		i, err := strconv.Atoi(cmd.Args[0])
+		if err != nil {
+			return fmt.Errorf("Failed to decode arg[0] to int %s %s", err, cmd.Args[0])
+		}
+
+		ard.Port.Write([]byte{0x02, 15, byte(i >> 8), byte(i), 0x03}) // command dose
+		break
+	case "dose5":
+		i, err := strconv.Atoi(cmd.Args[0])
+		if err != nil {
+			return fmt.Errorf("Failed to decode arg[0] to int %s %s", err, cmd.Args[0])
+		}
+
+		ard.Port.Write([]byte{0x02, 16, byte(i >> 8), byte(i), 0x03}) // command dose
+		break
+	case "dose6":
+		i, err := strconv.Atoi(cmd.Args[0])
+		if err != nil {
+			return fmt.Errorf("Failed to decode arg[0] to int %s %s", err, cmd.Args[0])
+		}
+
+		ard.Port.Write([]byte{0x02, 17, byte(i >> 8), byte(i), 0x03}) // command dose
+		break
+	case "notify":
+		notify.Error("Test trigger from Aquarium")
 	}
-	return nil
+	return fmt.Errorf("Unknown command \"\", skipping", cmd.Cmd)
 } // }}}
 
 func printTerminalStatus(msg string) { // {{{
@@ -666,12 +812,16 @@ func (config *SerialConnection) connect(connection basenode.Connection, callback
 
 	config.Port, err = serial.OpenPort(c)
 	if err != nil {
-		log.Error("Serial connect failed: ", err)
+		//log.Error("Serial connect failed: ", err)
 		return
 	}
 
 	close(connected)
 	<-time.After(time.Second)
+	defer func() {
+		config.connected = false
+	}()
+	config.connected = true
 
 	config.Port.Write([]byte{0x02, 0x07, 0x00, byte(red), 0x03})     // red
 	config.Port.Write([]byte{0x02, 0x08, 0x00, byte(green), 0x03})   // green

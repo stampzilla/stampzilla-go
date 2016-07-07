@@ -30,27 +30,6 @@ func (t *Installer) CreateConfig() {
 	}
 }
 
-func (t *Installer) Bower() {
-	bower, err := exec.LookPath("bower")
-	if err != nil {
-		fmt.Println("Missing bower executable. Install with: npm install -g bower")
-		os.Exit(1)
-	}
-
-	fmt.Print("bower install in public folder... ")
-	shbin, err := exec.LookPath("sh")
-	if err != nil {
-		fmt.Printf("LookPath Error: %s", err)
-		return
-	}
-
-	toRun := "cd /home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/public && " + bower + " install"
-	out, err := Run("sudo", "-E", "-u", "stampzilla", "-H", shbin, "-c", toRun)
-	if err != nil {
-		fmt.Println("ERROR", err, out)
-	}
-	fmt.Println("DONE")
-}
 func (t *Installer) CreateUser(username string) {
 	fmt.Print("Creating user " + username + "... ")
 	if t.userExists(username) {
