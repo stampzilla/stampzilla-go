@@ -27,6 +27,8 @@ type SerialConnection struct {
 	Name string
 	Baud int
 	Port io.ReadWriteCloser
+
+	connected bool
 }
 
 type winsize struct {
@@ -344,18 +346,18 @@ func processArduinoData(msg string, connection basenode.Connection) { // {{{
 	}
 
 	if !CirculationPumps {
-		if (pumpStopTime.IsZero() || pumpStopTime == time.Unix(0, 0)) {
-			log.Critical("PUMPAR STOPPADE");
+		if pumpStopTime.IsZero() || pumpStopTime == time.Unix(0, 0) {
+			log.Critical("PUMPAR STOPPADE")
 			pumpStopTime = time.Now()
 		}
-		
-		if time.Now().Sub(pumpStopTime) > (time.Hour*1) {
-			log.Critical("PUMPAR STOPPADE - LARM");
-			pumpStopTime = time.Now();
-			notify.Error("Pumpar stoppade i 1 timme");
+
+		if time.Now().Sub(pumpStopTime) > (time.Hour * 1) {
+			log.Critical("PUMPAR STOPPADE - LARM")
+			pumpStopTime = time.Now()
+			notify.Error("Pumpar stoppade i 1 timme")
 		}
 	} else if CirculationPumps {
-		pumpStopTime = time.Unix(0, 0);
+		pumpStopTime = time.Unix(0, 0)
 	}
 
 	state.CirculationPumps = CirculationPumps
@@ -392,17 +394,17 @@ func processArduinoData(msg string, connection basenode.Connection) { // {{{
 	}
 
 	/*
-	pH := strings.Split(values[8], ":")
-	value, err = strconv.ParseFloat(pH[0], 64)
-	if err == nil {
-		ph := ((673-value)/828*14+7)*1.5650273224 - 3.84
-		if len(phFilter) < 200 {
-			phFilter = append(phFilter, ph)
-		} else {
-			phFilter = append(phFilter[1:], ph)
-			state.PH = toFixed(Average(phFilter), 2)
-		}
-	}*/
+		pH := strings.Split(values[8], ":")
+		value, err = strconv.ParseFloat(pH[0], 64)
+		if err == nil {
+			ph := ((673-value)/828*14+7)*1.5650273224 - 3.84
+			if len(phFilter) < 200 {
+				phFilter = append(phFilter, ph)
+			} else {
+				phFilter = append(phFilter[1:], ph)
+				state.PH = toFixed(Average(phFilter), 2)
+			}
+		}*/
 
 	air := strings.Split(values[9], ",")
 	if len(air) == 2 {
@@ -578,7 +580,12 @@ func serverRecv(connection basenode.Connection) { // {{{
 } // }}}
 
 func processCommand(cmd protocol.Command) error { // {{{
+	log.Infof("Received command: %#v", cmd)
 	var target bool
+
+	if !ard.connected {
+		return fmt.Errorf("Arduino is not connected!")
+	}
 
 	if len(cmd.Args) < 1 {
 		if len(cmd.Params) < 1 {
@@ -642,6 +649,9 @@ func processCommand(cmd protocol.Command) error { // {{{
 
 		switch {
 		case len(cmd.Args) == 1:
+			if len(cmd.Params) < 1 {
+				return fmt.Errorf("Missing param[0], skipping")
+			}
 			i, err = strconv.Atoi(cmd.Params[0])
 			if err != nil {
 				return fmt.Errorf("Failed to decode param[0] to int %s %s", err, cmd.Args[0])
@@ -653,6 +663,7 @@ func processCommand(cmd protocol.Command) error { // {{{
 			}
 
 		}
+		return nil
 
 		switch cmd.Args[0] {
 		case "red":
@@ -802,12 +813,16 @@ func (config *SerialConnection) connect(connection basenode.Connection, callback
 
 	config.Port, err = serial.OpenPort(c)
 	if err != nil {
-		//log.Error("Serial connect failed: ", err)
+		log.Error("Serial connect failed: ", err)
 		return
 	}
 
 	close(connected)
 	<-time.After(time.Second)
+	defer func() {
+		config.connected = false
+	}()
+	config.connected = true
 
 	config.Port.Write([]byte{0x02, 0x07, 0x00, byte(red), 0x03})     // red
 	config.Port.Write([]byte{0x02, 0x08, 0x00, byte(green), 0x03})   // green
