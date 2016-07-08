@@ -84,7 +84,7 @@ func (a *action) run(progressChan chan ActionProgress) {
 func (a *action) tryNotifyProgress(addr *int, c chan ActionProgress, step int) {
 	msg := ActionProgress{
 		Address: fmt.Sprintf("%p", addr),
-		Uuid:    a.Uuid_,
+		Uuid:    a.Uuid(),
 		Step:    step,
 	}
 
