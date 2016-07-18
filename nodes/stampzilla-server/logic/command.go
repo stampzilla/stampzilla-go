@@ -9,7 +9,7 @@ import (
 )
 
 type Command interface {
-	Run()
+	Run(abort <-chan struct{})
 }
 type command struct {
 	Command *protocol.Command `json:"command"`
@@ -27,7 +27,7 @@ func (c *command) Uuid() string {
 //func (c *command) SetNodes(nodes serverprotocol.Searchable) {
 //c.nodes = nodes
 //}
-func (c *command) Run() {
+func (c *command) Run(abort <-chan struct{}) {
 	if c.nodes == nil {
 		log.Warn("Node ", c.Uuid(), " - No nodes connected when tried to send: ", c.Command)
 		return

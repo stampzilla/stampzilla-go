@@ -98,8 +98,9 @@ type pauseStub struct {
 	wg *sync.WaitGroup
 }
 
-func (p *pauseStub) Run() {
-	p.command_pause.Run()
+func (p *pauseStub) Run(a <-chan struct{}) {
+	abort := make(chan struct{})
+	p.command_pause.Run(abort)
 	p.wg.Done()
 }
 

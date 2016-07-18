@@ -60,7 +60,7 @@ func (a *action) run(progressChan chan ActionProgress) {
 				a.tryNotifyProgress(&addr, progressChan, -1) // Done
 				return
 			case cmd := <-queue:
-				cmd.Run()
+				cmd.Run(ctx.Done())
 			}
 		}
 	}()

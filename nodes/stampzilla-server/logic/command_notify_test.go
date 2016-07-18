@@ -27,7 +27,8 @@ func TestCommandNotifyRun(t *testing.T) {
 	}
 	c.NotificationRouter = fakeRouter
 
-	c.Run()
+	abort := make(chan struct{})
+	c.Run(abort)
 
 	if fakeRouter.notifications[0].Message != "Testing" {
 		t.Errorf("Got %s Expected %s", fakeRouter.notifications[0].Message, "Testing")
