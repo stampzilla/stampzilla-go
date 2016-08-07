@@ -1,0 +1,116 @@
+<dom-module id="stampzilla-rule">
+	<style is="custom-style">
+		:host {
+			@apply(--layout-vertical);
+			@apply(--shadow-elevation-2dp);
+
+			margin-bottom:10px;
+			padding:1em;
+		}
+
+		:host:hover {
+			@apply(--shadow-elevation-6dp);
+		}
+
+		#title {
+			color: #727272;
+			font-size:20px;
+			font-family: 'Roboto', 'Noto', sans-serif;
+			margin-bottom:10px;
+			border-bottom: 1px solid rgba(0,0,0,0.22);
+		}
+
+		table {
+			margin-left:12px;
+		}
+
+		.row .cell {
+			padding: 5px;
+			text-align:left;
+		}
+
+		.row .cell .flex {
+			overflow-y:none;
+		}
+		.args {
+			color: #666666;
+			font-size:0.8em;
+		}
+	</style>
+	<template>
+		<paper-shadow z="1"></paper-shadow>
+		<div class="layout horizontal title">
+			<div id="title"><paper-toggle-button checked disabled></paper-toggle-button></div>
+			<div id="title" class="flex">{{data.name}}</div>
+			<div><paper-button raised id="trigger1" uuid="[[data.uuid]]">Run Enter</paper-button></div>
+			<div><paper-button raised id="trigger2" uuid="[[data.uuid]]">Run Exit</paper-button></div>
+		</div>
+		<div>
+			<template is="dom-repeat" items="{{data.commands}}" as="item" index-as="i">
+				<div class="horizontal layout row">
+					<template is="dom-if" if="{{item.command}}">
+						<div class="cell"></div>
+						<div class="cell"><iron-icon icon="icons:send"></iron-icon></div>
+						<div class="cell"><span>[[item.uuid]]</span>:<span>[[item.command.cmd]]</span></div>
+						<div class="cell args flex"><div>[[item.command.args]]</div></div>
+					</template>
+					<template is="dom-if" if="{{item.pause}}">
+						<div class="cell"></div>
+						<div class="cell"><iron-icon icon="image:timer"></iron-icon></div>
+						<div class="cell">[[item.pause]]</div>
+						<div class="cell flex"></div>
+					</template>
+				</div>
+			</template>
+		</div>
+	</template>
+	<script>
+		(function () {
+			Polymer({
+				isText: false,
+				is: 'stampzilla-rule',
+				properties: {
+					data: {
+						type: Object,
+						notify: true
+					},
+					rules: {
+						type: Object,
+						notify: true
+					}
+				},
+				observers: [
+				],
+				listeners: {
+					'trigger1.click': 'handleClick',
+					'trigger2.click': 'handleClick2',
+				},
+				ready: function() {
+				},
+				handleClick: function(e) {
+					var pkg = {
+						type: 'rules/run',
+						data: {
+							'uuid': e.target.uuid,
+							'dir': 'enter'
+						}
+					};
+
+					app.fire('ws-send', pkg);
+				},
+				handleClick2: function(e) {
+					var pkg = {
+						type: 'rules/run',
+						data: {
+							'uuid': e.target.uuid,
+							'dir': 'exit'
+						}
+					};
+
+					app.fire('ws-send', pkg);
+				}
+			});
+		})();
+	</script>
+
+</dom-module>

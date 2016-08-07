@@ -19,13 +19,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		<!-- Place favicon.ico in the `app/` directory -->
 
 		<!-- Chrome for Android theme color -->
-		<meta name="theme-color" content="#303F9F">
+		<meta name="theme-color" content="#5F4F84">
 
 		<!-- Web Application Manifest -->
 		<link rel="manifest" href="manifest.json">
 
 		<!-- Tile color for Win8 -->
-		<meta name="msapplication-TileColor" content="#3372DF">
+		<meta name="msapplication-TileColor" content="#5F4F84">
 
 		<!-- Add to homescreen for Chrome on Android -->
 		<meta name="mobile-web-app-capable" content="yes">
@@ -78,7 +78,15 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		<template is="dom-bind" id="app">
 			<favorites-storage favorites="{{favs}}"></favorites-storage>
 
-			<ws-data id="socket" nodes={{nodes}}></ws-data>
+			<ws-data id="socket" 
+				parameters={{parameters}} 
+				nodes={{nodes}} 
+				actions={{actions}} 
+				runners={{runners}} 
+				rules={{rules}} 
+				schedule={{schedule}} 
+				connected="[[wsConnected]]"
+			></ws-data>
 			<node-selector nodes={{nodes}} uuid={{params.name}} node={{node}}></node-selector>
 
 			<paper-drawer-panel id="paperDrawerPanel">
@@ -87,7 +95,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 					<!-- Drawer Toolbar -->
 					<paper-toolbar id="drawerToolbar">
-						<span class="paper-font-title">STAMPZILLA</span>
+						<span class="paper-font-title">STAMPZILLA </span>
+						<span id="version">[[parameters.version]]</span>
 					</paper-toolbar>
 
 					<!-- Drawer Content -->
@@ -98,8 +107,25 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 						</a>
 					</paper-menu>
 
+					<paper-menu class="list" attr-for-selected="data-route" selected="[[route]]">
+						<a data-route="actions" href="/actions" on-click="onDataRouteClick">
+							<iron-icon icon="extension"></iron-icon>
+							<span>Actions</span>
+						</a>
+						<a data-route="rules" href="/rules" on-click="onDataRouteClick">
+							<iron-icon icon="assignment"></iron-icon>
+							<span>Rules</span>
+						</a>
+						<a data-route="schedule" href="/schedule" on-click="onDataRouteClick">
+							<iron-icon icon="schedule"></iron-icon>
+							<span>Schedule</span>
+						</a>
+					</paper-menu>
+
 					<nodes-list nodes={{nodes}} selected="[[params.name]]" route="[[route]]"></nodes-list>
 				</paper-scroll-header-panel>
+
+
 
 				<!-- Main Area -->
 				<paper-scroll-header-panel main condenses keep-condensed-header>
@@ -114,6 +140,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 							<div class="app-name">
 								<iron-selector attr-for-selected="data-route" selected="{{route}}">
 									<section data-route="home">Favorites</section>
+									<section data-route="actions">Actions</section>
+									<section data-route="rules">Rules</section>
+									<section data-route="schedule">Schedule</section>
 									<section data-route="node-info">{{node.Name}}</section>
 								</iron-selector>
 							</div>
@@ -141,6 +170,24 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 								TODO: Credits: icon by Dianne Kathleen Navarro
 							</section>
 
+							<section data-route="actions">
+								<template is="dom-repeat" items="[[actions]]" as="item">
+									<stampzilla-action data=[[item]] actions={{actions}} runners=[[runners]]></stampzilla-action>
+								</template>
+							</section>
+
+							<section data-route="rules">
+								<template is="dom-repeat" items="[[rules]]" as="item">
+									<stampzilla-rule data=[[item]] actions={{rules}}></stampzilla-rule>
+								</template>
+							</section>
+
+							<section data-route="schedule">
+								<template is="dom-repeat" items="[[schedule]]" as="item">
+									<stampzilla-schedule data=[[item]] schedule={{schedule}}></stampzilla-schedule>
+								</template>
+							</section>
+
 							<section data-route="node-info">
 
 								<paper-material elevation="1">
@@ -159,6 +206,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 					</div>
 				</paper-scroll-header-panel>
 			</paper-drawer-panel>
+
 
 			<!-- Uncomment next block to enable Service Worker support (1/2) -->
 			<!--

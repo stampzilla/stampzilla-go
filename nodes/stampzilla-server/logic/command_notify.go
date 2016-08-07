@@ -11,7 +11,7 @@ type command_notify struct {
 	NotificationRouter notifications.Router            `json:"-" inject:""`
 }
 
-func (p *command_notify) Run() {
+func (p *command_notify) Run(abort <-chan struct{}) {
 	log.Infof("Running notification %#v", p)
 
 	p.NotificationRouter.Dispatch(notifications.Notification{

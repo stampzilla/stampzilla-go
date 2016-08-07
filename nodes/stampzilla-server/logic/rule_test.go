@@ -17,7 +17,7 @@ func (a *actionStub) Name() string {
 func (a *actionStub) Uuid() string {
 	return ""
 }
-func (a *actionStub) Run() {
+func (a *actionStub) Run(c chan ActionProgress) {
 	a.enterCallCount += 1
 }
 func (a *actionStub) Cancel() {
@@ -34,14 +34,14 @@ func TestRunCalls(t *testing.T) {
 	rule.AddEnterAction(enterStub)
 	rule.AddExitAction(exitStub)
 
-	rule.RunEnter()
+	rule.RunEnter(nil)
 
 	assert.Equal(t, 1, enterStub.enterCallCount)
 	assert.Equal(t, 0, enterStub.cancelCallCount)
 	assert.Equal(t, 0, exitStub.enterCallCount)
 	assert.Equal(t, 1, exitStub.cancelCallCount)
 
-	rule.RunExit()
+	rule.RunExit(nil)
 
 	assert.Equal(t, 1, enterStub.enterCallCount)
 	assert.Equal(t, 1, enterStub.cancelCallCount)

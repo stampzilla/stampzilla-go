@@ -13,8 +13,8 @@ type Rule interface {
 	SetUuid(string)
 	CondState() bool
 	SetCondState(bool)
-	RunEnter()
-	RunExit()
+	RunEnter(chan ActionProgress)
+	RunExit(chan ActionProgress)
 	AddExitAction(Action)
 	AddEnterAction(Action)
 	AddExitCancelAction(Action)
@@ -85,7 +85,7 @@ func (r *rule) SetCondState(cond bool) {
 	r.condState = cond
 	r.RUnlock()
 }
-func (r *rule) RunEnter() {
+func (r *rule) RunEnter(progressChan chan ActionProgress) {
 	log.Debugf("Rule enter: %s", r.Uuid())
 	for _, a := range r.enterCancelActions_ {
 		a.Cancel()
@@ -94,10 +94,10 @@ func (r *rule) RunEnter() {
 		a.Cancel()
 	}
 	for _, a := range r.enterActions_ {
-		a.Run()
+		a.Run(progressChan)
 	}
 }
-func (r *rule) RunExit() {
+func (r *rule) RunExit(progressChan chan ActionProgress) {
 	log.Debugf("Rule exit: %s", r.Uuid())
 	for _, a := range r.exitCancelActions_ {
 		a.Cancel()
@@ -106,7 +106,7 @@ func (r *rule) RunExit() {
 		a.Cancel()
 	}
 	for _, a := range r.exitActions_ {
-		a.Run()
+		a.Run(progressChan)
 	}
 }
 func (r *rule) AddExitAction(a Action) {

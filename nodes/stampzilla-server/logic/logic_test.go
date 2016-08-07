@@ -18,7 +18,7 @@ type ruleActionStub struct {
 	t           *testing.T
 }
 
-func (ra *ruleActionStub) Run() {
+func (ra *ruleActionStub) Run(c chan ActionProgress) {
 	ra.t.Log("RuleActionStubRAN")
 	*ra.actionCount++
 }

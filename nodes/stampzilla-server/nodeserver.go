@@ -14,13 +14,14 @@ import (
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/notifications"
 	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/servernode"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket/handlers"
 )
 
 type NodeServer struct {
 	Config           *ServerConfig         `inject:""`
 	Logic            *logic.Logic          `inject:""`
 	Nodes            *serverprotocol.Nodes `inject:""`
-	WebsocketHandler *WebsocketHandler     `inject:""`
+	WebsocketHandler *handlers.Nodes       `inject:""`
 	ElasticSearch    *ElasticSearch        `inject:""`
 	Metrics          *metrics.Metrics      `inject:""`
 	Notifications    notifications.Router  `inject:""`

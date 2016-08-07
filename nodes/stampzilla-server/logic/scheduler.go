@@ -18,6 +18,7 @@ type Scheduler struct {
 	tasks         []Task
 	Nodes         *serverprotocol.Nodes `inject:""`
 	ActionService *ActionService        `inject:""`
+	Logic         *Logic                `inject:""`
 	Cron          *cron.Cron
 	sync.RWMutex
 }
@@ -57,6 +58,10 @@ func (s *Scheduler) AddTask(name string) Task {
 	var err error
 
 	task := &task{Name_: name, Uuid_: uuid.New()}
+	if s.Logic != nil {
+		task.ActionProgressChan = s.Logic.ActionProgressChan
+	}
+
 	//task.nodes = s.Nodes
 	task.cron = s.Cron
 	if err != nil {

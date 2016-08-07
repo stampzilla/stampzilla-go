@@ -173,7 +173,7 @@
 					cmd.params = null;
 
 					var pkg = {
-						type: 'cmd',
+						type: 'nodes/cmd',
 						data: cmd, 
 						to: this.node.Uuid,
 					};
@@ -182,11 +182,10 @@
 				},
 				handleToggle: function() {
 					var cmd = this.element.Command;
-					//cmd.params = [this.State.toString()];
-					cmd.params = null;
+					cmd.params = [this.PrimaryState.toString()];
 
 					var pkg = {
-						type: 'cmd',
+						type: 'nodes/cmd',
 						data: cmd, 
 						to: this.node.Uuid,
 					};
@@ -200,7 +199,7 @@
 					this.blocked = true;
 
 					var pkg = {
-						type: 'cmd',
+						type: 'nodes/cmd',
 						data: cmd, 
 						to: this.node.Uuid
 					};
@@ -214,7 +213,7 @@
 					this.blocked = false;
 
 					var pkg = {
-						type: 'cmd',
+						type: 'nodes/cmd',
 						data: cmd, 
 						to: this.node.Uuid
 					};

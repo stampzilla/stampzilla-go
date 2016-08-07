@@ -14,8 +14,12 @@ import (
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/notifications"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket/handlers"
 	"github.com/stampzilla/stampzilla-go/pkg/notifier"
 )
+
+var VERSION string = "dev"
+var BUILD_DATE string = ""
 
 //TODO make config general by using a map so we can get config from ENV,file or flag.
 type ServerConfig struct {
@@ -101,16 +105,29 @@ func main() {
 	notificationRouter.Name = "server"
 	notify = notifier.New(notificationRouter)
 
+	params := map[string]string{
+		"version":    VERSION,
+		"build_date": BUILD_DATE,
+	}
+	msg, err := json.Marshal(params)
+	wsr := websocket.NewRouter()
+	wsr.AddClientConnectHandler(func() *websocket.Message {
+		return &websocket.Message{Type: "parameters", Data: msg}
+	})
+
 	// Register the rest of the services
 	services = append(
 		services,
 		logic.NewActions(),
-		&WebsocketHandler{},
+		&handlers.Nodes{},
+		&handlers.Actions{},
+		&handlers.Rules{},
+		&handlers.Schedule{},
 		config,
 		protocol.NewNodes(),
 		logic.NewLogic(),
 		logic.NewScheduler(),
-		websocket.NewRouter(),
+		wsr,
 		NewNodeServer(),
 		NewWebServer(),
 		notificationRouter,

@@ -19,9 +19,12 @@ func NewPause(duration string) *command_pause {
 	return p
 }
 
-func (p *command_pause) Run() {
+func (p *command_pause) Run(abort <-chan struct{}) {
 	log.Infof("Pausing for %s", p.Pause)
-	<-time.After(p.pause)
+	select {
+	case <-time.After(p.pause):
+	case <-abort:
+	}
 }
 func (p *command_pause) SetNodes(nodes serverprotocol.Searchable) {
 }

@@ -2,16 +2,23 @@ package logic
 
 import (
 	"encoding/json"
+	"fmt"
 
 	log "github.com/cihub/seelog"
 	"golang.org/x/net/context"
 )
 
 type Action interface {
-	Run()
+	Run(chan ActionProgress)
 	Uuid() string
 	Name() string
 	Cancel()
+}
+
+type ActionProgress struct {
+	Address string `json:"address"`
+	Uuid    string `json:"uuid"`
+	Step    int    `json:"step"`
 }
 
 type action struct {
@@ -33,38 +40,60 @@ func (a *action) Cancel() {
 		a.cancel()
 	}
 }
-func (a *action) Run() {
+func (a *action) Run(c chan ActionProgress) {
 	a.Cancel()
-	a.run()
+	a.run(c)
 }
-func (a *action) run() {
+func (a *action) run(progressChan chan ActionProgress) {
 	log.Debugf("Running action %s", a.Uuid())
 	ctx, cancel := context.WithCancel(context.Background())
 	a.cancel = cancel
 	queue := make(chan Command)
+
+	addr := 0 // To generate a unique pointer address
+
 	go func() {
 		for {
 			select {
-			case cmd := <-queue:
-				cmd.Run()
 			case <-ctx.Done():
-				a.cancel = nil
+				//a.cancel = nil // this was causing it to miss cancel sometimes
+				a.tryNotifyProgress(&addr, progressChan, -1) // Done
 				return
+			case cmd := <-queue:
+				cmd.Run(ctx.Done())
 			}
 		}
 	}()
 
 	go func() {
-		for _, cmd := range a.Commands {
+
+		a.tryNotifyProgress(&addr, progressChan, 0) // Start
+		for index, cmd := range a.Commands {
 			select {
-			case queue <- cmd:
 			case <-ctx.Done():
 				return
-
+			case queue <- cmd:
+				a.tryNotifyProgress(&addr, progressChan, index+1) // Notify start of step n
 			}
 		}
+		a.tryNotifyProgress(&addr, progressChan, -1) // Done
 		cancel()
 	}()
+}
+
+func (a *action) tryNotifyProgress(addr *int, c chan ActionProgress, step int) {
+	msg := ActionProgress{
+		Address: fmt.Sprintf("%p", addr),
+		Uuid:    a.Uuid(),
+		Step:    step,
+	}
+
+	// Try to deliver message
+	select {
+	case c <- msg:
+	default:
+		log.Warnf("Dropped progress notification for action runner %p", addr)
+	}
 }
 
 func (a *action) UnmarshalJSON(b []byte) (err error) {

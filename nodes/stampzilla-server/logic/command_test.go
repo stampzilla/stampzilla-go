@@ -41,7 +41,8 @@ func TestRunCommand(t *testing.T) {
 	command.Uuid_ = "cmduuid"
 	command.nodes = nodes
 
-	command.Run()
+	abort := make(chan struct{})
+	command.Run(abort)
 
 	assert.Equal(t, 1, len(nodes.node.written))
 }
