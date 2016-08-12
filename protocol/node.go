@@ -3,29 +3,28 @@ package protocol
 import (
 	"encoding/json"
 	"sync"
+
+	"github.com/stampzilla/stampzilla-go/protocol/devices"
 )
 
-type Node struct { /*{{{*/
-	Name_    string `json:"Name"`
-	Uuid_    string `json:"Uuid"`
-	Host     string
-	Actions  []*Action
-	Layout   []*Layout
-	Elements_ []*Element `json:"Elements"`
-	State_   interface{} `json:"State"`
+type Node struct {
+	Name_     string `json:"Name"`
+	Uuid_     string `json:"Uuid"`
+	Host      string
+	Actions   []*Action
+	Layout    []*Layout
+	Elements_ []*Element  `json:"Elements"`
+	State_    interface{} `json:"State"`
+	Devices_  devices.Map `json:"Devices"`
 	sync.RWMutex
-} /*}}}*/
-
-//type State interface {
-//GetState() interface{}
-//}
+}
 
 func NewNode(name string) *Node {
 	return &Node{
-		Name_:   name,
-		Actions: []*Action{},
+		Name_:     name,
+		Actions:   []*Action{},
 		Elements_: []*Element{},
-		Layout:  []*Layout{},
+		Layout:    []*Layout{},
 	}
 }
 
@@ -56,6 +55,17 @@ func (n *Node) SetState(state interface{}) {
 	n.State_ = state
 	n.Unlock()
 }
+func (n *Node) Devices() devices.Map {
+	n.RLock()
+	defer n.RUnlock()
+	return n.Devices_
+}
+func (n *Node) SetDevices(devices devices.Map) {
+	n.Lock()
+	n.Devices_ = devices
+	n.Unlock()
+}
+
 func (n *Node) State() interface{} {
 	n.RLock()
 	defer n.RUnlock()

@@ -9,13 +9,14 @@ import (
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/stampzilla/stampzilla-go/pkg/notifier"
 	"github.com/stampzilla/stampzilla-go/protocol"
+	"github.com/stampzilla/stampzilla-go/protocol/devices"
 )
 
 // MAIN - This is run when the init function is done
 
 var notify *notifier.Notify
 
-func main() { /*{{{*/
+func main() {
 	log.Info("Starting SIMPLE node")
 
 	// Parse all commandline arguments, host and port parameters are added in the basenode init function
@@ -138,12 +139,24 @@ func main() { /*{{{*/
 	state.AddDevice("2", "Dev2", true)
 	state.AddDevice("3", "Slider", 33)
 
-	go startToggler(node, connection, "1", time.Second)
+	node.Devices_ = make(devices.Map)
+	node.Devices_["10"] = &devices.Device{
+		Type:   "lamp",
+		Name:   "Lamp ten",
+		Id:     "10",
+		Online: true,
+		Node:   config.GetUuid(),
+		StateMap: map[string]string{
+			"on": "Devices[1].State",
+		},
+	}
+
+	//go startToggler(node, connection, "1", time.Second)
 
 	// This worker recives all incomming commands
 	go serverRecv(node, connection)
 	select {}
-} /*}}}*/
+}
 
 // WORKER that monitors the current connection state
 func monitorState(node *protocol.Node, connection basenode.Connection) {

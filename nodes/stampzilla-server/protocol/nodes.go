@@ -9,6 +9,7 @@ import (
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/notifications"
 	"github.com/stampzilla/stampzilla-go/protocol"
+	"github.com/stampzilla/stampzilla-go/protocol/devices"
 )
 
 //global variable to hold our nodes. Initialized in main
@@ -17,6 +18,9 @@ var nodes *Nodes
 type Node interface {
 	SetState(interface{})
 	State() interface{}
+
+	SetDevices(devices.Map)
+	Devices() devices.Map
 
 	SetElements([]*protocol.Element)
 	Elements() []*protocol.Element
@@ -27,21 +31,18 @@ type Node interface {
 	SetName(string)
 	Write(b []byte)
 	SetConn(conn net.Conn)
-	GetNotification() *notifications.Notification
-	GetPing() bool
-	GetPong() bool
+	GetNotification(json.RawMessage) *notifications.Notification
 }
 
 type node struct {
-	Notification *json.RawMessage
-	Ping         bool `json:",omitempty"`
-	Pong         bool `json:",omitempty"`
+	//Notification *json.RawMessage
+	Ping bool `json:",omitempty"`
+	Pong bool `json:",omitempty"`
 
 	protocol.Node
 	conn net.Conn
 	wait chan bool
 	sync.RWMutex
-	//encoder *json.Encoder
 }
 
 func NewNode() Node {
@@ -70,13 +71,13 @@ func (n *node) Write(b []byte) {
 	}
 }
 
-func (n *node) GetNotification() *notifications.Notification {
-	if n.Notification == nil {
+func (n *node) GetNotification(notification json.RawMessage) *notifications.Notification {
+	if notification == nil {
 		return nil
 	}
 
 	note := &notifications.Notification{}
-	err := json.Unmarshal(*n.Notification, note)
+	err := json.Unmarshal(notification, note)
 
 	note.SourceUuid = n.Uuid()
 	note.Source = n.Name()
@@ -87,14 +88,6 @@ func (n *node) GetNotification() *notifications.Notification {
 	}
 
 	return note
-}
-
-func (n *node) GetPing() bool {
-	return n.Ping
-}
-
-func (n *node) GetPong() bool {
-	return n.Pong
 }
 
 //  TODO: write tests for Nodes struct (jonaz) <Fri 10 Oct 2014 04:31:22 PM CEST>

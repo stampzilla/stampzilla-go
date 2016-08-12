@@ -15,16 +15,20 @@ import (
 	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/servernode"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket/handlers"
+	"github.com/stampzilla/stampzilla-go/protocol"
+	"github.com/stampzilla/stampzilla-go/protocol/devices"
 )
 
 type NodeServer struct {
-	Config           *ServerConfig         `inject:""`
-	Logic            *logic.Logic          `inject:""`
-	Nodes            *serverprotocol.Nodes `inject:""`
-	WebsocketHandler *handlers.Nodes       `inject:""`
-	ElasticSearch    *ElasticSearch        `inject:""`
-	Metrics          *metrics.Metrics      `inject:""`
-	Notifications    notifications.Router  `inject:""`
+	Config           *ServerConfig           `inject:""`
+	Logic            *logic.Logic            `inject:""`
+	Nodes            *serverprotocol.Nodes   `inject:""`
+	Devices          *serverprotocol.Devices `inject:""`
+	WsNodesHandler   *handlers.Nodes         `inject:""`
+	WsDevicesHandler *handlers.Devices       `inject:""`
+	ElasticSearch    *ElasticSearch          `inject:""`
+	Metrics          *metrics.Metrics        `inject:""`
+	Notifications    notifications.Router    `inject:""`
 }
 
 func NewNodeServer() *NodeServer {
@@ -57,9 +61,10 @@ func (ns *NodeServer) Start() {
 }
 
 func (ns *NodeServer) NodeDisconnected(uuid, name string) {
-	ns.WebsocketHandler.SendDisconnectedNode(uuid)
+	ns.WsNodesHandler.SendDisconnectedNode(uuid)
 	ns.Nodes.Delete(uuid)
 	log.Info(name, " - Removing node from nodes list")
+	ns.Devices.SetOfflineByNode(uuid)
 
 	// Span a goroutine to check if node is disconnected after a delay
 	go func() {
@@ -86,10 +91,11 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 	nodeIsAlive := make(chan bool)
 	go timeoutMonitor(connection, nodeIsAlive)
 
+	updatePaket := protocol.NewUpdate()
 	var logicChannel chan string
 	for {
-		node := serverprotocol.NewNode()
-		err := decoder.Decode(&node)
+
+		err := decoder.Decode(&updatePaket)
 
 		if err != nil {
 			//If the error was a network error we have disconnected. Otherwise it might be a json decode error
@@ -103,7 +109,7 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 					return
 				}
 				// No uuid available, send the whole node list to webclients
-				ns.WebsocketHandler.SendAllNodes()
+				ns.WsNodesHandler.SendAllNodes()
 				return
 			}
 			log.Warn("Not a net.Error but error: ", err)
@@ -112,47 +118,60 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 
 		nodeIsAlive <- true
 
-		if node.GetPong() {
-			continue
-		}
-		if node.GetPing() {
+		existingNode := ns.Nodes.ByUuid(uuid)
+
+		switch updatePaket.Type {
+		case protocol.Pong:
+			break
+		case protocol.Ping:
 			connection.Write([]byte("{\"Ping\":true}"))
-			continue
-		}
+		case protocol.UpdateNode:
+			node := serverprotocol.NewNode()
+			err := json.Unmarshal(*updatePaket.Data, &node)
+			if err != nil {
+				log.Errorf("%s", updatePaket.Data)
+				log.Error(err)
+				return
+			}
 
-		if existingNode := ns.Nodes.ByUuid(uuid); existingNode != nil {
-			log.Tracef("Existing node: %#v", existingNode)
-			node.SetUuid(existingNode.Uuid()) // Add name and uuid to package
-			node.SetName(existingNode.Name()) // Add name and uuid to package
+			if existingNode != nil {
+				log.Tracef("Existing node: %#v", existingNode)
+				node.SetUuid(existingNode.Uuid()) // Add name and uuid to package
+				node.SetName(existingNode.Name()) // Add name and uuid to package
 
-			if note := node.GetNotification(); note != nil {
+				existingNode.SetState(node.State())
+				existingNode.SetDevices(node.Devices())
+				ns.updateState(logicChannel, existingNode)
+				ns.syncDevices(existingNode.Devices(), node)
+
+				existingNode.SetElements(node.Elements())
+			} else {
+				name = node.Name()
+				uuid = node.Uuid()
+
+				err := ns.Nodes.Add(node)
+				if err != nil {
+					log.Error(err)
+					continue
+				}
+
+				log.Info("New client connected (", name, " - ", uuid, ")")
+
+				logicChannel = ns.Logic.ListenForChanges(node.Uuid())
+				node.SetConn(connection)
+				ns.updateState(logicChannel, node)
+				ns.syncDevices(node.Devices(), node)
+			}
+			ns.WsNodesHandler.SendSingleNode(uuid)
+
+		case protocol.Notification:
+			if note := existingNode.GetNotification(*updatePaket.Data); note != nil {
 				log.Tracef("Recived notification: %#v", note)
 				ns.Notifications.Dispatch(*note) // Send the notification to the router
 				continue
 			}
-
-			existingNode.SetState(node.State())
-			ns.updateState(logicChannel, existingNode)
-
-			existingNode.SetElements(node.Elements())
-		} else {
-			name = node.Name()
-			uuid = node.Uuid()
-
-			err := ns.Nodes.Add(node)
-			if err != nil {
-				log.Error(err)
-				continue
-			}
-
-			log.Info("New client connected (", name, " - ", uuid, ")")
-
-			logicChannel = ns.Logic.ListenForChanges(node.Uuid())
-			node.SetConn(connection)
-			ns.updateState(logicChannel, node)
 		}
 
-		ns.WebsocketHandler.SendSingleNode(uuid)
 	}
 }
 
@@ -190,10 +209,17 @@ func (ns *NodeServer) updateState(updateChan chan string, node serverprotocol.No
 	ns.Metrics.Update(node)
 }
 
-func (self *NodeServer) addServerNode() {
-	logicChannel := self.Logic.ListenForChanges(self.Config.Uuid)
-	node := servernode.New(self.Config.Uuid, logicChannel)
-	err := self.Nodes.Add(node)
+func (ns *NodeServer) syncDevices(newDevices devices.Map, node serverprotocol.Node) {
+	for _, v := range newDevices {
+		ns.Devices.Add(node.Uuid(), v)
+		ns.WsDevicesHandler.SendSingleDevice(v)
+	}
+}
+
+func (ns *NodeServer) addServerNode() {
+	logicChannel := ns.Logic.ListenForChanges(ns.Config.Uuid)
+	node := servernode.New(ns.Config.Uuid, logicChannel)
+	err := ns.Nodes.Add(node)
 	if err != nil {
 		log.Critical(err)
 		os.Exit(2)
