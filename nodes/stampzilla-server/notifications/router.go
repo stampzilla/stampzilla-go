@@ -6,7 +6,6 @@ import (
 	"os"
 
 	log "github.com/cihub/seelog"
-	"github.com/koding/multiconfig"
 )
 
 type Router interface {
@@ -45,8 +44,14 @@ type Transport interface {
 
 func (self *router) Load(configFileName string) error {
 	log.Info("Load notifications config: ", configFileName)
-	m := multiconfig.NewWithPath(configFileName)
-	err := m.Load(self.Config)
+	file, err := os.Open(configFileName)
+	if err != nil {
+		log.Error(err)
+	}
+	defer file.Close()
+
+	jsonParser := json.NewDecoder(file)
+	err = jsonParser.Decode(self.Config)
 	if err != nil {
 		log.Error("Failed to read config file (", configFileName, ") ", err)
 		return err
