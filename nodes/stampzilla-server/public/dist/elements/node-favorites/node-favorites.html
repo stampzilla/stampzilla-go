@@ -31,8 +31,20 @@
 						notify: true,
 					}
 				},
-				_checkFavorite: function(uuid, item) {
-					return( this.favorites[this.nodes[uuid].Uuid+':'+item.Name] !== undefined && this.favorites[this.nodes[uuid].Uuid+':'+item.Name] );
+			_checkFavorite: function(uuid, item) {
+					if ( this.favorites === undefined ) {
+						return false;
+					}
+					if ( this.favorites === null ) {
+						this.favorites = [];
+						return false;
+					}
+					if ( this.favorites[this.nodes[uuid].Uuid+':'+item.Name] === undefined ||
+						 this.favorites[this.nodes[uuid].Uuid+':'+item.Name] === null ) {
+						return false;
+					}
+
+					return this.favorites[this.nodes[uuid].Uuid+':'+item.Name];
 					//this.favoritesOut = {test: 123};
 				}
 			});

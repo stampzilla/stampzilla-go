@@ -1,11 +1,21 @@
 
 <dom-module id="nodes-list">
 	<template>
+		<style>
+			.version {
+				font-size:0.7em;
+				margin-left:5px;
+				margin-top:0.5em;
+				opacity:0.6;
+			}
+		</style>
+
 		<paper-menu class="list" attr-for-selected="data-uuid" selected="[[selectedLocal]]">
 		<template is="dom-repeat" items="{{nodes}}">
 			<a data-uuid$="[[item.Uuid]]" href="{{_getHref(item.Uuid)}}">
 				<iron-icon icon="label"></iron-icon>
-				<span>{{item.Name}}</span>
+				<span class="name">{{item.Name}}</span>
+				<span class="version">{{item.Version}}</span>
 			</a>
 		</template>
 		</paper-menu>

@@ -78,6 +78,11 @@
 						value:[],
 						notify: true,
 					},
+					devices: {
+						type: Array,
+						value:[],
+						notify: true,
+					},
 
 					message: {
 						type: Object,
@@ -166,6 +171,19 @@
 						return;
 					case 'schedule/all':
 						this.schedule = d.data;
+						return;
+					case 'devices/all':
+						this.devices = d.data;
+						console.log(d.data);
+						return;
+					case 'devices/single':
+						this.devices.forEach(function(el,index){
+							if( d.data !== undefined && el.Node === d.data.Node && el.Id === d.data.Id){
+								this.set('devices.'+index, d.data);
+							}
+						}, this);
+
+						console.log(d.data);
 						return;
 					default:
 						console.error('Lost websocket message type: '+ d.type, d);

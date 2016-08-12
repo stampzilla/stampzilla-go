@@ -1,0 +1,84 @@
+<link rel="import" href="../../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../../bower_components/neon-animation/animations/fade-out-animation.html">
+
+<link rel="import" href="stampzilla-device-dialog-common.html">
+
+<dom-module id="stampzilla-device-lamp">
+	<template>
+		<style  is="custom-style">
+			:host {
+				@apply(--layout-horizontal);
+			    @apply(--layout-wrap);
+			}
+
+			:host > .name {
+				@apply(--layout-flex);
+				@apply(--layout-horizontal);
+    			@apply(--layout-center);
+			}
+
+			#header {
+				@apply(--layout-horizontal);
+			    @apply(--layout-wrap);
+			}
+			#header > h2 {
+				@apply(--layout-flex);
+			}
+
+			#dialog {
+				min-width: 50%;
+			}
+		</style>
+		<paper-dialog entry-animation="fade-in-animation"
+					  exit-animation="fade-out-animation"
+					  id="dialog"
+					  with-backdrop="true"
+		>
+			<div id="header">
+				<h2>Lamp: [[device.name]]</h2>
+				<paper-icon-button icon="settings" id="settings"></paper-icon-button>
+			</div>
+			<div>
+				<iron-collapse id="collapse">
+					<stampzilla-device-dialog-common device="{{device}}" ></stampzilla-device-dialog-common>
+				</iron-collapse>
+			</div>
+		</paper-dialog>
+
+		<paper-icon-button id="open" icon="lightbulb-outline" title="Click to open settings"></paper-icon-button>
+		<div class="name">[[device.name]]</div>
+		<paper-toggle-button></paper-toggle-button>
+	</template>
+
+	<script>
+		(function () {
+			Polymer({
+				is: 'stampzilla-device-lamp',
+				properties: {
+					device: {
+						type: Object,
+						notify: true,
+						observer: 'deviceChanged'
+					}
+				},
+				listeners: {
+        			'open.click': 'openDialog',
+        			'settings.click': 'toggleSettings'
+				},
+
+				deviceChanged: function() {
+					//console.log(this.device);
+				},
+				openDialog: function() {
+					this.$.dialog.open();
+				},
+				toggleSettings: function() {
+					this.$.collapse.toggle();
+				}
+			});
+		})();
+	</script>
+
+</dom-module>

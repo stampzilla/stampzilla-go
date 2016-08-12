@@ -84,7 +84,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				actions={{actions}} 
 				runners={{runners}} 
 				rules={{rules}} 
-				schedule={{schedule}} 
+				schedule={{schedule}}
+				devices={{devices}}
 				connected="[[wsConnected]]"
 			></ws-data>
 			<node-selector nodes={{nodes}} uuid={{params.name}} node={{node}}></node-selector>
@@ -104,6 +105,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 						<a data-route="home" href="/" on-click="onDataRouteClick">
 							<iron-icon icon="star"></iron-icon>
 							<span>Favorites</span>
+						</a>
+						<a data-route="devices" href="/devices" on-click="onDataRouteClick">
+							<iron-icon icon="important-devices"></iron-icon>
+							<span>Devices</span>
 						</a>
 					</paper-menu>
 
@@ -140,6 +145,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 							<div class="app-name">
 								<iron-selector attr-for-selected="data-route" selected="{{route}}">
 									<section data-route="home">Favorites</section>
+									<section data-route="devices">Devices</section>
 									<section data-route="actions">Actions</section>
 									<section data-route="rules">Rules</section>
 									<section data-route="schedule">Schedule</section>
@@ -168,6 +174,20 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 								</paper-material>
 
 								TODO: Credits: icon by Dianne Kathleen Navarro
+							</section>
+
+							<section data-route="devices">
+								<stampzilla-devices devices="[[devices]]"></stampzilla-devices>
+								<stampzilla-devices style="display:none" devices='{
+									"a":{"name":"test", "type":"lamp", "tags":["vardagsrum","fönsterlampor"]},
+									"b":{"name":"test2", "type":"lamp", "tags":["sovrum","fönsterlampor"]},
+									"c":{"name":"tv", "type":"chromecast", "tags":["vardagsrum"]},
+									"d":{"name":"radio", "type":"chromecast", "tags":["badrum"]},
+									"f":{"name":"test3", "type":"lamp", "tags":["kök"]},
+									"g":{"name":"tom1", "type":"lamp", "tags":[]},
+									"h":{"name":"tom2", "type":"lamp", "tags":[]},
+									"i":{"name":"tom3", "type":"lamp", "tags":[]}
+									}'></stampzilla-devices>
 							</section>
 
 							<section data-route="actions">

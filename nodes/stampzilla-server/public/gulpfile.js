@@ -13,6 +13,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 var gulp = require('gulp');
 var $ = require('gulp-load-plugins')();
 var del = require('del');
+var pump = require('pump');
 var runSequence = require('run-sequence');
 var browserSync = require('browser-sync');
 var reload = browserSync.reload;
@@ -68,27 +69,44 @@ var imageOptimizeTask = function (src, dest) {
 
 var optimizeHtmlTask = function (src, dest) {
   var assets = $.useref.assets({searchPath: ['.tmp', 'app', 'dist']});
+  var jsFilter = $.filter('**/*.js', {restore: true});
+  var cssFilter = $.filter('**/*.css', {restore: true});
+  var htmlFilter = $.filter('**/*.html', {restore: true});
 
-  return gulp.src(src)
+  return pump([
+	gulp.src(src),
     // Replace path for vulcanized assets
-    .pipe($.if('*.html', $.replace('elements/elements.html', 'elements/elements.vulcanized.html')))
-    .pipe(assets)
+    $.if('*.html', $.replace('elements/elements.html', 'elements/elements.vulcanized.html')),
+    assets,
     // Concatenate and minify JavaScript
-    .pipe($.if('*.js', $.uglify({preserveComments: 'some'})))
-    // Concatenate and minify styles
-    // In case you are still using useref build blocks
-    .pipe($.if('*.css', $.cssmin()))
-    .pipe(assets.restore())
-    .pipe($.useref())
-    // Minify any HTML
-    .pipe($.if('*.html', $.minifyHtml({
+	jsFilter, 
+    $.uglify({
+		preserveComments: 'some',
+	}),
+	jsFilter.restore,
+    
+	// Concatenate and minify styles
+	// In case you are still using useref build blocks
+    cssFilter,
+	$.cssmin(),
+	cssFilter.restore,
+
+    assets.restore(),
+    $.useref(),
+    
+	// Minify any HTML
+	htmlFilter, 
+    $.minifyHtml({
       quotes: true,
       empty: true,
       spare: true
-    })))
+    }),
+	htmlFilter.restore,
+
     // Output files
-    .pipe(gulp.dest(dest))
-    .pipe($.size({title: 'html'}));
+    gulp.dest(dest),
+    $.size({title: 'html'})
+	]);
 };
 
 // Compile and automatically prefix stylesheets
@@ -126,7 +144,7 @@ gulp.task('copy', function () {
   }).pipe(gulp.dest('dist'));
 
   var bower = gulp.src([
-    'bower_components/**/*'
+    './bower_components/**/*'
   ]).pipe(gulp.dest('dist/bower_components'));
 
   var elements = gulp.src(['app/elements/**/*.html',
