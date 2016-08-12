@@ -138,10 +138,13 @@ func (c *Chromecast) Event(event events.Event) {
 
 		//If the app supports media controls lets subscribe to it
 		if data.HasNamespace("urn:x-cast:com.google.cast.media") {
+			log.Info(c.Name(), "- Subscribe cast.tp.connection:", data.DisplayName, "(", data.AppID, ")")
 			c.Subscribe("urn:x-cast:com.google.cast.tp.connection", data.TransportId, c.mediaConnectionHandler)
+			log.Info(c.Name(), "- Subscribe cast.media:", data.DisplayName, "(", data.AppID, ")")
 			c.Subscribe("urn:x-cast:com.google.cast.media", data.TransportId, c.mediaHandler)
 		}
 		c.appLaunched(data.AppID)
+		log.Info(c.Name(), "- Notifying appLanunched:", data.DisplayName, "(", data.AppID, ")")
 
 	case events.AppStopped:
 		log.Info(c.Name(), "- App stopped:", data.DisplayName, "(", data.AppID, ")")
