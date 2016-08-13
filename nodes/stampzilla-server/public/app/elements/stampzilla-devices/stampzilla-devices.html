@@ -48,16 +48,18 @@
 				properties: {
 					devices: {
 						type: Object,
-						notify: true,
-						observer: 'devicesChanged'
+						notify: true
 					},
 					cards: {
 						type: Array,
 						notify: true,
 					}
 				},
+				observers: [
+					'devicesChanged(devices.*)'
+				],
 
-				devicesChanged: function() {
+				devicesChanged: function(changeRecord) {
 					var cards = {};
 
 					var devices = this._toArray(this.devices);

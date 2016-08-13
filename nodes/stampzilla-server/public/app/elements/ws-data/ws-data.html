@@ -79,8 +79,8 @@
 						notify: true,
 					},
 					devices: {
-						type: Array,
-						value:[],
+						type: Object,
+						value:{},
 						notify: true,
 					},
 
@@ -98,6 +98,7 @@
 						notify: true
 					}
 				},
+
 				_toArray: function(obj) {
 					if(!obj){
 						return [];
@@ -174,16 +175,17 @@
 						return;
 					case 'devices/all':
 						this.devices = d.data;
-						console.log(d.data);
 						return;
 					case 'devices/single':
-						for(var i=0; i < this.devices.length; i++) {
-							if( d.data !== undefined && this.devices[i].Node === d.data.Node && this.devices[i].Id === d.data.Id){
-								this.set('devices.'+index, d.data);
-							}
+						if ( d.data === undefined ) {
+							return;
 						}
 
-						console.log(d.data);
+						// Make a copy of the current data, and then update the whole list to make polymer react correctly
+						var changed = JSON.parse(JSON.stringify(this.devices));
+						changed[d.data.node+'.'+d.data.id] = d.data; 
+						this.devices = changed;
+
 						return;
 					default:
 						console.error('Lost websocket message type: '+ d.type, d);
