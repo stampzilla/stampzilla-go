@@ -25,19 +25,30 @@ func (n *Devices) ByUuid(uuid string) *devices.Device {
 	}
 	return nil
 }
-func (n *Devices) All() map[string]devices.Device {
+func (n *Devices) All() map[string]*devices.Device {
 	n.RLock()
 	defer n.RUnlock()
-	r := make(map[string]devices.Device)
+	return n.devices
+}
+func (n *Devices) ShallowCopy() devices.Map {
+	n.RLock()
+	defer n.RUnlock()
+	r := make(map[string]*devices.Device)
 	for k, v := range n.devices {
-		r[k] = *v
+		copy := *v
+		r[k] = &copy
 	}
 	return r
 }
-func (n *Devices) AllWithState(nodes *Nodes) map[string]devices.Device {
-	devices := n.All()
+func (n *Devices) AllWithState(nodes *Nodes) devices.Map {
+	devices := n.ShallowCopy()
 	for _, device := range devices {
-		device.SyncState(nodes.ByUuid(device.Node).State())
+		node := nodes.ByUuid(device.Node)
+		if node == nil {
+			device.State = nil
+			continue //node is offline and we dont have the state
+		}
+		device.SyncState(node.State())
 	}
 	return devices
 }
