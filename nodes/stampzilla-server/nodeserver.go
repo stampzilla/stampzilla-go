@@ -134,6 +134,10 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 		case protocol.Ping:
 			connection.Write([]byte("{\"Ping\":true}"))
 		case protocol.UpdateNode:
+			if updatePaket.Data == nil {
+				return // The packet was nil due to some reason
+			}
+
 			node := serverprotocol.NewNode()
 			err := json.Unmarshal(*updatePaket.Data, &node)
 			if err != nil {
