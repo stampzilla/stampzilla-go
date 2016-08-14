@@ -25,6 +25,7 @@ func NewNode(name string) *Node {
 		Actions:   []*Action{},
 		Elements_: []*Element{},
 		Layout:    []*Layout{},
+		Devices_:  make(devices.Map),
 	}
 }
 
