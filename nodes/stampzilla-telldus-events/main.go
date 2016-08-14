@@ -36,15 +36,6 @@ type Config struct {
 	MonitorSensors []sensormonitor.SensorConfig
 }
 
-func (c *Config) GetSensorName(id int) string {
-	for _, sensor := range c.MonitorSensors {
-		if id == sensor.Id {
-			return sensor.Name
-		}
-	}
-	return "UNKNOWN"
-}
-
 func main() {
 	flag.Parse()
 
