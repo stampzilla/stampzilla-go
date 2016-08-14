@@ -139,7 +139,6 @@ func main() {
 	state.AddDevice("2", "Dev2", true)
 	state.AddDevice("3", "Slider", 33)
 
-	node.Devices_ = make(devices.Map)
 	node.Devices_["10"] = &devices.Device{
 		Type:   "lamp",
 		Name:   "Lamp ten",
