@@ -110,7 +110,9 @@ func (c *Chromecast) waitForAppLaunch(app string) error {
 func (c *Chromecast) appLaunched(app string) {
 	select {
 	case c.appLaunch <- app:
+		log.Info("Notified c.appLaunch")
 	default:
+		log.Info("No one is waiting for appLaunch event")
 	}
 }
 
