@@ -8,6 +8,10 @@ import (
 	"github.com/stampzilla/stampzilla-go/pkg/notifier"
 )
 
+type SensorConfig struct {
+	Id   int
+	Name string
+}
 type sensor struct {
 	alive    time.Time
 	notified bool
@@ -18,7 +22,7 @@ type Monitor struct {
 	sensors        map[int]*sensor
 	alive          chan (int)
 	timeout        string
-	MonitorSensors []int
+	MonitorSensors []SensorConfig
 }
 
 func New(notify *notifier.Notify) *Monitor {
@@ -83,7 +87,7 @@ func (s *Monitor) CheckDead(dur string) {
 
 func (s *Monitor) Alive(id int) {
 	for _, sensor := range s.MonitorSensors {
-		if id == sensor {
+		if id == sensor.Id {
 			s.alive <- id
 			return
 		}
