@@ -97,8 +97,8 @@
 		<div class="bar">
 			<paper-icon-button id="open" icon="hardware:cast" title="Click to open settings"></paper-icon-button>
 			<div class="name">[[device.name]]</div>
-			<paper-icon-button id="" disabled=[[!device.online]] icon="av:play-arrow" title="Click to open settings"></paper-icon-button>
 			<paper-icon-button id="" disabled=[[!device.online]] icon="av:pause" title="Click to open settings"></paper-icon-button>
+			<paper-icon-button id="" disabled=[[!device.online]] icon="av:play-arrow" title="Click to open settings"></paper-icon-button>
 		</div>
 	</template>
 
@@ -138,6 +138,8 @@
 
 					if ( this.state.Thumb !== "" ) {
 						this.style.backgroundImage = 'url('+this.state.Thumb+')';
+					} else {
+						this.style.backgroundImage = 'none';
 					}
 
 					this.updateStyles();

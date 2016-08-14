@@ -22,6 +22,7 @@ type Chromecast struct {
 	//Paused          bool
 
 	IsStandBy     bool
+	IsIdleScreen  bool
 	IsActiveInput bool
 
 	Volume float64
@@ -145,6 +146,16 @@ func (c *Chromecast) Event(event events.Event) {
 
 		c.PrimaryApp = data.DisplayName
 		c.PrimaryEndpoint = data.TransportId
+		c.IsIdleScreen = data.IsIdleScreen
+
+		c.Media.Title = data.DisplayName
+		if c.IsIdleScreen {
+			c.Media.Title = ""
+		}
+		c.Media.SubTitle = ""
+		c.Media.Thumb = ""
+		c.Media.Url = ""
+		c.Media.Duration = 0
 
 		//If the app supports media controls lets subscribe to it
 		if data.HasNamespace("urn:x-cast:com.google.cast.media") {
@@ -187,8 +198,23 @@ func (c *Chromecast) Event(event events.Event) {
 			c.Playing = false
 		}
 
+		if data.PlayerState == "IDLE" {
+			c.Media.Title = c.PrimaryApp
+			c.Media.SubTitle = ""
+			c.Media.Thumb = ""
+			c.Media.Url = ""
+			c.Media.Duration = 0
+		}
+
 		if data.Media != nil {
-			c.Media.Title = data.Media.MetaData.Title
+			c.Media.Title = c.PrimaryApp
+			if data.Media.MetaData.Title != "" {
+				c.Media.Title = data.Media.MetaData.Title
+			}
+			if c.IsIdleScreen {
+				c.Media.Title = ""
+			}
+
 			c.Media.SubTitle = data.Media.MetaData.SubTitle
 			c.Media.Url = data.Media.ContentId
 			c.Media.Duration = data.Media.Duration
