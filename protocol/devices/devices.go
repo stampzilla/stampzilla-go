@@ -15,7 +15,7 @@ import (
 //SyncState(interface{})
 //}
 
-var regex = regexp.MustCompile(`^([^\s\[][^\s\[]*)?(\[.*?([0-9]).*?\])?$`)
+var regex = regexp.MustCompile(`^([^\s\[][^\s\[]*)?(\[.*?([0-9]+).*?\])?$`)
 
 type Device struct {
 	Type     string                 `json:"type"`
@@ -51,6 +51,8 @@ func path(state interface{}, jp string) (interface{}, error) {
 	if jp == "" {
 		return nil, errors.New("invalid path")
 	}
+	log.Info("begin state:", jp)
+	log.Info("state at beg:", state)
 	for _, token := range strings.Split(jp, ".") {
 		sl := regex.FindAllStringSubmatch(token, -1)
 		if len(sl) == 0 {
@@ -61,6 +63,7 @@ func path(state interface{}, jp string) (interface{}, error) {
 			switch v1 := state.(type) {
 			case map[string]interface{}:
 				state = v1[ss[1]]
+				log.Info("ss[1]: ", ss)
 			}
 		}
 		if ss[3] != "" {
@@ -76,6 +79,7 @@ func path(state interface{}, jp string) (interface{}, error) {
 				state = v2[is]
 			}
 		}
+		log.Info("state:", state)
 	}
 	return state, nil
 }

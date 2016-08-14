@@ -33,7 +33,7 @@ type Logic struct {
 
 func NewLogic() *Logic {
 	l := &Logic{states: make(map[string]string)}
-	l.re = regexp.MustCompile(`^([^\s\[][^\s\[]*)?(\[.*?([0-9]).*?\])?$`)
+	l.re = regexp.MustCompile(`^([^\s\[][^\s\[]*)?(\[.*?([0-9]+).*?\])?$`)
 	return l
 }
 
