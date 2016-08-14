@@ -28314,15 +28314,47 @@ module.exports = Array.isArray || function (arr) {
 	<template>
 		<style is="custom-style">
 			:host {
-				@apply(--layout-horizontal);
-			    @apply(--layout-wrap);
+				@apply(--layout-vertical);
+				@apply(--layout-wrap);
+				background: #eee no-repeat center;
+				background-size: cover;
 			}
 
-			:host > .name {
+			#thumb {
+				height: 100px;
+
+			}
+
+			.bar {
+				@apply(--layout-horizontal);
+				@apply(--layout-wrap);
+				background-color: rgba(255,255,255,0.6);
+			}
+
+			.bar > .name {
 				@apply(--layout-flex);
 				@apply(--layout-horizontal);
     			@apply(--layout-center);
 			}
+
+			.titleBar {
+				@apply(--layout-vertical);
+				@apply(--layout-wrap);
+				background-color: rgba(255,255,255,0.6);
+			}
+
+			:host.disabled > .titleBar {
+				display:none;
+			}
+				
+			#title {
+				@apply(--paper-font-headline);
+				padding: 0 8px;
+			}
+			#subtitle {
+				padding: 0 8px;
+			}
+
 
 			#header {
 				@apply(--layout-horizontal);
@@ -28352,10 +28384,18 @@ module.exports = Array.isArray || function (arr) {
 			</div>
 		</paper-dialog>
 
-		<paper-icon-button id="open" icon="hardware:cast" title="Click to open settings"></paper-icon-button>
-		<div class="name">[[device.name]]</div>
-		<paper-icon-button id="" disabled="[[!device.online]]" icon="av:play-arrow" title="Click to open settings"></paper-icon-button>
-		<paper-icon-button id="" disabled="[[!device.online]]" icon="av:pause" title="Click to open settings"></paper-icon-button>
+		<div id="thumb">
+			<div class="titleBar">
+				<div id="title">[[state.Title]]</div>
+				<div id="subtitle">[[state.SubTitle]]</div>
+			</div>
+		</div>
+		<div class="bar">
+			<paper-icon-button id="open" icon="hardware:cast" title="Click to open settings"></paper-icon-button>
+			<div class="name">[[device.name]]</div>
+			<paper-icon-button id="" disabled="[[!device.online]]" icon="av:play-arrow" title="Click to open settings"></paper-icon-button>
+			<paper-icon-button id="" disabled="[[!device.online]]" icon="av:pause" title="Click to open settings"></paper-icon-button>
+		</div>
 	</template>
 
 	<script>
@@ -28367,6 +28407,12 @@ module.exports = Array.isArray || function (arr) {
 						type: Object,
 						notify: true,
 						observer: 'deviceChanged'
+					},
+					state: {
+						type: Object,
+						value:{},
+						notify: true,
+						observer: 'stateChanged'
 					}
 				},
 				listeners: {
@@ -28380,13 +28426,131 @@ module.exports = Array.isArray || function (arr) {
 						this.classList.remove('disabled')
 					} else {
 						this.classList.add('disabled')
+						this.style.backgroundImage = '';
 					}
 				},
+				stateChanged: function() {
+					//console.log(this.state);
+
+					if ( this.state.Thumb !== "" ) {
+						this.style.backgroundImage = 'url('+this.state.Thumb+')';
+					}
+
+					this.updateStyles();
+				},
+
 				openDialog: function() {
 					this.$.dialog.open();
 				},
 				toggleSettings: function() {
 					this.$.collapse.toggle();
+				}
+			});
+		})();
+	</script>
+
+</dom-module>
+<dom-module id="stampzilla-device" assetpath="stampzilla-device/">
+	<template>
+		<template is="dom-if" if="{{_isType('lamp',device.type)}}">
+			<stampzilla-device-lamp state="[[state]]" device="[[device]]"></stampzilla-device-lamp>
+		</template>
+
+		<template is="dom-if" if="{{_isType('chromecast',device.type)}}">
+			<stampzilla-device-chromecast state="[[state]]" device="[[device]]"></stampzilla-device-chromecast>
+		</template>
+	</template>
+
+	<script>
+		(function () {
+			Polymer({
+				is: 'stampzilla-device',
+				properties: {
+					device: {
+						type: Object,
+						value:{},
+						notify: true
+					},
+					nodes: {
+						type: Array,
+						value:[],
+						notify: true,
+					},
+					node: {
+						type: Object,
+						value:{},
+						notify: true,
+					},
+					state: {
+						type: Object,
+						value:{},
+						notify: true,
+					}
+				},
+				observers: [
+					'nodesChanged(nodes.*, device.*)',
+					'nodeChanged(node.*)'
+				],
+
+				nodesChanged: function() {
+					if ( this.device.node === undefined ) {
+						this.node = {};
+						return;
+					}
+
+					this.nodes.forEach(function(el){
+						if( el.Uuid === this.device.node){
+							this.set('node', el);
+						}
+					}, this);
+
+				},
+				nodeChanged: function() {
+					if ( this.device.node === undefined ) {
+						this.state = {};
+						return;
+					}
+					if ( this.node.State === undefined || this.node.State === null ) {
+						this.state = {};
+						return;
+					}
+
+
+					var state = {};
+					for (var key in this.device.stateMap) {
+						var row = this.device.stateMap[key];
+
+						state[key] = this.byString(this.node.State,row);
+					}
+					this.state = state;
+				}, 
+
+				byString: function(o,s){
+					s = s.replace(/\[(\w+)\]/g, '.$1'); // convert indexes to properties
+					s = s.replace(/^\./, '');           // strip a leading dot
+					var a = s.split('.');
+					for (var i = 0, n = a.length; i < n; ++i) {
+						var k = a[i];
+						if (k in o) {
+							o = o[k];
+						} else {
+							return;
+						}
+					}
+					return o;
+				},
+
+			   _toArray: function(obj) {
+					return Object.keys(obj).map(function(key) {
+						return {
+							tag: key,
+							devices: obj[key]
+						};
+					});
+				},
+				
+				_isType(type, device) {
+					return device === type;
 				}
 			});
 		})();
@@ -28414,15 +28578,7 @@ module.exports = Array.isArray || function (arr) {
 			<paper-card heading="[[item.tag]]">
 				<div class="card-content">
 					<template is="dom-repeat" items="{{item.devices}}" as="device">
-
-						<template is="dom-if" if="{{_isType('lamp',device.type)}}">
-							<stampzilla-device-lamp device="[[device]]">[[device.name]]</stampzilla-device-lamp>
-						</template>
-
-						<template is="dom-if" if="{{_isType('chromecast',device.type)}}">
-							<stampzilla-device-chromecast device="[[device]]">[[device.name]]</stampzilla-device-chromecast>
-						</template>
-
+						<stampzilla-device device="[[device]]" nodes="[[nodes]]"></stampzilla-device>
 					</template>
 				</div>
 			</paper-card>
@@ -28438,6 +28594,11 @@ module.exports = Array.isArray || function (arr) {
 					devices: {
 						type: Object,
 						notify: true
+					},
+					nodes: {
+						type: Array,
+						value:[],
+						notify: true,
 					},
 					cards: {
 						type: Array,
@@ -28475,9 +28636,7 @@ module.exports = Array.isArray || function (arr) {
 
 
 					this.cards = cards;
-					//this.favoritesOut = {test: 123};
 				},
-
 
 			   _toArray: function(obj) {
 					return Object.keys(obj).map(function(key) {
