@@ -58,7 +58,7 @@
 
 		<paper-icon-button id="open" icon="lightbulb-outline" title="Click to open settings"></paper-icon-button>
 		<div class="name">[[device.name]]</div>
-		<paper-toggle-button disabled=[[!device.online]]></paper-toggle-button>
+		<paper-toggle-button id="toggle" disabled=[[!device.online]] checked="{{value}}"></paper-toggle-button>
 	</template>
 
 	<script>
@@ -70,13 +70,53 @@
 						type: Object,
 						notify: true,
 						observer: 'deviceChanged'
+					},
+					state: {
+						type: Object,
+						notify: true,
+						observer: 'stateChanged'
+					},
+					value: {
+						type: Boolean,
+						notify: true
 					}
 				},
 				listeners: {
         			'open.click': 'openDialog',
-        			'settings.click': 'toggleSettings'
+					'settings.click': 'toggleSettings',
+					'toggle.change': 'toggleValue'
 				},
 
+				stateChanged: function() {
+					this.value = this.state.On;
+				}, 
+				toggleValue: function() {
+					if (this.value) {
+						var pkg = {
+							type: 'nodes/cmd',
+							data: {
+								'cmd': 'stampzilla-device-on',
+								'args': [
+									this.device.id
+								]
+							}, 
+							to: this.device.node,
+						};
+					} else {
+						var pkg = {
+							type: 'nodes/cmd',
+							data: {
+								'cmd': 'stampzilla-device-off',
+								'args': [
+									this.device.id
+								]
+							}, 
+							to: this.device.node,
+						};
+					}
+
+					app.fire('ws-send', pkg);
+				}, 
 				deviceChanged: function() {
 					//console.log(this.device);
 
@@ -85,6 +125,7 @@
 					} else {
 						this.classList.add('disabled')
 					}
+
 				},
 				openDialog: function() {
 					this.$.dialog.open();

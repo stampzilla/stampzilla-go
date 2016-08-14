@@ -21,7 +21,7 @@
 		<template is="dom-repeat" items="{{_toArray(cards)}}">
 			<paper-card heading="[[item.tag]]">
 				<div class="card-content">
-					<template is="dom-repeat" items="{{item.devices}}" as="device">
+					<template is="dom-repeat" items="{{item.devices}}" as="device" sort="_sort">
 						<stampzilla-device device=[[device]] nodes=[[nodes]]></stampzilla-device>
 					</template>
 				</div>
@@ -93,6 +93,10 @@
 				
 				_isType(type, device) {
 					return device === type;
+				},
+				_sort: function(a, b) {
+					if (a.name === b.name) return 0;
+					return a.name.localeCompare(b.name);
 				}
 			});
 		})();

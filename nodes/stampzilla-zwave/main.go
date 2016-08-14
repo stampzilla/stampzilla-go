@@ -27,7 +27,7 @@ func main() { /*{{{*/
 	//Activate the config
 	basenode.SetConfig(config)
 
-	z, err := gozwave.Connect("/dev/ttyACM0")
+	z, err := gozwave.Connect("/dev/ttyACM0", "zwave-networkmap.json")
 	if err != nil {
 		log.Error(err)
 		return
@@ -67,9 +67,17 @@ func main() { /*{{{*/
 	// This worker recives all incomming commands
 	go serverRecv(node, connection)
 
-	state.Nodes, _ = z.GetNodes()
+	//state.Nodes, _ = z.GetNodes()
+	//connection.Send(node.Node())
 
-	select {}
+	z.GetNodes()
+
+	for {
+		select {
+		case event := <-z.GetNextEvent():
+			log.Infof("Event: %#v", event)
+		}
+	}
 } /*}}}*/
 
 // WORKER that monitors the current connection state

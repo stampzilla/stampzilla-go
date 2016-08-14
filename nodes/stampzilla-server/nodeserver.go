@@ -124,6 +124,10 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 
 		existingNode := ns.Nodes.ByUuid(uuid)
 
+		if updatePaket == nil {
+			return // The packet was nil due to some reason
+		}
+
 		switch updatePaket.Type {
 		case protocol.Pong:
 			break
