@@ -1,8 +1,5 @@
 <link rel="import" href="../../bower_components/paper-card/paper-card.html">
-<link rel="import" href="../stampzilla-device/stampzilla-device-lamp.html">
-<link rel="import" href="../stampzilla-device/stampzilla-device-chromecast.html">
-<link rel="import" href="../../bower_components/iron-icons/hardware-icons.html">
-<link rel="import" href="../../bower_components/iron-icons/av-icons.html">
+<link rel="import" href="../stampzilla-device/stampzilla-device.html">
 
 <dom-module id="stampzilla-devices">
 	<template>
@@ -25,15 +22,7 @@
 			<paper-card heading="[[item.tag]]">
 				<div class="card-content">
 					<template is="dom-repeat" items="{{item.devices}}" as="device">
-
-						<template is="dom-if" if="{{_isType('lamp',device.type)}}">
-							<stampzilla-device-lamp device="[[device]]">[[device.name]]</stampzilla-device-lamp>
-						</template>
-
-						<template is="dom-if" if="{{_isType('chromecast',device.type)}}">
-							<stampzilla-device-chromecast device="[[device]]">[[device.name]]</stampzilla-device-chromecast>
-						</template>
-
+						<stampzilla-device device=[[device]] nodes=[[nodes]]></stampzilla-device>
 					</template>
 				</div>
 			</paper-card>
@@ -49,6 +38,11 @@
 					devices: {
 						type: Object,
 						notify: true
+					},
+					nodes: {
+						type: Array,
+						value:[],
+						notify: true,
 					},
 					cards: {
 						type: Array,
@@ -86,9 +80,7 @@
 
 
 					this.cards = cards;
-					//this.favoritesOut = {test: 123};
 				},
-
 
 			   _toArray: function(obj) {
 					return Object.keys(obj).map(function(key) {

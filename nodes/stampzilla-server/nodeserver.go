@@ -64,7 +64,11 @@ func (ns *NodeServer) NodeDisconnected(uuid, name string) {
 	ns.WsNodesHandler.SendDisconnectedNode(uuid)
 	ns.Nodes.Delete(uuid)
 	log.Info(name, " - Removing node from nodes list")
-	ns.Devices.SetOfflineByNode(uuid)
+
+	devices := ns.Devices.SetOfflineByNode(uuid)
+	for _, dev := range devices {
+		ns.WsDevicesHandler.SendSingleDevice(dev)
+	}
 
 	// Span a goroutine to check if node is disconnected after a delay
 	go func() {

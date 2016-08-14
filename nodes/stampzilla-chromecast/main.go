@@ -8,6 +8,7 @@ import (
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/stampzilla/stampzilla-go/protocol"
+	"github.com/stampzilla/stampzilla-go/protocol/devices"
 
 	"github.com/stampzilla/gocast/discovery"
 )
@@ -42,6 +43,8 @@ func main() { /*{{{*/
 		node:       node,
 	}
 	node.SetState(&state.Devices)
+
+	node.Devices_ = make(devices.Map)
 
 	discovery := discovery.NewService()
 

@@ -177,17 +177,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 							</section>
 
 							<section data-route="devices">
-								<stampzilla-devices devices="{{devices}}"></stampzilla-devices>
-								<stampzilla-devices style="display:none" devices='{
-									"a":{"name":"test", "type":"lamp", "tags":["vardagsrum","fönsterlampor"]},
-									"b":{"name":"test2", "type":"lamp", "tags":["sovrum","fönsterlampor"]},
-									"c":{"name":"tv", "type":"chromecast", "tags":["vardagsrum"]},
-									"d":{"name":"radio", "type":"chromecast", "tags":["badrum"]},
-									"f":{"name":"test3", "type":"lamp", "tags":["kök"]},
-									"g":{"name":"tom1", "type":"lamp", "tags":[]},
-									"h":{"name":"tom2", "type":"lamp", "tags":[]},
-									"i":{"name":"tom3", "type":"lamp", "tags":[]}
-									}'></stampzilla-devices>
+								<stampzilla-devices devices="{{devices}}" nodes="{{nodes}}"></stampzilla-devices>
 							</section>
 
 							<section data-route="actions">

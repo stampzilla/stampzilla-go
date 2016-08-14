@@ -14,15 +14,47 @@
 	<template>
 		<style  is="custom-style">
 			:host {
-				@apply(--layout-horizontal);
-			    @apply(--layout-wrap);
+				@apply(--layout-vertical);
+				@apply(--layout-wrap);
+				background: #eee no-repeat center;
+				background-size: cover;
 			}
 
-			:host > .name {
+			#thumb {
+				height: 100px;
+
+			}
+
+			.bar {
+				@apply(--layout-horizontal);
+				@apply(--layout-wrap);
+				background-color: rgba(255,255,255,0.6);
+			}
+
+			.bar > .name {
 				@apply(--layout-flex);
 				@apply(--layout-horizontal);
     			@apply(--layout-center);
 			}
+
+			.titleBar {
+				@apply(--layout-vertical);
+				@apply(--layout-wrap);
+				background-color: rgba(255,255,255,0.6);
+			}
+
+			:host.disabled > .titleBar {
+				display:none;
+			}
+				
+			#title {
+				@apply(--paper-font-headline);
+				padding: 0 8px;
+			}
+			#subtitle {
+				padding: 0 8px;
+			}
+
 
 			#header {
 				@apply(--layout-horizontal);
@@ -56,10 +88,18 @@
 			</div>
 		</paper-dialog>
 
-		<paper-icon-button id="open" icon="hardware:cast" title="Click to open settings"></paper-icon-button>
-		<div class="name">[[device.name]]</div>
-		<paper-icon-button id="" disabled=[[!device.online]] icon="av:play-arrow" title="Click to open settings"></paper-icon-button>
-		<paper-icon-button id="" disabled=[[!device.online]] icon="av:pause" title="Click to open settings"></paper-icon-button>
+		<div id="thumb">
+			<div class="titleBar">
+				<div id="title">[[state.Title]]</div>
+				<div id="subtitle">[[state.SubTitle]]</div>
+			</div>
+		</div>
+		<div class="bar">
+			<paper-icon-button id="open" icon="hardware:cast" title="Click to open settings"></paper-icon-button>
+			<div class="name">[[device.name]]</div>
+			<paper-icon-button id="" disabled=[[!device.online]] icon="av:play-arrow" title="Click to open settings"></paper-icon-button>
+			<paper-icon-button id="" disabled=[[!device.online]] icon="av:pause" title="Click to open settings"></paper-icon-button>
+		</div>
 	</template>
 
 	<script>
@@ -71,6 +111,12 @@
 						type: Object,
 						notify: true,
 						observer: 'deviceChanged'
+					},
+					state: {
+						type: Object,
+						value:{},
+						notify: true,
+						observer: 'stateChanged'
 					}
 				},
 				listeners: {
@@ -84,8 +130,19 @@
 						this.classList.remove('disabled')
 					} else {
 						this.classList.add('disabled')
+						this.style.backgroundImage = '';
 					}
 				},
+				stateChanged: function() {
+					//console.log(this.state);
+
+					if ( this.state.Thumb !== "" ) {
+						this.style.backgroundImage = 'url('+this.state.Thumb+')';
+					}
+
+					this.updateStyles();
+				},
+
 				openDialog: function() {
 					this.$.dialog.open();
 				},

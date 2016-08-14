@@ -30,6 +30,8 @@ type Chromecast struct {
 	Addr net.IP
 	Port int
 
+	Media Chromecast_Media
+
 	publish func()
 
 	mediaHandler           *handlers.Media
@@ -38,6 +40,14 @@ type Chromecast struct {
 	appLaunch chan string
 
 	*gocast.Device
+}
+
+type Chromecast_Media struct {
+	Title    string
+	SubTitle string
+	Url      string
+	Thumb    string
+	Duration float64
 }
 
 func NewChromecast(d *gocast.Device) *Chromecast {
@@ -158,6 +168,12 @@ func (c *Chromecast) Event(event events.Event) {
 		c.PrimaryEndpoint = ""
 		c.Playing = false
 
+		c.Media.Title = ""
+		c.Media.SubTitle = ""
+		c.Media.Thumb = ""
+		c.Media.Url = ""
+		c.Media.Duration = 0
+
 	case events.ReceiverStatus:
 		c.IsStandBy = data.Status.IsStandBy
 		c.IsActiveInput = data.Status.IsActiveInput
@@ -169,6 +185,18 @@ func (c *Chromecast) Event(event events.Event) {
 			c.Playing = true
 		} else {
 			c.Playing = false
+		}
+
+		if data.Media != nil {
+			c.Media.Title = data.Media.MetaData.Title
+			c.Media.SubTitle = data.Media.MetaData.SubTitle
+			c.Media.Url = data.Media.ContentId
+			c.Media.Duration = data.Media.Duration
+			if len(data.Media.MetaData.Images) > 0 {
+				c.Media.Thumb = data.Media.MetaData.Images[0].Url
+			} else {
+				c.Media.Thumb = ""
+			}
 		}
 
 		//Only publish if playing state changed

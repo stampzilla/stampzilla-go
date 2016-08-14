@@ -63,13 +63,17 @@ func (n *Devices) Delete(uuid string) {
 	defer n.Unlock()
 	delete(n.devices, uuid)
 }
-func (n *Devices) SetOfflineByNode(node string) Node {
+func (n *Devices) SetOfflineByNode(node string) (list []*devices.Device) {
 	n.RLock()
 	defer n.RUnlock()
+
+	list = make([]*devices.Device, 0)
 	for _, dev := range n.devices {
 		if dev.Node == node {
 			dev.Online = false
+			list = append(list, dev)
 		}
 	}
-	return nil
+
+	return
 }
