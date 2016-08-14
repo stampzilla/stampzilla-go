@@ -12,6 +12,7 @@ import (
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-telldus-events/sensormonitor"
 	"github.com/stampzilla/stampzilla-go/pkg/notifier"
 	"github.com/stampzilla/stampzilla-go/protocol"
+	"github.com/stampzilla/stampzilla-go/protocol/devices"
 )
 
 /*
@@ -32,16 +33,20 @@ var serverConnection basenode.Connection
 var sensorMonitor *sensormonitor.Monitor
 
 type Config struct {
-	MonitorSensors []int
+	MonitorSensors []sensormonitor.SensorConfig
+}
+
+func (c *Config) GetSensorName(id int) string {
+	for _, sensor := range c.MonitorSensors {
+		if id == sensor.Id {
+			return sensor.Name
+		}
+	}
+	return "UNKNOWN"
 }
 
 func main() {
-	// Load logger
-	//logger, err := log.LoggerFromConfigAsFile("../logconfig.xml")
-	//if err != nil {
-	//panic(err)
-	//}
-	//log.ReplaceLogger(logger)
+	flag.Parse()
 
 	//Get a config with the correct parameters
 	config := basenode.NewConfig()
@@ -52,13 +57,6 @@ func main() {
 		log.Println(err)
 		return
 	}
-
-	// Load flags
-	//var host string
-	//var port string
-	//flag.StringVar(&host, "host", "localhost", "Stampzilla server hostname")
-	//flag.StringVar(&port, "port", "8282", "Stampzilla server port")
-	flag.Parse()
 
 	log.Println("Starting TELLDUS-events node")
 
@@ -93,6 +91,32 @@ func main() {
 			},
 			Feedback: `Devices[` + dev.Id + `].State.On`,
 		})
+
+		node.Devices_[dev.Id] = &devices.Device{
+			Type:   "lamp",
+			Name:   dev.Name,
+			Id:     dev.Id,
+			Online: true,
+			Node:   config.Uuid,
+			StateMap: map[string]string{
+				"On": "Devices[" + dev.Id + "]" + ".State.On",
+			},
+		}
+	}
+
+	for _, dev := range nc.MonitorSensors {
+		id := strconv.Itoa(dev.Id)
+		node.Devices_["s"+id] = &devices.Device{
+			Type:   "sensor",
+			Name:   dev.Name,
+			Id:     "s" + id,
+			Online: true,
+			Node:   config.Uuid,
+			StateMap: map[string]string{
+				"Temp":     "Sensors[" + id + "]" + ".Temp",
+				"Humidity": "Sensors[" + id + "]" + ".Humidity",
+			},
+		}
 	}
 
 	// Start the connection
@@ -246,7 +270,7 @@ func sensorEvent(protocol, model *C.char, sensorId, dataType int, value *C.char)
 
 	var s *Sensor
 	if s = state.GetSensor(sensorId); s == nil {
-		s = state.AddSensor(sensorId, "UNKNOWN")
+		s = state.AddSensor(sensorId)
 	}
 	sensorMonitor.Alive(s.Id)
 
