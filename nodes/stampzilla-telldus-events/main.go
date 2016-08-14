@@ -176,9 +176,9 @@ func processCommand(cmd protocol.Command) error {
 	id = C.int(i)
 
 	switch cmd.Cmd {
-	case "on":
+	case "on", "stampzilla-device-on":
 		result = C.tdTurnOn(id)
-	case "off":
+	case "off", "stampzilla-device-off":
 		result = C.tdTurnOff(id)
 	case "toggle":
 		s := C.tdLastSentCommand(id, C.TELLSTICK_TURNON|C.TELLSTICK_TURNOFF|C.TELLSTICK_DIM)
@@ -197,12 +197,16 @@ func processCommand(cmd protocol.Command) error {
 		case s&C.TELLSTICK_TURNOFF != 0:
 			result = C.tdTurnOn(id)
 		}
+	default:
+		log.Println("Unknown command")
 	}
 
 	if result != C.TELLSTICK_SUCCESS {
 		var errorString *C.char = C.tdGetErrorString(result)
 		C.tdReleaseString(errorString)
-		return errors.New(C.GoString(errorString))
+		err :=  errors.New(C.GoString(errorString))
+		log.Println("Command failed", err)
+		return err
 	}
 
 	return nil
