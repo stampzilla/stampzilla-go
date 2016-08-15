@@ -8,6 +8,9 @@ import (
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
+var VERSION string = "dev"
+var BUILD_DATE string = ""
+
 // GLOBAL VARS
 var node *protocol.Node
 
@@ -50,6 +53,8 @@ func main() { /*{{{*/
 	basenode.SetConfig(config)
 
 	node = protocol.NewNode("pinger")
+	node.Version = VERSION
+	node.BuildDate = BUILD_DATE
 
 	//Start communication with the server
 	connection := basenode.Connect()

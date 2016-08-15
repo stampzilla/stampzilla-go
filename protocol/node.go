@@ -11,6 +11,8 @@ type Node struct {
 	Name_     string `json:"Name"`
 	Uuid_     string `json:"Uuid"`
 	Host      string
+	Version   string
+	BuildDate string
 	Actions   []*Action
 	Layout    []*Layout
 	Elements_ []*Element  `json:"Elements"`
@@ -22,6 +24,7 @@ type Node struct {
 func NewNode(name string) *Node {
 	return &Node{
 		Name_:     name,
+		Version:   "-",
 		Actions:   []*Action{},
 		Elements_: []*Element{},
 		Layout:    []*Layout{},

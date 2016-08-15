@@ -9,6 +9,9 @@ import (
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
+var VERSION string = "dev"
+var BUILD_DATE string = ""
+
 var notify *notifier.Notify
 
 type Config struct {
@@ -37,6 +40,8 @@ func main() {
 	}
 
 	node := protocol.NewNode("squeezebox")
+	node.Version = VERSION
+	node.BuildDate = BUILD_DATE
 
 	//Start communication with the server
 	connection := basenode.Connect()

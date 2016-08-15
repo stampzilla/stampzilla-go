@@ -12,6 +12,9 @@ import (
 	"github.com/stampzilla/gocast/discovery"
 )
 
+var VERSION string = "dev"
+var BUILD_DATE string = ""
+
 var state State
 
 func main() { /*{{{*/
@@ -27,6 +30,8 @@ func main() { /*{{{*/
 	basenode.SetConfig(config)
 
 	node := protocol.NewNode("chromecast")
+	node.Version = VERSION
+	node.BuildDate = BUILD_DATE
 
 	//Start communication with the server
 	connection := basenode.Connect()

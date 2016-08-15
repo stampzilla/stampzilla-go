@@ -4,11 +4,11 @@ import (
 	"flag"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
 	"time"
-	"strconv"
 
 	"github.com/stamp/goADS"
 
@@ -24,6 +24,9 @@ var serverConnection basenode.Connection
 var symbols map[string]goADS.ADSSymbol
 var settings *Config
 
+var VERSION string = "dev"
+var BUILD_DATE string = ""
+
 func main() {
 	config := basenode.NewConfig()
 	basenode.SetConfig(config)
@@ -38,9 +41,11 @@ func main() {
 
 	// Create new node description
 	node = protocol.NewNode("beckhoff")
+	node.Version = VERSION
+	node.BuildDate = BUILD_DATE
+
 	state.Values = make(map[string]StateValue, 0)
 	node.SetState(state)
-
 
 	serverConnection = basenode.Connect()
 	go monitorState(serverConnection)
@@ -65,9 +70,9 @@ func main() {
 	} else {
 		symbols, _ = connection.UploadSymbolInfo()
 
-		log.Debug("Symbols uploaded:");
-		for key, _ := range(symbols) {
-			log.Debug(" - ", key);
+		log.Debug("Symbols uploaded:")
+		for key, _ := range symbols {
+			log.Debug(" - ", key)
 		}
 	}
 
@@ -79,10 +84,10 @@ func main() {
 	}
 	log.Infof("Successfully conncected to \"%s\" version %d.%d (build %d)", data.DeviceName, data.MajorVersion, data.MinorVersion, data.BuildVersion) /*}}}*/
 
-	for variableName, variable := range(settings.Variables) {
+	for variableName, variable := range settings.Variables {
 		foundSymbol := Find(variableName)
 		if foundSymbol != nil {
-			foundSymbol.Read();
+			foundSymbol.Read()
 			WalkSymbol(variable, foundSymbol)
 
 			variable.symbol = foundSymbol
@@ -92,10 +97,10 @@ func main() {
 				WalkSymbol(variable, symbol)
 				serverConnection.Send(node.Node())
 			})
-			
+
 		}
 	}
-	
+
 	serverConnection.Send(node.Node())
 
 	go func() {
@@ -112,21 +117,21 @@ func main() {
 }
 
 func Find(variableName string) *goADS.ADSSymbol {
-	for _, symbol := range(symbols) {
+	for _, symbol := range symbols {
 		if len(variableName) < len(symbol.FullName) {
 			continue
 		}
 		if symbol.FullName != variableName[:len(symbol.FullName)] {
-			continue;
+			continue
 		}
 
 		found := symbol.Find(variableName)
 		if len(found) > 0 {
-			return found[0];
+			return found[0]
 		}
 	}
 
-	return nil;
+	return nil
 }
 
 /*
@@ -179,13 +184,12 @@ func processCommand(cmd protocol.Command) error {
 				//WriteSymbol(&iface, name, cmd.Args[1])
 			}
 
-
 			if variable.Max != 0 || variable.Min != 0 {
 				i, _ := strconv.Atoi(target)
-				var tmp float64;
-				tmp = (float64(i)/100) * (variable.Max - variable.Min) + variable.Min;
+				var tmp float64
+				tmp = (float64(i)/100)*(variable.Max-variable.Min) + variable.Min
 				i = int(tmp)
-				target = strconv.Itoa(i);
+				target = strconv.Itoa(i)
 			}
 
 			if variable.symbol != nil {
@@ -196,7 +200,7 @@ func processCommand(cmd protocol.Command) error {
 				variable.symbolCtrl.Write(target)
 			}
 		} else {
-			log.Warn("Tag ",name," not found in beckhoff.json")
+			log.Warn("Tag ", name, " not found in beckhoff.json")
 		}
 	}
 
@@ -220,20 +224,20 @@ func WalkSymbol(variable *Variable, data *goADS.ADSSymbol) { /*{{{*/
 			val.String = data.Value
 			val.Bool = data.Value == "True"
 
-			switch(data.DataType) {
+			switch data.DataType {
 			case "UINT":
 				val.Int, _ = strconv.Atoi(data.Value)
 				if variable.Max != 0 || variable.Min != 0 {
-					var tmp float64;
-					tmp = (float64(val.Int)-variable.Min) / (variable.Max - variable.Min) * 100;
-					val.Int = int(tmp);
-					val.Bool = (float64(val.Int)-variable.Min) > 0
+					var tmp float64
+					tmp = (float64(val.Int) - variable.Min) / (variable.Max - variable.Min) * 100
+					val.Int = int(tmp)
+					val.Bool = (float64(val.Int) - variable.Min) > 0
 				}
 			}
 		}
 
 		if !ok {
-			switch(variable.Type) {
+			switch variable.Type {
 			case "slider":
 				node.AddElement(&protocol.Element{
 					Type: protocol.ElementTypeSlider,

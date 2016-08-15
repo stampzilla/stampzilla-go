@@ -27,3 +27,5 @@ stampzilla-server/gin-bin
 # application specifics
 config.json
 devices.json
+
+build

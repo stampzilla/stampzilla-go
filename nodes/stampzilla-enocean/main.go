@@ -16,11 +16,16 @@ import (
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
+var VERSION string = "dev"
+var BUILD_DATE string = ""
+
 var state *State
 
 func main() {
 
 	node := protocol.NewNode("enocean")
+	node.Version = VERSION
+	node.BuildDate = BUILD_DATE
 
 	flag.Parse()
 

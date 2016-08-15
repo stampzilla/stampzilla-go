@@ -27,6 +27,9 @@ extern int updateDevices();
 */
 import "C"
 
+var VERSION string = "dev"
+var BUILD_DATE string = ""
+
 var node *protocol.Node
 var state *State = &State{make(map[string]*Device), make(map[string]*Sensor, 0)}
 var serverConnection basenode.Connection
@@ -56,6 +59,8 @@ func main() {
 
 	// Create new node description
 	node = protocol.NewNode("telldus-events")
+	node.Version = VERSION
+	node.BuildDate = BUILD_DATE
 	node.SetState(state)
 
 	// Describe available actions
@@ -204,7 +209,7 @@ func processCommand(cmd protocol.Command) error {
 	if result != C.TELLSTICK_SUCCESS {
 		var errorString *C.char = C.tdGetErrorString(result)
 		C.tdReleaseString(errorString)
-		err :=  errors.New(C.GoString(errorString))
+		err := errors.New(C.GoString(errorString))
 		log.Println("Command failed", err)
 		return err
 	}

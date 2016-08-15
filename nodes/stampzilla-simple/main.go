@@ -12,6 +12,9 @@ import (
 	"github.com/stampzilla/stampzilla-go/protocol/devices"
 )
 
+var VERSION string = "dev"
+var BUILD_DATE string = ""
+
 // MAIN - This is run when the init function is done
 
 var notify *notifier.Notify
@@ -29,6 +32,8 @@ func main() {
 	basenode.SetConfig(config)
 
 	node := protocol.NewNode("simple")
+	node.Version = VERSION
+	node.BuildDate = BUILD_DATE
 
 	//Start communication with the server
 	connection := basenode.Connect()

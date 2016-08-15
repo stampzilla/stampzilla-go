@@ -1,9 +1,9 @@
 {
-	"AppName": "stampzilla-server",
+	"AppName": "stampzilla-zwave",
 	"ArtifactsDest": "build",
 	"Tasks": [
-        "xc",
-        "deb"
+		"xc",
+		"deb"
 	],
 	"BuildConstraints": "linux,amd64,arm",
 	"ResourcesInclude": "public/dist",
@@ -22,14 +22,8 @@
 				"Build-Depends": "",
 				"Depends": ""
 			},
-			"other-mapped-files": {
-				"/usr/share/stampzilla/stampzilla-server/gui": "public/dist"
-			},
+			"other-mapped-files": {},
 			"rmtemp": true
-		},
-		"publish-github": {
-			"owner": "stampzilla",
-			"repository": "stampzilla-go"
 		},
 		"xc": {
 			"GOARM": "7"
