@@ -125,7 +125,7 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 		existingNode := ns.Nodes.ByUuid(uuid)
 
 		if updatePaket == nil {
-			return // The packet was nil due to some reason
+			continue // The packet was nil due to some reason
 		}
 
 		switch updatePaket.Type {
@@ -135,7 +135,7 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 			connection.Write([]byte("{\"Ping\":true}"))
 		case protocol.UpdateNode:
 			if updatePaket.Data == nil {
-				return // The packet was nil due to some reason
+				continue // The packet was nil due to some reason
 			}
 
 			node := serverprotocol.NewNode()
