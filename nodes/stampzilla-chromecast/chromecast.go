@@ -48,7 +48,7 @@ func NewChromecast(d *gocast.Device) *Chromecast {
 		appLaunch:              make(chan string),
 	}
 
-	d.OnEvent(c.Event)
+	c.OnEvent(c.Event)
 	return c
 }
 
