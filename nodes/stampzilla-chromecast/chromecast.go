@@ -42,15 +42,13 @@ type Chromecast struct {
 
 func NewChromecast(d *gocast.Device) *Chromecast {
 	c := &Chromecast{
-		Device: d,
+		Device:                 d,
+		mediaHandler:           &handlers.Media{},
+		mediaConnectionHandler: &handlers.Connection{},
+		appLaunch:              make(chan string),
 	}
 
 	d.OnEvent(c.Event)
-
-	c.mediaHandler = &handlers.Media{}
-	c.mediaConnectionHandler = &handlers.Connection{}
-	c.appLaunch = make(chan string)
-
 	return c
 }
 
