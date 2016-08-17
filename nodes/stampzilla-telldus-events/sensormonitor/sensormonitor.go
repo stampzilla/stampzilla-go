@@ -26,7 +26,7 @@ func New(notify *notifier.Notify) *Monitor {
 		sensors: make(map[int]*sensor),
 		alive:   make(chan (int)),
 		notify:  notify,
-		timeout: "1h",
+		timeout: "4h",
 	}
 	return sm
 }
@@ -46,7 +46,7 @@ func (s *Monitor) worker() {
 		case id := <-s.alive:
 			s.updateAlive(id)
 		case <-ticker.C:
-			s.CheckDead("1h")
+			s.CheckDead(s.timeout)
 		}
 	}
 }
