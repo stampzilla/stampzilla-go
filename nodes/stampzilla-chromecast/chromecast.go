@@ -93,6 +93,7 @@ func (c *Chromecast) PlayUrl(url string, contentType string) {
 }
 
 func (c *Chromecast) waitForAppLaunch(app string) error {
+	log.Info("waitForAppLaunch pointer: %p", c.appLaunch)
 	select {
 	case launchedApp := <-c.appLaunch:
 		if app == launchedApp {
@@ -106,6 +107,7 @@ func (c *Chromecast) waitForAppLaunch(app string) error {
 
 }
 func (c *Chromecast) appLaunched(app string) {
+	log.Info("appLaunched pointer: %p", c.appLaunch)
 	select {
 	case c.appLaunch <- app:
 		log.Info("Notified c.appLaunch")
