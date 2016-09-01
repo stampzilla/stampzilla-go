@@ -3,16 +3,18 @@ package main
 import (
 	"sync"
 
+	"github.com/stampzilla/gozwave"
 	"github.com/stampzilla/gozwave/nodes"
-	"github.com/stampzilla/gozwave/serialapi"
 )
 
 type State struct {
-	Nodes nodes.List
-	zwave *serialapi.Connection
+	Nodes []nodes.Node
+	zwave *gozwave.Controller
 	sync.Mutex
 }
 
 func NewState() *State {
-	return &State{}
+	return &State{
+		Nodes: make([]nodes.Node, 0),
+	}
 }

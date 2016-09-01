@@ -3,9 +3,10 @@ package main
 import (
 	"flag"
 
+	"github.com/Sirupsen/logrus"
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/gozwave"
-	"github.com/stampzilla/gozwave/commands/switchbinary"
+	"github.com/stampzilla/gozwave/events"
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/stampzilla/stampzilla-go/pkg/notifier"
 	"github.com/stampzilla/stampzilla-go/protocol"
@@ -18,11 +19,17 @@ var BUILD_DATE string = ""
 
 var notify *notifier.Notify
 
-func main() { /*{{{*/
+func main() {
 	log.Info("Starting ZWAVE node")
+
+	debug := flag.Bool("v", false, "Verbose - show more debuging info")
 
 	// Parse all commandline arguments, host and port parameters are added in the basenode init function
 	flag.Parse()
+	logrus.SetLevel(logrus.WarnLevel)
+	if *debug {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
 
 	//Get a config with the correct parameters
 	config := basenode.NewConfig()
@@ -75,15 +82,20 @@ func main() { /*{{{*/
 	//state.Nodes, _ = z.GetNodes()
 	//connection.Send(node.Node())
 
-	z.GetNodes()
-
 	for {
 		select {
 		case event := <-z.GetNextEvent():
 			log.Infof("Event: %#v", event)
+			switch e := event.(type) {
+			case events.NodeDiscoverd:
+				log.Infof("%#v", z.Nodes.Get(e.Address))
+				state.Nodes = append(state.Nodes, z.Nodes.Get(e.Address))
+			}
+
+			connection.Send(node.Node())
 		}
 	}
-} /*}}}*/
+}
 
 // WORKER that monitors the current connection state
 func monitorState(node *protocol.Node, connection basenode.Connection) {
@@ -114,13 +126,13 @@ func processCommand(node *protocol.Node, connection basenode.Connection, cmd pro
 		switch cmd.Cmd {
 		case "blinds":
 
-			rollup := switchbinary.New().SetNode(2)
+			//rollup := switchbinary.New().SetNode(2)
 
-			if cmd.Args[0] == "1" {
-				rollup.SetValue(true)
-			}
+			//if cmd.Args[0] == "1" {
+			//	rollup.SetValue(true)
+			//}
 
-			<-s.zwave.Send(rollup) // Stop previous motion
+			//<-s.zwave.Send(rollup) // Stop previous motion
 			//<-time.After(time.Millisecond * 200)
 			//<-s.zwave.Send(rollup) // Start up
 			//connection.Send(node.Node())
