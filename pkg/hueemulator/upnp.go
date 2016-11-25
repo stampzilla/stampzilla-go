@@ -141,7 +141,9 @@ func upnpResponder(hostAddr string, endpoint string) {
 				log.Fatal("[UPNP] DialUDP failed:", err)
 			}
 
-			log.Println("[UPNP] discovery request from", src)
+			if debug {
+				log.Println("[UPNP] discovery request from", src)
+			}
 
 			// For whatever reason I can't execute the template using c as the reader,
 			// you HAVE to put it in a buffer first

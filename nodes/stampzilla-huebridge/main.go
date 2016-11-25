@@ -14,16 +14,19 @@ import (
 var port string
 var ip string
 var config string
+var debug bool
 
 func init() {
 	flag.StringVar(&port, "port", "80", "Port to listen to. Must be 80 for Google Home to work")
 	flag.StringVar(&ip, "ip", hueemulator.GetPrimaryIp(), "Ip to listen to.")
 	flag.StringVar(&config, "config", "config.json", "Path to config file.")
+	flag.BoolVar(&debug, "debug", false, "Debug. Without this we dont print other than errors. Optimized not to wear on raspberry pi SD card.")
 	flag.Parse()
 }
 
 func main() {
 	hueemulator.SetLogger(os.Stdout)
+	hueemulator.SetDebug(debug)
 
 	devices := NewDevices()
 	err := devices.ReadFromFile(config)

@@ -12,6 +12,7 @@ import (
 )
 
 var handlerMap map[string]*huestate
+var debug bool
 
 func init() {
 	log.SetOutput(ioutil.Discard)
@@ -23,10 +24,20 @@ func SetLogger(w io.Writer) {
 	log.SetOutput(w)
 }
 
+func SetDebug(d bool) {
+	debug = d
+}
+
 func ListenAndServe(addr string) error {
 	log.Println("Listening to: ", addr)
 	//router := httprouter.New()
-	router := gin.Default()
+	//router := gin.Default()
+	router := gin.New()
+
+	if debug {
+		router.Use(gin.Logger())
+	}
+	router.Use(gin.Recovery())
 
 	router.GET(upnp_uri, upnpSetup(addr))
 
@@ -63,8 +74,9 @@ func Handle(id int, deviceName string, h Handler) {
 
 func requestLogger(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println("[WEB]", r.RemoteAddr, r.Method, r.URL)
-		//		log.Printf("\t%+v\n", r)
+		if debug {
+			log.Println("[WEB]", r.RemoteAddr, r.Method, r.URL)
+		}
 		h.ServeHTTP(w, r)
 	})
 }
