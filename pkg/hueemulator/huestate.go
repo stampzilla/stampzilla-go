@@ -2,5 +2,7 @@ package hueemulator
 
 type huestate struct {
 	Handler Handler
-	OnState bool
+	//OnState bool
+	Light *light
+	Id    int
 }

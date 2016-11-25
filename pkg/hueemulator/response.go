@@ -1,6 +1,7 @@
 package hueemulator
 
 type Response struct {
-	OnState    bool
+	On         bool
+	Brightness uint8
 	ErrorState bool
 }

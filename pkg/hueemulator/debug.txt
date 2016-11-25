@@ -68,3 +68,99 @@ After added to home:
 [GIN] 2016/11/24 - 23:54:26 | 404 |       1.701µs | 192.168.13.124 |   GET     /api/83b7780291a6ceffbe0bd049104df/lights
 [WEB] 192.168.13.124:52765 GET /api/83b7780291a6ceffbe0bd049104df/lights
 [GIN] 2016/11/24 - 23:54:36 | 404 |       1.584µs | 192.168.13.124 |   GET     /api/83b7780291a6ceffbe0bd049104df/lights
+
+
+
+
+OUTPUT FROM REAL HUE BRIDGE:
+
+{
+	"1": {
+		"state": {
+			"on": false,
+			"bri": 254,
+			"alert": "select",
+			"reachable": true
+		},
+		"type": "Dimmable light",
+		"name": "Kitchen Table Lamp 1",
+		"modelid": "LWB014",
+		"manufacturername": "Philips",
+		"uniqueid": "00:17:88:01:02:7e:b5:8e-0b",
+		"swversion": "1.15.0_r18729",
+		"swconfigid": "D1D2055F",
+		"productid": "Philips-LWB014-1-A19DLv3"
+	},
+	"2": {
+		"state": {
+			"on": false,
+			"bri": 254,
+			"alert": "select",
+			"reachable": true
+		},
+		"type": "Dimmable light",
+		"name": "Kitchen Table Lamp 2",
+		"modelid": "LWB014",
+		"manufacturername": "Philips",
+		"uniqueid": "00:17:88:01:02:7f:87:d5-0b",
+		"swversion": "1.15.0_r18729",
+		"swconfigid": "D1D2055F",
+		"productid": "Philips-LWB014-1-A19DLv3"
+	},
+	"3": {
+		"state": {
+			"on": false,
+			"bri": 254,
+			"alert": "select",
+			"reachable": true
+		},
+		"type": "Dimmable light",
+		"name": "Kitchen Island Lamp 2",
+		"modelid": "LWB006",
+		"manufacturername": "Philips",
+		"uniqueid": "00:17:88:01:10:5c:ab:0c-0b",
+		"swversion": "5.38.1.15095"
+	},
+	"4": {
+		"state": {
+			"on": false,
+			"bri": 254,
+			"alert": "select",
+			"reachable": true
+		},
+		"type": "Dimmable light",
+		"name": "Kitchen Island Lamp 3",
+		"modelid": "LWB006",
+		"manufacturername": "Philips",
+		"uniqueid": "00:17:88:01:10:2c:ce:11-0b",
+		"swversion": "5.38.1.15095"
+	},
+	"5": {
+		"state": {
+			"on": false,
+			"bri": 254,
+			"alert": "select",
+			"reachable": true
+		},
+		"type": "Dimmable light",
+		"name": "Kitchen Island Lamp 1",
+		"modelid": "LWB006",
+		"manufacturername": "Philips",
+		"uniqueid": "00:17:88:01:10:2c:f4:4d-0b",
+		"swversion": "5.38.1.15095"
+	},
+	"6": {
+		"state": {
+			"on": true,
+			"bri": 254,
+			"alert": "select",
+			"reachable": false
+		},
+		"type": "Dimmable light",
+		"name": "Master Bedroom Lamp 1",
+		"modelid": "LWB006",
+		"manufacturername": "Philips",
+		"uniqueid": "00:17:88:01:10:40:49:bd-0b",
+		"swversion": "5.38.1.15095"
+	}
+}
