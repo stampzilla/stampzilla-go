@@ -1,0 +1,166 @@
+
+[HANDLE] test
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /upnp/setup.xml           --> github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/hueemulator.upnpSetup.func1 (3 handlers)
+[GIN-debug] GET    /api/:userId              --> github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/hueemulator.getLightsList (3 handlers)
+[GIN-debug] PUT    /api/:userId/lights/:lightId/state --> github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/hueemulator.setLightState (3 handlers)
+[GIN-debug] GET    /api/:userId/lights/:lightId --> github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/hueemulator.getLightInfo (3 handlers)
+[GIN-debug] POST   /api                      --> github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/hueemulator.ListenAndServe.func1 (3 handlers)
+[UPNP] listening...
+[WEB] 192.168.13.124:52754 POST /api
+{"devicetype":"ap-local-actions#jetstream"}
+[GIN] 2016/11/24 - 23:46:46 | 200 |       7.481µs | 192.168.13.124 |   POST    /api
+[WEB] 192.168.13.124:52754 POST /api
+{"devicetype":"ap-local-actions#jetstream"}
+[GIN] 2016/11/24 - 23:46:52 | 200 |      10.414µs | 192.168.13.124 |   POST    /api
+[WEB] 192.168.13.124:52754 POST /api
+{"devicetype":"ap-local-actions#jetstream"}
+[GIN] 2016/11/24 - 23:46:58 | 200 |      16.467µs | 192.168.13.124 |   POST    /api
+[WEB] 192.168.13.124:52754 POST /api
+{"devicetype":"ap-local-actions#jetstream"}
+[GIN] 2016/11/24 - 23:47:04 | 200 |        4.87µs | 192.168.13.124 |   POST    /api
+[WEB] 192.168.13.124:52754 POST /api
+{"devicetype":"ap-local-actions#jetstream"}
+[GIN] 2016/11/24 - 23:47:10 | 200 |       5.531µs | 192.168.13.124 |   POST    /api
+[WEB] 192.168.13.124:52754 POST /api
+{"devicetype":"ap-local-actions#jetstream"}
+[GIN] 2016/11/24 - 23:47:16 | 200 |       4.678µs | 192.168.13.124 |   POST    /api
+[WEB] 192.168.13.124:52754 POST /api
+{"devicetype":"ap-local-actions#jetstream"}
+[GIN] 2016/11/24 - 23:47:22 | 200 |       6.089µs | 192.168.13.124 |   POST    /api
+[UPNP] discovery request from 192.168.13.124:43625
+[UPNP] discovery request from 192.168.13.86:38014
+
+
+After added to home:
+[sudo] password for jonaz: 
+[HANDLE] test
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /upnp/setup.xml           --> github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/hueemulator.upnpSetup.func1 (3 handlers)
+[GIN-debug] GET    /api/:userId              --> github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/hueemulator.getLightsList (3 handlers)
+[GIN-debug] PUT    /api/:userId/lights/:lightId/state --> github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/hueemulator.setLightState (3 handlers)
+[GIN-debug] GET    /api/:userId/lights/:lightId --> github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/hueemulator.getLightInfo (3 handlers)
+[GIN-debug] POST   /api                      --> github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/hueemulator.ListenAndServe.func1 (3 handlers)
+[UPNP] listening...
+[UPNP] discovery request from 192.168.13.86:48251
+[UPNP] discovery request from 192.168.13.86:48251
+[WEB] 192.168.13.86:45270 GET /upnp/setup.xml
+[GIN] 2016/11/24 - 23:53:46 | 200 |      31.624µs | 192.168.13.86 |   GET     /upnp/setup.xml
+[UPNP] discovery request from 192.168.13.86:48251
+[UPNP] discovery request from 192.168.13.86:48251
+[WEB] 192.168.13.124:52765 POST /api
+{"devicetype":"ap-local-actions#jetstream"}
+[GIN] 2016/11/24 - 23:54:03 | 200 |      70.179µs | 192.168.13.124 |   POST    /api
+[WEB] 192.168.13.124:52765 GET /api/83b7780291a6ceffbe0bd049104df/lights
+[GIN] 2016/11/24 - 23:54:03 | 404 |       1.406µs | 192.168.13.124 |   GET     /api/83b7780291a6ceffbe0bd049104df/lights
+[WEB] 192.168.13.124:52765 GET /api/83b7780291a6ceffbe0bd049104df/lights
+[GIN] 2016/11/24 - 23:54:06 | 404 |       1.771µs | 192.168.13.124 |   GET     /api/83b7780291a6ceffbe0bd049104df/lights
+[WEB] 192.168.13.124:52765 GET /api/83b7780291a6ceffbe0bd049104df/lights
+[GIN] 2016/11/24 - 23:54:16 | 404 |       1.766µs | 192.168.13.124 |   GET     /api/83b7780291a6ceffbe0bd049104df/lights
+[UPNP] discovery request from 192.168.13.124:43625
+[WEB] 192.168.13.124:52765 GET /api/83b7780291a6ceffbe0bd049104df/lights
+[GIN] 2016/11/24 - 23:54:26 | 404 |       1.701µs | 192.168.13.124 |   GET     /api/83b7780291a6ceffbe0bd049104df/lights
+[WEB] 192.168.13.124:52765 GET /api/83b7780291a6ceffbe0bd049104df/lights
+[GIN] 2016/11/24 - 23:54:36 | 404 |       1.584µs | 192.168.13.124 |   GET     /api/83b7780291a6ceffbe0bd049104df/lights
+
+
+
+
+OUTPUT FROM REAL HUE BRIDGE:
+
+{
+	"1": {
+		"state": {
+			"on": false,
+			"bri": 254,
+			"alert": "select",
+			"reachable": true
+		},
+		"type": "Dimmable light",
+		"name": "Kitchen Table Lamp 1",
+		"modelid": "LWB014",
+		"manufacturername": "Philips",
+		"uniqueid": "00:17:88:01:02:7e:b5:8e-0b",
+		"swversion": "1.15.0_r18729",
+		"swconfigid": "D1D2055F",
+		"productid": "Philips-LWB014-1-A19DLv3"
+	},
+	"2": {
+		"state": {
+			"on": false,
+			"bri": 254,
+			"alert": "select",
+			"reachable": true
+		},
+		"type": "Dimmable light",
+		"name": "Kitchen Table Lamp 2",
+		"modelid": "LWB014",
+		"manufacturername": "Philips",
+		"uniqueid": "00:17:88:01:02:7f:87:d5-0b",
+		"swversion": "1.15.0_r18729",
+		"swconfigid": "D1D2055F",
+		"productid": "Philips-LWB014-1-A19DLv3"
+	},
+	"3": {
+		"state": {
+			"on": false,
+			"bri": 254,
+			"alert": "select",
+			"reachable": true
+		},
+		"type": "Dimmable light",
+		"name": "Kitchen Island Lamp 2",
+		"modelid": "LWB006",
+		"manufacturername": "Philips",
+		"uniqueid": "00:17:88:01:10:5c:ab:0c-0b",
+		"swversion": "5.38.1.15095"
+	},
+	"4": {
+		"state": {
+			"on": false,
+			"bri": 254,
+			"alert": "select",
+			"reachable": true
+		},
+		"type": "Dimmable light",
+		"name": "Kitchen Island Lamp 3",
+		"modelid": "LWB006",
+		"manufacturername": "Philips",
+		"uniqueid": "00:17:88:01:10:2c:ce:11-0b",
+		"swversion": "5.38.1.15095"
+	},
+	"5": {
+		"state": {
+			"on": false,
+			"bri": 254,
+			"alert": "select",
+			"reachable": true
+		},
+		"type": "Dimmable light",
+		"name": "Kitchen Island Lamp 1",
+		"modelid": "LWB006",
+		"manufacturername": "Philips",
+		"uniqueid": "00:17:88:01:10:2c:f4:4d-0b",
+		"swversion": "5.38.1.15095"
+	},
+	"6": {
+		"state": {
+			"on": true,
+			"bri": 254,
+			"alert": "select",
+			"reachable": false
+		},
+		"type": "Dimmable light",
+		"name": "Master Bedroom Lamp 1",
+		"modelid": "LWB006",
+		"manufacturername": "Philips",
+		"uniqueid": "00:17:88:01:10:40:49:bd-0b",
+		"swversion": "5.38.1.15095"
+	}
+}
