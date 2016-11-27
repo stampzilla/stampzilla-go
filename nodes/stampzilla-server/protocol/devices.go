@@ -63,13 +63,15 @@ func (n *Devices) Delete(uuid string) {
 	defer n.Unlock()
 	delete(n.devices, uuid)
 }
-func (n *Devices) SetOfflineByNode(node string) (list []*devices.Device) {
+
+//SetOfflineByNode marks device from a single node offline and returns a list of all marked devices
+func (n *Devices) SetOfflineByNode(nodeUUID string) (list []*devices.Device) {
 	n.Lock()
 	defer n.Unlock()
 
 	list = make([]*devices.Device, 0)
 	for _, dev := range n.devices {
-		if dev.Node == node {
+		if dev.Node == nodeUUID {
 			dev.Online = false
 			list = append(list, dev)
 		}

@@ -2,8 +2,12 @@ package protocol
 
 import (
 	"bufio"
+	"encoding/json"
 	"net"
 	"testing"
+
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/notifications"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSearch(t *testing.T) {
@@ -66,4 +70,28 @@ func TestWrite(t *testing.T) {
 	if status != "hej\n" {
 		t.Error("Expected to have read \"hej\" got: ", status)
 	}
+}
+
+func TestGetNotification(t *testing.T) {
+
+	notification := notifications.NewNotification(notifications.InfoLevel, "test")
+	jsonNote, err := json.Marshal(notification)
+	assert.NoError(t, err)
+
+	node := &node{}
+	node.SetName("Test")
+	node.SetUuid("testuuid")
+
+	nodeNote := node.GetNotification(jsonNote)
+
+	assert.Equal(t, "Test", nodeNote.Source)
+	assert.Equal(t, "testuuid", nodeNote.SourceUuid)
+}
+
+func TestGetNotificationNil(t *testing.T) {
+	node := &node{}
+	node.SetName("Test")
+	node.SetUuid("testuuid")
+	nodeNote := node.GetNotification(nil)
+	assert.Nil(t, nodeNote)
 }

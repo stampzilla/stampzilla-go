@@ -17,6 +17,7 @@ import (
 
 var regex = regexp.MustCompile(`^([^\s\[][^\s\[]*)?(\[.*?([0-9]+).*?\])?$`)
 
+//Device is the abstraction between devices on the nodes and the device on the server
 type Device struct {
 	Type     string                 `json:"type"`
 	Node     string                 `json:"node,omitempty"`
@@ -27,9 +28,20 @@ type Device struct {
 	State    map[string]interface{} `json:"state,omitempty"`
 }
 
+// NewDevice returns a new Device
+func NewDevice() *Device {
+	device := &Device{
+		StateMap: make(map[string]string),
+	}
+
+	return device
+}
+
 //func (d *Device) SetName(name string) {
 //d.Name = name
 //}
+
+// SyncState syncs the state between the node data and the device
 func (d *Device) SyncState(state interface{}) {
 
 	var err error
@@ -44,7 +56,7 @@ func (d *Device) SyncState(state interface{}) {
 	d.StateMap = nil
 }
 
-// key should be nodeuuid.deviceid
+// Map is a list of all devices. The key should be "<nodeuuid>.<deviceuuid>"
 type Map map[string]*Device
 
 func path(state interface{}, jp string) (interface{}, error) {
