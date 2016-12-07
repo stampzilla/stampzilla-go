@@ -2,10 +2,13 @@ package main
 
 import (
 	"flag"
+	"strconv"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/gozwave"
+	"github.com/stampzilla/gozwave/commands"
 	"github.com/stampzilla/gozwave/events"
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/stampzilla/stampzilla-go/pkg/notifier"
@@ -123,7 +126,26 @@ func processCommand(node *protocol.Node, connection basenode.Connection, cmd pro
 			return
 		}
 
+		id, err := strconv.Atoi(cmd.Args[0])
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		//device := s.zwave.Nodes.Get(byte(id))
+
 		switch cmd.Cmd {
+		case "on":
+			//TODO SwitchBinary not working yet :(
+			cmd := commands.NewSwitchBinary()
+			cmd.SetValue(true)
+			cmd.SetNode(byte(id))
+			s.zwave.Connection.Send(cmd, time.Second)
+		case "off":
+			cmd := commands.NewSwitchBinary()
+			cmd.SetValue(false)
+			cmd.SetNode(byte(id))
+			s.zwave.Connection.Send(cmd, time.Second)
 		case "blinds":
 
 			//rollup := switchbinary.New().SetNode(2)
