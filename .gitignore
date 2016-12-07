@@ -27,3 +27,18 @@ stampzilla-server/gin-bin
 # application specifics
 config.json
 devices.json
+
+build
+
+
+#vim stuff
+# swap
+[._]*.s[a-w][a-z]
+[._]s[a-w][a-z]
+# session
+Session.vim
+# temporary
+.netrwhist
+*~
+# auto-generated tag files
+tags

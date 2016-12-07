@@ -1,0 +1,160 @@
+
+<link rel="import" href="../../bower_components/iron-icons/hardware-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/av-icons.html">
+<link rel="import" href="../../bower_components/iron-collapse/iron-collapse.html">
+
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
+
+<link rel="import" href="stampzilla-device-dialog-common.html">
+
+<dom-module id="stampzilla-device-chromecast">
+	<template>
+		<style  is="custom-style">
+			:host {
+				@apply(--layout-vertical);
+				@apply(--layout-wrap);
+				background: #eee no-repeat center;
+				background-size: cover;
+				margin-top:15px;
+				margin-bottom:15px;
+			}
+
+			#thumb {
+				height: 120px;
+
+			}
+
+			.bar {
+				@apply(--layout-horizontal);
+				@apply(--layout-wrap);
+				background-color: rgba(255,255,255,0.6);
+			}
+
+			.bar > .name {
+				@apply(--layout-flex);
+				@apply(--layout-horizontal);
+    			@apply(--layout-center);
+			}
+
+			.titleBar {
+				@apply(--layout-vertical);
+				@apply(--layout-wrap);
+				background-color: rgba(255,255,255,0.6);
+			}
+
+			:host.disabled > .titleBar {
+				display:none;
+			}
+				
+			#title {
+				@apply(--paper-font-headline);
+				padding: 0 8px;
+			}
+			#subtitle {
+				padding: 0 8px;
+			}
+
+
+			#header {
+				@apply(--layout-horizontal);
+			    @apply(--layout-wrap);
+			}
+			#header > h2 {
+				@apply(--layout-flex);
+			}
+
+			#dialog {
+				min-width: 50%;
+			}
+
+			:host.disabled {
+				color: #ccc;
+			}
+		</style>
+		<paper-dialog entry-animation="fade-in-animation"
+					  exit-animation="fade-out-animation"
+					  id="dialog"
+					  with-backdrop="true"
+		>
+			<div id="header">
+				<h2>Chromecast: [[device.name]]</h2>
+				<paper-icon-button icon="settings" id="settings"></paper-icon-button>
+			</div>
+			<div>
+				<iron-collapse id="collapse">
+					<stampzilla-device-dialog-common device="{{device}}" ></stampzilla-device-dialog-common>
+				</iron-collapse>
+			</div>
+		</paper-dialog>
+
+		<div id="thumb">
+			<div class="titleBar">
+				<div id="title">[[state.Title]]</div>
+				<div id="subtitle">[[state.SubTitle]]</div>
+			</div>
+		</div>
+		<div class="bar">
+			<paper-icon-button id="open" icon="hardware:cast" title="Click to open settings"></paper-icon-button>
+			<div class="name">[[device.name]]</div>
+			<paper-icon-button id="" disabled=[[!device.online]] icon="av:pause" title="Click to open settings"></paper-icon-button>
+			<paper-icon-button id="" disabled=[[!device.online]] icon="av:play-arrow" title="Click to open settings"></paper-icon-button>
+		</div>
+	</template>
+
+	<script>
+		(function () {
+			Polymer({
+				is: 'stampzilla-device-chromecast',
+				properties: {
+					device: {
+						type: Object,
+						notify: true,
+						observer: 'deviceChanged'
+					},
+					state: {
+						type: Object,
+						value:{},
+						notify: true,
+						observer: 'stateChanged'
+					}
+				},
+				listeners: {
+        			'open.click': 'openDialog',
+        			'settings.click': 'toggleSettings'
+				},
+
+				deviceChanged: function() {
+					//console.log(this.device);
+					if (this.device.online) {
+						this.classList.remove('disabled')
+					} else {
+						this.classList.add('disabled')
+						this.style.backgroundImage = '';
+					}
+				},
+				stateChanged: function() {
+					//console.log(this.state);
+
+					if ( this.state.Thumb !== "" ) {
+						this.style.backgroundImage = 'url('+this.state.Thumb+')';
+					} else {
+						this.style.backgroundImage = 'none';
+					}
+
+					this.updateStyles();
+				},
+
+				openDialog: function() {
+					this.$.dialog.open();
+				},
+				toggleSettings: function() {
+					this.$.collapse.toggle();
+				}
+			});
+		})();
+	</script>
+
+</dom-module>

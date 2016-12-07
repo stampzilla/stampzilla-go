@@ -1,4 +1,5 @@
 node_modules
 dist/bower_components
+app/bower_components
 !dist/bower_components/webcomponentsjs/webcomponents-lite.min.js 
 .tmp

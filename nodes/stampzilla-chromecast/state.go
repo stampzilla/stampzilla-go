@@ -5,6 +5,7 @@ import (
 
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/stampzilla/stampzilla-go/protocol"
+	"github.com/stampzilla/stampzilla-go/protocol/devices"
 )
 
 type State struct {
@@ -40,6 +41,23 @@ func (s *State) Add(c *Chromecast) {
 	s.Devices[c.Uuid()] = c
 	s.Unlock()
 
+	s.node.Devices_[c.Id] = &devices.Device{
+		Type:   "chromecast",
+		Name:   c.Name_,
+		Id:     c.Id,
+		Online: true,
+		Node:   s.node.Uuid(),
+		StateMap: map[string]string{
+			"Playing":    c.Id + ".Playing",
+			"PrimaryApp": c.Id + ".PrimaryApp",
+			"Title":      c.Id + ".Media.Title",
+			"SubTitle":   c.Id + ".Media.SubTitle",
+			"Thumb":      c.Id + ".Media.Thumb",
+			"Url":        c.Id + ".Media.Url",
+			"Duration":   c.Id + ".Media.Duration",
+		},
+	}
+
 	s.Publish()
 }
 
@@ -50,6 +68,10 @@ func (s *State) Remove(c *Chromecast) {
 		s.Lock()
 		delete(s.Devices, c.Uuid())
 		s.Unlock()
+	}
+
+	if dev, ok := s.node.Devices_[c.Id]; ok {
+		dev.Online = false
 	}
 
 	s.Publish()

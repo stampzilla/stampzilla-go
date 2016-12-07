@@ -33,7 +33,7 @@ type Logic struct {
 
 func NewLogic() *Logic {
 	l := &Logic{states: make(map[string]string)}
-	l.re = regexp.MustCompile(`^([^\s\[][^\s\[]*)?(\[.*?([0-9]).*?\])?$`)
+	l.re = regexp.MustCompile(`^([^\s\[][^\s\[]*)?(\[.*?([0-9]+).*?\])?$`)
 	return l
 }
 
@@ -129,6 +129,7 @@ func (l *Logic) evaluateRuleAnd(r Rule) bool {
 		value, err := l.getValueToEvaluate(cond)
 		if err != nil {
 			log.Error(err)
+			return false
 		}
 
 		if !cond.Check(value) {
@@ -143,6 +144,7 @@ func (l *Logic) evaluateRuleOr(r Rule) bool {
 		value, err := l.getValueToEvaluate(cond)
 		if err != nil {
 			log.Error(err)
+			return false
 		}
 
 		if cond.Check(value) {

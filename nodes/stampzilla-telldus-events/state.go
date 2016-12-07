@@ -12,8 +12,8 @@ func (s *State) AddDevice(id, name string, features []string, state DeviceState)
 	s.Devices[id] = d
 }
 
-func (s *State) AddSensor(id int, name string) *Sensor {
-	d := NewSensor(id, name)
+func (s *State) AddSensor(id int) *Sensor {
+	d := NewSensor(id)
 	s.Sensors[strconv.Itoa(id)] = d
 	return d
 }

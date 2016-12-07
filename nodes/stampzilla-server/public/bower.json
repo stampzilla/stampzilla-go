@@ -2,19 +2,18 @@
   "name": "polymer-starter-kit",
   "private": true,
   "dependencies": {
-    "iron-elements": "PolymerElements/iron-elements#^1.0.0",
+    "iron-elements": "PolymerElements/iron-elements#^1.0.10",
     "neon-elements": "PolymerElements/neon-elements#^1.0.0",
-    "page": "visionmedia/page.js#~1.6.3",
-    "paper-elements": "PolymerElements/paper-elements#^1.0.1",
-    "platinum-elements": "PolymerElements/platinum-elements#^1.1.0",
-    "polymer": "Polymer/polymer#^1.2.0",
-    "x-json": "~0.2.3",
-    "time-element": "~1.0.1",
-    "reconnectingWebsocket": "^1.0.0",
-    "vaadin-core-elements": "^1.1.0"
+    "page": "visionmedia/page.js#~1.6.4",
+    "paper-elements": "PolymerElements/paper-elements#^1.0.7",
+    "platinum-elements": "PolymerElements/platinum-elements#^1.2.0",
+    "polymer": "Polymer/polymer#^1.4.0",
+    "reconnectingWebsocket": "*",
+    "x-json": "*",
+    "time-element": "*"
   },
   "devDependencies": {
-    "test-fixture": "PolymerElements/test-fixture#^1.0.0",
-    "web-component-tester": "*"
-  }
+    "web-component-tester": "^4.0.0"
+  },
+  "ignore": []
 }

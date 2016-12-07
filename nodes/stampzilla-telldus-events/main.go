@@ -12,6 +12,7 @@ import (
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-telldus-events/sensormonitor"
 	"github.com/stampzilla/stampzilla-go/pkg/notifier"
 	"github.com/stampzilla/stampzilla-go/protocol"
+	"github.com/stampzilla/stampzilla-go/protocol/devices"
 )
 
 /*
@@ -26,22 +27,20 @@ extern int updateDevices();
 */
 import "C"
 
+var VERSION string = "dev"
+var BUILD_DATE string = ""
+
 var node *protocol.Node
 var state *State = &State{make(map[string]*Device), make(map[string]*Sensor, 0)}
 var serverConnection basenode.Connection
 var sensorMonitor *sensormonitor.Monitor
 
 type Config struct {
-	MonitorSensors []int
+	MonitorSensors []sensormonitor.SensorConfig
 }
 
 func main() {
-	// Load logger
-	//logger, err := log.LoggerFromConfigAsFile("../logconfig.xml")
-	//if err != nil {
-	//panic(err)
-	//}
-	//log.ReplaceLogger(logger)
+	flag.Parse()
 
 	//Get a config with the correct parameters
 	config := basenode.NewConfig()
@@ -53,13 +52,6 @@ func main() {
 		return
 	}
 
-	// Load flags
-	//var host string
-	//var port string
-	//flag.StringVar(&host, "host", "localhost", "Stampzilla server hostname")
-	//flag.StringVar(&port, "port", "8282", "Stampzilla server port")
-	flag.Parse()
-
 	log.Println("Starting TELLDUS-events node")
 
 	C.registerCallbacks()
@@ -67,6 +59,8 @@ func main() {
 
 	// Create new node description
 	node = protocol.NewNode("telldus-events")
+	node.Version = VERSION
+	node.BuildDate = BUILD_DATE
 	node.SetState(state)
 
 	// Describe available actions
@@ -93,6 +87,32 @@ func main() {
 			},
 			Feedback: `Devices[` + dev.Id + `].State.On`,
 		})
+
+		node.Devices_[dev.Id] = &devices.Device{
+			Type:   "lamp",
+			Name:   dev.Name,
+			Id:     dev.Id,
+			Online: true,
+			Node:   config.Uuid,
+			StateMap: map[string]string{
+				"On": "Devices[" + dev.Id + "]" + ".State.On",
+			},
+		}
+	}
+
+	for _, dev := range nc.MonitorSensors {
+		id := strconv.Itoa(dev.Id)
+		node.Devices_["s"+id] = &devices.Device{
+			Type:   "sensor",
+			Name:   dev.Name,
+			Id:     "s" + id,
+			Online: true,
+			Node:   config.Uuid,
+			StateMap: map[string]string{
+				"Temp":     "Sensors[" + id + "]" + ".Temp",
+				"Humidity": "Sensors[" + id + "]" + ".Humidity",
+			},
+		}
 	}
 
 	// Start the connection
@@ -161,9 +181,9 @@ func processCommand(cmd protocol.Command) error {
 	id = C.int(i)
 
 	switch cmd.Cmd {
-	case "on":
+	case "on", "stampzilla-device-on":
 		result = C.tdTurnOn(id)
-	case "off":
+	case "off", "stampzilla-device-off":
 		result = C.tdTurnOff(id)
 	case "toggle":
 		s := C.tdLastSentCommand(id, C.TELLSTICK_TURNON|C.TELLSTICK_TURNOFF|C.TELLSTICK_DIM)
@@ -182,12 +202,16 @@ func processCommand(cmd protocol.Command) error {
 		case s&C.TELLSTICK_TURNOFF != 0:
 			result = C.tdTurnOn(id)
 		}
+	default:
+		log.Println("Unknown command")
 	}
 
 	if result != C.TELLSTICK_SUCCESS {
 		var errorString *C.char = C.tdGetErrorString(result)
 		C.tdReleaseString(errorString)
-		return errors.New(C.GoString(errorString))
+		err := errors.New(C.GoString(errorString))
+		log.Println("Command failed", err)
+		return err
 	}
 
 	return nil
@@ -246,7 +270,7 @@ func sensorEvent(protocol, model *C.char, sensorId, dataType int, value *C.char)
 
 	var s *Sensor
 	if s = state.GetSensor(sensorId); s == nil {
-		s = state.AddSensor(sensorId, "UNKNOWN")
+		s = state.AddSensor(sensorId)
 	}
 	sensorMonitor.Alive(s.Id)
 

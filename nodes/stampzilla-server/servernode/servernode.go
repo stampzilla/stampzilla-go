@@ -1,6 +1,7 @@
 package servernode
 
 import (
+	"encoding/json"
 	"net"
 	"strconv"
 
@@ -60,7 +61,7 @@ func (self *Node) Reset(key string) {
 	}
 }
 
-func (self *Node) GetNotification() *notifications.Notification {
+func (self *Node) GetNotification(data json.RawMessage) *notifications.Notification {
 	return nil
 }
 

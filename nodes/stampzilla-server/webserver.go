@@ -67,6 +67,9 @@ func (ws *WebServer) Start() {
 	r.GET("/api/trigger/:key/:value", ws.WebHandler.GetServerTrigger)
 	r.GET("/api/set/:key/:value", ws.WebHandler.GetServerSet)
 
+	//Devices
+	r.GET("/api/devices", ws.WebHandler.GetDevices)
+
 	go func() {
 		log.Critical(http.ListenAndServe(":"+ws.Config.WebPort, r))
 	}()

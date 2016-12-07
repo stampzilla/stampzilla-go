@@ -6,6 +6,7 @@ import (
 	"time"
 
 	log "github.com/cihub/seelog"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/notifications"
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
@@ -40,7 +41,7 @@ func (c *connection) State() chan int {
 func (c *connection) Send(data interface{}) {
 	select {
 	case c.send <- data:
-	case <-time.After(time.Minute):
+	case <-time.After(time.Second * 10):
 	}
 }
 
@@ -89,17 +90,14 @@ func sendWorker(connection net.Conn, send chan interface{}, quit chan bool) {
 		case d := <-send:
 			if a, ok := d.(*protocol.Node); ok {
 				a.SetUuid(config.Uuid)
-				log.Trace("Sending node package: ", a)
-				err = encoder.Encode(a.Node())
-			} else if a, ok := d.(notifications.Notification); ok {
-				type NotificationPkg struct {
-					Notification notifications.Notification
-				}
-				note := NotificationPkg{
-					Notification: a,
-				}
-				log.Tracef("Sending notification: %#v", d, d)
-				err = encoder.Encode(note)
+
+				pkg := protocol.NewUpdateWithData(protocol.UpdateNode, a.Node())
+				log.Trace("Sending node package: ", spew.Sdump(pkg))
+				err = encoder.Encode(pkg)
+			} else if noti, ok := d.(notifications.Notification); ok {
+				pkg := protocol.NewUpdateWithData(protocol.Notification, noti)
+				log.Trace("Sending notification: ", spew.Sdump(pkg))
+				err = encoder.Encode(pkg)
 			} else {
 				log.Tracef("Sending %T package: %#v", d, d)
 				err = encoder.Encode(d)
@@ -137,7 +135,8 @@ func connectionWorker(connection net.Conn, recv chan protocol.Command, serverIsA
 
 			if cmd.Ping {
 				//log.Debug("Recived ping - pong")
-				connection.Write([]byte("{\"Pong\":true}"))
+				//PONG packet
+				connection.Write([]byte(`{"Type":5}`))
 				continue
 			}
 
@@ -158,7 +157,9 @@ func timeoutMonitor(connection net.Conn, serverIsAlive chan bool) {
 			// Everything is great, just continue
 			continue
 		case <-time.After(time.Second * 10):
-			connection.Write([]byte("{\"Ping\":true}"))
+			//connection.Write([]byte("{\"Ping\":true}"))
+			//PING packet
+			connection.Write([]byte(`{"Type":4}`))
 
 			select {
 			case <-serverIsAlive:

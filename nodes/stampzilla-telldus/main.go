@@ -14,6 +14,9 @@ import (
 	log "github.com/cihub/seelog"
 )
 
+var VERSION string = "dev"
+var BUILD_DATE string = ""
+
 var Info InfoStruct
 var devices []Device
 

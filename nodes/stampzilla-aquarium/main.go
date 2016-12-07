@@ -23,6 +23,9 @@ import (
 	"github.com/stampzilla/stampzilla-go/pkg/notifier"
 )
 
+var VERSION string = "dev"
+var BUILD_DATE string = ""
+
 type SerialConnection struct {
 	Name string
 	Baud int
@@ -75,6 +78,9 @@ func main() { // {{{
 
 	// Create new node description
 	node = protocol.NewNode("aquarium")
+	node.Version = VERSION
+	node.BuildDate = BUILD_DATE
+
 	node.SetState(state)
 
 	node.AddElement(&protocol.Element{

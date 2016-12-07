@@ -78,6 +78,11 @@
 						value:[],
 						notify: true,
 					},
+					devices: {
+						type: Object,
+						value:{},
+						notify: true,
+					},
 
 					message: {
 						type: Object,
@@ -93,6 +98,7 @@
 						notify: true
 					}
 				},
+
 				_toArray: function(obj) {
 					if(!obj){
 						return [];
@@ -166,6 +172,20 @@
 						return;
 					case 'schedule/all':
 						this.schedule = d.data;
+						return;
+					case 'devices/all':
+						this.devices = d.data;
+						return;
+					case 'devices/single':
+						if ( d.data === undefined ) {
+							return;
+						}
+
+						// Make a copy of the current data, and then update the whole list to make polymer react correctly
+						var changed = JSON.parse(JSON.stringify(this.devices));
+						changed[d.data.node+'.'+d.data.id] = d.data; 
+						this.devices = changed;
+
 						return;
 					default:
 						console.error('Lost websocket message type: '+ d.type, d);

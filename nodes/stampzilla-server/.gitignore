@@ -1,4 +1,5 @@
 build
+.goxc.local.json
 stampzilla-server
 gin-bin
 rules.json

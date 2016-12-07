@@ -1,0 +1,105 @@
+<link rel="import" href="../../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../stampzilla-device/stampzilla-device.html">
+
+<dom-module id="stampzilla-devices">
+	<template>
+		<style  is="custom-style">
+			:host {
+				@apply(--layout-horizontal);
+			    @apply(--layout-wrap);
+			}
+
+			:host > paper-card {
+				box-sizing: border-box;
+				min-width: 300px;
+				max-width: 400px;
+				margin: 4px;
+				flex: 1;
+		  	}
+		</style>
+
+		<template is="dom-repeat" items="{{_toArray(cards)}}">
+			<paper-card heading="[[item.tag]]">
+				<div class="card-content">
+					<template is="dom-repeat" items="{{item.devices}}" as="device" sort="_sort">
+						<stampzilla-device device=[[device]] nodes=[[nodes]]></stampzilla-device>
+					</template>
+				</div>
+			</paper-card>
+		</template>
+
+	</template>
+
+	<script>
+		(function () {
+			Polymer({
+				is: 'stampzilla-devices',
+				properties: {
+					devices: {
+						type: Object,
+						notify: true
+					},
+					nodes: {
+						type: Array,
+						value:[],
+						notify: true,
+					},
+					cards: {
+						type: Array,
+						notify: true,
+					}
+				},
+				observers: [
+					'devicesChanged(devices.*)'
+				],
+
+				devicesChanged: function(changeRecord) {
+					var cards = {};
+
+					var devices = this._toArray(this.devices);
+					devices.forEach(function(row) {
+						var device = row.devices;
+						if ( device.tags !== undefined ) {
+							device.tags.forEach(function(tag) {
+								tag = '#' + tag;
+								if ( cards[tag] === undefined ) {
+									cards[tag] = [];
+								}
+								cards[tag].push(device);
+							});
+						}
+
+						if ( device.tags === undefined || device.tags.length === 0) {
+							var tag = 'No tags specified';
+							if ( cards[tag] === undefined ) {
+								cards[tag] = [];
+							}
+							cards[tag].push(device);
+						}
+					});
+
+
+					this.cards = cards;
+				},
+
+			   _toArray: function(obj) {
+					return Object.keys(obj).map(function(key) {
+						return {
+							tag: key,
+							devices: obj[key]
+						};
+					});
+				},
+				
+				_isType(type, device) {
+					return device === type;
+				},
+				_sort: function(a, b) {
+					if (a.name === b.name) return 0;
+					return a.name.localeCompare(b.name);
+				}
+			});
+		})();
+	</script>
+
+</dom-module>

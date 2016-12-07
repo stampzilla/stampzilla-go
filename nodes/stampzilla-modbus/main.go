@@ -12,6 +12,9 @@ import (
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
+var VERSION string = "dev"
+var BUILD_DATE string = ""
+
 // MAIN - This is run when the init function is done
 func main() {
 	log.Println("Starting modbus node")
@@ -26,6 +29,8 @@ func main() {
 	basenode.SetConfig(config)
 
 	node := protocol.NewNode("modbus")
+	node.Version = VERSION
+	node.BuildDate = BUILD_DATE
 
 	registers := NewRegisters()
 	registers.ReadFromFile("registers.json")

@@ -14,11 +14,12 @@ import (
 )
 
 type WebHandler struct {
-	Logic          *logic.Logic          `inject:""`
-	Scheduler      *logic.Scheduler      `inject:""`
-	Nodes          *serverprotocol.Nodes `inject:""`
-	NodeServer     *NodeServer           `inject:""`
-	ActionsService *logic.ActionService  `inject:""`
+	Logic          *logic.Logic            `inject:""`
+	Scheduler      *logic.Scheduler        `inject:""`
+	Nodes          *serverprotocol.Nodes   `inject:""`
+	Devices        *serverprotocol.Devices `inject:""`
+	NodeServer     *NodeServer             `inject:""`
+	ActionsService *logic.ActionService    `inject:""`
 }
 
 func (wh *WebHandler) GetNodes(c *gin.Context) {
@@ -166,4 +167,7 @@ func (wh *WebHandler) GetServerSet(c *gin.Context) {
 		return
 	}
 	c.String(500, "node server is wrong type")
+}
+func (wh *WebHandler) GetDevices(c *gin.Context) {
+	c.JSON(200, wh.Devices.AllWithState(wh.Nodes))
 }
