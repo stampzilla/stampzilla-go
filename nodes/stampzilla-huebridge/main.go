@@ -41,10 +41,17 @@ func main() {
 		log.Println(d)
 		dev := d
 		hueemulator.Handle(d.Id, d.Name, func(req hueemulator.Request) error {
-			fmt.Println("im handling test from", req.RemoteAddr, req.Request.On)
+			fmt.Println("im handling from", req.RemoteAddr, req.Request.On)
 			if req.Request.Brightness != 0 {
-				log.Println("Request url: ", dev.Url.Dim)
-				_, err := http.Get(dev.Url.Dim)
+				if dev.Url.Level == "" {
+					log.Println("No level url set. ignoring...")
+					return nil
+				}
+				// hue protocol is 0-255. Stampzilla level is 0-100
+				bri := float64(req.Request.Brightness) * 100.0 / 255.0
+				url := fmt.Sprintf(dev.Url.Level, bri)
+				log.Println("Request url: ", url)
+				_, err := http.Get(url)
 				if err != nil {
 					log.Println(err)
 				}
@@ -84,9 +91,9 @@ func NewDevices() *Devices {
 }
 
 type Url struct {
-	Dim string
-	On  string
-	Off string
+	Level string
+	On    string
+	Off   string
 }
 
 type Device struct {
