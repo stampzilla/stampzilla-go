@@ -59,6 +59,11 @@ func (d *Device) SyncState(state interface{}) {
 // Map is a list of all devices. The key should be "<nodeuuid>.<deviceuuid>"
 type Map map[string]*Device
 
+// NewMap returns initialized Map
+func NewMap() Map {
+	return make(map[string]*Device)
+}
+
 // Add adds a device the the device map. Its not safe for concurrent use.
 func (m Map) Add(dev *Device) {
 	m[dev.Id] = dev

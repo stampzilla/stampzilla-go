@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/stampzilla/stampzilla-go/pkg/hueemulator"
+	"github.com/stampzilla/stampzilla-go/protocol/devices"
 )
 
 var port string
@@ -35,7 +36,15 @@ func main() {
 		return
 	}
 
-	//TODO fetch config from stampzilla server when devices feature is merged.
+	//TODO this works. But we need to save devices to json before uncommenting and enableing it!
+	//serverDevices, err := fetchDevices()
+	//if err != nil {
+	//log.Println(err)
+	//} else {
+	//SyncDevicesFromServer(devices, serverDevices)
+	//}
+
+	//spew.Dump(devices)
 
 	for _, d := range devices.Devices {
 		log.Println(d)
@@ -99,7 +108,8 @@ type Url struct {
 type Device struct {
 	Name string
 	Id   int
-	Url  Url
+	UUID string
+	Url  *Url
 }
 
 type Devices struct {
@@ -120,4 +130,53 @@ func (c *Devices) ReadFromFile(filepath string) error {
 
 	c.Devices = devices
 	return nil
+}
+
+func SyncDevicesFromServer(localDevs *Devices, serverDevs devices.Map) {
+
+outer:
+	for uuid, sdev := range serverDevs {
+		for _, v := range localDevs.Devices {
+			if v.UUID == uuid {
+				log.Printf("Already have device: %s. Do not add again.\n", sdev.Name)
+				continue outer
+			}
+		}
+
+		//Skip non controllable devices
+		if sdev.Type != "lamp" {
+			continue
+		}
+
+		//We dont have the device so we add it
+		dev := &Device{
+			Name: sdev.Name,
+			Id:   len(localDevs.Devices) + 1,
+			Url: &Url{
+				Level: "http://bulan.lan:8080/api/nodes/" + sdev.Node + "/cmd/level/" + sdev.Id + "/%f",
+				On:    "http://bulan.lan:8080/api/nodes/" + sdev.Node + "/cmd/on/" + sdev.Id,
+				Off:   "http://bulan.lan:8080/api/nodes/" + sdev.Node + "/cmd/off/" + sdev.Id,
+			},
+			UUID: uuid,
+		}
+
+		localDevs.Devices = append(localDevs.Devices, dev)
+	}
+
+}
+
+func fetchDevices() (devices.Map, error) {
+	//TODO use nodespecific config
+	resp, err := http.Get("http://192.168.13.1:8080/api/devices")
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	devmap := devices.NewMap()
+	err = json.NewDecoder(resp.Body).Decode(&devmap)
+	if err != nil {
+		return nil, err
+	}
+	return devmap, nil
+
 }
