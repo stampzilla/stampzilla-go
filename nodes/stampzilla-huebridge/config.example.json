@@ -3,7 +3,7 @@
 		"name": "Test1",
 		"id": 1,
 		"url":{
-			"dim":"http://localhost/dim",
+			"level":"http://localhost/dim/%f",
 			"on":"http://localhost/on",
 			"off":"http://localhost/off"
 		}
@@ -12,7 +12,7 @@
 		"name": "Test2",
 		"id": 2,
 		"url":{
-			"dim":"http://localhost/dim",
+			"level":"http://localhost/dim/%f",
 			"on":"http://localhost/on",
 			"off":"http://localhost/off"
 		}
