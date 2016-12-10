@@ -86,11 +86,11 @@ func main() {
 		node.Devices().Add(&devices.Device{
 			Type:   "lamp",
 			Name:   dev.Name,
-			Id:     dev.Id,
+			Id:     dev.IdString(),
 			Online: true,
 			Node:   config.Uuid,
 			StateMap: map[string]string{
-				"On": "Devices[" + dev.Id + "]" + ".On",
+				"On": "Devices[" + dev.IdString() + "]" + ".On",
 			},
 		})
 	}
