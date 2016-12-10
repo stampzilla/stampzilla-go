@@ -6,7 +6,6 @@ import (
 	"time"
 
 	log "github.com/cihub/seelog"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/notifications"
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
@@ -92,14 +91,14 @@ func sendWorker(connection net.Conn, send chan interface{}, quit chan bool) {
 				a.SetUuid(config.Uuid)
 
 				pkg := protocol.NewUpdateWithData(protocol.UpdateNode, a.Node())
-				log.Trace("Sending node package: ", spew.Sdump(pkg))
+				//log.Trace("Sending node package: ", spew.Sdump(pkg))
 				err = encoder.Encode(pkg)
 			} else if noti, ok := d.(notifications.Notification); ok {
 				pkg := protocol.NewUpdateWithData(protocol.Notification, noti)
-				log.Trace("Sending notification: ", spew.Sdump(pkg))
+				//log.Trace("Sending notification: ", spew.Sdump(pkg))
 				err = encoder.Encode(pkg)
 			} else {
-				log.Tracef("Sending %T package: %#v", d, d)
+				//log.Tracef("Sending %T package: %#v", d, d)
 				err = encoder.Encode(d)
 			}
 			if err != nil {

@@ -3,12 +3,10 @@ package main
 import (
 	"flag"
 	"strconv"
-	"time"
 
 	"github.com/Sirupsen/logrus"
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/gozwave"
-	"github.com/stampzilla/gozwave/commands"
 	"github.com/stampzilla/gozwave/events"
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/stampzilla/stampzilla-go/pkg/notifier"
@@ -26,6 +24,7 @@ func main() {
 	log.Info("Starting ZWAVE node")
 
 	debug := flag.Bool("v", false, "Verbose - show more debuging info")
+	port := flag.String("controllerport", "/dev/ttyACM0", "SerialAPI communication port (to controller)")
 
 	// Parse all commandline arguments, host and port parameters are added in the basenode init function
 	flag.Parse()
@@ -40,7 +39,7 @@ func main() {
 	//Activate the config
 	basenode.SetConfig(config)
 
-	z, err := gozwave.Connect("/dev/ttyACM0", "zwave-networkmap.json")
+	z, err := gozwave.Connect(*port, "zwave-networkmap.json")
 	if err != nil {
 		log.Error(err)
 		return
@@ -58,32 +57,12 @@ func main() {
 	// Thit worker keeps track on our connection state, if we are connected or not
 	go monitorState(node, connection)
 
-	node.AddElement(&protocol.Element{
-		Type: protocol.ElementTypeButton,
-		Name: "Up",
-		Command: &protocol.Command{
-			Cmd:  "blinds",
-			Args: []string{"0"},
-		},
-	})
-	node.AddElement(&protocol.Element{
-		Type: protocol.ElementTypeButton,
-		Name: "Down",
-		Command: &protocol.Command{
-			Cmd:  "blinds",
-			Args: []string{"1"},
-		},
-	})
-
 	state := NewState()
 	node.SetState(state)
 	state.zwave = z
 
 	// This worker recives all incomming commands
 	go serverRecv(node, connection)
-
-	//state.Nodes, _ = z.GetNodes()
-	//connection.Send(node.Node())
 
 	for {
 		select {
@@ -92,7 +71,12 @@ func main() {
 			switch e := event.(type) {
 			case events.NodeDiscoverd:
 				log.Infof("%#v", z.Nodes.Get(e.Address))
-				state.Nodes = append(state.Nodes, z.Nodes.Get(e.Address))
+				state.Nodes = append(state.Nodes, newZwavenode(z.Nodes.Get(e.Address)))
+			case events.NodeUpdated:
+				n := state.GetNode(e.Address)
+				if n != nil {
+					n.sync(z.Nodes.Get(e.Address))
+				}
 			}
 
 			connection.Send(node.Node())
@@ -132,32 +116,22 @@ func processCommand(node *protocol.Node, connection basenode.Connection, cmd pro
 			return
 		}
 
-		//device := s.zwave.Nodes.Get(byte(id))
+		device := s.zwave.Nodes.Get(byte(id))
 
 		switch cmd.Cmd {
 		case "on":
-			//TODO SwitchBinary not working yet :(
-			cmd := commands.NewSwitchBinary()
-			cmd.SetValue(true)
-			cmd.SetNode(byte(id))
-			s.zwave.Connection.Send(cmd, time.Second)
+			device.On()
 		case "off":
-			cmd := commands.NewSwitchBinary()
-			cmd.SetValue(false)
-			cmd.SetNode(byte(id))
-			s.zwave.Connection.Send(cmd, time.Second)
-		case "blinds":
-
-			//rollup := switchbinary.New().SetNode(2)
-
-			//if cmd.Args[0] == "1" {
-			//	rollup.SetValue(true)
-			//}
-
-			//<-s.zwave.Send(rollup) // Stop previous motion
-			//<-time.After(time.Millisecond * 200)
-			//<-s.zwave.Send(rollup) // Start up
-			//connection.Send(node.Node())
+			device.Off()
+		case "level":
+			level, err := strconv.ParseFloat(cmd.Args[1], 64)
+			if err != nil {
+				log.Error(err)
+				return
+			}
+			device.Level(level)
+		default:
+			log.Warnf("Unknown command '%s'", cmd.Cmd)
 		}
 	}
 }
