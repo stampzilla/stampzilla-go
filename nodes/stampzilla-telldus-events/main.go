@@ -88,7 +88,7 @@ func main() {
 			Feedback: `Devices[` + dev.Id + `].State.On`,
 		})
 
-		node.Devices_[dev.Id] = &devices.Device{
+		node.Devices().Add(&devices.Device{
 			Type:   "lamp",
 			Name:   dev.Name,
 			Id:     dev.Id,
@@ -97,7 +97,7 @@ func main() {
 			StateMap: map[string]string{
 				"On": "Devices[" + dev.Id + "]" + ".State.On",
 			},
-		}
+		})
 	}
 
 	for _, dev := range nc.MonitorSensors {

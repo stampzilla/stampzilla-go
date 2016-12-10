@@ -325,6 +325,7 @@ func (h *handlerEepa53808eltako) Dim(lvl int, d *Device) {
 	p.SetSenderId(h.generateSenderId(d))
 	p.SetDestinationId(d.Id())
 	p.SetCommand(2)
+	//TODO dim level should be 0-100 in stampzilla and send 0-255 to enocean device
 	p.SetDimValue(uint8(lvl))
 	p.SetSwitchingCommand(1)
 	fmt.Printf("Sending DIM: % x\n", p.Encode())

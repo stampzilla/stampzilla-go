@@ -11,6 +11,7 @@ import (
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/stampzilla/stampzilla-go/pkg/notifier"
 	"github.com/stampzilla/stampzilla-go/protocol"
+	"github.com/stampzilla/stampzilla-go/protocol/devices"
 )
 
 var VERSION string = "dev"
@@ -72,6 +73,18 @@ func main() {
 			case events.NodeDiscoverd:
 				log.Infof("%#v", z.Nodes.Get(e.Address))
 				state.Nodes = append(state.Nodes, newZwavenode(z.Nodes.Get(e.Address)))
+				devid := strconv.Itoa(int(e.Address))
+				node.Devices().Add(&devices.Device{
+					Type:     "lamp",
+					Name:     "TODO implement this",
+					Id:       devid,
+					Online:   true,
+					Node:     config.Uuid,
+					StateMap: map[string]string{
+					//TODO add state map
+					//"On": "Devices[" + devid + "]" + ".State.On",
+					},
+				})
 			case events.NodeUpdated:
 				n := state.GetNode(e.Address)
 				if n != nil {

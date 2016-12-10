@@ -144,7 +144,8 @@ func main() {
 	state.AddDevice("2", "Dev2", true)
 	state.AddDevice("3", "Slider", 33)
 
-	node.Devices_["10"] = &devices.Device{
+	//node.Devices_["10"] = &devices.Device{
+	node.Devices().Add(&devices.Device{
 		Type:   "lamp",
 		Name:   "Lamp ten",
 		Id:     "10",
@@ -153,7 +154,7 @@ func main() {
 		StateMap: map[string]string{
 			"on": "Devices[1].State",
 		},
-	}
+	})
 
 	//go startToggler(node, connection, "1", time.Second)
 

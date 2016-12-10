@@ -14,6 +14,7 @@ import (
 	"github.com/jonaz/goenocean"
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/stampzilla/stampzilla-go/protocol"
+	"github.com/stampzilla/stampzilla-go/protocol/devices"
 )
 
 var VERSION string = "dev"
@@ -74,10 +75,25 @@ func main() {
 	state.Devices = readConfigFromFile()
 	node.SetState(state)
 
+	//TODO remove element generator and AddElement and AddLayout and AddAction. Devices will superseed that.
 	elementGenerator := &ElementGenerator{}
 	elementGenerator.State = state
 	elementGenerator.Node = node
 	elementGenerator.Run()
+
+	for _, dev := range state.Devices {
+		// TODO if RecvEEPs is f60201 then its a button and not lamp
+		node.Devices().Add(&devices.Device{
+			Type:   "lamp",
+			Name:   dev.Name,
+			Id:     dev.Id,
+			Online: true,
+			Node:   config.Uuid,
+			StateMap: map[string]string{
+				"On": "Devices[" + dev.Id + "]" + ".On",
+			},
+		})
+	}
 
 	checkDuplicateSenderIds()
 
@@ -182,6 +198,7 @@ func incomingPacket(node *protocol.Node, connection basenode.Connection, p goeno
 	if d = state.Device(p.SenderId()); d == nil {
 		//Add unknown device
 		d = state.AddDevice(p.SenderId(), "UNKNOWN", nil, false)
+		//TODO add to devices list aswell? Maybe we need to configure it first?
 		saveDevicesToFile()
 		connection.Send(node)
 	}
