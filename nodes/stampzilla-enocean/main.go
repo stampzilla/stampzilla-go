@@ -90,7 +90,7 @@ func main() {
 			Online: true,
 			Node:   config.Uuid,
 			StateMap: map[string]string{
-				"On": "Devices[" + dev.IdString() + "]" + ".On",
+				"On": "Devices." + dev.IdString() + "." + ".On",
 			},
 		})
 	}
