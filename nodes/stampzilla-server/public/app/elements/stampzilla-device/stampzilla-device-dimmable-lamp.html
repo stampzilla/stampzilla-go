@@ -1,22 +1,30 @@
 <link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/paper-slider/paper-slider.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
 
 <link rel="import" href="stampzilla-device-dialog-common.html">
 
-<dom-module id="stampzilla-device-lamp">
+<dom-module id="stampzilla-device-dimmable-lamp">
 	<template>
 		<style  is="custom-style">
 			:host {
 				@apply(--layout-horizontal);
 			    @apply(--layout-wrap);
+			    @apply(--layout-baseline);
 			}
 
-			:host > .name {
+			:host > .body {
 				@apply(--layout-flex);
-				@apply(--layout-horizontal);
-    			@apply(--layout-center);
+				@apply(--layout-vertical);
+    			@apply(--layout-start);
+			}
+
+			:host > .body > paper-slider {
+				margin-left:-15px;
+				margin-right:-15px;
+				width: 100%;
 			}
 
 			:host > paper-toggle-button {
@@ -56,15 +64,18 @@
 			</div>
 		</paper-dialog>
 
-		<paper-icon-button id="open" icon="lightbulb-outline" title="Click to open settings"></paper-icon-button>
-		<div class="name">[[device.name]]</div>
-		<paper-toggle-button id="toggle" disabled=[[!device.online]] checked="{{value}}"></paper-toggle-button>
+			<paper-icon-button id="open" icon="lightbulb-outline" title="Click to open settings"></paper-icon-button>
+			<div class="body">
+				<div class="name">[[device.name]]</div>
+				<paper-slider class="level" pin value="{{level}}"></paper-slider>
+			</div>
+			<paper-toggle-button id="toggle" disabled=[[!device.online]] checked="{{value}}"></paper-toggle-button>
 	</template>
 
 	<script>
 		(function () {
 			Polymer({
-				is: 'stampzilla-device-lamp',
+				is: 'stampzilla-device-dimmable-lamp',
 				properties: {
 					device: {
 						type: Object,
@@ -79,12 +90,17 @@
 					value: {
 						type: Boolean,
 						notify: true
+					},
+					level: {
+						type: Number,
+						notify: true,
+						observer: 'changeLevel'
 					}
 				},
 				listeners: {
         			'open.click': 'openDialog',
 					'settings.click': 'toggleSettings',
-					'toggle.change': 'toggleValue'
+					'toggle.change': 'toggleValue',
 				},
 
 				stateChanged: function() {
@@ -114,6 +130,21 @@
 							to: this.device.node,
 						};
 					}
+
+					app.fire('ws-send', pkg);
+				}, 
+				changeLevel: function() {
+					var pkg = {
+						type: 'nodes/cmd',
+						data: {
+							'cmd': 'level',
+							'args': [
+								this.device.id,
+								this.level.toString()
+							]
+						}, 
+						to: this.device.node,
+					};
 
 					app.fire('ws-send', pkg);
 				}, 

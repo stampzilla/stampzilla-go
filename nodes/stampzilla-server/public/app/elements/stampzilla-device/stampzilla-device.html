@@ -1,11 +1,16 @@
 
 <link rel="import" href="../stampzilla-device/stampzilla-device-lamp.html">
+<link rel="import" href="../stampzilla-device/stampzilla-device-dimmable-lamp.html">
 <link rel="import" href="../stampzilla-device/stampzilla-device-chromecast.html">
 
 <dom-module id="stampzilla-device">
 	<template>
 		<template is="dom-if" if="{{_isType('lamp',device.type)}}">
 			<stampzilla-device-lamp state="[[state]]" device=[[device]]></stampzilla-device-lamp>
+		</template>
+
+		<template is="dom-if" if="{{_isType('dimmableLamp',device.type)}}">
+			<stampzilla-device-dimmable-lamp state="[[state]]" device=[[device]]></stampzilla-device-dimmable-lamp>
 		</template>
 
 		<template is="dom-if" if="{{_isType('chromecast',device.type)}}">

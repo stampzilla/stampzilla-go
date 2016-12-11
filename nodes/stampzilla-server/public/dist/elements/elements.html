@@ -27898,7 +27898,7 @@ module.exports = Array.isArray || function (arr) {
 
 		<paper-icon-button id="open" icon="lightbulb-outline" title="Click to open settings"></paper-icon-button>
 		<div class="name">[[device.name]]</div>
-		<paper-toggle-button disabled="[[!device.online]]"></paper-toggle-button>
+		<paper-toggle-button id="toggle" disabled="[[!device.online]]" checked="{{value}}"></paper-toggle-button>
 	</template>
 
 	<script>
@@ -27910,13 +27910,53 @@ module.exports = Array.isArray || function (arr) {
 						type: Object,
 						notify: true,
 						observer: 'deviceChanged'
+					},
+					state: {
+						type: Object,
+						notify: true,
+						observer: 'stateChanged'
+					},
+					value: {
+						type: Boolean,
+						notify: true
 					}
 				},
 				listeners: {
         			'open.click': 'openDialog',
-        			'settings.click': 'toggleSettings'
+					'settings.click': 'toggleSettings',
+					'toggle.change': 'toggleValue'
 				},
 
+				stateChanged: function() {
+					this.value = this.state.On;
+				}, 
+				toggleValue: function() {
+					if (this.value) {
+						var pkg = {
+							type: 'nodes/cmd',
+							data: {
+								'cmd': 'stampzilla-device-on',
+								'args': [
+									this.device.id
+								]
+							}, 
+							to: this.device.node,
+						};
+					} else {
+						var pkg = {
+							type: 'nodes/cmd',
+							data: {
+								'cmd': 'stampzilla-device-off',
+								'args': [
+									this.device.id
+								]
+							}, 
+							to: this.device.node,
+						};
+					}
+
+					app.fire('ws-send', pkg);
+				}, 
 				deviceChanged: function() {
 					//console.log(this.device);
 
@@ -27925,6 +27965,136 @@ module.exports = Array.isArray || function (arr) {
 					} else {
 						this.classList.add('disabled')
 					}
+
+				},
+				openDialog: function() {
+					this.$.dialog.open();
+				},
+				toggleSettings: function() {
+					this.$.collapse.toggle();
+				}
+			});
+		})();
+	</script>
+
+</dom-module>
+<dom-module id="stampzilla-device-dimmable-lamp" assetpath="stampzilla-device/">
+	<template>
+		<style is="custom-style">
+			:host {
+				@apply(--layout-horizontal);
+			    @apply(--layout-wrap);
+			}
+
+			:host > .name {
+				@apply(--layout-flex);
+				@apply(--layout-horizontal);
+    			@apply(--layout-center);
+			}
+
+			:host > paper-toggle-button {
+				@apply(--layout-horizontal);
+    			@apply(--layout-center);
+			}
+
+			#header {
+				@apply(--layout-horizontal);
+			    @apply(--layout-wrap);
+			}
+			#header > h2 {
+				@apply(--layout-flex);
+			}
+
+			#dialog {
+				min-width: 50%;
+			}
+
+			:host.disabled {
+				color: #ccc;
+			}
+		</style>
+		<paper-dialog entry-animation="fade-in-animation" exit-animation="fade-out-animation" id="dialog" with-backdrop="true">
+			<div id="header">
+				<h2>Lamp: [[device.name]]</h2>
+				<paper-icon-button icon="settings" id="settings"></paper-icon-button>
+			</div>
+			<div>
+				<iron-collapse id="collapse">
+					<stampzilla-device-dialog-common device="{{device}}"></stampzilla-device-dialog-common>
+				</iron-collapse>
+			</div>
+		</paper-dialog>
+
+		<paper-icon-button id="open" icon="lightbulb-outline" title="Click to open settings"></paper-icon-button>
+		<div class="name">[[device.name]]</div>
+		<paper-toggle-button id="toggle" disabled="[[!device.online]]" checked="{{value}}"></paper-toggle-button>
+	</template>
+
+	<script>
+		(function () {
+			Polymer({
+				is: 'stampzilla-device-dimmable-lamp',
+				properties: {
+					device: {
+						type: Object,
+						notify: true,
+						observer: 'deviceChanged'
+					},
+					state: {
+						type: Object,
+						notify: true,
+						observer: 'stateChanged'
+					},
+					value: {
+						type: Boolean,
+						notify: true
+					}
+				},
+				listeners: {
+        			'open.click': 'openDialog',
+					'settings.click': 'toggleSettings',
+					'toggle.change': 'toggleValue'
+				},
+
+				stateChanged: function() {
+					this.value = this.state.On;
+				}, 
+				toggleValue: function() {
+					if (this.value) {
+						var pkg = {
+							type: 'nodes/cmd',
+							data: {
+								'cmd': 'stampzilla-device-on',
+								'args': [
+									this.device.id
+								]
+							}, 
+							to: this.device.node,
+						};
+					} else {
+						var pkg = {
+							type: 'nodes/cmd',
+							data: {
+								'cmd': 'stampzilla-device-off',
+								'args': [
+									this.device.id
+								]
+							}, 
+							to: this.device.node,
+						};
+					}
+
+					app.fire('ws-send', pkg);
+				}, 
+				deviceChanged: function() {
+					//console.log(this.device);
+
+					if (this.device.online) {
+						this.classList.remove('disabled')
+					} else {
+						this.classList.add('disabled')
+					}
+
 				},
 				openDialog: function() {
 					this.$.dialog.open();
@@ -28318,10 +28488,12 @@ module.exports = Array.isArray || function (arr) {
 				@apply(--layout-wrap);
 				background: #eee no-repeat center;
 				background-size: cover;
+				margin-top:15px;
+				margin-bottom:15px;
 			}
 
 			#thumb {
-				height: 100px;
+				height: 120px;
 
 			}
 
@@ -28393,8 +28565,8 @@ module.exports = Array.isArray || function (arr) {
 		<div class="bar">
 			<paper-icon-button id="open" icon="hardware:cast" title="Click to open settings"></paper-icon-button>
 			<div class="name">[[device.name]]</div>
-			<paper-icon-button id="" disabled="[[!device.online]]" icon="av:play-arrow" title="Click to open settings"></paper-icon-button>
 			<paper-icon-button id="" disabled="[[!device.online]]" icon="av:pause" title="Click to open settings"></paper-icon-button>
+			<paper-icon-button id="" disabled="[[!device.online]]" icon="av:play-arrow" title="Click to open settings"></paper-icon-button>
 		</div>
 	</template>
 
@@ -28434,6 +28606,8 @@ module.exports = Array.isArray || function (arr) {
 
 					if ( this.state.Thumb !== "" ) {
 						this.style.backgroundImage = 'url('+this.state.Thumb+')';
+					} else {
+						this.style.backgroundImage = 'none';
 					}
 
 					this.updateStyles();
@@ -28454,6 +28628,10 @@ module.exports = Array.isArray || function (arr) {
 	<template>
 		<template is="dom-if" if="{{_isType('lamp',device.type)}}">
 			<stampzilla-device-lamp state="[[state]]" device="[[device]]"></stampzilla-device-lamp>
+		</template>
+
+		<template is="dom-if" if="{{_isType('dimmableLamp',device.type)}}">
+			<stampzilla-device-dimmable-lamp state="[[state]]" device="[[device]]"></stampzilla-device-dimmable-lamp>
 		</template>
 
 		<template is="dom-if" if="{{_isType('chromecast',device.type)}}">
@@ -28577,7 +28755,7 @@ module.exports = Array.isArray || function (arr) {
 		<template is="dom-repeat" items="{{_toArray(cards)}}">
 			<paper-card heading="[[item.tag]]">
 				<div class="card-content">
-					<template is="dom-repeat" items="{{item.devices}}" as="device">
+					<template is="dom-repeat" items="{{item.devices}}" as="device" sort="_sort">
 						<stampzilla-device device="[[device]]" nodes="[[nodes]]"></stampzilla-device>
 					</template>
 				</div>
@@ -28649,6 +28827,10 @@ module.exports = Array.isArray || function (arr) {
 				
 				_isType(type, device) {
 					return device === type;
+				},
+				_sort: function(a, b) {
+					if (a.name === b.name) return 0;
+					return a.name.localeCompare(b.name);
 				}
 			});
 		})();

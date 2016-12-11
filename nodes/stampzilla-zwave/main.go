@@ -7,7 +7,9 @@ import (
 	"github.com/Sirupsen/logrus"
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/gozwave"
+	"github.com/stampzilla/gozwave/commands"
 	"github.com/stampzilla/gozwave/events"
+	"github.com/stampzilla/gozwave/nodes"
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/stampzilla/stampzilla-go/pkg/notifier"
 	"github.com/stampzilla/stampzilla-go/protocol"
@@ -73,28 +75,56 @@ func main() {
 			case events.NodeDiscoverd:
 				log.Infof("%#v", z.Nodes.Get(e.Address))
 				state.Nodes = append(state.Nodes, newZwavenode(z.Nodes.Get(e.Address)))
-				devid := strconv.Itoa(int(e.Address))
-				node.Devices().Add(&devices.Device{
-					Type:     "lamp",
-					Name:     "TODO implement this",
-					Id:       devid,
-					Online:   true,
-					Node:     config.Uuid,
-					StateMap: map[string]string{
-					//TODO add state map
-					//"On": "Devices[" + devid + "]" + ".State.On",
-					},
-				})
+
 			case events.NodeUpdated:
 				n := state.GetNode(e.Address)
 				if n != nil {
-					n.sync(z.Nodes.Get(e.Address))
+					znode := z.Nodes.Get(e.Address)
+
+					addOrUpdateDevice(node, znode)
+					n.sync(znode)
 				}
 			}
 
 			connection.Send(node.Node())
 		}
 	}
+}
+
+func addOrUpdateDevice(node *protocol.Node, znode *nodes.Node) {
+	if znode.Device == nil {
+		return
+	}
+
+	devid := strconv.Itoa(int(znode.Id))
+
+	switch {
+	case znode.HasCommand(commands.SwitchMultilevel):
+		node.Devices().Add(&devices.Device{
+			Type:     "dimmableLamp",
+			Name:     znode.Device.Brand + " - " + znode.Device.Product + " (Address: " + devid + ")",
+			Id:       devid,
+			Online:   true,
+			Node:     node.Uuid(),
+			StateMap: map[string]string{
+			//TODO add state map
+			//"On": "Devices[" + devid + "]" + ".State.On",
+			},
+		})
+	case znode.HasCommand(commands.SwitchBinary):
+		node.Devices().Add(&devices.Device{
+			Type:     "lamp",
+			Name:     znode.Device.Brand + " - " + znode.Device.Product + " (Address: " + devid + ")",
+			Id:       devid,
+			Online:   true,
+			Node:     node.Uuid(),
+			StateMap: map[string]string{
+			//TODO add state map
+			//"On": "Devices[" + devid + "]" + ".State.On",
+			},
+		})
+	}
+
 }
 
 // WORKER that monitors the current connection state
