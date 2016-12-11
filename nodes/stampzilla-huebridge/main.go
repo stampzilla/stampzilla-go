@@ -155,7 +155,9 @@ outer:
 	for uuid, sdev := range serverDevs {
 		for _, v := range ns.Devices {
 			if v.UUID == uuid {
-				log.Printf("Already have device: %s. Do not add again.\n", sdev.Name)
+				if debug {
+					log.Printf("Already have device: %s. Do not add again.\n", sdev.Name)
+				}
 				continue outer
 			}
 		}
