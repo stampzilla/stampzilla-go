@@ -1,20 +1,29 @@
-[
-	{
-		"name": "Test1",
-		"id": 1,
-		"url":{
-			"level":"http://localhost/dim/%f",
-			"on":"http://localhost/on",
-			"off":"http://localhost/off"
-		}
-	},
-	{
-		"name": "Test2",
-		"id": 2,
-		"url":{
-			"level":"http://localhost/dim/%f",
-			"on":"http://localhost/on",
-			"off":"http://localhost/off"
-		}
+{
+	"Host": "10.21.10.40",
+	"Port": "8282",
+	"Uuid": "77a7333d-16a3-470b-ab17-9d3218221c86",
+	"Node": {
+		"ListenPort": "80",
+		"Port": "8080",
+		"Devices": [
+			{
+				"name": "Test1",
+				"id": 1,
+				"url": {
+					"level": "http://localhost/dim/%f",
+					"on": "http://localhost/on",
+					"off": "http://localhost/off"
+				}
+			},
+			{
+				"name": "Test2",
+				"id": 2,
+				"url": {
+					"level": "http://localhost/dim/%f",
+					"on": "http://localhost/on",
+					"off": "http://localhost/off"
+				}
+			}
+		]
 	}
-]
+}
