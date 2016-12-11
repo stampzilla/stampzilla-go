@@ -5,8 +5,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"flag"
-	"os"
 	"fmt"
+	"os"
 
 	log "github.com/cihub/seelog"
 	"github.com/pborman/uuid"
@@ -83,6 +83,10 @@ func SetConfig(c *Config) {
 	saveConfigToFile()
 }
 
+func SaveConfigToFile(cfg *Config) {
+	config = cfg
+	saveConfigToFile()
+}
 func saveConfigToFile() {
 	configFile, err := os.Create("config.json")
 	if err != nil {
@@ -122,7 +126,7 @@ type Config struct {
 }
 
 func (c *Config) NodeSpecific(i interface{}) error {
-	if c.Node != nil  {
+	if c.Node != nil {
 		return json.Unmarshal(*c.Node, &i)
 	}
 

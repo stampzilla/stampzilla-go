@@ -7,46 +7,73 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
+	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/stampzilla/stampzilla-go/pkg/hueemulator"
+	"github.com/stampzilla/stampzilla-go/protocol"
 	"github.com/stampzilla/stampzilla-go/protocol/devices"
 )
 
-var port string
+var VERSION string = "dev"
+var BUILD_DATE string = ""
+var listenPort string
 var ip string
-var config string
 var debug bool
 
 func init() {
-	flag.StringVar(&port, "port", "80", "Port to listen to. Must be 80 for Google Home to work")
+	flag.StringVar(&listenPort, "listenport", "80", "Port to listen to. Must be 80 for Google Home to work")
 	flag.StringVar(&ip, "ip", hueemulator.GetPrimaryIp(), "Ip to listen to.")
-	flag.StringVar(&config, "config", "config.json", "Path to config file.")
 	flag.BoolVar(&debug, "debug", false, "Debug. Without this we dont print other than errors. Optimized not to wear on raspberry pi SD card.")
 	flag.Parse()
+}
+
+type NodeSpecific struct {
+	Port       string
+	ListenPort string
+	Devices    []*Device
 }
 
 func main() {
 	hueemulator.SetLogger(os.Stdout)
 	hueemulator.SetDebug(debug)
 
-	devices := NewDevices()
-	err := devices.ReadFromFile(config)
+	config := basenode.NewConfig()
+
+	basenode.SetConfig(config)
+
+	node := protocol.NewNode("huebridge")
+	node.Version = VERSION
+	node.BuildDate = BUILD_DATE
+
+	//devices := NewDevices()
+	nodespecific := &NodeSpecific{}
+	err := config.NodeSpecific(&nodespecific)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
+	if nodespecific.ListenPort != "" {
+		listenPort = nodespecific.ListenPort
+	}
+
 	//TODO this works. But we need to save devices to json before uncommenting and enableing it!
-	//serverDevices, err := fetchDevices()
-	//if err != nil {
-	//log.Println(err)
-	//} else {
-	//SyncDevicesFromServer(devices, serverDevices)
-	//}
+	log.Println("Syncing devices from server")
+	SyncDevicesFromServer(config, nodespecific)
 
-	//spew.Dump(devices)
+	go func() {
+		for range time.NewTicker(60 * time.Second).C {
+			if debug {
+				log.Println("Syncing devices from server")
+			}
+			SyncDevicesFromServer(config, nodespecific)
+		}
+	}()
 
-	for _, d := range devices.Devices {
+	//spew.Dump(config)
+
+	for _, d := range nodespecific.Devices {
 		log.Println(d)
 		dev := d
 		hueemulator.Handle(d.Id, d.Name, func(req hueemulator.Request) error {
@@ -87,17 +114,21 @@ func main() {
 
 	}
 
+	connection := basenode.Connect()
+
+	go monitorState(node, connection)
+
 	// it is very important to use a full IP here or the UPNP does not work correctly.
 	ip := hueemulator.GetPrimaryIp()
-	panic(hueemulator.ListenAndServe(ip + ":80"))
+	panic(hueemulator.ListenAndServe(ip + ":" + listenPort))
 	//panic(hueemulator.ListenAndServe("192.168.13.86:8080"))
 }
 
-func NewDevices() *Devices {
-	return &Devices{
-		Devices: make([]*Device, 0),
-	}
-}
+//func NewDevices() *Devices {
+//return &Devices{
+//Devices: make([]*Device, 0),
+//}
+//}
 
 type Url struct {
 	Level string
@@ -112,62 +143,67 @@ type Device struct {
 	Url  *Url
 }
 
-type Devices struct {
-	Devices []*Device
-}
+func SyncDevicesFromServer(config *basenode.Config, ns *NodeSpecific) {
+	didChange := false
 
-func (c *Devices) ReadFromFile(filepath string) error {
-	configFile, err := os.Open(filepath)
+	serverDevs, err := fetchDevices(config, ns)
 	if err != nil {
-		return err
+		log.Println(err)
+		return
 	}
-
-	devices := make([]*Device, 0)
-	jsonParser := json.NewDecoder(configFile)
-	if err = jsonParser.Decode(&devices); err != nil {
-		return err
-	}
-
-	c.Devices = devices
-	return nil
-}
-
-func SyncDevicesFromServer(localDevs *Devices, serverDevs devices.Map) {
 
 outer:
 	for uuid, sdev := range serverDevs {
-		for _, v := range localDevs.Devices {
+		for _, v := range ns.Devices {
 			if v.UUID == uuid {
-				log.Printf("Already have device: %s. Do not add again.\n", sdev.Name)
+				if debug {
+					log.Printf("Already have device: %s. Do not add again.\n", sdev.Name)
+				}
 				continue outer
 			}
 		}
 
 		//Skip non controllable devices
-		if sdev.Type != "lamp" {
+		if sdev.Type != "lamp" && sdev.Type != "dimmableLamp" {
 			continue
 		}
 
 		//We dont have the device so we add it
+		baseURL := fmt.Sprintf("http://%s:%s/api/nodes/", config.Host, ns.Port)
 		dev := &Device{
 			Name: sdev.Name,
-			Id:   len(localDevs.Devices) + 1,
+			Id:   len(ns.Devices) + 1,
 			Url: &Url{
-				Level: "http://bulan.lan:8080/api/nodes/" + sdev.Node + "/cmd/level/" + sdev.Id + "/%f",
-				On:    "http://bulan.lan:8080/api/nodes/" + sdev.Node + "/cmd/on/" + sdev.Id,
-				Off:   "http://bulan.lan:8080/api/nodes/" + sdev.Node + "/cmd/off/" + sdev.Id,
+				Level: baseURL + sdev.Node + "/cmd/level/" + sdev.Id + "/%f",
+				On:    baseURL + sdev.Node + "/cmd/on/" + sdev.Id,
+				Off:   baseURL + sdev.Node + "/cmd/off/" + sdev.Id,
 			},
 			UUID: uuid,
 		}
 
-		localDevs.Devices = append(localDevs.Devices, dev)
+		didChange = true
+		ns.Devices = append(ns.Devices, dev)
 	}
 
+	//Dont save file if no new devices are found
+	if !didChange {
+		return
+	}
+
+	data, err := json.Marshal(ns)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	raw := json.RawMessage(data)
+	config.Node = &raw
+	basenode.SaveConfigToFile(config)
 }
 
-func fetchDevices() (devices.Map, error) {
+func fetchDevices(config *basenode.Config, ns *NodeSpecific) (devices.Map, error) {
 	//TODO use nodespecific config
-	resp, err := http.Get("http://192.168.13.1:8080/api/devices")
+	url := fmt.Sprintf("http://%s:%s/api/devices", config.Host, ns.Port)
+	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
@@ -179,4 +215,15 @@ func fetchDevices() (devices.Map, error) {
 	}
 	return devmap, nil
 
+}
+
+// WORKER that monitors the current connection state
+func monitorState(node *protocol.Node, connection basenode.Connection) {
+	for s := range connection.State() {
+		switch s {
+		case basenode.ConnectionStateConnected:
+			connection.Send(node.Node())
+		case basenode.ConnectionStateDisconnected:
+		}
+	}
 }
