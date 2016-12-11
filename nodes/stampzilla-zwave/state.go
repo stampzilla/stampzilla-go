@@ -8,7 +8,7 @@ import (
 )
 
 type Zwavenode struct {
-	Id      byte   `json:"id"`
+	Id      int    `json:"id"`
 	Brand   string `json:"brand"`
 	Product string `json:"product"`
 	Awake   bool   `json:"awake"`
@@ -49,7 +49,7 @@ func NewState() *State {
 	}
 }
 
-func (state *State) GetNode(address byte) *Zwavenode {
+func (state *State) GetNode(address int) *Zwavenode {
 	for _, v := range state.Nodes {
 		if v.Id == address {
 			return v

@@ -42,7 +42,7 @@ func main() { // {{{
 	err := config.NodeSpecific(&nc)
 	if err != nil {
 		log.Error(err)
-		return
+		//return
 	}
 
 	node = protocol.NewNode("lifx")

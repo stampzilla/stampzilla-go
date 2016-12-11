@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"strconv"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	log "github.com/cihub/seelog"
@@ -67,14 +68,34 @@ func main() {
 	// This worker recives all incomming commands
 	go serverRecv(node, connection)
 
+	<-time.After(time.Second) // TODO: Wait for node.Uuid_ to be populated
+
+	// Add all existing nodes to the state / device list
+	for _, znode := range z.Nodes.All() {
+		if znode.Id == 1 {
+			continue
+		}
+
+		state.Nodes = append(state.Nodes, newZwavenode(znode))
+		n := state.GetNode(znode.Id)
+		n.sync(znode)
+
+		addOrUpdateDevice(node, znode)
+	}
+	connection.Send(node.Node())
+
+	// Listen from events from the zwave-controller
 	for {
 		select {
 		case event := <-z.GetNextEvent():
 			log.Infof("Event: %#v", event)
 			switch e := event.(type) {
 			case events.NodeDiscoverd:
-				log.Infof("%#v", z.Nodes.Get(e.Address))
-				state.Nodes = append(state.Nodes, newZwavenode(z.Nodes.Get(e.Address)))
+				znode := z.Nodes.Get(e.Address)
+				log.Infof("%#v", znode)
+				if znode != nil {
+					state.Nodes = append(state.Nodes, newZwavenode(znode))
+				}
 
 			case events.NodeUpdated:
 				n := state.GetNode(e.Address)
@@ -96,33 +117,37 @@ func addOrUpdateDevice(node *protocol.Node, znode *nodes.Node) {
 		return
 	}
 
-	devid := strconv.Itoa(int(znode.Id))
+	log.Errorf("Endpoints: %#v", znode.Endpoints)
 
-	switch {
-	case znode.HasCommand(commands.SwitchMultilevel):
-		node.Devices().Add(&devices.Device{
-			Type:     "dimmableLamp",
-			Name:     znode.Device.Brand + " - " + znode.Device.Product + " (Address: " + devid + ")",
-			Id:       devid,
-			Online:   true,
-			Node:     node.Uuid(),
-			StateMap: map[string]string{
-			//TODO add state map
-			//"On": "Devices[" + devid + "]" + ".State.On",
-			},
-		})
-	case znode.HasCommand(commands.SwitchBinary):
-		node.Devices().Add(&devices.Device{
-			Type:     "lamp",
-			Name:     znode.Device.Brand + " - " + znode.Device.Product + " (Address: " + devid + ")",
-			Id:       devid,
-			Online:   true,
-			Node:     node.Uuid(),
-			StateMap: map[string]string{
-			//TODO add state map
-			//"On": "Devices[" + devid + "]" + ".State.On",
-			},
-		})
+	for i := 0; i < len(znode.Endpoints); i++ {
+		devid := strconv.Itoa(int(znode.Id) + (i * 1000))
+
+		switch {
+		case znode.HasCommand(commands.SwitchMultilevel):
+			node.Devices().Add(&devices.Device{
+				Type:     "dimmableLamp",
+				Name:     znode.Device.Brand + " - " + znode.Device.Product + " (Address: " + devid + ")",
+				Id:       devid,
+				Online:   true,
+				Node:     node.Uuid(),
+				StateMap: map[string]string{
+				//TODO add state map
+				//"On": "Devices[" + devid + "]" + ".State.On",
+				},
+			})
+		case znode.HasCommand(commands.SwitchBinary):
+			node.Devices().Add(&devices.Device{
+				Type:     "lamp",
+				Name:     znode.Device.Brand + " - " + znode.Device.Product + " (Address: " + devid + ")",
+				Id:       devid,
+				Online:   true,
+				Node:     node.Uuid(),
+				StateMap: map[string]string{
+				//TODO add state map
+				//"On": "Devices[" + devid + "]" + ".State.On",
+				},
+			})
+		}
 	}
 
 }
@@ -159,7 +184,22 @@ func processCommand(node *protocol.Node, connection basenode.Connection, cmd pro
 			return
 		}
 
-		device := s.zwave.Nodes.Get(byte(id))
+		var device gozwave.Controllable
+
+		endpoint := int(id / 1000)
+		id = id - (endpoint * 1000)
+
+		znode := s.zwave.Nodes.Get(id)
+		if znode == nil {
+			log.Error("Node not found")
+			return
+		}
+
+		if id < 1000 && len(znode.Endpoints) < 2 {
+			device = znode
+		} else {
+			device = znode.Endpoint(endpoint)
+		}
 
 		switch cmd.Cmd {
 		case "on":
