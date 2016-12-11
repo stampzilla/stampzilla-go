@@ -9,3 +9,7 @@ go get github.com/stampzilla/stampzilla-go/stampzilla
 sudo stampzilla install
 ```
 This creates a stampzilla user. checksout the code in stampzilla user home folder and creates some required folders. 
+
+### Documentation
+Is work in progress and can be found here:
+* [Docs](docs/README.md)
