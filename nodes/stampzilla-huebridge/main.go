@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/stampzilla/stampzilla-go/pkg/hueemulator"
@@ -58,7 +59,17 @@ func main() {
 	}
 
 	//TODO this works. But we need to save devices to json before uncommenting and enableing it!
+	log.Println("Syncing devices from server")
 	SyncDevicesFromServer(config, nodespecific)
+
+	go func() {
+		for range time.NewTicker(60 * time.Second).C {
+			if debug {
+				log.Println("Syncing devices from server")
+			}
+			SyncDevicesFromServer(config, nodespecific)
+		}
+	}()
 
 	//spew.Dump(config)
 
