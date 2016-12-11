@@ -24,7 +24,10 @@ func TestSensorDead(t *testing.T) {
 	sender := &senderStub{}
 	notify := notifier.New(sender)
 	sm := New(notify)
-	sm.MonitorSensors = []int{10}
+	sm.MonitorSensors = []SensorConfig{SensorConfig{
+		Id:   10,
+		Name: "Tio",
+	}}
 	sm.Start()
 
 	sm.Alive(10)
@@ -39,7 +42,10 @@ func TestSensorNotDead(t *testing.T) {
 	sender := &senderStub{}
 	notify := notifier.New(sender)
 	sm := New(notify)
-	sm.MonitorSensors = []int{10}
+	sm.MonitorSensors = []SensorConfig{SensorConfig{
+		Id:   10,
+		Name: "Tio",
+	}}
 	sm.Start()
 
 	sm.Alive(10)
@@ -54,7 +60,10 @@ func TestNotificationSendOnlyOnce(t *testing.T) {
 	sender := &senderStub{}
 	notify := notifier.New(sender)
 	sm := New(notify)
-	sm.MonitorSensors = []int{10}
+	sm.MonitorSensors = []SensorConfig{SensorConfig{
+		Id:   10,
+		Name: "Tio",
+	}}
 	sm.Start()
 
 	sm.Alive(10)
