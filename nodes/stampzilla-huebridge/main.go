@@ -144,6 +144,7 @@ type Device struct {
 }
 
 func SyncDevicesFromServer(config *basenode.Config, ns *NodeSpecific) {
+	didChange := false
 
 	serverDevs, err := fetchDevices(config, ns)
 	if err != nil {
@@ -180,7 +181,13 @@ outer:
 			UUID: uuid,
 		}
 
+		didChange = true
 		ns.Devices = append(ns.Devices, dev)
+	}
+
+	//Dont save file if no new devices are found
+	if !didChange {
+		return
 	}
 
 	data, err := json.Marshal(ns)
