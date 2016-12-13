@@ -27935,7 +27935,7 @@ module.exports = Array.isArray || function (arr) {
 						var pkg = {
 							type: 'nodes/cmd',
 							data: {
-								'cmd': 'stampzilla-device-on',
+								'cmd': 'on',
 								'args': [
 									this.device.id
 								]
@@ -27946,7 +27946,7 @@ module.exports = Array.isArray || function (arr) {
 						var pkg = {
 							type: 'nodes/cmd',
 							data: {
-								'cmd': 'stampzilla-device-off',
+								'cmd': 'off',
 								'args': [
 									this.device.id
 								]
@@ -27984,12 +27984,19 @@ module.exports = Array.isArray || function (arr) {
 			:host {
 				@apply(--layout-horizontal);
 			    @apply(--layout-wrap);
+			    @apply(--layout-baseline);
 			}
 
-			:host > .name {
+			:host > .body {
 				@apply(--layout-flex);
-				@apply(--layout-horizontal);
-    			@apply(--layout-center);
+				@apply(--layout-vertical);
+    			@apply(--layout-start);
+			}
+
+			:host > .body > paper-slider {
+				margin-left:-15px;
+				margin-right:-15px;
+				width: 100%;
 			}
 
 			:host > paper-toggle-button {
@@ -28025,9 +28032,12 @@ module.exports = Array.isArray || function (arr) {
 			</div>
 		</paper-dialog>
 
-		<paper-icon-button id="open" icon="lightbulb-outline" title="Click to open settings"></paper-icon-button>
-		<div class="name">[[device.name]]</div>
-		<paper-toggle-button id="toggle" disabled="[[!device.online]]" checked="{{value}}"></paper-toggle-button>
+			<paper-icon-button id="open" icon="lightbulb-outline" title="Click to open settings"></paper-icon-button>
+			<div class="body">
+				<div class="name">[[device.name]]</div>
+				<paper-slider class="level" pin="" value="{{level}}"></paper-slider>
+			</div>
+			<paper-toggle-button id="toggle" disabled="[[!device.online]]" checked="{{value}}"></paper-toggle-button>
 	</template>
 
 	<script>
@@ -28048,12 +28058,17 @@ module.exports = Array.isArray || function (arr) {
 					value: {
 						type: Boolean,
 						notify: true
+					},
+					level: {
+						type: Number,
+						notify: true,
+						observer: 'changeLevel'
 					}
 				},
 				listeners: {
         			'open.click': 'openDialog',
 					'settings.click': 'toggleSettings',
-					'toggle.change': 'toggleValue'
+					'toggle.change': 'toggleValue',
 				},
 
 				stateChanged: function() {
@@ -28064,7 +28079,7 @@ module.exports = Array.isArray || function (arr) {
 						var pkg = {
 							type: 'nodes/cmd',
 							data: {
-								'cmd': 'stampzilla-device-on',
+								'cmd': 'on',
 								'args': [
 									this.device.id
 								]
@@ -28075,7 +28090,7 @@ module.exports = Array.isArray || function (arr) {
 						var pkg = {
 							type: 'nodes/cmd',
 							data: {
-								'cmd': 'stampzilla-device-off',
+								'cmd': 'off',
 								'args': [
 									this.device.id
 								]
@@ -28083,6 +28098,21 @@ module.exports = Array.isArray || function (arr) {
 							to: this.device.node,
 						};
 					}
+
+					app.fire('ws-send', pkg);
+				}, 
+				changeLevel: function() {
+					var pkg = {
+						type: 'nodes/cmd',
+						data: {
+							'cmd': 'level',
+							'args': [
+								this.device.id,
+								this.level.toString()
+							]
+						}, 
+						to: this.device.node,
+					};
 
 					app.fire('ws-send', pkg);
 				}, 
