@@ -76,7 +76,8 @@ func main() {
 			continue
 		}
 
-		state.Nodes = append(state.Nodes, newZwavenode(znode))
+		//state.Nodes = append(state.Nodes, newZwavenode(znode))
+		state.Nodes[strconv.Itoa(znode.Id)] = newZwavenode(znode)
 		n := state.GetNode(znode.Id)
 		n.sync(znode)
 
@@ -94,7 +95,7 @@ func main() {
 				znode := z.Nodes.Get(e.Address)
 				log.Infof("%#v", znode)
 				if znode != nil {
-					state.Nodes = append(state.Nodes, newZwavenode(znode))
+					state.Nodes[strconv.Itoa(znode.Id)] = newZwavenode(znode)
 				}
 
 			case events.NodeUpdated:
@@ -121,30 +122,35 @@ func addOrUpdateDevice(node *protocol.Node, znode *nodes.Node) {
 
 	for i := 0; i < len(znode.Endpoints); i++ {
 		devid := strconv.Itoa(int(znode.Id) + (i * 1000))
+		endpoint := ""
+		if i > 0 {
+			endpoint = strconv.Itoa(i)
+		}
 
 		switch {
 		case znode.HasCommand(commands.SwitchMultilevel):
 			node.Devices().Add(&devices.Device{
-				Type:     "dimmableLamp",
-				Name:     znode.Device.Brand + " - " + znode.Device.Product + " (Address: " + devid + ")",
-				Id:       devid,
-				Online:   true,
-				Node:     node.Uuid(),
+				Type:   "dimmableLamp",
+				Name:   znode.Device.Brand + " - " + znode.Device.Product + " (Address: " + devid + ")",
+				Id:     devid,
+				Online: true,
+				Node:   node.Uuid(),
 				StateMap: map[string]string{
-				//TODO add state map
-				//"On": "Devices[" + devid + "]" + ".State.On",
+					//TODO add state map
+					"On":    "Nodes[" + strconv.Itoa(int(znode.Id)) + "]" + ".StateBool.On" + endpoint,
+					"Level": "Nodes[" + strconv.Itoa(int(znode.Id)) + "]" + ".StateFloat.Level" + endpoint,
 				},
 			})
 		case znode.HasCommand(commands.SwitchBinary):
 			node.Devices().Add(&devices.Device{
-				Type:     "lamp",
-				Name:     znode.Device.Brand + " - " + znode.Device.Product + " (Address: " + devid + ")",
-				Id:       devid,
-				Online:   true,
-				Node:     node.Uuid(),
+				Type:   "lamp",
+				Name:   znode.Device.Brand + " - " + znode.Device.Product + " (Address: " + devid + ")",
+				Id:     devid,
+				Online: true,
+				Node:   node.Uuid(),
 				StateMap: map[string]string{
-				//TODO add state map
-				//"On": "Devices[" + devid + "]" + ".State.On",
+					//TODO add state map
+					"On": "Nodes[" + strconv.Itoa(int(znode.Id)) + "]" + ".StateBool.On" + endpoint,
 				},
 			})
 		}

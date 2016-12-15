@@ -28019,6 +28019,11 @@ module.exports = Array.isArray || function (arr) {
 			:host.disabled {
 				color: #ccc;
 			}
+
+			paper-slider {
+				--paper-slider-active-color: transparent;
+				--paper-slider-secondary-color: var(--google-blue-700);
+			}
 		</style>
 		<paper-dialog entry-animation="fade-in-animation" exit-animation="fade-out-animation" id="dialog" with-backdrop="true">
 			<div id="header">
@@ -28035,7 +28040,8 @@ module.exports = Array.isArray || function (arr) {
 			<paper-icon-button id="open" icon="lightbulb-outline" title="Click to open settings"></paper-icon-button>
 			<div class="body">
 				<div class="name">[[device.name]]</div>
-				<paper-slider class="level" pin="" value="{{level}}"></paper-slider>
+				<paper-slider class="level" pin="" on-immediate-value-change="handleSlide" on-change="handleSlideEnd" immediatevalue="{{immediateValue}}" value="[[level]]" secondary-progress="[[secondaryLevel]]">
+				&gt;</paper-slider>
 			</div>
 			<paper-toggle-button id="toggle" disabled="[[!device.online]]" checked="{{value}}"></paper-toggle-button>
 	</template>
@@ -28061,8 +28067,7 @@ module.exports = Array.isArray || function (arr) {
 					},
 					level: {
 						type: Number,
-						notify: true,
-						observer: 'changeLevel'
+						notify: true
 					}
 				},
 				listeners: {
@@ -28072,7 +28077,9 @@ module.exports = Array.isArray || function (arr) {
 				},
 
 				stateChanged: function() {
+					console.log(this.state);
 					this.value = this.state.On;
+					this.secondaryLevel = this.state.Level;
 				}, 
 				toggleValue: function() {
 					if (this.value) {
@@ -28101,24 +28108,7 @@ module.exports = Array.isArray || function (arr) {
 
 					app.fire('ws-send', pkg);
 				}, 
-				changeLevel: function() {
-					var pkg = {
-						type: 'nodes/cmd',
-						data: {
-							'cmd': 'level',
-							'args': [
-								this.device.id,
-								this.level.toString()
-							]
-						}, 
-						to: this.device.node,
-					};
-
-					app.fire('ws-send', pkg);
-				}, 
 				deviceChanged: function() {
-					//console.log(this.device);
-
 					if (this.device.online) {
 						this.classList.remove('disabled')
 					} else {
@@ -28131,6 +28121,26 @@ module.exports = Array.isArray || function (arr) {
 				},
 				toggleSettings: function() {
 					this.$.collapse.toggle();
+				},
+				ready: function() {
+					this.set('level',this.secondaryLevel);
+				},
+				handleSlide: function(e) {
+				},
+				handleSlideEnd: function(e) {
+					var pkg = {
+						type: 'nodes/cmd',
+						data: {
+							'cmd': 'level',
+							'args': [
+								this.device.id,
+								e.target.immediateValue.toString()
+							]
+						}, 
+						to: this.device.node,
+					};
+
+					app.fire('ws-send', pkg);
 				}
 			});
 		})();
