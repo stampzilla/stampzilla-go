@@ -70,6 +70,14 @@ func (m Map) Add(dev *Device) {
 	//map[string]*Device(*m)[dev.Id] = dev
 }
 
+// Exists return true if device id exists in the map
+func (m Map) Exists(id string) bool {
+	if _, ok := m[id]; ok {
+		return true
+	}
+	return false
+}
+
 func path(state interface{}, jp string) (interface{}, error) {
 	if jp == "" {
 		return nil, errors.New("invalid path")
