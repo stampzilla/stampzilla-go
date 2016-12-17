@@ -95,7 +95,7 @@ func main() {
 			Online: true,
 			Node:   config.Uuid,
 			StateMap: map[string]string{
-				"On": "Devices[" + dev.Id + "]" + ".State.On",
+				"on": "Devices[" + dev.Id + "]" + ".State.On",
 			},
 		})
 	}
@@ -109,8 +109,8 @@ func main() {
 			Online: true,
 			Node:   config.Uuid,
 			StateMap: map[string]string{
-				"Temp":     "Sensors[" + id + "]" + ".Temp",
-				"Humidity": "Sensors[" + id + "]" + ".Humidity",
+				"temp":     "Sensors[" + id + "]" + ".Temp",
+				"humidity": "Sensors[" + id + "]" + ".Humidity",
 			},
 		}
 	}
