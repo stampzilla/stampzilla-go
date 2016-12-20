@@ -44,6 +44,7 @@ func (ns *NodeServer) Start() {
 	}
 
 	ns.Logic.RestoreRulesFromFile("rules.json")
+	ns.Devices.RestoreFromFile("devices.json")
 	ns.addServerNode()
 
 	//return

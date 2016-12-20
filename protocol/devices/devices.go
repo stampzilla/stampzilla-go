@@ -26,6 +26,7 @@ type Device struct {
 	Online   bool                   `json:"online"`
 	StateMap map[string]string      `json:"stateMap,omitempty"`
 	State    map[string]interface{} `json:"state,omitempty"`
+	Tags     []string               `json:"tags"`
 }
 
 // NewDevice returns a new Device

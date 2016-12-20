@@ -113,6 +113,7 @@
         			'open.click': 'openDialog',
 					'settings.click': 'toggleSettings',
 					'toggle.change': 'toggleValue',
+					'stampzilla-dialog-dismiss': 'closeDialog'
 				},
 
 				stateChanged: function() {
@@ -157,6 +158,10 @@
 				},
 				openDialog: function() {
 					this.$.dialog.open();
+				},
+				closeDialog: function(e) {
+					this.$.dialog.close();
+					this.$.collapse.hide();
 				},
 				toggleSettings: function() {
 					this.$.collapse.toggle();

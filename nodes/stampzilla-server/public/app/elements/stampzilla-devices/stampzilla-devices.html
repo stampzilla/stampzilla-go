@@ -59,7 +59,7 @@
 					var devices = this._toArray(this.devices);
 					devices.forEach(function(row) {
 						var device = row.devices;
-						if ( device.tags !== undefined ) {
+						if ( device.tags !== undefined && device.tags !== null ) {
 							device.tags.forEach(function(tag) {
 								tag = '#' + tag;
 								if ( cards[tag] === undefined ) {
@@ -69,7 +69,7 @@
 							});
 						}
 
-						if ( device.tags === undefined || device.tags.length === 0) {
+						if ( device.tags === undefined || device.tags === null || device.tags.length === 0) {
 							var tag = 'No tags specified';
 							if ( cards[tag] === undefined ) {
 								cards[tag] = [];

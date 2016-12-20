@@ -1,7 +1,12 @@
 package protocol
 
 import (
+	"bytes"
+	"encoding/json"
+	"os"
 	"sync"
+
+	log "github.com/cihub/seelog"
 
 	"github.com/stampzilla/stampzilla-go/protocol/devices"
 )
@@ -55,7 +60,15 @@ func (n *Devices) AllWithState(nodes *Nodes) devices.Map {
 func (n *Devices) Add(nodeUuid string, device *devices.Device) error {
 	n.Lock()
 	defer n.Unlock()
+
+	if dev, ok := n.devices[nodeUuid+"."+device.Id]; ok {
+		// Save name and tags
+		device.Name = dev.Name
+		device.Tags = dev.Tags
+	}
+
 	n.devices[nodeUuid+"."+device.Id] = device
+
 	return nil
 }
 func (n *Devices) Delete(uuid string) {
@@ -78,4 +91,52 @@ func (n *Devices) SetOfflineByNode(nodeUUID string) (list []*devices.Device) {
 	}
 
 	return
+}
+
+func (n *Devices) SaveToFile(path string) {
+	configFile, err := os.Create(path)
+	if err != nil {
+		log.Error("creating config file", err.Error())
+		return
+	}
+	var out bytes.Buffer
+	b, err := json.Marshal(n.devices)
+	if err != nil {
+		log.Error("error marshal json", err)
+	}
+	json.Indent(&out, b, "", "\t")
+	out.WriteTo(configFile)
+}
+
+func (n *Devices) RestoreFromFile(path string) {
+	configFile, err := os.Open(path)
+	if err != nil {
+		log.Warn("opening config file", err.Error())
+		return
+	}
+
+	type localDevice struct {
+		Type string   `json:"type"`
+		Node string   `json:"node"`
+		ID   string   `json:"id"`
+		Name string   `json:"name"`
+		Tags []string `json:"tags"`
+	}
+
+	var devs map[string]*localDevice
+	jsonParser := json.NewDecoder(configFile)
+	if err = jsonParser.Decode(&devs); err != nil {
+		log.Error(err)
+	}
+
+	for _, v := range devs {
+		n.Add(v.Node, &devices.Device{
+			Type:   v.Type,
+			Node:   v.Node,
+			Id:     v.ID,
+			Online: false,
+			Name:   v.Name,
+			Tags:   v.Tags,
+		})
+	}
 }

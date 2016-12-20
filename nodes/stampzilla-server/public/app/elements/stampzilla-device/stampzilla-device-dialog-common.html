@@ -1,4 +1,4 @@
-
+<link rel="import" href="../../bower_components/iron-form/iron-form.html">
 
 <dom-module id="stampzilla-device-dialog-common">
 	<template>
@@ -9,9 +9,11 @@
 			}
 
 		</style>
-
-			<paper-input label="Name" value="{{device.name}}"></paper-input>
-			<paper-input label="Tags (space sepparated)"></paper-input>
+		<form is="iron-form" id="form">
+			<paper-input label="Name" name="name" value="[[device.name]]"></paper-input>
+			<paper-input label="Tags (space sepparated)" name="tags" value="[[device.tags]]"></paper-input>
+			<paper-button id="save" raised><iron-icon icon="icons:save"></iron-icon> Save</paper-button>
+		</form>
 	</template>
 
 	<script>
@@ -26,7 +28,27 @@
 					}
 				},
 				deviceChanged: function() {
-					//console.log(this.device);
+					// console.log(this.device);
+				},
+				listeners: {
+					'save.click': 'save',
+					'form.iron-form-presubmit': 'presubmit'
+				},
+				presubmit: function(event) {
+					event.preventDefault();
+
+					var pkg = {
+						type: 'devices/set',
+						data: this.$.form.serialize()
+					};
+					pkg.data.uuid = this.device.node+"."+this.device.id;
+
+					app.fire('ws-send', pkg);
+
+					this.fire('stampzilla-dialog-dismiss')
+				},
+				save: function() {
+					this.$.form.submit();
 				}
 			});
 		})();
