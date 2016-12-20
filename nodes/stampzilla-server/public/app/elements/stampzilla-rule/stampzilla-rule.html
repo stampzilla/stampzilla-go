@@ -6,6 +6,7 @@
 
 			margin-bottom:10px;
 			padding:1em;
+			background: #fff;
 		}
 
 		:host:hover {
@@ -38,31 +39,30 @@
 		}
 	</style>
 	<template>
-		<paper-shadow z="1"></paper-shadow>
-		<div class="layout horizontal title">
-			<div id="title"><paper-toggle-button checked disabled></paper-toggle-button></div>
-			<div id="title" class="flex">{{data.name}}</div>
-			<div><paper-button raised id="trigger1" uuid="[[data.uuid]]">Run Enter</paper-button></div>
-			<div><paper-button raised id="trigger2" uuid="[[data.uuid]]">Run Exit</paper-button></div>
-		</div>
-		<div>
-			<template is="dom-repeat" items="{{data.commands}}" as="item" index-as="i">
-				<div class="horizontal layout row">
-					<template is="dom-if" if="{{item.command}}">
-						<div class="cell"></div>
-						<div class="cell"><iron-icon icon="icons:send"></iron-icon></div>
-						<div class="cell"><span>[[item.uuid]]</span>:<span>[[item.command.cmd]]</span></div>
-						<div class="cell args flex"><div>[[item.command.args]]</div></div>
-					</template>
-					<template is="dom-if" if="{{item.pause}}">
-						<div class="cell"></div>
-						<div class="cell"><iron-icon icon="image:timer"></iron-icon></div>
-						<div class="cell">[[item.pause]]</div>
-						<div class="cell flex"></div>
-					</template>
-				</div>
-			</template>
-		</div>
+			<div class="layout horizontal title">
+				<div id="title"><paper-toggle-button checked disabled></paper-toggle-button></div>
+				<div id="title" class="flex">{{data.name}}</div>
+				<div><paper-button raised id="trigger1" uuid="[[data.uuid]]">Run Enter</paper-button></div>
+				<div><paper-button raised id="trigger2" uuid="[[data.uuid]]">Run Exit</paper-button></div>
+			</div>
+			<div>
+				<template is="dom-repeat" items="{{data.commands}}" as="item" index-as="i">
+					<div class="horizontal layout row">
+						<template is="dom-if" if="{{item.command}}">
+							<div class="cell"></div>
+							<div class="cell"><iron-icon icon="icons:send"></iron-icon></div>
+							<div class="cell"><span>[[item.uuid]]</span>:<span>[[item.command.cmd]]</span></div>
+							<div class="cell args flex"><div>[[item.command.args]]</div></div>
+						</template>
+						<template is="dom-if" if="{{item.pause}}">
+							<div class="cell"></div>
+							<div class="cell"><iron-icon icon="image:timer"></iron-icon></div>
+							<div class="cell">[[item.pause]]</div>
+							<div class="cell flex"></div>
+						</template>
+					</div>
+				</template>
+			</div>
 	</template>
 	<script>
 		(function () {
