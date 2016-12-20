@@ -117,9 +117,13 @@
 				},
 
 				stateChanged: function() {
-					console.log(this.state);
+					// console.log(this.state);
 					this.value = this.state.on;
 					this.secondaryLevel = this.state.level;
+
+					if ( this.sliding === undefined || this.sliding === false ) {
+						this.level = this.secondaryLevel;
+					}
 				}, 
 				toggleValue: function() {
 					if (this.value) {
@@ -170,6 +174,7 @@
 					this.set('level',this.secondaryLevel);
 				},
 				handleSlide: function(e) {
+					this.sliding = true;
 				},
 				handleSlideEnd: function(e) {
 					var pkg = {
@@ -185,6 +190,8 @@
 					};
 
 					app.fire('ws-send', pkg);
+
+					this.sliding = false;
 				}
 			});
 		})();
