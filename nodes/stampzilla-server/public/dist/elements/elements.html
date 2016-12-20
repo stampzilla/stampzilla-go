@@ -28663,7 +28663,7 @@ module.exports = Array.isArray || function (arr) {
 				},
 
 				stateChanged: function() {
-					this.value = this.state.On;
+					this.value = this.state.on;
 				}, 
 				toggleValue: function() {
 					if (this.value) {
@@ -28813,8 +28813,8 @@ module.exports = Array.isArray || function (arr) {
 
 				stateChanged: function() {
 					console.log(this.state);
-					this.value = this.state.On;
-					this.secondaryLevel = this.state.Level;
+					this.value = this.state.on;
+					this.secondaryLevel = this.state.level;
 				}, 
 				toggleValue: function() {
 					if (this.value) {

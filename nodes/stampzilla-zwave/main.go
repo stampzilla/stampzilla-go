@@ -127,6 +127,11 @@ func addOrUpdateDevice(node *protocol.Node, znode *nodes.Node) {
 			endpoint = strconv.Itoa(i)
 		}
 
+		//Dont add if it already exists
+		if node.Devices().Exists(devid) {
+			return
+		}
+
 		switch {
 		case znode.HasCommand(commands.SwitchMultilevel):
 			node.Devices().Add(&devices.Device{
@@ -136,9 +141,8 @@ func addOrUpdateDevice(node *protocol.Node, znode *nodes.Node) {
 				Online: true,
 				Node:   node.Uuid(),
 				StateMap: map[string]string{
-					//TODO add state map
-					"On":    "Nodes[" + strconv.Itoa(int(znode.Id)) + "]" + ".StateBool.On" + endpoint,
-					"Level": "Nodes[" + strconv.Itoa(int(znode.Id)) + "]" + ".StateFloat.Level" + endpoint,
+					"on":    "Nodes[" + strconv.Itoa(int(znode.Id)) + "]" + ".stateBool.on" + endpoint,
+					"level": "Nodes[" + strconv.Itoa(int(znode.Id)) + "]" + ".stateFloat.level" + endpoint,
 				},
 			})
 		case znode.HasCommand(commands.SwitchBinary):
@@ -149,8 +153,7 @@ func addOrUpdateDevice(node *protocol.Node, znode *nodes.Node) {
 				Online: true,
 				Node:   node.Uuid(),
 				StateMap: map[string]string{
-					//TODO add state map
-					"On": "Nodes[" + strconv.Itoa(int(znode.Id)) + "]" + ".StateBool.On" + endpoint,
+					"on": "Nodes[" + strconv.Itoa(int(znode.Id)) + "]" + ".stateBool.on" + endpoint,
 				},
 			})
 		}

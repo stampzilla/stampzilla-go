@@ -8,21 +8,22 @@ import (
 	"github.com/stampzilla/gozwave/nodes"
 )
 
+// Zwavenode is the node visible to the outside world through stampzilla-server
 type Zwavenode struct {
-	Id      int    `json:"id"`
+	ID      int    `json:"id"`
 	Brand   string `json:"brand"`
 	Product string `json:"product"`
 	Awake   bool   `json:"awake"`
 
-	StateFloat map[string]float64
-	StateBool  map[string]bool
+	StateFloat map[string]float64 `json:"stateFloat"`
+	StateBool  map[string]bool    `json:"stateBool"`
 
 	node *nodes.Node
 }
 
 func newZwavenode(znode *nodes.Node) *Zwavenode {
 	z := &Zwavenode{
-		Id:         znode.Id,
+		ID:         znode.Id,
 		StateFloat: make(map[string]float64),
 		StateBool:  make(map[string]bool),
 		node:       znode,
