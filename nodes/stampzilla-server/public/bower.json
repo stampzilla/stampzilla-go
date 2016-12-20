@@ -2,18 +2,25 @@
   "name": "polymer-starter-kit",
   "private": true,
   "dependencies": {
-    "iron-elements": "PolymerElements/iron-elements#^1.0.10",
-    "neon-elements": "PolymerElements/neon-elements#^1.0.0",
-    "page": "visionmedia/page.js#~1.6.4",
-    "paper-elements": "PolymerElements/paper-elements#^1.0.7",
-    "platinum-elements": "PolymerElements/platinum-elements#^1.2.0",
-    "polymer": "Polymer/polymer#^1.4.0",
-    "reconnectingWebsocket": "*",
-    "x-json": "*",
-    "time-element": "*"
+    "iron-elements": "^1.0.10",
+    "neon-elements": "^1.0.0",
+    "page": "^1.7.1",
+    "paper-elements": "^1.0.7",
+    "platinum-elements": "^2.0.0",
+    "polymer": "^1.7.1",
+    "reconnectingWebsocket": "^1.0.0",
+    "x-json": "^0.2.3",
+    "time-element": "^1.0.1"
   },
   "devDependencies": {
-    "web-component-tester": "^4.0.0"
+    "web-component-tester": "^5.0.0"
   },
-  "ignore": []
+  "ignore": [],
+  "resolutions": {
+    "page": "^1.7.1",
+    "platinum-elements": "^2.0.0",
+    "platinum-bluetooth": "^2.0.0",
+    "web-component-tester": "^5.0.0",
+    "mocha": "^3.1.2"
+  }
 }
