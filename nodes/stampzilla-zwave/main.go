@@ -8,7 +8,6 @@ import (
 	"github.com/Sirupsen/logrus"
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/gozwave"
-	"github.com/stampzilla/gozwave/commands"
 	"github.com/stampzilla/gozwave/events"
 	"github.com/stampzilla/gozwave/nodes"
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
@@ -93,9 +92,13 @@ func main() {
 			switch e := event.(type) {
 			case events.NodeDiscoverd:
 				znode := z.Nodes.Get(e.Address)
-				log.Infof("%#v", znode)
+				//spew.Dump(znode)
 				if znode != nil {
-					state.Nodes[strconv.Itoa(znode.Id)] = newZwavenode(znode)
+					n := newZwavenode(znode)
+					state.Nodes[strconv.Itoa(znode.Id)] = n
+
+					addOrUpdateDevice(node, znode) // Device management
+					n.sync(znode)                  // State management
 				}
 
 			case events.NodeUpdated:
@@ -103,8 +106,8 @@ func main() {
 				if n != nil {
 					znode := z.Nodes.Get(e.Address)
 
-					addOrUpdateDevice(node, znode)
-					n.sync(znode)
+					addOrUpdateDevice(node, znode) // Device management
+					n.sync(znode)                  // State management
 				}
 			}
 
@@ -133,7 +136,9 @@ func addOrUpdateDevice(node *protocol.Node, znode *nodes.Node) {
 		}
 
 		switch {
-		case znode.HasCommand(commands.SwitchMultilevel):
+		case znode.IsDeviceClass(gozwave.GENERIC_TYPE_SWITCH_MULTILEVEL,
+			gozwave.SPECIFIC_TYPE_POWER_SWITCH_MULTILEVEL):
+			//znode.HasCommand(commands.SwitchMultilevel):
 			node.Devices().Add(&devices.Device{
 				Type:   "dimmableLamp",
 				Name:   znode.Device.Brand + " - " + znode.Device.Product + " (Address: " + devid + ")",
@@ -145,7 +150,9 @@ func addOrUpdateDevice(node *protocol.Node, znode *nodes.Node) {
 					"level": "Nodes[" + strconv.Itoa(int(znode.Id)) + "]" + ".stateFloat.level" + endpoint,
 				},
 			})
-		case znode.HasCommand(commands.SwitchBinary):
+		//case znode.HasCommand(commands.SwitchBinary):
+		case znode.IsDeviceClass(gozwave.GENERIC_TYPE_SWITCH_BINARY,
+			gozwave.SPECIFIC_TYPE_POWER_SWITCH_BINARY):
 			node.Devices().Add(&devices.Device{
 				Type:   "lamp",
 				Name:   znode.Device.Brand + " - " + znode.Device.Product + " (Address: " + devid + ")",
