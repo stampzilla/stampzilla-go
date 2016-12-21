@@ -135,6 +135,36 @@ func addOrUpdateDevice(node *protocol.Node, znode *nodes.Node) {
 			return
 		}
 
+		node.Config().Add(devid).Layout(
+			&protocol.DeviceConfig{
+				ID:   "46",
+				Name: "LOAD ERROR Alarmreport",
+				Options: map[string]string{
+					"0": "No reaction",
+					"1": "Send an alarm frame",
+				},
+			},
+			&protocol.DeviceConfig{
+				ID:   "47",
+				Name: "Ignorera",
+				Type: "bool",
+			},
+			&protocol.DeviceConfig{
+				ID:   "47",
+				Name: "Ignorera",
+				Type: "float",
+				Min:  0,
+				Max:  99,
+			},
+		).Handler(func(device devices.Device, c *protocol.DeviceConfig) {
+			//save c....
+			//switch c.ID {
+			//case "46": // Dimvärde:
+			////znode.SetParameter(46, c.Value)
+			//}
+			logrus.Warnf("Got config update: %s = %s", c.ID, c.Value)
+		})
+
 		switch {
 		case znode.IsDeviceClass(gozwave.GENERIC_TYPE_SWITCH_MULTILEVEL,
 			gozwave.SPECIFIC_TYPE_POWER_SWITCH_MULTILEVEL):

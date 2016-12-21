@@ -154,6 +154,7 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 
 				existingNode.SetState(node.State())
 				existingNode.SetDevices(node.Devices())
+				existingNode.SetConfig(node.Config())
 				ns.updateState(logicChannel, existingNode)
 				ns.syncDevices(existingNode.Devices(), node)
 

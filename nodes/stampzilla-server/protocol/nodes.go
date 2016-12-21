@@ -19,8 +19,11 @@ type Node interface {
 	SetState(interface{})
 	State() interface{}
 
-	SetDevices(devices.Map)
 	Devices() devices.Map
+	SetDevices(devices.Map)
+
+	Config() *protocol.ConfigMap
+	SetConfig(*protocol.ConfigMap)
 
 	SetElements([]*protocol.Element)
 	Elements() []*protocol.Element

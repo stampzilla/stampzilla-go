@@ -18,18 +18,26 @@ type Node struct {
 	Elements_ []*Element  `json:"Elements"`
 	State_    interface{} `json:"State"`
 	Devices_  devices.Map `json:"Devices"`
+	Config_   *ConfigMap  `json:"config"`
 	sync.RWMutex
 }
 
 func NewNode(name string) *Node {
-	return &Node{
+	n := &Node{
 		Name_:     name,
 		Version:   "-",
 		Actions:   []*Action{},
 		Elements_: []*Element{},
 		Layout:    []*Layout{},
 		Devices_:  make(devices.Map),
+		Config_: &ConfigMap{
+			Config: make(map[string]*DeviceConfigMap),
+		},
 	}
+
+	n.Config_.node = n
+
+	return n
 }
 
 func (n *Node) AddAction(id, name string, args []string) {
@@ -67,6 +75,17 @@ func (n *Node) Devices() devices.Map {
 func (n *Node) SetDevices(devices devices.Map) {
 	n.Lock()
 	n.Devices_ = devices
+	n.Unlock()
+}
+
+func (n *Node) Config() *ConfigMap {
+	n.RLock()
+	defer n.RUnlock()
+	return n.Config_
+}
+func (n *Node) SetConfig(c *ConfigMap) {
+	n.Lock()
+	n.Config_ = c
 	n.Unlock()
 }
 
@@ -119,4 +138,8 @@ func (n *Node) JsonEncode() (string, error) {
 		return "", err
 	}
 	return string(ret), nil
+}
+
+type Identifiable interface {
+	Uuid() string
 }
