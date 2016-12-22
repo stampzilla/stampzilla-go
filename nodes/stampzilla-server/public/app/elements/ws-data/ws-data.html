@@ -57,6 +57,7 @@
 						type: Array,
 						value:[],
 						notify: true,
+						observer: 'nodesChanged'
 					},
 					actions: {
 						type: Array,
@@ -82,6 +83,7 @@
 						type: Object,
 						value:{},
 						notify: true,
+						observer: 'devicesChanged'
 					},
 
 					message: {
@@ -249,6 +251,35 @@
 					}
 					window.localStorage.setItem('stampzilla-url', /** @type {string} */ (this.newUrl));
 					this.url = this.newUrl;
+				},
+				nodesChanged: function() {
+					this.syncConfigBetweenNodesAndDevices();
+				},
+				devicesChanged: function() {
+					this.syncConfigBetweenNodesAndDevices();
+				},
+				syncConfigBetweenNodesAndDevices: function() {
+					if ( !(this.devices instanceof Object) ) {
+						return;
+					}
+					for (var prop in this.devices) {
+						if(!this.devices.hasOwnProperty(prop)) continue;
+
+						var dev = this.devices[prop];
+
+						var self = this;
+						this.nodes.forEach(function(el,index){
+							if ( el.Uuid === dev.node ) {
+								for (var prop2 in el.config.config) {
+									if ( !el.config.config.hasOwnProperty(prop2) ) continue;
+									if ( prop2 !== prop ) continue;
+
+									var cfg = el.config.config[prop2];
+									self.devices[prop]['config'] = cfg.layout;
+								}
+							}
+						});
+					};
 				}
 			});
 		})();
