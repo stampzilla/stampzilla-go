@@ -15932,6 +15932,7 @@ this.fire('dom-change');
         position: relative;
         padding: 8px;
         outline: none;
+        -webkit-tap-highlight-color: rgba(0,0,0,0);
         -webkit-user-select: none;
         -moz-user-select: none;
         -ms-user-select: none;
@@ -15942,10 +15943,6 @@ this.fire('dom-change');
 
         width: 40px;
         height: 40px;
-
-        /* NOTE: Both values are needed, since some phones require the value to be `transparent`. */
-        -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-        -webkit-tap-highlight-color: transparent;
 
         /* Because of polymer/2558, this style has lower specificity than * */
         box-sizing: border-box !important;
@@ -16030,24 +16027,666 @@ this.fire('dom-change');
     });
   </script>
 </dom-module>
-
-
 <script>
-  /** @polymerBehavior Polymer.PaperItemBehavior */
-  Polymer.PaperItemBehaviorImpl = {
-    hostAttributes: {
-      role: 'option',
-      tabindex: '0'
-    }
-  };
-
-  /** @polymerBehavior */
-  Polymer.PaperItemBehavior = [
-    Polymer.IronButtonState,
-    Polymer.IronControlState,
-    Polymer.PaperItemBehaviorImpl
-  ];
+  console.warn('This file is deprecated. Please use `iron-flex-layout/iron-flex-layout-classes.html`, and one of the specific dom-modules instead');
 </script>
+
+<style>
+
+  /*******************************
+            Flex Layout
+  *******************************/
+
+  html /deep/ .layout.horizontal,
+  html /deep/ .layout.horizontal-reverse,
+  html /deep/ .layout.vertical,
+  html /deep/ .layout.vertical-reverse {
+    display: -ms-flexbox;
+    display: -webkit-flex;
+    display: flex;
+  }
+
+  html /deep/ .layout.inline {
+    display: -ms-inline-flexbox;
+    display: -webkit-inline-flex;
+    display: inline-flex;
+  }
+
+  html /deep/ .layout.horizontal {
+    -ms-flex-direction: row;
+    -webkit-flex-direction: row;
+    flex-direction: row;
+  }
+
+  html /deep/ .layout.horizontal-reverse {
+    -ms-flex-direction: row-reverse;
+    -webkit-flex-direction: row-reverse;
+    flex-direction: row-reverse;
+  }
+
+  html /deep/ .layout.vertical {
+    -ms-flex-direction: column;
+    -webkit-flex-direction: column;
+    flex-direction: column;
+  }
+
+  html /deep/ .layout.vertical-reverse {
+    -ms-flex-direction: column-reverse;
+    -webkit-flex-direction: column-reverse;
+    flex-direction: column-reverse;
+  }
+
+  html /deep/ .layout.wrap {
+    -ms-flex-wrap: wrap;
+    -webkit-flex-wrap: wrap;
+    flex-wrap: wrap;
+  }
+
+  html /deep/ .layout.wrap-reverse {
+    -ms-flex-wrap: wrap-reverse;
+    -webkit-flex-wrap: wrap-reverse;
+    flex-wrap: wrap-reverse;
+  }
+
+  html /deep/ .flex-auto {
+    -ms-flex: 1 1 auto;
+    -webkit-flex: 1 1 auto;
+    flex: 1 1 auto;
+  }
+
+  html /deep/ .flex-none {
+    -ms-flex: none;
+    -webkit-flex: none;
+    flex: none;
+  }
+
+  html /deep/ .flex,
+  html /deep/ .flex-1 {
+    -ms-flex: 1;
+    -webkit-flex: 1;
+    flex: 1;
+  }
+
+  html /deep/ .flex-2 {
+    -ms-flex: 2;
+    -webkit-flex: 2;
+    flex: 2;
+  }
+
+  html /deep/ .flex-3 {
+    -ms-flex: 3;
+    -webkit-flex: 3;
+    flex: 3;
+  }
+
+  html /deep/ .flex-4 {
+    -ms-flex: 4;
+    -webkit-flex: 4;
+    flex: 4;
+  }
+
+  html /deep/ .flex-5 {
+    -ms-flex: 5;
+    -webkit-flex: 5;
+    flex: 5;
+  }
+
+  html /deep/ .flex-6 {
+    -ms-flex: 6;
+    -webkit-flex: 6;
+    flex: 6;
+  }
+
+  html /deep/ .flex-7 {
+    -ms-flex: 7;
+    -webkit-flex: 7;
+    flex: 7;
+  }
+
+  html /deep/ .flex-8 {
+    -ms-flex: 8;
+    -webkit-flex: 8;
+    flex: 8;
+  }
+
+  html /deep/ .flex-9 {
+    -ms-flex: 9;
+    -webkit-flex: 9;
+    flex: 9;
+  }
+
+  html /deep/ .flex-10 {
+    -ms-flex: 10;
+    -webkit-flex: 10;
+    flex: 10;
+  }
+
+  html /deep/ .flex-11 {
+    -ms-flex: 11;
+    -webkit-flex: 11;
+    flex: 11;
+  }
+
+  html /deep/ .flex-12 {
+    -ms-flex: 12;
+    -webkit-flex: 12;
+    flex: 12;
+  }
+
+  /* alignment in cross axis */
+
+  html /deep/ .layout.start {
+    -ms-flex-align: start;
+    -webkit-align-items: flex-start;
+    align-items: flex-start;
+  }
+
+  html /deep/ .layout.center,
+  html /deep/ .layout.center-center {
+    -ms-flex-align: center;
+    -webkit-align-items: center;
+    align-items: center;
+  }
+
+  html /deep/ .layout.end {
+    -ms-flex-align: end;
+    -webkit-align-items: flex-end;
+    align-items: flex-end;
+  }
+
+  /* alignment in main axis */
+
+  html /deep/ .layout.start-justified {
+    -ms-flex-pack: start;
+    -webkit-justify-content: flex-start;
+    justify-content: flex-start;
+  }
+
+  html /deep/ .layout.center-justified,
+  html /deep/ .layout.center-center {
+    -ms-flex-pack: center;
+    -webkit-justify-content: center;
+    justify-content: center;
+  }
+
+  html /deep/ .layout.end-justified {
+    -ms-flex-pack: end;
+    -webkit-justify-content: flex-end;
+    justify-content: flex-end;
+  }
+
+  html /deep/ .layout.around-justified {
+    -ms-flex-pack: around;
+    -webkit-justify-content: space-around;
+    justify-content: space-around;
+  }
+
+  html /deep/ .layout.justified {
+    -ms-flex-pack: justify;
+    -webkit-justify-content: space-between;
+    justify-content: space-between;
+  }
+
+  /* self alignment */
+
+  html /deep/ .self-start {
+    -ms-align-self: flex-start;
+    -webkit-align-self: flex-start;
+    align-self: flex-start;
+  }
+
+  html /deep/ .self-center {
+    -ms-align-self: center;
+    -webkit-align-self: center;
+    align-self: center;
+  }
+
+  html /deep/ .self-end {
+    -ms-align-self: flex-end;
+    -webkit-align-self: flex-end;
+    align-self: flex-end;
+  }
+
+  html /deep/ .self-stretch {
+    -ms-align-self: stretch;
+    -webkit-align-self: stretch;
+    align-self: stretch;
+  }
+
+  /*******************************
+            Other Layout
+  *******************************/
+
+  html /deep/ .block {
+    display: block;
+  }
+
+  /* IE 10 support for HTML5 hidden attr */
+  html /deep/ [hidden] {
+    display: none !important;
+  }
+
+  html /deep/ .invisible {
+    visibility: hidden !important;
+  }
+
+  html /deep/ .relative {
+    position: relative;
+  }
+
+  html /deep/ .fit {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+  }
+
+  body.fullbleed {
+    margin: 0;
+    height: 100vh;
+  }
+
+  html /deep/ .scroll {
+    -webkit-overflow-scrolling: touch;
+    overflow: auto;
+  }
+
+  .fixed-bottom,
+  .fixed-left,
+  .fixed-right,
+  .fixed-top {
+    position: fixed;
+  }
+
+  html /deep/ .fixed-top {
+    top: 0;
+    left: 0;
+    right: 0;
+  }
+
+  html /deep/ .fixed-right {
+    top: 0;
+    right: 0;
+    bottom: 0;
+  }
+
+  html /deep/ .fixed-bottom {
+    right: 0;
+    bottom: 0;
+    left: 0;
+  }
+
+  html /deep/ .fixed-left {
+    top: 0;
+    bottom: 0;
+    left: 0;
+  }
+
+</style>
+<script>
+  console.warn('This file is deprecated. Please use `iron-flex-layout/iron-flex-layout-classes.html`, and one of the specific dom-modules instead');
+</script>
+
+<style>
+
+  /*******************************
+            Flex Layout
+  *******************************/
+
+  .layout.horizontal,
+  .layout.horizontal-reverse,
+  .layout.vertical,
+  .layout.vertical-reverse {
+    display: -ms-flexbox;
+    display: -webkit-flex;
+    display: flex;
+  }
+
+  .layout.inline {
+    display: -ms-inline-flexbox;
+    display: -webkit-inline-flex;
+    display: inline-flex;
+  }
+
+  .layout.horizontal {
+    -ms-flex-direction: row;
+    -webkit-flex-direction: row;
+    flex-direction: row;
+  }
+
+  .layout.horizontal-reverse {
+    -ms-flex-direction: row-reverse;
+    -webkit-flex-direction: row-reverse;
+    flex-direction: row-reverse;
+  }
+
+  .layout.vertical {
+    -ms-flex-direction: column;
+    -webkit-flex-direction: column;
+    flex-direction: column;
+  }
+
+  .layout.vertical-reverse {
+    -ms-flex-direction: column-reverse;
+    -webkit-flex-direction: column-reverse;
+    flex-direction: column-reverse;
+  }
+
+  .layout.wrap {
+    -ms-flex-wrap: wrap;
+    -webkit-flex-wrap: wrap;
+    flex-wrap: wrap;
+  }
+
+  .layout.wrap-reverse {
+    -ms-flex-wrap: wrap-reverse;
+    -webkit-flex-wrap: wrap-reverse;
+    flex-wrap: wrap-reverse;
+  }
+
+  .flex-auto {
+    -ms-flex: 1 1 auto;
+    -webkit-flex: 1 1 auto;
+    flex: 1 1 auto;
+  }
+
+  .flex-none {
+    -ms-flex: none;
+    -webkit-flex: none;
+    flex: none;
+  }
+
+  .flex,
+  .flex-1 {
+    -ms-flex: 1;
+    -webkit-flex: 1;
+    flex: 1;
+  }
+
+  .flex-2 {
+    -ms-flex: 2;
+    -webkit-flex: 2;
+    flex: 2;
+  }
+
+  .flex-3 {
+    -ms-flex: 3;
+    -webkit-flex: 3;
+    flex: 3;
+  }
+
+  .flex-4 {
+    -ms-flex: 4;
+    -webkit-flex: 4;
+    flex: 4;
+  }
+
+  .flex-5 {
+    -ms-flex: 5;
+    -webkit-flex: 5;
+    flex: 5;
+  }
+
+  .flex-6 {
+    -ms-flex: 6;
+    -webkit-flex: 6;
+    flex: 6;
+  }
+
+  .flex-7 {
+    -ms-flex: 7;
+    -webkit-flex: 7;
+    flex: 7;
+  }
+
+  .flex-8 {
+    -ms-flex: 8;
+    -webkit-flex: 8;
+    flex: 8;
+  }
+
+  .flex-9 {
+    -ms-flex: 9;
+    -webkit-flex: 9;
+    flex: 9;
+  }
+
+  .flex-10 {
+    -ms-flex: 10;
+    -webkit-flex: 10;
+    flex: 10;
+  }
+
+  .flex-11 {
+    -ms-flex: 11;
+    -webkit-flex: 11;
+    flex: 11;
+  }
+
+  .flex-12 {
+    -ms-flex: 12;
+    -webkit-flex: 12;
+    flex: 12;
+  }
+
+  /* alignment in cross axis */
+
+  .layout.start {
+    -ms-flex-align: start;
+    -webkit-align-items: flex-start;
+    align-items: flex-start;
+  }
+
+  .layout.center,
+  .layout.center-center {
+    -ms-flex-align: center;
+    -webkit-align-items: center;
+    align-items: center;
+  }
+
+  .layout.end {
+    -ms-flex-align: end;
+    -webkit-align-items: flex-end;
+    align-items: flex-end;
+  }
+
+  /* alignment in main axis */
+
+  .layout.start-justified {
+    -ms-flex-pack: start;
+    -webkit-justify-content: flex-start;
+    justify-content: flex-start;
+  }
+
+  .layout.center-justified,
+  .layout.center-center {
+    -ms-flex-pack: center;
+    -webkit-justify-content: center;
+    justify-content: center;
+  }
+
+  .layout.end-justified {
+    -ms-flex-pack: end;
+    -webkit-justify-content: flex-end;
+    justify-content: flex-end;
+  }
+
+  .layout.around-justified {
+    -ms-flex-pack: around;
+    -webkit-justify-content: space-around;
+    justify-content: space-around;
+  }
+
+  .layout.justified {
+    -ms-flex-pack: justify;
+    -webkit-justify-content: space-between;
+    justify-content: space-between;
+  }
+
+  /* self alignment */
+
+  .self-start {
+    -ms-align-self: flex-start;
+    -webkit-align-self: flex-start;
+    align-self: flex-start;
+  }
+
+  .self-center {
+    -ms-align-self: center;
+    -webkit-align-self: center;
+    align-self: center;
+  }
+
+  .self-end {
+    -ms-align-self: flex-end;
+    -webkit-align-self: flex-end;
+    align-self: flex-end;
+  }
+
+  .self-stretch {
+    -ms-align-self: stretch;
+    -webkit-align-self: stretch;
+    align-self: stretch;
+  }
+
+  /*******************************
+            Other Layout
+  *******************************/
+
+  .block {
+    display: block;
+  }
+
+  /* IE 10 support for HTML5 hidden attr */
+  [hidden] {
+    display: none !important;
+  }
+
+  .invisible {
+    visibility: hidden !important;
+  }
+
+  .relative {
+    position: relative;
+  }
+
+  .fit {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+  }
+
+  body.fullbleed {
+    margin: 0;
+    height: 100vh;
+  }
+
+  .scroll {
+    -webkit-overflow-scrolling: touch;
+    overflow: auto;
+  }
+
+  /* fixed position */
+
+  .fixed-bottom,
+  .fixed-left,
+  .fixed-right,
+  .fixed-top {
+    position: fixed;
+  }
+
+  .fixed-top {
+    top: 0;
+    left: 0;
+    right: 0;
+  }
+
+  .fixed-right {
+    top: 0;
+    right: 0;
+    bottom: 0;
+  }
+
+  .fixed-bottom {
+    right: 0;
+    bottom: 0;
+    left: 0;
+  }
+
+  .fixed-left {
+    top: 0;
+    bottom: 0;
+    left: 0;
+  }
+
+</style>
+<style is="custom-style">
+
+  :root {
+
+    --shadow-transition: {
+      transition: box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    };
+
+    --shadow-none: {
+      box-shadow: none;
+    };
+
+    /* from http://codepen.io/shyndman/pen/c5394ddf2e8b2a5c9185904b57421cdb */
+
+    --shadow-elevation-2dp: {
+      box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14),
+                  0 1px 5px 0 rgba(0, 0, 0, 0.12),
+                  0 3px 1px -2px rgba(0, 0, 0, 0.2);
+    };
+
+    --shadow-elevation-3dp: {
+      box-shadow: 0 3px 4px 0 rgba(0, 0, 0, 0.14),
+                  0 1px 8px 0 rgba(0, 0, 0, 0.12),
+                  0 3px 3px -2px rgba(0, 0, 0, 0.4);
+    };
+
+    --shadow-elevation-4dp: {
+      box-shadow: 0 4px 5px 0 rgba(0, 0, 0, 0.14),
+                  0 1px 10px 0 rgba(0, 0, 0, 0.12),
+                  0 2px 4px -1px rgba(0, 0, 0, 0.4);
+    };
+
+    --shadow-elevation-6dp: {
+      box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.14),
+                  0 1px 18px 0 rgba(0, 0, 0, 0.12),
+                  0 3px 5px -1px rgba(0, 0, 0, 0.4);
+    };
+
+    --shadow-elevation-8dp: {
+      box-shadow: 0 8px 10px 1px rgba(0, 0, 0, 0.14),
+                  0 3px 14px 2px rgba(0, 0, 0, 0.12),
+                  0 5px 5px -3px rgba(0, 0, 0, 0.4);
+    };
+
+    --shadow-elevation-12dp: {
+      box-shadow: 0 12px 16px 1px rgba(0, 0, 0, 0.14),
+                  0 4px 22px 3px rgba(0, 0, 0, 0.12),
+                  0 6px 7px -4px rgba(0, 0, 0, 0.4);
+    };
+
+    --shadow-elevation-16dp: {
+      box-shadow: 0 16px 24px 2px rgba(0, 0, 0, 0.14),
+                  0  6px 30px 5px rgba(0, 0, 0, 0.12),
+                  0  8px 10px -5px rgba(0, 0, 0, 0.4);
+    };
+
+    --shadow-elevation-24dp: {
+      box-shadow: 0 24px 38px 3px rgba(0, 0, 0, 0.14),
+                  0 9px 46px 8px rgba(0, 0, 0, 0.12),
+                  0 11px 15px -7px rgba(0, 0, 0, 0.4);
+    };
+  }
+
+</style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,300,300italic,400italic,500,500italic,700,700italic">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Mono:400,700">
 <style is="custom-style">
@@ -16206,53 +16845,37 @@ this.fire('dom-change');
   }
 
 </style>
+
+
 <dom-module id="paper-item-shared-styles" assetpath="../bower_components/paper-item/">
   <template>
     <style>
-      :host, .paper-item {
+      :host {
         display: block;
-        position: relative;
         min-height: var(--paper-item-min-height, 48px);
         padding: 0px 16px;
       }
 
-      .paper-item {
-        @apply(--paper-font-subhead);
-        border:none;
-        outline: none;
-        background: white;
-        width: 100%;
-        text-align: left;
-      }
-
-      :host([hidden]), .paper-item[hidden] {
-        display: none !important;
-      }
-
-      :host(.iron-selected), .paper-item.iron-selected {
+      :host(.iron-selected) {
         font-weight: var(--paper-item-selected-weight, bold);
-
         @apply(--paper-item-selected);
       }
 
-      :host([disabled]), .paper-item[disabled] {
+      :host([disabled]) {
         color: var(--paper-item-disabled-color, --disabled-text-color);
-
         @apply(--paper-item-disabled);
       }
 
-      :host(:focus), .paper-item:focus {
+      :host(:focus) {
         position: relative;
         outline: 0;
-
         @apply(--paper-item-focused);
       }
 
-      :host(:focus):before, .paper-item:focus:before {
+      :host(:focus):before {
         @apply(--layout-fit);
-
-        background: currentColor;
         content: '';
+        background: currentColor;
         opacity: var(--dark-divider-opacity);
         pointer-events: none;
 
@@ -16283,76 +16906,18 @@ this.fire('dom-change');
     Polymer({
       is: 'paper-item',
 
+      hostAttributes: {
+        role: 'option',
+        tabindex: '0'
+      },
+
       behaviors: [
-        Polymer.PaperItemBehavior
+        Polymer.IronControlState,
+        Polymer.IronButtonState
       ]
     });
   </script>
 </dom-module>
-<style is="custom-style">
-
-  :root {
-
-    --shadow-transition: {
-      transition: box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-    };
-
-    --shadow-none: {
-      box-shadow: none;
-    };
-
-    /* from http://codepen.io/shyndman/pen/c5394ddf2e8b2a5c9185904b57421cdb */
-
-    --shadow-elevation-2dp: {
-      box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14),
-                  0 1px 5px 0 rgba(0, 0, 0, 0.12),
-                  0 3px 1px -2px rgba(0, 0, 0, 0.2);
-    };
-
-    --shadow-elevation-3dp: {
-      box-shadow: 0 3px 4px 0 rgba(0, 0, 0, 0.14),
-                  0 1px 8px 0 rgba(0, 0, 0, 0.12),
-                  0 3px 3px -2px rgba(0, 0, 0, 0.4);
-    };
-
-    --shadow-elevation-4dp: {
-      box-shadow: 0 4px 5px 0 rgba(0, 0, 0, 0.14),
-                  0 1px 10px 0 rgba(0, 0, 0, 0.12),
-                  0 2px 4px -1px rgba(0, 0, 0, 0.4);
-    };
-
-    --shadow-elevation-6dp: {
-      box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.14),
-                  0 1px 18px 0 rgba(0, 0, 0, 0.12),
-                  0 3px 5px -1px rgba(0, 0, 0, 0.4);
-    };
-
-    --shadow-elevation-8dp: {
-      box-shadow: 0 8px 10px 1px rgba(0, 0, 0, 0.14),
-                  0 3px 14px 2px rgba(0, 0, 0, 0.12),
-                  0 5px 5px -3px rgba(0, 0, 0, 0.4);
-    };
-
-    --shadow-elevation-12dp: {
-      box-shadow: 0 12px 16px 1px rgba(0, 0, 0, 0.14),
-                  0 4px 22px 3px rgba(0, 0, 0, 0.12),
-                  0 6px 7px -4px rgba(0, 0, 0, 0.4);
-    };
-
-    --shadow-elevation-16dp: {
-      box-shadow: 0 16px 24px 2px rgba(0, 0, 0, 0.14),
-                  0  6px 30px 5px rgba(0, 0, 0, 0.12),
-                  0  8px 10px -5px rgba(0, 0, 0, 0.4);
-    };
-
-    --shadow-elevation-24dp: {
-      box-shadow: 0 24px 38px 3px rgba(0, 0, 0, 0.14),
-                  0 9px 46px 8px rgba(0, 0, 0, 0.12),
-                  0 11px 15px -7px rgba(0, 0, 0, 0.4);
-    };
-  }
-
-</style>
 <dom-module id="paper-material-shared-styles" assetpath="../bower_components/paper-material/">
   <template>
     <style>
@@ -17364,602 +17929,6 @@ this.fire('dom-change');
 })();
 
 </script>
-<script>
-  console.warn('This file is deprecated. Please use `iron-flex-layout/iron-flex-layout-classes.html`, and one of the specific dom-modules instead');
-</script>
-
-<style>
-
-  /*******************************
-            Flex Layout
-  *******************************/
-
-  html /deep/ .layout.horizontal,
-  html /deep/ .layout.horizontal-reverse,
-  html /deep/ .layout.vertical,
-  html /deep/ .layout.vertical-reverse {
-    display: -ms-flexbox;
-    display: -webkit-flex;
-    display: flex;
-  }
-
-  html /deep/ .layout.inline {
-    display: -ms-inline-flexbox;
-    display: -webkit-inline-flex;
-    display: inline-flex;
-  }
-
-  html /deep/ .layout.horizontal {
-    -ms-flex-direction: row;
-    -webkit-flex-direction: row;
-    flex-direction: row;
-  }
-
-  html /deep/ .layout.horizontal-reverse {
-    -ms-flex-direction: row-reverse;
-    -webkit-flex-direction: row-reverse;
-    flex-direction: row-reverse;
-  }
-
-  html /deep/ .layout.vertical {
-    -ms-flex-direction: column;
-    -webkit-flex-direction: column;
-    flex-direction: column;
-  }
-
-  html /deep/ .layout.vertical-reverse {
-    -ms-flex-direction: column-reverse;
-    -webkit-flex-direction: column-reverse;
-    flex-direction: column-reverse;
-  }
-
-  html /deep/ .layout.wrap {
-    -ms-flex-wrap: wrap;
-    -webkit-flex-wrap: wrap;
-    flex-wrap: wrap;
-  }
-
-  html /deep/ .layout.wrap-reverse {
-    -ms-flex-wrap: wrap-reverse;
-    -webkit-flex-wrap: wrap-reverse;
-    flex-wrap: wrap-reverse;
-  }
-
-  html /deep/ .flex-auto {
-    -ms-flex: 1 1 auto;
-    -webkit-flex: 1 1 auto;
-    flex: 1 1 auto;
-  }
-
-  html /deep/ .flex-none {
-    -ms-flex: none;
-    -webkit-flex: none;
-    flex: none;
-  }
-
-  html /deep/ .flex,
-  html /deep/ .flex-1 {
-    -ms-flex: 1;
-    -webkit-flex: 1;
-    flex: 1;
-  }
-
-  html /deep/ .flex-2 {
-    -ms-flex: 2;
-    -webkit-flex: 2;
-    flex: 2;
-  }
-
-  html /deep/ .flex-3 {
-    -ms-flex: 3;
-    -webkit-flex: 3;
-    flex: 3;
-  }
-
-  html /deep/ .flex-4 {
-    -ms-flex: 4;
-    -webkit-flex: 4;
-    flex: 4;
-  }
-
-  html /deep/ .flex-5 {
-    -ms-flex: 5;
-    -webkit-flex: 5;
-    flex: 5;
-  }
-
-  html /deep/ .flex-6 {
-    -ms-flex: 6;
-    -webkit-flex: 6;
-    flex: 6;
-  }
-
-  html /deep/ .flex-7 {
-    -ms-flex: 7;
-    -webkit-flex: 7;
-    flex: 7;
-  }
-
-  html /deep/ .flex-8 {
-    -ms-flex: 8;
-    -webkit-flex: 8;
-    flex: 8;
-  }
-
-  html /deep/ .flex-9 {
-    -ms-flex: 9;
-    -webkit-flex: 9;
-    flex: 9;
-  }
-
-  html /deep/ .flex-10 {
-    -ms-flex: 10;
-    -webkit-flex: 10;
-    flex: 10;
-  }
-
-  html /deep/ .flex-11 {
-    -ms-flex: 11;
-    -webkit-flex: 11;
-    flex: 11;
-  }
-
-  html /deep/ .flex-12 {
-    -ms-flex: 12;
-    -webkit-flex: 12;
-    flex: 12;
-  }
-
-  /* alignment in cross axis */
-
-  html /deep/ .layout.start {
-    -ms-flex-align: start;
-    -webkit-align-items: flex-start;
-    align-items: flex-start;
-  }
-
-  html /deep/ .layout.center,
-  html /deep/ .layout.center-center {
-    -ms-flex-align: center;
-    -webkit-align-items: center;
-    align-items: center;
-  }
-
-  html /deep/ .layout.end {
-    -ms-flex-align: end;
-    -webkit-align-items: flex-end;
-    align-items: flex-end;
-  }
-
-  /* alignment in main axis */
-
-  html /deep/ .layout.start-justified {
-    -ms-flex-pack: start;
-    -webkit-justify-content: flex-start;
-    justify-content: flex-start;
-  }
-
-  html /deep/ .layout.center-justified,
-  html /deep/ .layout.center-center {
-    -ms-flex-pack: center;
-    -webkit-justify-content: center;
-    justify-content: center;
-  }
-
-  html /deep/ .layout.end-justified {
-    -ms-flex-pack: end;
-    -webkit-justify-content: flex-end;
-    justify-content: flex-end;
-  }
-
-  html /deep/ .layout.around-justified {
-    -ms-flex-pack: around;
-    -webkit-justify-content: space-around;
-    justify-content: space-around;
-  }
-
-  html /deep/ .layout.justified {
-    -ms-flex-pack: justify;
-    -webkit-justify-content: space-between;
-    justify-content: space-between;
-  }
-
-  /* self alignment */
-
-  html /deep/ .self-start {
-    -ms-align-self: flex-start;
-    -webkit-align-self: flex-start;
-    align-self: flex-start;
-  }
-
-  html /deep/ .self-center {
-    -ms-align-self: center;
-    -webkit-align-self: center;
-    align-self: center;
-  }
-
-  html /deep/ .self-end {
-    -ms-align-self: flex-end;
-    -webkit-align-self: flex-end;
-    align-self: flex-end;
-  }
-
-  html /deep/ .self-stretch {
-    -ms-align-self: stretch;
-    -webkit-align-self: stretch;
-    align-self: stretch;
-  }
-
-  /*******************************
-            Other Layout
-  *******************************/
-
-  html /deep/ .block {
-    display: block;
-  }
-
-  /* IE 10 support for HTML5 hidden attr */
-  html /deep/ [hidden] {
-    display: none !important;
-  }
-
-  html /deep/ .invisible {
-    visibility: hidden !important;
-  }
-
-  html /deep/ .relative {
-    position: relative;
-  }
-
-  html /deep/ .fit {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-  }
-
-  body.fullbleed {
-    margin: 0;
-    height: 100vh;
-  }
-
-  html /deep/ .scroll {
-    -webkit-overflow-scrolling: touch;
-    overflow: auto;
-  }
-
-  .fixed-bottom,
-  .fixed-left,
-  .fixed-right,
-  .fixed-top {
-    position: fixed;
-  }
-
-  html /deep/ .fixed-top {
-    top: 0;
-    left: 0;
-    right: 0;
-  }
-
-  html /deep/ .fixed-right {
-    top: 0;
-    right: 0;
-    bottom: 0;
-  }
-
-  html /deep/ .fixed-bottom {
-    right: 0;
-    bottom: 0;
-    left: 0;
-  }
-
-  html /deep/ .fixed-left {
-    top: 0;
-    bottom: 0;
-    left: 0;
-  }
-
-</style>
-<script>
-  console.warn('This file is deprecated. Please use `iron-flex-layout/iron-flex-layout-classes.html`, and one of the specific dom-modules instead');
-</script>
-
-<style>
-
-  /*******************************
-            Flex Layout
-  *******************************/
-
-  .layout.horizontal,
-  .layout.horizontal-reverse,
-  .layout.vertical,
-  .layout.vertical-reverse {
-    display: -ms-flexbox;
-    display: -webkit-flex;
-    display: flex;
-  }
-
-  .layout.inline {
-    display: -ms-inline-flexbox;
-    display: -webkit-inline-flex;
-    display: inline-flex;
-  }
-
-  .layout.horizontal {
-    -ms-flex-direction: row;
-    -webkit-flex-direction: row;
-    flex-direction: row;
-  }
-
-  .layout.horizontal-reverse {
-    -ms-flex-direction: row-reverse;
-    -webkit-flex-direction: row-reverse;
-    flex-direction: row-reverse;
-  }
-
-  .layout.vertical {
-    -ms-flex-direction: column;
-    -webkit-flex-direction: column;
-    flex-direction: column;
-  }
-
-  .layout.vertical-reverse {
-    -ms-flex-direction: column-reverse;
-    -webkit-flex-direction: column-reverse;
-    flex-direction: column-reverse;
-  }
-
-  .layout.wrap {
-    -ms-flex-wrap: wrap;
-    -webkit-flex-wrap: wrap;
-    flex-wrap: wrap;
-  }
-
-  .layout.wrap-reverse {
-    -ms-flex-wrap: wrap-reverse;
-    -webkit-flex-wrap: wrap-reverse;
-    flex-wrap: wrap-reverse;
-  }
-
-  .flex-auto {
-    -ms-flex: 1 1 auto;
-    -webkit-flex: 1 1 auto;
-    flex: 1 1 auto;
-  }
-
-  .flex-none {
-    -ms-flex: none;
-    -webkit-flex: none;
-    flex: none;
-  }
-
-  .flex,
-  .flex-1 {
-    -ms-flex: 1;
-    -webkit-flex: 1;
-    flex: 1;
-  }
-
-  .flex-2 {
-    -ms-flex: 2;
-    -webkit-flex: 2;
-    flex: 2;
-  }
-
-  .flex-3 {
-    -ms-flex: 3;
-    -webkit-flex: 3;
-    flex: 3;
-  }
-
-  .flex-4 {
-    -ms-flex: 4;
-    -webkit-flex: 4;
-    flex: 4;
-  }
-
-  .flex-5 {
-    -ms-flex: 5;
-    -webkit-flex: 5;
-    flex: 5;
-  }
-
-  .flex-6 {
-    -ms-flex: 6;
-    -webkit-flex: 6;
-    flex: 6;
-  }
-
-  .flex-7 {
-    -ms-flex: 7;
-    -webkit-flex: 7;
-    flex: 7;
-  }
-
-  .flex-8 {
-    -ms-flex: 8;
-    -webkit-flex: 8;
-    flex: 8;
-  }
-
-  .flex-9 {
-    -ms-flex: 9;
-    -webkit-flex: 9;
-    flex: 9;
-  }
-
-  .flex-10 {
-    -ms-flex: 10;
-    -webkit-flex: 10;
-    flex: 10;
-  }
-
-  .flex-11 {
-    -ms-flex: 11;
-    -webkit-flex: 11;
-    flex: 11;
-  }
-
-  .flex-12 {
-    -ms-flex: 12;
-    -webkit-flex: 12;
-    flex: 12;
-  }
-
-  /* alignment in cross axis */
-
-  .layout.start {
-    -ms-flex-align: start;
-    -webkit-align-items: flex-start;
-    align-items: flex-start;
-  }
-
-  .layout.center,
-  .layout.center-center {
-    -ms-flex-align: center;
-    -webkit-align-items: center;
-    align-items: center;
-  }
-
-  .layout.end {
-    -ms-flex-align: end;
-    -webkit-align-items: flex-end;
-    align-items: flex-end;
-  }
-
-  /* alignment in main axis */
-
-  .layout.start-justified {
-    -ms-flex-pack: start;
-    -webkit-justify-content: flex-start;
-    justify-content: flex-start;
-  }
-
-  .layout.center-justified,
-  .layout.center-center {
-    -ms-flex-pack: center;
-    -webkit-justify-content: center;
-    justify-content: center;
-  }
-
-  .layout.end-justified {
-    -ms-flex-pack: end;
-    -webkit-justify-content: flex-end;
-    justify-content: flex-end;
-  }
-
-  .layout.around-justified {
-    -ms-flex-pack: around;
-    -webkit-justify-content: space-around;
-    justify-content: space-around;
-  }
-
-  .layout.justified {
-    -ms-flex-pack: justify;
-    -webkit-justify-content: space-between;
-    justify-content: space-between;
-  }
-
-  /* self alignment */
-
-  .self-start {
-    -ms-align-self: flex-start;
-    -webkit-align-self: flex-start;
-    align-self: flex-start;
-  }
-
-  .self-center {
-    -ms-align-self: center;
-    -webkit-align-self: center;
-    align-self: center;
-  }
-
-  .self-end {
-    -ms-align-self: flex-end;
-    -webkit-align-self: flex-end;
-    align-self: flex-end;
-  }
-
-  .self-stretch {
-    -ms-align-self: stretch;
-    -webkit-align-self: stretch;
-    align-self: stretch;
-  }
-
-  /*******************************
-            Other Layout
-  *******************************/
-
-  .block {
-    display: block;
-  }
-
-  /* IE 10 support for HTML5 hidden attr */
-  [hidden] {
-    display: none !important;
-  }
-
-  .invisible {
-    visibility: hidden !important;
-  }
-
-  .relative {
-    position: relative;
-  }
-
-  .fit {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-  }
-
-  body.fullbleed {
-    margin: 0;
-    height: 100vh;
-  }
-
-  .scroll {
-    -webkit-overflow-scrolling: touch;
-    overflow: auto;
-  }
-
-  /* fixed position */
-
-  .fixed-bottom,
-  .fixed-left,
-  .fixed-right,
-  .fixed-top {
-    position: fixed;
-  }
-
-  .fixed-top {
-    top: 0;
-    left: 0;
-    right: 0;
-  }
-
-  .fixed-right {
-    top: 0;
-    right: 0;
-    bottom: 0;
-  }
-
-  .fixed-bottom {
-    right: 0;
-    bottom: 0;
-    left: 0;
-  }
-
-  .fixed-left {
-    top: 0;
-    bottom: 0;
-    left: 0;
-  }
-
-</style>
 
 <style>
 
@@ -24590,16 +24559,6 @@ is separate from validation, and `allowed-pattern` does not affect how the input
         display: inline-block;
         white-space: nowrap;
         cursor: pointer;
-        --calculated-paper-checkbox-size: var(--paper-checkbox-size, 18px);
-        /* -1px is a sentinel for the default and is replaced in `attached`. */
-        --calculated-paper-checkbox-ink-size: var(--paper-checkbox-ink-size, -1px);
-        @apply(--paper-font-common-base);
-        line-height: 0;
-        -webkit-tap-highlight-color: transparent;
-      }
-
-      :host([hidden]) {
-        display: none !important;
       }
 
       :host(:focus) {
@@ -24613,35 +24572,31 @@ is separate from validation, and `allowed-pattern` does not affect how the input
       #checkboxContainer {
         display: inline-block;
         position: relative;
-        width: var(--calculated-paper-checkbox-size);
-        height: var(--calculated-paper-checkbox-size);
-        min-width: var(--calculated-paper-checkbox-size);
-        margin: var(--paper-checkbox-margin, initial);
-        vertical-align: var(--paper-checkbox-vertical-align, middle);
+        width: 18px;
+        height: 18px;
+        min-width: 18px;
+        vertical-align: middle;
         background-color: var(--paper-checkbox-unchecked-background-color, transparent);
       }
 
       #ink {
         position: absolute;
-
-        /* Center the ripple in the checkbox by negative offsetting it by
-         * (inkWidth - rippleWidth) / 2 */
-        top: calc(0px - (var(--calculated-paper-checkbox-ink-size) - var(--calculated-paper-checkbox-size)) / 2);
-        left: calc(0px - (var(--calculated-paper-checkbox-ink-size) - var(--calculated-paper-checkbox-size)) / 2);
-        width: var(--calculated-paper-checkbox-ink-size);
-        height: var(--calculated-paper-checkbox-ink-size);
-        color: var(--paper-checkbox-unchecked-ink-color, var(--primary-text-color));
+        top: -15px;
+        left: -15px;
+        width: 48px;
+        height: 48px;
+        color: var(--paper-checkbox-unchecked-ink-color, --primary-text-color);
         opacity: 0.6;
         pointer-events: none;
       }
 
       :host-context([dir="rtl"]) #ink {
-        right: calc(0px - (var(--calculated-paper-checkbox-ink-size) - var(--calculated-paper-checkbox-size)) / 2);
+        right: -15px;
         left: auto;
       }
 
       #ink[checked] {
-        color: var(--paper-checkbox-checked-ink-color, var(--primary-color));
+        color: var(--paper-checkbox-checked-ink-color, --default-primary-color);
       }
 
       #checkbox {
@@ -24649,7 +24604,7 @@ is separate from validation, and `allowed-pattern` does not affect how the input
         box-sizing: border-box;
         height: 100%;
         border: solid 2px;
-        border-color: var(--paper-checkbox-unchecked-color, var(--primary-text-color));
+        border-color: var(--paper-checkbox-unchecked-color, --primary-text-color);
         border-radius: 2px;
         pointer-events: none;
         -webkit-transition: background-color 140ms, border-color 140ms;
@@ -24681,28 +24636,22 @@ is separate from validation, and `allowed-pattern` does not affect how the input
       }
 
       #checkbox.checked {
-        background-color: var(--paper-checkbox-checked-color, var(--primary-color));
-        border-color: var(--paper-checkbox-checked-color, var(--primary-color));
+        background-color: var(--paper-checkbox-checked-color, --default-primary-color);
+        border-color: var(--paper-checkbox-checked-color, --default-primary-color);
       }
 
       #checkmark {
         position: absolute;
-        width: 36%;
-        height: 70%;
+        width: 5px;
+        height: 10px;
         border-style: solid;
         border-top: none;
         border-left: none;
-        border-right-width: calc(2/15 * var(--calculated-paper-checkbox-size));
-        border-bottom-width: calc(2/15 * var(--calculated-paper-checkbox-size));
+        border-right-width: 2px;
+        border-bottom-width: 2px;
         border-color: var(--paper-checkbox-checkmark-color, white);
-        -webkit-transform-origin: 97% 86%;
         transform-origin: 97% 86%;
-        box-sizing: content-box; /* protect against page-level box-sizing */
-      }
-
-      :host-context([dir="rtl"]) #checkmark {
-        -webkit-transform-origin: 50% 14%;
-        transform-origin: 50% 14%;
+        -webkit-transform-origin: 97% 86%;
       }
 
       /* label */
@@ -24712,14 +24661,8 @@ is separate from validation, and `allowed-pattern` does not affect how the input
         vertical-align: middle;
         padding-left: var(--paper-checkbox-label-spacing, 8px);
         white-space: normal;
-        line-height: normal;
-        color: var(--paper-checkbox-label-color, var(--primary-text-color));
-        @apply(--paper-checkbox-label);
-      }
-
-      :host([checked]) #checkboxLabel {
-        color: var(--paper-checkbox-label-checked-color, var(--paper-checkbox-label-color, var(--primary-text-color)));
-        @apply(--paper-checkbox-label-checked);
+        pointer-events: none;
+        color: var(--paper-checkbox-label-color, --primary-text-color);
       }
 
       :host-context([dir="rtl"]) #checkboxLabel {
@@ -24732,14 +24675,17 @@ is separate from validation, and `allowed-pattern` does not affect how the input
       }
 
       /* disabled state */
+      :host([disabled]) {
+        pointer-events: none;
+      }
 
       :host([disabled]) #checkbox {
         opacity: 0.5;
-        border-color: var(--paper-checkbox-unchecked-color, var(--primary-text-color));
+        border-color: var(--paper-checkbox-unchecked-color, --primary-text-color);
       }
 
       :host([disabled][checked]) #checkbox {
-        background-color: var(--paper-checkbox-unchecked-color, var(--primary-text-color));
+        background-color: var(--paper-checkbox-unchecked-color, --primary-text-color);
         opacity: 0.5;
       }
 
@@ -24749,7 +24695,7 @@ is separate from validation, and `allowed-pattern` does not affect how the input
 
       /* invalid state */
       #checkbox.invalid:not(.checked) {
-        border-color: var(--paper-checkbox-error-color, var(--error-color));
+        border-color: var(--paper-checkbox-error-color, --google-red-500);
       }
     </style>
 
@@ -24791,24 +24737,6 @@ is separate from validation, and `allowed-pattern` does not affect how the input
         ariaActiveAttribute: {
           type: String,
           value: 'aria-checked'
-        }
-      },
-
-      attached: function() {
-        var inkSize = this.getComputedStyleValue('--calculated-paper-checkbox-ink-size').trim();
-        // If unset, compute and set the default `--paper-checkbox-ink-size`.
-        if (inkSize === '-1px') {
-          var checkboxSize = parseFloat(this.getComputedStyleValue('--calculated-paper-checkbox-size').trim());
-          var defaultInkSize = Math.floor((8 / 3) * checkboxSize);
-
-          // The checkbox and ripple need to have the same parity so that their
-          // centers align.
-          if (defaultInkSize % 2 !== checkboxSize % 2) {
-            defaultInkSize++;
-          }
-
-          this.customStyle['--paper-checkbox-ink-size'] = defaultInkSize + 'px';
-          this.updateStyles();
         }
       },
 
@@ -27449,6 +27377,7 @@ module.exports = Array.isArray || function (arr) {
 						type: Array,
 						value:[],
 						notify: true,
+						observer: 'nodesChanged'
 					},
 					actions: {
 						type: Array,
@@ -27474,6 +27403,7 @@ module.exports = Array.isArray || function (arr) {
 						type: Object,
 						value:{},
 						notify: true,
+						observer: 'devicesChanged'
 					},
 
 					message: {
@@ -27641,6 +27571,35 @@ module.exports = Array.isArray || function (arr) {
 					}
 					window.localStorage.setItem('stampzilla-url', /** @type {string} */ (this.newUrl));
 					this.url = this.newUrl;
+				},
+				nodesChanged: function() {
+					this.syncConfigBetweenNodesAndDevices();
+				},
+				devicesChanged: function() {
+					this.syncConfigBetweenNodesAndDevices();
+				},
+				syncConfigBetweenNodesAndDevices: function() {
+					if ( !(this.devices instanceof Object) ) {
+						return;
+					}
+					for (var prop in this.devices) {
+						if(!this.devices.hasOwnProperty(prop)) continue;
+
+						var dev = this.devices[prop];
+
+						var self = this;
+						this.nodes.forEach(function(el,index){
+							if ( el.Uuid === dev.node ) {
+								for (var prop2 in el.config.config) {
+									if ( !el.config.config.hasOwnProperty(prop2) ) continue;
+									if ( prop2 !== prop ) continue;
+
+									var cfg = el.config.config[prop2];
+									self.devices[prop]['config'] = cfg.layout;
+								}
+							}
+						});
+					};
 				}
 			});
 		})();
@@ -27683,6 +27642,7 @@ module.exports = Array.isArray || function (arr) {
 
 			margin-bottom:10px;
 			padding:1em;
+			background: #fff;
 		}
 
 		:host:hover {
@@ -27715,7 +27675,6 @@ module.exports = Array.isArray || function (arr) {
 		}
 	</style>
 	<template>
-		<paper-shadow z="1"></paper-shadow>
 		<div class="layout horizontal title">
 			<div id="title"><paper-toggle-button checked="" disabled=""></paper-toggle-button></div>
 			<div id="title" class="flex">{{data.name}}</div>
@@ -27825,6 +27784,7 @@ module.exports = Array.isArray || function (arr) {
 
 			margin-bottom:10px;
 			padding:1em;
+			background: #fff;
 		}
 
 		:host:hover {
@@ -27857,31 +27817,30 @@ module.exports = Array.isArray || function (arr) {
 		}
 	</style>
 	<template>
-		<paper-shadow z="1"></paper-shadow>
-		<div class="layout horizontal title">
-			<div id="title"><paper-toggle-button checked="" disabled=""></paper-toggle-button></div>
-			<div id="title" class="flex">{{data.name}}</div>
-			<div><paper-button raised="" id="trigger1" uuid="[[data.uuid]]">Run Enter</paper-button></div>
-			<div><paper-button raised="" id="trigger2" uuid="[[data.uuid]]">Run Exit</paper-button></div>
-		</div>
-		<div>
-			<template is="dom-repeat" items="{{data.commands}}" as="item" index-as="i">
-				<div class="horizontal layout row">
-					<template is="dom-if" if="{{item.command}}">
-						<div class="cell"></div>
-						<div class="cell"><iron-icon icon="icons:send"></iron-icon></div>
-						<div class="cell"><span>[[item.uuid]]</span>:<span>[[item.command.cmd]]</span></div>
-						<div class="cell args flex"><div>[[item.command.args]]</div></div>
-					</template>
-					<template is="dom-if" if="{{item.pause}}">
-						<div class="cell"></div>
-						<div class="cell"><iron-icon icon="image:timer"></iron-icon></div>
-						<div class="cell">[[item.pause]]</div>
-						<div class="cell flex"></div>
-					</template>
-				</div>
-			</template>
-		</div>
+			<div class="layout horizontal title">
+				<div id="title"><paper-toggle-button checked="" disabled=""></paper-toggle-button></div>
+				<div id="title" class="flex">{{data.name}}</div>
+				<div><paper-button raised="" id="trigger1" uuid="[[data.uuid]]">Run Enter</paper-button></div>
+				<div><paper-button raised="" id="trigger2" uuid="[[data.uuid]]">Run Exit</paper-button></div>
+			</div>
+			<div>
+				<template is="dom-repeat" items="{{data.commands}}" as="item" index-as="i">
+					<div class="horizontal layout row">
+						<template is="dom-if" if="{{item.command}}">
+							<div class="cell"></div>
+							<div class="cell"><iron-icon icon="icons:send"></iron-icon></div>
+							<div class="cell"><span>[[item.uuid]]</span>:<span>[[item.command.cmd]]</span></div>
+							<div class="cell args flex"><div>[[item.command.args]]</div></div>
+						</template>
+						<template is="dom-if" if="{{item.pause}}">
+							<div class="cell"></div>
+							<div class="cell"><iron-icon icon="image:timer"></iron-icon></div>
+							<div class="cell">[[item.pause]]</div>
+							<div class="cell flex"></div>
+						</template>
+					</div>
+				</template>
+			</div>
 	</template>
 	<script>
 		(function () {
@@ -29910,7 +29869,7 @@ event and do your own custom submission:
       for (var el, i = 0; el = this._customElements[i], i < this._customElements.length; i++) {
         // If this custom element is inside a custom element that has already
         // registered to this form, skip it.
-        if (!this._isChildOfRegisteredParent(el, true) && this._useValue(el)) {
+        if (!this._isChildOfRegisteredParent(el) && this._useValue(el)) {
           addSerializedElement(el.name, el.value);
         }
       }
@@ -29919,7 +29878,7 @@ event and do your own custom submission:
       for (var el, i = 0; el = this.elements[i], i < this.elements.length; i++) {
         // If this native element is inside a custom element that has already
         // registered to this form, skip it.
-        if (this._isChildOfRegisteredParent(el, true) || !this._useValue(el)) {
+        if (this._isChildOfRegisteredParent(el) || !this._useValue(el)) {
           continue;
         }
 
@@ -29979,7 +29938,7 @@ event and do your own custom submission:
       // Validate all the custom elements.
       var validatable;
       for (var el, i = 0; el = this._customElements[i], i < this._customElements.length; i++) {
-        if (!this._isChildOfRegisteredParent(el, false) && !el.disabled) {
+        if (el.required && !el.disabled) {
           validatable = /** @type {{validate: (function() : boolean)}} */ (el);
           // Some elements may not have correctly defined a validate method.
           if (validatable.validate)
@@ -29989,12 +29948,6 @@ event and do your own custom submission:
 
       // Validate the form's native elements.
       for (var el, i = 0; el = this.elements[i], i < this.elements.length; i++) {
-        // If this native element is inside a custom element that has already
-        // registered to this form, skip it.
-        if (this._isChildOfRegisteredParent(el, false)) {
-          continue;
-        }
-
         // Custom elements that extend a native element will also appear in
         // this list, but they've already been validated.
         if (!el.hasAttribute('is') && el.willValidate && el.checkValidity) {
@@ -30061,13 +30014,7 @@ event and do your own custom submission:
           if (this._usesCheckedInsteadOfValue(el)) {
             el.checked = this._customElementsInitialValues[i];
           } else {
-            // The native input/textarea displays literal "undefined" when its
-            // its value is set to undefined, so default to null instead.
-            var value = this._customElementsInitialValues[i];
-            if (value === undefined) {
-              value = null;
-            }
-            el.value = value;
+            el.value = this._customElementsInitialValues[i];
 
             // In the shady DOM, the native form is all-seeing, and will
             // reset the nested inputs inside <paper-input> and <paper-textarea>.
@@ -30091,10 +30038,9 @@ event and do your own custom submission:
     /**
      * Returns true if `node` is in the shadow DOM of a different element,
      * that has also implemented IronFormElementBehavior and is registered
-     * to this form. The second parameter specifies if the parent must have a
-     * name to be considered.
+     * to this form.
      */
-    _isChildOfRegisteredParent: function(node, checkHasName) {
+    _isChildOfRegisteredParent: function(node) {
       var parent = node;
 
       // At some point going up the tree we'll find either this form or the document.
@@ -30103,9 +30049,7 @@ event and do your own custom submission:
         parent = Polymer.dom(parent).parentNode || parent.host;
 
         // Check if the parent was registered and submittable.
-        if (parent &&
-            (!checkHasName || parent.name) &&
-            parent._parentForm === this) {
+        if (parent && parent.name && parent._parentForm === this) {
           return true;
         }
       }
@@ -30115,6 +30059,1567 @@ event and do your own custom submission:
   });
 
 </script>
+
+
+<script>
+
+  Polymer({
+
+    is: 'opaque-animation',
+
+    behaviors: [
+      Polymer.NeonAnimationBehavior
+    ],
+
+    configure: function(config) {
+      var node = config.node;
+      this._effect = new KeyframeEffect(node, [
+        {'opacity': '1'},
+        {'opacity': '1'}
+      ], this.timingFromConfig(config));
+      node.style.opacity = '0';
+      return this._effect;
+    },
+
+    complete: function(config) {
+      config.node.style.opacity = '';
+    }
+
+  });
+
+</script>
+<script>
+  (function() {
+    'use strict';
+    /**
+     * Used to calculate the scroll direction during touch events.
+     * @type {!Object}
+     */
+    var lastTouchPosition = {
+      pageX: 0,
+      pageY: 0
+    };
+    /**
+     * Used to avoid computing event.path and filter scrollable nodes (better perf).
+     * @type {?EventTarget}
+     */
+    var lastRootTarget = null;
+    /**
+     * @type {!Array<Node>}
+     */
+    var lastScrollableNodes = [];
+
+    /**
+     * The IronDropdownScrollManager is intended to provide a central source
+     * of authority and control over which elements in a document are currently
+     * allowed to scroll.
+     */
+
+    Polymer.IronDropdownScrollManager = {
+
+      /**
+       * The current element that defines the DOM boundaries of the
+       * scroll lock. This is always the most recently locking element.
+       */
+      get currentLockingElement() {
+        return this._lockingElements[this._lockingElements.length - 1];
+      },
+
+      /**
+       * Returns true if the provided element is "scroll locked", which is to
+       * say that it cannot be scrolled via pointer or keyboard interactions.
+       *
+       * @param {HTMLElement} element An HTML element instance which may or may
+       * not be scroll locked.
+       */
+      elementIsScrollLocked: function(element) {
+        var currentLockingElement = this.currentLockingElement;
+
+        if (currentLockingElement === undefined)
+          return false;
+
+        var scrollLocked;
+
+        if (this._hasCachedLockedElement(element)) {
+          return true;
+        }
+
+        if (this._hasCachedUnlockedElement(element)) {
+          return false;
+        }
+
+        scrollLocked = !!currentLockingElement &&
+          currentLockingElement !== element &&
+          !this._composedTreeContains(currentLockingElement, element);
+
+        if (scrollLocked) {
+          this._lockedElementCache.push(element);
+        } else {
+          this._unlockedElementCache.push(element);
+        }
+
+        return scrollLocked;
+      },
+
+      /**
+       * Push an element onto the current scroll lock stack. The most recently
+       * pushed element and its children will be considered scrollable. All
+       * other elements will not be scrollable.
+       *
+       * Scroll locking is implemented as a stack so that cases such as
+       * dropdowns within dropdowns are handled well.
+       *
+       * @param {HTMLElement} element The element that should lock scroll.
+       */
+      pushScrollLock: function(element) {
+        // Prevent pushing the same element twice
+        if (this._lockingElements.indexOf(element) >= 0) {
+          return;
+        }
+
+        if (this._lockingElements.length === 0) {
+          this._lockScrollInteractions();
+        }
+
+        this._lockingElements.push(element);
+
+        this._lockedElementCache = [];
+        this._unlockedElementCache = [];
+      },
+
+      /**
+       * Remove an element from the scroll lock stack. The element being
+       * removed does not need to be the most recently pushed element. However,
+       * the scroll lock constraints only change when the most recently pushed
+       * element is removed.
+       *
+       * @param {HTMLElement} element The element to remove from the scroll
+       * lock stack.
+       */
+      removeScrollLock: function(element) {
+        var index = this._lockingElements.indexOf(element);
+
+        if (index === -1) {
+          return;
+        }
+
+        this._lockingElements.splice(index, 1);
+
+        this._lockedElementCache = [];
+        this._unlockedElementCache = [];
+
+        if (this._lockingElements.length === 0) {
+          this._unlockScrollInteractions();
+        }
+      },
+
+      _lockingElements: [],
+
+      _lockedElementCache: null,
+
+      _unlockedElementCache: null,
+
+      _hasCachedLockedElement: function(element) {
+        return this._lockedElementCache.indexOf(element) > -1;
+      },
+
+      _hasCachedUnlockedElement: function(element) {
+        return this._unlockedElementCache.indexOf(element) > -1;
+      },
+
+      _composedTreeContains: function(element, child) {
+        // NOTE(cdata): This method iterates over content elements and their
+        // corresponding distributed nodes to implement a contains-like method
+        // that pierces through the composed tree of the ShadowDOM. Results of
+        // this operation are cached (elsewhere) on a per-scroll-lock basis, to
+        // guard against potentially expensive lookups happening repeatedly as
+        // a user scrolls / touchmoves.
+        var contentElements;
+        var distributedNodes;
+        var contentIndex;
+        var nodeIndex;
+
+        if (element.contains(child)) {
+          return true;
+        }
+
+        contentElements = Polymer.dom(element).querySelectorAll('content');
+
+        for (contentIndex = 0; contentIndex < contentElements.length; ++contentIndex) {
+
+          distributedNodes = Polymer.dom(contentElements[contentIndex]).getDistributedNodes();
+
+          for (nodeIndex = 0; nodeIndex < distributedNodes.length; ++nodeIndex) {
+
+            if (this._composedTreeContains(distributedNodes[nodeIndex], child)) {
+              return true;
+            }
+          }
+        }
+
+        return false;
+      },
+
+      _scrollInteractionHandler: function(event) {
+        // Avoid canceling an event with cancelable=false, e.g. scrolling is in
+        // progress and cannot be interrupted.
+        if (event.cancelable && this._shouldPreventScrolling(event)) {
+          event.preventDefault();
+        }
+        // If event has targetTouches (touch event), update last touch position.
+        if (event.targetTouches) {
+          var touch = event.targetTouches[0];
+          lastTouchPosition.pageX = touch.pageX;
+          lastTouchPosition.pageY = touch.pageY;
+        }
+      },
+
+      _lockScrollInteractions: function() {
+        this._boundScrollHandler = this._boundScrollHandler ||
+          this._scrollInteractionHandler.bind(this);
+        // Modern `wheel` event for mouse wheel scrolling:
+        document.addEventListener('wheel', this._boundScrollHandler, true);
+        // Older, non-standard `mousewheel` event for some FF:
+        document.addEventListener('mousewheel', this._boundScrollHandler, true);
+        // IE:
+        document.addEventListener('DOMMouseScroll', this._boundScrollHandler, true);
+        // Save the lastScrollableNodes on touchstart, to be used on touchmove.
+        document.addEventListener('touchstart', this._boundScrollHandler, true);
+        // Mobile devices can scroll on touch move:
+        document.addEventListener('touchmove', this._boundScrollHandler, true);
+      },
+
+      _unlockScrollInteractions: function() {
+        document.removeEventListener('wheel', this._boundScrollHandler, true);
+        document.removeEventListener('mousewheel', this._boundScrollHandler, true);
+        document.removeEventListener('DOMMouseScroll', this._boundScrollHandler, true);
+        document.removeEventListener('touchstart', this._boundScrollHandler, true);
+        document.removeEventListener('touchmove', this._boundScrollHandler, true);
+      },
+
+      /**
+       * Returns true if the event causes scroll outside the current locking
+       * element, e.g. pointer/keyboard interactions, or scroll "leaking"
+       * outside the locking element when it is already at its scroll boundaries.
+       * @param {!Event} event
+       * @return {boolean}
+       * @private
+       */
+      _shouldPreventScrolling: function(event) {
+
+        // Update if root target changed. For touch events, ensure we don't
+        // update during touchmove.
+        var target = Polymer.dom(event).rootTarget;
+        if (event.type !== 'touchmove' && lastRootTarget !== target) {
+          lastRootTarget = target;
+          lastScrollableNodes = this._getScrollableNodes(Polymer.dom(event).path);
+        }
+
+        // Prevent event if no scrollable nodes.
+        if (!lastScrollableNodes.length) {
+          return true;
+        }
+        // Don't prevent touchstart event inside the locking element when it has
+        // scrollable nodes.
+        if (event.type === 'touchstart') {
+          return false;
+        }
+        // Get deltaX/Y.
+        var info = this._getScrollInfo(event);
+        // Prevent if there is no child that can scroll.
+        return !this._getScrollingNode(lastScrollableNodes, info.deltaX, info.deltaY);
+      },
+
+      /**
+       * Returns an array of scrollable nodes up to the current locking element,
+       * which is included too if scrollable.
+       * @param {!Array<Node>} nodes
+       * @return {Array<Node>} scrollables
+       * @private
+       */
+      _getScrollableNodes: function(nodes) {
+        var scrollables = [];
+        var lockingIndex = nodes.indexOf(this.currentLockingElement);
+        // Loop from root target to locking element (included).
+        for (var i = 0; i <= lockingIndex; i++) {
+          // Skip non-Element nodes.
+          if (nodes[i].nodeType !== Node.ELEMENT_NODE) {
+            continue;
+          }
+          var node = /** @type {!Element} */ (nodes[i]);
+          // Check inline style before checking computed style.
+          var style = node.style;
+          if (style.overflow !== 'scroll' && style.overflow !== 'auto') {
+            style = window.getComputedStyle(node);
+          }
+          if (style.overflow === 'scroll' || style.overflow === 'auto') {
+            scrollables.push(node);
+          }
+        }
+        return scrollables;
+      },
+
+      /**
+       * Returns the node that is scrolling. If there is no scrolling,
+       * returns undefined.
+       * @param {!Array<Node>} nodes
+       * @param {number} deltaX Scroll delta on the x-axis
+       * @param {number} deltaY Scroll delta on the y-axis
+       * @return {Node|undefined}
+       * @private
+       */
+      _getScrollingNode: function(nodes, deltaX, deltaY) {
+        // No scroll.
+        if (!deltaX && !deltaY) {
+          return;
+        }
+        // Check only one axis according to where there is more scroll.
+        // Prefer vertical to horizontal.
+        var verticalScroll = Math.abs(deltaY) >= Math.abs(deltaX);
+        for (var i = 0; i < nodes.length; i++) {
+          var node = nodes[i];
+          var canScroll = false;
+          if (verticalScroll) {
+            // delta < 0 is scroll up, delta > 0 is scroll down.
+            canScroll = deltaY < 0 ? node.scrollTop > 0 :
+              node.scrollTop < node.scrollHeight - node.clientHeight;
+          } else {
+            // delta < 0 is scroll left, delta > 0 is scroll right.
+            canScroll = deltaX < 0 ? node.scrollLeft > 0 :
+              node.scrollLeft < node.scrollWidth - node.clientWidth;
+          }
+          if (canScroll) {
+            return node;
+          }
+        }
+      },
+
+      /**
+       * Returns scroll `deltaX` and `deltaY`.
+       * @param {!Event} event The scroll event
+       * @return {{deltaX: number, deltaY: number}} Object containing the
+       * x-axis scroll delta (positive: scroll right, negative: scroll left,
+       * 0: no scroll), and the y-axis scroll delta (positive: scroll down,
+       * negative: scroll up, 0: no scroll).
+       * @private
+       */
+      _getScrollInfo: function(event) {
+        var info = {
+          deltaX: event.deltaX,
+          deltaY: event.deltaY
+        };
+        // Already available.
+        if ('deltaX' in event) {
+          // do nothing, values are already good.
+        }
+        // Safari has scroll info in `wheelDeltaX/Y`.
+        else if ('wheelDeltaX' in event) {
+          info.deltaX = -event.wheelDeltaX;
+          info.deltaY = -event.wheelDeltaY;
+        }
+        // Firefox has scroll info in `detail` and `axis`.
+        else if ('axis' in event) {
+          info.deltaX = event.axis === 1 ? event.detail : 0;
+          info.deltaY = event.axis === 2 ? event.detail : 0;
+        }
+        // On mobile devices, calculate scroll direction.
+        else if (event.targetTouches) {
+          var touch = event.targetTouches[0];
+          // Touch moves from right to left => scrolling goes right.
+          info.deltaX = lastTouchPosition.pageX - touch.pageX;
+          // Touch moves from down to up => scrolling goes down.
+          info.deltaY = lastTouchPosition.pageY - touch.pageY;
+        }
+        return info;
+      }
+    };
+  })();
+</script>
+
+
+<dom-module id="iron-dropdown" assetpath="../bower_components/iron-dropdown/">
+  <template>
+    <style>
+      :host {
+        position: fixed;
+      }
+
+      #contentWrapper ::content > * {
+        overflow: auto;
+      }
+
+      #contentWrapper.animating ::content > * {
+        overflow: hidden;
+      }
+    </style>
+
+    <div id="contentWrapper">
+      <content id="content" select=".dropdown-content"></content>
+    </div>
+  </template>
+
+  <script>
+    (function() {
+      'use strict';
+
+      Polymer({
+        is: 'iron-dropdown',
+
+        behaviors: [
+          Polymer.IronControlState,
+          Polymer.IronA11yKeysBehavior,
+          Polymer.IronOverlayBehavior,
+          Polymer.NeonAnimationRunnerBehavior
+        ],
+
+        properties: {
+          /**
+           * The orientation against which to align the dropdown content
+           * horizontally relative to the dropdown trigger.
+           * Overridden from `Polymer.IronFitBehavior`.
+           */
+          horizontalAlign: {
+            type: String,
+            value: 'left',
+            reflectToAttribute: true
+          },
+
+          /**
+           * The orientation against which to align the dropdown content
+           * vertically relative to the dropdown trigger.
+           * Overridden from `Polymer.IronFitBehavior`.
+           */
+          verticalAlign: {
+            type: String,
+            value: 'top',
+            reflectToAttribute: true
+          },
+
+          /**
+           * An animation config. If provided, this will be used to animate the
+           * opening of the dropdown. Pass an Array for multiple animations.
+           * See `neon-animation` documentation for more animation configuration
+           * details.
+           */
+          openAnimationConfig: {
+            type: Object
+          },
+
+          /**
+           * An animation config. If provided, this will be used to animate the
+           * closing of the dropdown. Pass an Array for multiple animations.
+           * See `neon-animation` documentation for more animation configuration
+           * details.
+           */
+          closeAnimationConfig: {
+            type: Object
+          },
+
+          /**
+           * If provided, this will be the element that will be focused when
+           * the dropdown opens.
+           */
+          focusTarget: {
+            type: Object
+          },
+
+          /**
+           * Set to true to disable animations when opening and closing the
+           * dropdown.
+           */
+          noAnimations: {
+            type: Boolean,
+            value: false
+          },
+
+          /**
+           * By default, the dropdown will constrain scrolling on the page
+           * to itself when opened.
+           * Set to true in order to prevent scroll from being constrained
+           * to the dropdown when it opens.
+           */
+          allowOutsideScroll: {
+            type: Boolean,
+            value: false
+          },
+
+          /**
+           * Callback for scroll events.
+           * @type {Function}
+           * @private
+           */
+          _boundOnCaptureScroll: {
+            type: Function,
+            value: function() {
+              return this._onCaptureScroll.bind(this);
+            }
+          }
+        },
+
+        listeners: {
+          'neon-animation-finish': '_onNeonAnimationFinish'
+        },
+
+        observers: [
+          '_updateOverlayPosition(positionTarget, verticalAlign, horizontalAlign, verticalOffset, horizontalOffset)'
+        ],
+
+        /**
+         * The element that is contained by the dropdown, if any.
+         */
+        get containedElement() {
+          return Polymer.dom(this.$.content).getDistributedNodes()[0];
+        },
+
+        /**
+         * The element that should be focused when the dropdown opens.
+         * @deprecated
+         */
+        get _focusTarget() {
+          return this.focusTarget || this.containedElement;
+        },
+
+        ready: function() {
+          // Memoized scrolling position, used to block scrolling outside.
+          this._scrollTop = 0;
+          this._scrollLeft = 0;
+          // Used to perform a non-blocking refit on scroll.
+          this._refitOnScrollRAF = null;
+        },
+
+        attached: function () {
+          if (!this.sizingTarget || this.sizingTarget === this) {
+            this.sizingTarget = this.containedElement || this;
+          }
+        },
+
+        detached: function() {
+          this.cancelAnimation();
+          document.removeEventListener('scroll', this._boundOnCaptureScroll);
+          Polymer.IronDropdownScrollManager.removeScrollLock(this);
+        },
+
+        /**
+         * Called when the value of `opened` changes.
+         * Overridden from `IronOverlayBehavior`
+         */
+        _openedChanged: function() {
+          if (this.opened && this.disabled) {
+            this.cancel();
+          } else {
+            this.cancelAnimation();
+            this._updateAnimationConfig();
+            this._saveScrollPosition();
+            if (this.opened) {
+              document.addEventListener('scroll', this._boundOnCaptureScroll);
+              !this.allowOutsideScroll && Polymer.IronDropdownScrollManager.pushScrollLock(this);
+            } else {
+              document.removeEventListener('scroll', this._boundOnCaptureScroll);
+              Polymer.IronDropdownScrollManager.removeScrollLock(this);
+            }
+            Polymer.IronOverlayBehaviorImpl._openedChanged.apply(this, arguments);
+          }
+        },
+
+        /**
+         * Overridden from `IronOverlayBehavior`.
+         */
+        _renderOpened: function() {
+          if (!this.noAnimations && this.animationConfig.open) {
+            this.$.contentWrapper.classList.add('animating');
+            this.playAnimation('open');
+          } else {
+            Polymer.IronOverlayBehaviorImpl._renderOpened.apply(this, arguments);
+          }
+        },
+
+        /**
+         * Overridden from `IronOverlayBehavior`.
+         */
+        _renderClosed: function() {
+
+          if (!this.noAnimations && this.animationConfig.close) {
+            this.$.contentWrapper.classList.add('animating');
+            this.playAnimation('close');
+          } else {
+            Polymer.IronOverlayBehaviorImpl._renderClosed.apply(this, arguments);
+          }
+        },
+
+        /**
+         * Called when animation finishes on the dropdown (when opening or
+         * closing). Responsible for "completing" the process of opening or
+         * closing the dropdown by positioning it or setting its display to
+         * none.
+         */
+        _onNeonAnimationFinish: function() {
+          this.$.contentWrapper.classList.remove('animating');
+          if (this.opened) {
+            this._finishRenderOpened();
+          } else {
+            this._finishRenderClosed();
+          }
+        },
+
+        _onCaptureScroll: function() {
+          if (!this.allowOutsideScroll) {
+            this._restoreScrollPosition();
+          } else {
+            this._refitOnScrollRAF && window.cancelAnimationFrame(this._refitOnScrollRAF);
+            this._refitOnScrollRAF = window.requestAnimationFrame(this.refit.bind(this));
+          }
+        },
+
+        /**
+         * Memoizes the scroll position of the outside scrolling element.
+         * @private
+         */
+        _saveScrollPosition: function() {
+          if (document.scrollingElement) {
+            this._scrollTop = document.scrollingElement.scrollTop;
+            this._scrollLeft = document.scrollingElement.scrollLeft;
+          } else {
+            // Since we don't know if is the body or html, get max.
+            this._scrollTop = Math.max(document.documentElement.scrollTop, document.body.scrollTop);
+            this._scrollLeft = Math.max(document.documentElement.scrollLeft, document.body.scrollLeft);
+          }
+        },
+
+        /**
+         * Resets the scroll position of the outside scrolling element.
+         * @private
+         */
+        _restoreScrollPosition: function() {
+          if (document.scrollingElement) {
+            document.scrollingElement.scrollTop = this._scrollTop;
+            document.scrollingElement.scrollLeft = this._scrollLeft;
+          } else {
+            // Since we don't know if is the body or html, set both.
+            document.documentElement.scrollTop = this._scrollTop;
+            document.documentElement.scrollLeft = this._scrollLeft;
+            document.body.scrollTop = this._scrollTop;
+            document.body.scrollLeft = this._scrollLeft;
+          }
+        },
+
+        /**
+         * Constructs the final animation config from different properties used
+         * to configure specific parts of the opening and closing animations.
+         */
+        _updateAnimationConfig: function() {
+          // Update the animation node to be the containedElement.
+          var animationNode = this.containedElement;
+          var animations = [].concat(this.openAnimationConfig || []).concat(this.closeAnimationConfig || []);
+          for (var i = 0; i < animations.length; i++) {
+            animations[i].node = animationNode;
+          }
+          this.animationConfig = {
+            open: this.openAnimationConfig,
+            close: this.closeAnimationConfig
+          };
+        },
+
+        /**
+         * Updates the overlay position based on configured horizontal
+         * and vertical alignment.
+         */
+        _updateOverlayPosition: function() {
+          if (this.isAttached) {
+            // This triggers iron-resize, and iron-overlay-behavior will call refit if needed.
+            this.notifyResize();
+          }
+        },
+
+        /**
+         * Apply focus to focusTarget or containedElement
+         */
+        _applyFocus: function () {
+          var focusTarget = this.focusTarget || this.containedElement;
+          if (focusTarget && this.opened && !this.noAutoFocus) {
+            focusTarget.focus();
+          } else {
+            Polymer.IronOverlayBehaviorImpl._applyFocus.apply(this, arguments);
+          }
+        }
+      });
+    })();
+  </script>
+</dom-module>
+<script>
+  Polymer({
+    is: 'paper-menu-grow-height-animation',
+
+    behaviors: [
+      Polymer.NeonAnimationBehavior
+    ],
+
+    configure: function(config) {
+      var node = config.node;
+      var rect = node.getBoundingClientRect();
+      var height = rect.height;
+
+      this._effect = new KeyframeEffect(node, [{
+        height: (height / 2) + 'px'
+      }, {
+        height: height + 'px'
+      }], this.timingFromConfig(config));
+
+      return this._effect;
+    }
+  });
+
+  Polymer({
+    is: 'paper-menu-grow-width-animation',
+
+    behaviors: [
+      Polymer.NeonAnimationBehavior
+    ],
+
+    configure: function(config) {
+      var node = config.node;
+      var rect = node.getBoundingClientRect();
+      var width = rect.width;
+
+      this._effect = new KeyframeEffect(node, [{
+        width: (width / 2) + 'px'
+      }, {
+        width: width + 'px'
+      }], this.timingFromConfig(config));
+
+      return this._effect;
+    }
+  });
+
+  Polymer({
+    is: 'paper-menu-shrink-width-animation',
+
+    behaviors: [
+      Polymer.NeonAnimationBehavior
+    ],
+
+    configure: function(config) {
+      var node = config.node;
+      var rect = node.getBoundingClientRect();
+      var width = rect.width;
+
+      this._effect = new KeyframeEffect(node, [{
+        width: width + 'px'
+      }, {
+        width: width - (width / 20) + 'px'
+      }], this.timingFromConfig(config));
+
+      return this._effect;
+    }
+  });
+
+  Polymer({
+    is: 'paper-menu-shrink-height-animation',
+
+    behaviors: [
+      Polymer.NeonAnimationBehavior
+    ],
+
+    configure: function(config) {
+      var node = config.node;
+      var rect = node.getBoundingClientRect();
+      var height = rect.height;
+      var top = rect.top;
+
+      this.setPrefixedProperty(node, 'transformOrigin', '0 0');
+
+      this._effect = new KeyframeEffect(node, [{
+        height: height + 'px',
+        transform: 'translateY(0)'
+      }, {
+        height: height / 2 + 'px',
+        transform: 'translateY(-20px)'
+      }], this.timingFromConfig(config));
+
+      return this._effect;
+    }
+  });
+</script>
+
+
+
+
+<dom-module id="paper-menu-button" assetpath="../bower_components/paper-menu-button/">
+  <template>
+    <style>
+      :host {
+        display: inline-block;
+        position: relative;
+        padding: 8px;
+        outline: none;
+
+        @apply(--paper-menu-button);
+      }
+
+      :host([disabled]) {
+        cursor: auto;
+        color: var(--disabled-text-color);
+
+        @apply(--paper-menu-button-disabled);
+      }
+
+      iron-dropdown {
+        @apply(--paper-menu-button-dropdown);
+      }
+
+      .dropdown-content {
+        @apply(--shadow-elevation-2dp);
+
+        position: relative;
+        border-radius: 2px;
+        background-color: var(--paper-menu-button-dropdown-background, --primary-background-color);
+
+        @apply(--paper-menu-button-content);
+      }
+
+      :host([vertical-align="top"]) .dropdown-content {
+        margin-bottom: 20px;
+        margin-top: -10px;
+        top: 10px;
+      }
+
+      :host([vertical-align="bottom"]) .dropdown-content {
+        bottom: 10px;
+        margin-bottom: -10px;
+        margin-top: 20px;
+      }
+      
+      #trigger {
+        cursor: pointer;
+      }
+    </style>
+
+    <div id="trigger" on-tap="toggle">
+      <content select=".dropdown-trigger"></content>
+    </div>
+
+    <iron-dropdown id="dropdown" opened="{{opened}}" horizontal-align="[[horizontalAlign]]" vertical-align="[[verticalAlign]]" dynamic-align="[[dynamicAlign]]" horizontal-offset="[[horizontalOffset]]" vertical-offset="[[verticalOffset]]" no-overlap="[[noOverlap]]" open-animation-config="[[openAnimationConfig]]" close-animation-config="[[closeAnimationConfig]]" no-animations="[[noAnimations]]" focus-target="[[_dropdownContent]]" allow-outside-scroll="[[allowOutsideScroll]]" restore-focus-on-close="[[restoreFocusOnClose]]" on-iron-overlay-canceled="__onIronOverlayCanceled">
+      <div class="dropdown-content">
+        <content id="content" select=".dropdown-content"></content>
+      </div>
+    </iron-dropdown>
+  </template>
+
+  <script>
+    (function() {
+      'use strict';
+
+      var config = {
+        ANIMATION_CUBIC_BEZIER: 'cubic-bezier(.3,.95,.5,1)',
+        MAX_ANIMATION_TIME_MS: 400
+      };
+
+      var PaperMenuButton = Polymer({
+        is: 'paper-menu-button',
+
+        /**
+         * Fired when the dropdown opens.
+         *
+         * @event paper-dropdown-open
+         */
+
+        /**
+         * Fired when the dropdown closes.
+         *
+         * @event paper-dropdown-close
+         */
+
+        behaviors: [
+          Polymer.IronA11yKeysBehavior,
+          Polymer.IronControlState
+        ],
+
+        properties: {
+          /**
+           * True if the content is currently displayed.
+           */
+          opened: {
+            type: Boolean,
+            value: false,
+            notify: true,
+            observer: '_openedChanged'
+          },
+
+          /**
+           * The orientation against which to align the menu dropdown
+           * horizontally relative to the dropdown trigger.
+           */
+          horizontalAlign: {
+            type: String,
+            value: 'left',
+            reflectToAttribute: true
+          },
+
+          /**
+           * The orientation against which to align the menu dropdown
+           * vertically relative to the dropdown trigger.
+           */
+          verticalAlign: {
+            type: String,
+            value: 'top',
+            reflectToAttribute: true
+          },
+
+          /**
+           * If true, the `horizontalAlign` and `verticalAlign` properties will
+           * be considered preferences instead of strict requirements when
+           * positioning the dropdown and may be changed if doing so reduces
+           * the area of the dropdown falling outside of `fitInto`.
+           */
+          dynamicAlign: {
+            type: Boolean
+          },
+
+          /**
+           * A pixel value that will be added to the position calculated for the
+           * given `horizontalAlign`. Use a negative value to offset to the
+           * left, or a positive value to offset to the right.
+           */
+          horizontalOffset: {
+            type: Number,
+            value: 0,
+            notify: true
+          },
+
+          /**
+           * A pixel value that will be added to the position calculated for the
+           * given `verticalAlign`. Use a negative value to offset towards the
+           * top, or a positive value to offset towards the bottom.
+           */
+          verticalOffset: {
+            type: Number,
+            value: 0,
+            notify: true
+          },
+
+          /**
+           * If true, the dropdown will be positioned so that it doesn't overlap
+           * the button.
+           */
+          noOverlap: {
+            type: Boolean
+          },
+
+          /**
+           * Set to true to disable animations when opening and closing the
+           * dropdown.
+           */
+          noAnimations: {
+            type: Boolean,
+            value: false
+          },
+
+          /**
+           * Set to true to disable automatically closing the dropdown after
+           * a selection has been made.
+           */
+          ignoreSelect: {
+            type: Boolean,
+            value: false
+          },
+
+          /**
+           * Set to true to enable automatically closing the dropdown after an
+           * item has been activated, even if the selection did not change.
+           */
+          closeOnActivate: {
+            type: Boolean,
+            value: false
+          },
+
+          /**
+           * An animation config. If provided, this will be used to animate the
+           * opening of the dropdown.
+           */
+          openAnimationConfig: {
+            type: Object,
+            value: function() {
+              return [{
+                name: 'fade-in-animation',
+                timing: {
+                  delay: 100,
+                  duration: 200
+                }
+              }, {
+                name: 'paper-menu-grow-width-animation',
+                timing: {
+                  delay: 100,
+                  duration: 150,
+                  easing: config.ANIMATION_CUBIC_BEZIER
+                }
+              }, {
+                name: 'paper-menu-grow-height-animation',
+                timing: {
+                  delay: 100,
+                  duration: 275,
+                  easing: config.ANIMATION_CUBIC_BEZIER
+                }
+              }];
+            }
+          },
+
+          /**
+           * An animation config. If provided, this will be used to animate the
+           * closing of the dropdown.
+           */
+          closeAnimationConfig: {
+            type: Object,
+            value: function() {
+              return [{
+                name: 'fade-out-animation',
+                timing: {
+                  duration: 150
+                }
+              }, {
+                name: 'paper-menu-shrink-width-animation',
+                timing: {
+                  delay: 100,
+                  duration: 50,
+                  easing: config.ANIMATION_CUBIC_BEZIER
+                }
+              }, {
+                name: 'paper-menu-shrink-height-animation',
+                timing: {
+                  duration: 200,
+                  easing: 'ease-in'
+                }
+              }];
+            }
+          },
+
+          /**
+           * By default, the dropdown will constrain scrolling on the page
+           * to itself when opened.
+           * Set to true in order to prevent scroll from being constrained
+           * to the dropdown when it opens.
+           */
+          allowOutsideScroll: {
+            type: Boolean,
+            value: false
+          },
+
+          /**
+           * Whether focus should be restored to the button when the menu closes.
+           */
+          restoreFocusOnClose: {
+            type: Boolean,
+            value: true
+          },
+
+          /**
+           * This is the element intended to be bound as the focus target
+           * for the `iron-dropdown` contained by `paper-menu-button`.
+           */
+          _dropdownContent: {
+            type: Object
+          }
+        },
+
+        hostAttributes: {
+          role: 'group',
+          'aria-haspopup': 'true'
+        },
+
+        listeners: {
+          'iron-activate': '_onIronActivate',
+          'iron-select': '_onIronSelect'
+        },
+
+        /**
+         * The content element that is contained by the menu button, if any.
+         */
+        get contentElement() {
+          return Polymer.dom(this.$.content).getDistributedNodes()[0];
+        },
+
+        /**
+         * Toggles the drowpdown content between opened and closed.
+         */
+        toggle: function() {
+          if (this.opened) {
+            this.close();
+          } else {
+            this.open();
+          }
+        },
+
+        /**
+         * Make the dropdown content appear as an overlay positioned relative
+         * to the dropdown trigger.
+         */
+        open: function() {
+          if (this.disabled) {
+            return;
+          }
+
+          this.$.dropdown.open();
+        },
+
+        /**
+         * Hide the dropdown content.
+         */
+        close: function() {
+          this.$.dropdown.close();
+        },
+
+        /**
+         * When an `iron-select` event is received, the dropdown should
+         * automatically close on the assumption that a value has been chosen.
+         *
+         * @param {CustomEvent} event A CustomEvent instance with type
+         * set to `"iron-select"`.
+         */
+        _onIronSelect: function(event) {
+          if (!this.ignoreSelect) {
+            this.close();
+          }
+        },
+
+        /**
+         * Closes the dropdown when an `iron-activate` event is received if
+         * `closeOnActivate` is true.
+         *
+         * @param {CustomEvent} event A CustomEvent of type 'iron-activate'.
+         */
+        _onIronActivate: function(event) {
+          if (this.closeOnActivate) {
+            this.close();
+          }
+        },
+
+        /**
+         * When the dropdown opens, the `paper-menu-button` fires `paper-open`.
+         * When the dropdown closes, the `paper-menu-button` fires `paper-close`.
+         *
+         * @param {boolean} opened True if the dropdown is opened, otherwise false.
+         * @param {boolean} oldOpened The previous value of `opened`.
+         */
+        _openedChanged: function(opened, oldOpened) {
+          if (opened) {
+            // TODO(cdata): Update this when we can measure changes in distributed
+            // children in an idiomatic way.
+            // We poke this property in case the element has changed. This will
+            // cause the focus target for the `iron-dropdown` to be updated as
+            // necessary:
+            this._dropdownContent = this.contentElement;
+            this.fire('paper-dropdown-open');
+          } else if (oldOpened != null) {
+            this.fire('paper-dropdown-close');
+          }
+        },
+
+        /**
+         * If the dropdown is open when disabled becomes true, close the
+         * dropdown.
+         *
+         * @param {boolean} disabled True if disabled, otherwise false.
+         */
+        _disabledChanged: function(disabled) {
+          Polymer.IronControlState._disabledChanged.apply(this, arguments);
+          if (disabled && this.opened) {
+            this.close();
+          }
+        },
+
+        __onIronOverlayCanceled: function(event) {
+          var uiEvent = event.detail;
+          var target = Polymer.dom(uiEvent).rootTarget;
+          var trigger = this.$.trigger;
+          var path = Polymer.dom(uiEvent).path;
+
+          if (path.indexOf(trigger) > -1) {
+            event.preventDefault();
+          }
+        }
+      });
+
+      Object.keys(config).forEach(function (key) {
+        PaperMenuButton[key] = config[key];
+      });
+
+      Polymer.PaperMenuButton = PaperMenuButton;
+    })();
+  </script>
+</dom-module>
+<iron-iconset-svg name="paper-dropdown-menu" size="24">
+<svg><defs>
+<g id="arrow-drop-down"><path d="M7 10l5 5 5-5z"></path></g>
+</defs></svg>
+</iron-iconset-svg>
+<dom-module id="paper-dropdown-menu-shared-styles" assetpath="../bower_components/paper-dropdown-menu/">
+  <template>
+    <style>
+      :host {
+        display: inline-block;
+        position: relative;
+        text-align: left;
+
+        /* NOTE(cdata): Both values are needed, since some phones require the
+         * value to be `transparent`.
+         */
+        -webkit-tap-highlight-color: rgba(0,0,0,0);
+        -webkit-tap-highlight-color: transparent;
+
+        --paper-input-container-input: {
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          max-width: 100%;
+          box-sizing: border-box;
+          cursor: pointer;
+        };
+
+        @apply(--paper-dropdown-menu);
+      }
+
+      :host([disabled]) {
+        @apply(--paper-dropdown-menu-disabled);
+      }
+
+      :host([noink]) paper-ripple {
+        display: none;
+      }
+
+      :host([no-label-float]) paper-ripple {
+        top: 8px;
+      }
+
+      paper-ripple {
+        top: 12px;
+        left: 0px;
+        bottom: 8px;
+        right: 0px;
+
+        @apply(--paper-dropdown-menu-ripple);
+      }
+
+      paper-menu-button {
+        display: block;
+        padding: 0;
+
+        @apply(--paper-dropdown-menu-button);
+      }
+
+      paper-input {
+        @apply(--paper-dropdown-menu-input);
+      }
+
+      iron-icon {
+        color: var(--disabled-text-color);
+
+        @apply(--paper-dropdown-menu-icon);
+      }
+    </style>
+  </template>
+</dom-module>
+
+
+<dom-module id="paper-dropdown-menu" assetpath="../bower_components/paper-dropdown-menu/">
+  <template>
+    <style include="paper-dropdown-menu-shared-styles"></style>
+
+    
+    <span role="button"></span>
+    <paper-menu-button id="menuButton" vertical-align="[[verticalAlign]]" horizontal-align="[[horizontalAlign]]" dynamic-align="[[dynamicAlign]]" vertical-offset="[[_computeMenuVerticalOffset(noLabelFloat)]]" disabled="[[disabled]]" no-animations="[[noAnimations]]" on-iron-select="_onIronSelect" on-iron-deselect="_onIronDeselect" opened="{{opened}}" close-on-activate="" allow-outside-scroll="[[allowOutsideScroll]]">
+      <div class="dropdown-trigger">
+        <paper-ripple></paper-ripple>
+        
+        <paper-input type="text" invalid="[[invalid]]" readonly="" disabled="[[disabled]]" value="[[selectedItemLabel]]" placeholder="[[placeholder]]" error-message="[[errorMessage]]" always-float-label="[[alwaysFloatLabel]]" no-label-float="[[noLabelFloat]]" label="[[label]]">
+          <iron-icon icon="paper-dropdown-menu:arrow-drop-down" suffix=""></iron-icon>
+        </paper-input>
+      </div>
+      <content id="content" select=".dropdown-content"></content>
+    </paper-menu-button>
+  </template>
+
+  <script>
+    (function() {
+      'use strict';
+
+      Polymer({
+        is: 'paper-dropdown-menu',
+
+        behaviors: [
+          Polymer.IronButtonState,
+          Polymer.IronControlState,
+          Polymer.IronFormElementBehavior,
+          Polymer.IronValidatableBehavior
+        ],
+
+        properties: {
+          /**
+           * The derived "label" of the currently selected item. This value
+           * is the `label` property on the selected item if set, or else the
+           * trimmed text content of the selected item.
+           */
+          selectedItemLabel: {
+            type: String,
+            notify: true,
+            readOnly: true
+          },
+
+          /**
+           * The last selected item. An item is selected if the dropdown menu has
+           * a child with class `dropdown-content`, and that child triggers an
+           * `iron-select` event with the selected `item` in the `detail`.
+           *
+           * @type {?Object}
+           */
+          selectedItem: {
+            type: Object,
+            notify: true,
+            readOnly: true
+          },
+
+          /**
+           * The value for this element that will be used when submitting in
+           * a form. It is read only, and will always have the same value
+           * as `selectedItemLabel`.
+           */
+          value: {
+            type: String,
+            notify: true,
+            readOnly: true
+          },
+
+          /**
+           * The label for the dropdown.
+           */
+          label: {
+            type: String
+          },
+
+          /**
+           * The placeholder for the dropdown.
+           */
+          placeholder: {
+            type: String
+          },
+
+          /**
+           * The error message to display when invalid.
+           */
+          errorMessage: {
+              type: String
+          },
+
+          /**
+           * True if the dropdown is open. Otherwise, false.
+           */
+          opened: {
+            type: Boolean,
+            notify: true,
+            value: false,
+            observer: '_openedChanged'
+          },
+
+          /**
+           * By default, the dropdown will constrain scrolling on the page
+           * to itself when opened.
+           * Set to true in order to prevent scroll from being constrained
+           * to the dropdown when it opens.
+           */
+          allowOutsideScroll: {
+            type: Boolean,
+            value: false
+          },
+
+          /**
+           * Set to true to disable the floating label. Bind this to the
+           * `<paper-input-container>`'s `noLabelFloat` property.
+           */
+          noLabelFloat: {
+              type: Boolean,
+              value: false,
+              reflectToAttribute: true
+          },
+
+          /**
+           * Set to true to always float the label. Bind this to the
+           * `<paper-input-container>`'s `alwaysFloatLabel` property.
+           */
+          alwaysFloatLabel: {
+            type: Boolean,
+            value: false
+          },
+
+          /**
+           * Set to true to disable animations when opening and closing the
+           * dropdown.
+           */
+          noAnimations: {
+            type: Boolean,
+            value: false
+          },
+
+          /**
+           * The orientation against which to align the menu dropdown
+           * horizontally relative to the dropdown trigger.
+           */
+          horizontalAlign: {
+            type: String,
+            value: 'right'
+          },
+
+          /**
+           * The orientation against which to align the menu dropdown
+           * vertically relative to the dropdown trigger.
+           */
+          verticalAlign: {
+            type: String,
+            value: 'top'
+          },
+
+          /**
+           * If true, the `horizontalAlign` and `verticalAlign` properties will
+           * be considered preferences instead of strict requirements when
+           * positioning the dropdown and may be changed if doing so reduces
+           * the area of the dropdown falling outside of `fitInto`.
+           */
+          dynamicAlign: {
+            type: Boolean
+          },
+        },
+
+        listeners: {
+          'tap': '_onTap'
+        },
+
+        keyBindings: {
+          'up down': 'open',
+          'esc': 'close'
+        },
+
+        hostAttributes: {
+          role: 'combobox',
+          'aria-autocomplete': 'none',
+          'aria-haspopup': 'true'
+        },
+
+        observers: [
+          '_selectedItemChanged(selectedItem)'
+        ],
+
+        attached: function() {
+          // NOTE(cdata): Due to timing, a preselected value in a `IronSelectable`
+          // child will cause an `iron-select` event to fire while the element is
+          // still in a `DocumentFragment`. This has the effect of causing
+          // handlers not to fire. So, we double check this value on attached:
+          var contentElement = this.contentElement;
+          if (contentElement && contentElement.selectedItem) {
+            this._setSelectedItem(contentElement.selectedItem);
+          }
+        },
+
+        /**
+         * The content element that is contained by the dropdown menu, if any.
+         */
+        get contentElement() {
+          return Polymer.dom(this.$.content).getDistributedNodes()[0];
+        },
+
+        /**
+         * Show the dropdown content.
+         */
+        open: function() {
+          this.$.menuButton.open();
+        },
+
+        /**
+         * Hide the dropdown content.
+         */
+        close: function() {
+          this.$.menuButton.close();
+        },
+
+        /**
+         * A handler that is called when `iron-select` is fired.
+         *
+         * @param {CustomEvent} event An `iron-select` event.
+         */
+        _onIronSelect: function(event) {
+          this._setSelectedItem(event.detail.item);
+        },
+
+        /**
+         * A handler that is called when `iron-deselect` is fired.
+         *
+         * @param {CustomEvent} event An `iron-deselect` event.
+         */
+        _onIronDeselect: function(event) {
+          this._setSelectedItem(null);
+        },
+
+        /**
+         * A handler that is called when the dropdown is tapped.
+         *
+         * @param {CustomEvent} event A tap event.
+         */
+        _onTap: function(event) {
+          if (Polymer.Gestures.findOriginalTarget(event) === this) {
+            this.open();
+          }
+        },
+
+        /**
+         * Compute the label for the dropdown given a selected item.
+         *
+         * @param {Element} selectedItem A selected Element item, with an
+         * optional `label` property.
+         */
+        _selectedItemChanged: function(selectedItem) {
+          var value = '';
+          if (!selectedItem) {
+            value = '';
+          } else {
+            value = selectedItem.label || selectedItem.getAttribute('label') || selectedItem.textContent.trim();
+          }
+
+          this._setValue(value);
+          this._setSelectedItemLabel(value);
+        },
+
+        /**
+         * Compute the vertical offset of the menu based on the value of
+         * `noLabelFloat`.
+         *
+         * @param {boolean} noLabelFloat True if the label should not float
+         * above the input, otherwise false.
+         */
+        _computeMenuVerticalOffset: function(noLabelFloat) {
+          // NOTE(cdata): These numbers are somewhat magical because they are
+          // derived from the metrics of elements internal to `paper-input`'s
+          // template. The metrics will change depending on whether or not the
+          // input has a floating label.
+          return noLabelFloat ? -4 : 8;
+        },
+
+        /**
+         * Returns false if the element is required and does not have a selection,
+         * and true otherwise.
+         * @param {*=} _value Ignored.
+         * @return {boolean} true if `required` is false, or if `required` is true
+         * and the element has a valid selection.
+         */
+        _getValidity: function(_value) {
+          return this.disabled || !this.required || (this.required && !!this.value);
+        },
+
+        _openedChanged: function() {
+          var openState = this.opened ? 'true' : 'false';
+          var e = this.contentElement;
+          if (e) {
+            e.setAttribute('aria-expanded', openState);
+          }
+        }
+      });
+    })();
+  </script>
+</dom-module>
 <dom-module id="stampzilla-device-dialog-common" assetpath="stampzilla-device/">
 	<template>
 		<style is="custom-style">
@@ -30127,6 +31632,29 @@ event and do your own custom submission:
 		<form is="iron-form" id="form">
 			<paper-input label="Name" name="name" value="[[device.name]]"></paper-input>
 			<paper-input label="Tags (space sepparated)" name="tags" value="[[device.tags]]"></paper-input>
+
+			<h4>Parameters</h4>
+			<table>
+				<template is="dom-repeat" items="{{_toArray(device.config)}}" as="config" sort="_sort">
+					<tr>
+						<td>[[config.name]]</td>
+						<td>
+							<template is="dom-if" if="{{_isType(config.type, 'bool')}}">
+								<paper-toggle-button></paper-toggle-button>
+							</template>
+							<template is="dom-if" if="{{_isSet(config.options)}}">
+								<paper-dropdown-menu>
+									<paper-listbox class="dropdown-content">
+										<template is="dom-repeat" items="{{_toArray(config.options)}}">
+											<paper-item>[[item]]</paper-item>
+										</template>
+									</paper-listbox>
+								</paper-dropdown-menu>
+							</template>
+						</td>
+					</tr>
+				</template>
+			</table>
 			<paper-button id="save" raised=""><iron-icon icon="icons:save"></iron-icon> Save</paper-button>
 		</form>
 	</template>
@@ -30143,7 +31671,6 @@ event and do your own custom submission:
 					}
 				},
 				deviceChanged: function() {
-					// console.log(this.device);
 				},
 				listeners: {
 					'save.click': 'save',
@@ -30164,6 +31691,21 @@ event and do your own custom submission:
 				},
 				save: function() {
 					this.$.form.submit();
+				},
+				_toArray: function(obj) {
+					return Object.keys(obj).map(function(key) {
+						return obj[key];
+					});
+				},
+				_sort: function(a, b) {
+					if (a.name === b.name) return 0;
+					return a.name.localeCompare(b.name);
+				},
+				_isType(type, config) {
+					return config === type;
+				},
+				_isSet(type) {
+					return type !== undefined;
 				}
 			});
 		})();
@@ -30399,9 +31941,13 @@ event and do your own custom submission:
 				},
 
 				stateChanged: function() {
-					console.log(this.state);
+					// console.log(this.state);
 					this.value = this.state.on;
 					this.secondaryLevel = this.state.level;
+
+					if ( this.sliding === undefined || this.sliding === false ) {
+						this.level = this.secondaryLevel;
+					}
 				}, 
 				toggleValue: function() {
 					if (this.value) {
@@ -30452,6 +31998,7 @@ event and do your own custom submission:
 					this.set('level',this.secondaryLevel);
 				},
 				handleSlide: function(e) {
+					this.sliding = true;
 				},
 				handleSlideEnd: function(e) {
 					var pkg = {
@@ -30467,6 +32014,8 @@ event and do your own custom submission:
 					};
 
 					app.fire('ws-send', pkg);
+
+					this.sliding = false;
 				}
 			});
 		})();
@@ -31168,7 +32717,7 @@ event and do your own custom submission:
 						var device = row.devices;
 						if ( device.tags !== undefined && device.tags !== null ) {
 							device.tags.forEach(function(tag) {
-								tag = '#' + tag;
+								//tag = '#' + tag;
 								if ( cards[tag] === undefined ) {
 									cards[tag] = [];
 								}

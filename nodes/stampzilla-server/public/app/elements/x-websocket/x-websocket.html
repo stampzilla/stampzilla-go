@@ -170,7 +170,6 @@
 				 * @private
 				 */
 				_onwsclose: function(e) {
-					this._ws = null;
 					this.fire('error', { code: e.code, reason: e.reason });
 					if(e.code === 1001){
 						this._reconnect();

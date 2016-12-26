@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/Sirupsen/logrus"
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
@@ -24,6 +25,7 @@ func (wsr *Devices) Start() {
 	})
 
 	wsr.Router.AddRoute("devices/set", wsr.Set)
+	wsr.Router.AddRoute("device/config/set", wsr.SetConfig)
 
 }
 func (wh *Devices) SendAllDevices() {
@@ -45,16 +47,38 @@ func (wh *Devices) Set(msg *websocket.Message) {
 
 	device := wh.Devices.ByUuid(data.Uuid)
 	if device != nil {
-		device.Name = data.Name
-		tags := strings.Split(data.Tags, ",")
-		for k, v := range tags {
-			tags[k] = strings.TrimSpace(v)
+		if data.Name != "" {
+			device.Name = data.Name
 		}
-		device.Tags = tags
+
+		if data.Tags != "" {
+			tags := strings.Split(data.Tags, ",")
+			for k, v := range tags {
+				tags[k] = strings.TrimSpace(v)
+			}
+			device.Tags = tags
+		}
 
 		go wh.Clients.SendToAll("devices/single", device)
 
 		wh.Devices.SaveToFile("devices.json")
+	}
+}
+
+func (wh *Devices) SetConfig(msg *websocket.Message) {
+	type message struct {
+		Device    string          `json:"device"`
+		Parameter string          `json:"parameter"`
+		Value     json.RawMessage `json:"value"`
+	}
+	var data message
+
+	json.Unmarshal(msg.Data, &data)
+
+	device := wh.Devices.ByUuid(data.Device)
+	if device != nil {
+		//device.SetConfig(data.Parameter, data.Value)
+		logrus.Errorf("Recivec config %#v", data)
 	}
 }
 
