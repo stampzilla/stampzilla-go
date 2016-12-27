@@ -27,9 +27,10 @@ var lifxClient *client.Client
 
 type Config struct {
 	BroadcastAddress string `json:"broadcastAddress"`
+	ApiAccessToken   string `json:"api_access_token"`
 }
 
-func main() { // {{{
+func main() {
 	// Parse all commandline arguments, host and port parameters are added in the basenode init function
 	flag.Parse()
 
@@ -71,11 +72,23 @@ func main() { // {{{
 		log.Error(err)
 		return
 	}
+	log.Infof("%#v", nc)
+
+	if nc.ApiAccessToken != "" {
+		lifxCloudClient, err := NewLifxCloudClient(nc.ApiAccessToken)
+
+		if err != nil {
+			log.Error(err)
+		} else {
+			lifxCloudClient.Start()
+		}
+	}
+
 	go discoverWorker(lifxClient, connection)
 
 	select {}
 
-} /*}}}*/
+}
 
 func discoverWorker(client *client.Client, connection basenode.Connection) {
 
