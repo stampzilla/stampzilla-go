@@ -20,12 +20,13 @@ var BUILD_DATE string = ""
 var listenPort string
 var ip string
 var debug bool
+var standalone bool
 
 func init() {
 	flag.StringVar(&listenPort, "listenport", "80", "Port to listen to. Must be 80 for Google Home to work")
 	flag.StringVar(&ip, "ip", hueemulator.GetPrimaryIp(), "Ip to listen to.")
 	flag.BoolVar(&debug, "debug", false, "Debug. Without this we dont print other than errors. Optimized not to wear on raspberry pi SD card.")
-	flag.Parse()
+	flag.BoolVar(&standalone, "standalone", false, "Run standalone without communicating with stampzilla-server Host:Port configured in config.json.")
 }
 
 type NodeSpecific struct {
@@ -35,6 +36,7 @@ type NodeSpecific struct {
 }
 
 func main() {
+	flag.Parse()
 	hueemulator.SetLogger(os.Stdout)
 	hueemulator.SetDebug(debug)
 
@@ -51,30 +53,32 @@ func main() {
 	err := config.NodeSpecific(&nodespecific)
 	if err != nil {
 		log.Println(err)
-		return
 	}
 
-	if nodespecific.ListenPort != "" {
+	if nodespecific.ListenPort != "" && listenPort == "80" {
 		listenPort = nodespecific.ListenPort
 	}
 
-	//TODO this works. But we need to save devices to json before uncommenting and enableing it!
-	log.Println("Syncing devices from server")
-	SyncDevicesFromServer(config, nodespecific)
+	if !standalone {
+		log.Println("Syncing devices from server")
+		syncDevicesFromServer(config, nodespecific)
 
-	go func() {
-		for range time.NewTicker(60 * time.Second).C {
-			if debug {
-				log.Println("Syncing devices from server")
+		go func() {
+			for range time.NewTicker(60 * time.Second).C {
+				if debug {
+					log.Println("Syncing devices from server")
+				}
+				syncDevicesFromServer(config, nodespecific)
 			}
-			SyncDevicesFromServer(config, nodespecific)
-		}
-	}()
+		}()
+		connection := basenode.Connect()
+		go monitorState(node, connection)
+	}
 
 	//spew.Dump(config)
 
 	for _, d := range nodespecific.Devices {
-		log.Println(d)
+		log.Println("Setting up handler for device: ", d.Name)
 		dev := d
 		hueemulator.Handle(d.Id, d.Name, func(req hueemulator.Request) error {
 			fmt.Println("im handling from", req.RemoteAddr, req.Request.On)
@@ -114,10 +118,6 @@ func main() {
 
 	}
 
-	connection := basenode.Connect()
-
-	go monitorState(node, connection)
-
 	// it is very important to use a full IP here or the UPNP does not work correctly.
 	ip := hueemulator.GetPrimaryIp()
 	panic(hueemulator.ListenAndServe(ip + ":" + listenPort))
@@ -130,7 +130,8 @@ func main() {
 //}
 //}
 
-type Url struct {
+// URL containing urls for dim and on and off
+type URL struct {
 	Level string
 	On    string
 	Off   string
@@ -140,10 +141,10 @@ type Device struct {
 	Name string
 	Id   int
 	UUID string
-	Url  *Url
+	Url  *URL
 }
 
-func SyncDevicesFromServer(config *basenode.Config, ns *NodeSpecific) {
+func syncDevicesFromServer(config *basenode.Config, ns *NodeSpecific) {
 	didChange := false
 
 	serverDevs, err := fetchDevices(config, ns)
@@ -173,7 +174,7 @@ outer:
 		dev := &Device{
 			Name: sdev.Name,
 			Id:   len(ns.Devices) + 1,
-			Url: &Url{
+			Url: &URL{
 				Level: baseURL + sdev.Node + "/cmd/level/" + sdev.Id + "/%f",
 				On:    baseURL + sdev.Node + "/cmd/on/" + sdev.Id,
 				Off:   baseURL + sdev.Node + "/cmd/off/" + sdev.Id,
