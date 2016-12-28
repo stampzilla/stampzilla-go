@@ -19,17 +19,25 @@ var VERSION string = "dev"
 var BUILD_DATE string = ""
 
 // GLOBAL VARS
-var node *protocol.Node
+var node = &Node{}
 var state *State
 var serverSendChannel chan interface{}
 var serverRecvChannel chan protocol.Command
 var lifxClient *client.Client
 
+// Config contains the lifx specific node configuration
 type Config struct {
 	BroadcastAddress string `json:"broadcastAddress"`
+	APIAccessToken   string `json:"api_access_token"`
 }
 
-func main() { // {{{
+// Node is an extended version of protocol.Node with a pointer to the connection
+type Node struct {
+	*protocol.Node
+	connection basenode.Connection
+}
+
+func main() {
 	// Parse all commandline arguments, host and port parameters are added in the basenode init function
 	flag.Parse()
 
@@ -45,21 +53,22 @@ func main() { // {{{
 		//return
 	}
 
-	node = protocol.NewNode("lifx")
+	node.Node = protocol.NewNode("lifx")
 	node.Version = VERSION
 	node.BuildDate = BUILD_DATE
 
 	//Start communication with the server
-	connection := basenode.Connect()
+	node.connection = basenode.Connect()
 
 	// This worker keeps track on our connection state, if we are connected or not
-	go monitorState(node, connection)
+	go monitorState(node, node.connection)
 
 	// This worker recives all incomming commands
-	go serverRecv(connection)
+	go serverRecv(node.connection)
 
 	// Create new node description
 	state = NewState()
+	state.publishStateFunc = node.publishState
 	node.SetState(state)
 
 	if nc.BroadcastAddress != "" {
@@ -71,14 +80,28 @@ func main() { // {{{
 		log.Error(err)
 		return
 	}
-	go discoverWorker(lifxClient, connection)
+
+	if nc.APIAccessToken != "" {
+		lifxCloudClient, err := newLifxCloudClient(nc.APIAccessToken)
+		lifxCloudClient.pollerResultFunc = node.handleLifxCloudUpdate
+		if err != nil {
+			log.Error(err)
+		} else {
+			lifxCloudClient.start()
+		}
+	}
+
+	go discoverWorker(lifxClient, node.connection)
 
 	select {}
 
-} /*}}}*/
+}
+
+func (node *Node) publishState() {
+	node.connection.Send(node.Node)
+}
 
 func discoverWorker(client *client.Client, connection basenode.Connection) {
-
 	go monitorLampCollection(client.Lights, connection)
 
 	for {
@@ -97,7 +120,7 @@ func monitorLampCollection(lights *client.LightCollection, connection basenode.C
 		case client.LampAdded:
 			log.Warnf("Added: %s (%s)", s.Lamp.Id(), s.Lamp.Label())
 
-			state.AddDevice(s.Lamp)
+			state.AddLanDevice(s.Lamp)
 
 			node.AddElement(&protocol.Element{
 				Type: protocol.ElementTypeToggle,
@@ -118,8 +141,6 @@ func monitorLampCollection(lights *client.LightCollection, connection basenode.C
 				Feedback: "Devices[4].State",
 			})
 			//log.Infof("Collection: %#v", lights.Lights)
-			connection.Send(node)
-
 		case client.LampUpdated:
 			log.Warnf("Changed: %s (%s)", s.Lamp.Id(), s.Lamp.Label())
 		case client.LampRemoved:
@@ -130,12 +151,28 @@ func monitorLampCollection(lights *client.LightCollection, connection basenode.C
 	}
 }
 
+func (node *Node) handleLifxCloudUpdate(lamps []*cloudGetAllResponse) {
+	for _, v := range lamps {
+		if len(v.ID) == 12 {
+			v.ID = v.ID + "0000"
+		}
+
+		d := state.GetByID(v.ID)
+		if d == nil {
+			d = NewLamp(v.ID, v.Label, "")
+			state.Add(d)
+		}
+
+		d.SyncFromCloud(v)
+	}
+}
+
 // WORKER that monitors the current connection state
-func monitorState(node *protocol.Node, connection basenode.Connection) {
+func monitorState(node *Node, connection basenode.Connection) {
 	for s := range connection.State() {
 		switch s {
 		case basenode.ConnectionStateConnected:
-			connection.Send(node)
+			node.publishState()
 		case basenode.ConnectionStateDisconnected:
 		}
 	}
