@@ -26837,7 +26837,6 @@ module.exports = Array.isArray || function (arr) {
 				 * @private
 				 */
 				_onwsclose: function(e) {
-					this._ws = null;
 					this.fire('error', { code: e.code, reason: e.reason });
 					if(e.code === 1001){
 						this._reconnect();
@@ -27815,31 +27814,52 @@ module.exports = Array.isArray || function (arr) {
 			color: #666666;
 			font-size:0.8em;
 		}
+
+		.col {
+			padding:0 15px;
+		}
 	</style>
 	<template>
 			<div class="layout horizontal title">
-				<div id="title"><paper-toggle-button checked="" disabled=""></paper-toggle-button></div>
-				<div id="title" class="flex">{{data.name}}</div>
+				<div id="title"><paper-toggle-button checked$="[[data.enabled]]" disabled=""></paper-toggle-button></div>
+				<div id="title" class="flex">
+					<template is="dom-if" if="{{!data.active}}">
+						{{data.name}}
+					</template>
+					<template is="dom-if" if="{{data.active}}">
+						<span style="color:#090">{{data.name}}</span>
+					</template>
+				</div>
 				<div><paper-button raised="" id="trigger1" uuid="[[data.uuid]]">Run Enter</paper-button></div>
 				<div><paper-button raised="" id="trigger2" uuid="[[data.uuid]]">Run Exit</paper-button></div>
 			</div>
-			<div>
-				<template is="dom-repeat" items="{{data.commands}}" as="item" index-as="i">
-					<div class="horizontal layout row">
-						<template is="dom-if" if="{{item.command}}">
-							<div class="cell"></div>
-							<div class="cell"><iron-icon icon="icons:send"></iron-icon></div>
-							<div class="cell"><span>[[item.uuid]]</span>:<span>[[item.command.cmd]]</span></div>
-							<div class="cell args flex"><div>[[item.command.args]]</div></div>
-						</template>
-						<template is="dom-if" if="{{item.pause}}">
-							<div class="cell"></div>
-							<div class="cell"><iron-icon icon="image:timer"></iron-icon></div>
-							<div class="cell">[[item.pause]]</div>
-							<div class="cell flex"></div>
-						</template>
-					</div>
-				</template>
+			<div class="horizontal layout">
+				<div class="flex col">
+					<strong>Conditions</strong>
+					<template is="dom-repeat" items="{{data.conditions}}" as="item" index-as="i">
+						<div class="horizontal layout row">
+							<div><span>[[item.uuid]]</span> - <span>[[item.statePath]]</span> <span>[[item.comparator]]</span> <span></span>[[item.value]]</div>
+						</div>
+					</template>
+				</div>
+
+				<div class="col">
+					<strong>Enter actions</strong>
+					<template is="dom-repeat" items="{{data.enterActions}}" as="item" index-as="i">
+						<div class="horizontal layout row">
+							<div>[[item]]</div>
+						</div>
+					</template>
+				</div>
+
+				<div class="col">
+					<strong>Exit actions</strong>
+					<template is="dom-repeat" items="{{data.exitActions}}" as="item" index-as="i">
+						<div class="horizontal layout row">
+							<div>[[item]]</div>
+						</div>
+					</template>
+				</div>
 			</div>
 	</template>
 	<script>
@@ -30061,6 +30081,41 @@ event and do your own custom submission:
 </script>
 
 
+<dom-module id="paper-listbox" assetpath="../bower_components/paper-listbox/">
+  <template>
+    <style>
+      :host {
+        display: block;
+        padding: 8px 0;
+
+        background: var(--paper-listbox-background-color, --primary-background-color);
+        color: var(--paper-listbox-color, --primary-text-color);
+
+        @apply(--paper-listbox);
+      }
+    </style>
+
+    <content></content>
+  </template>
+
+  <script>
+    (function() {
+      Polymer({
+        is: 'paper-listbox',
+
+        behaviors: [
+          Polymer.IronMenuBehavior
+        ],
+
+        hostAttributes: {
+          role: 'listbox'
+        }
+      });
+    })();
+  </script>
+</dom-module>
+
+
 <script>
 
   Polymer({
@@ -31628,35 +31683,124 @@ event and do your own custom submission:
 			    @apply(--layout-wrap);
 			}
 
+			/* Table styles are partially from https://github.com/David-Mulder/paper-datatable */ 
+
+			table {
+			  border-spacing: 0px;
+							width:100%;
+			}
+
+			tr td, tr th {
+			  padding: 6px 28px 6px 28px;
+							box-sizing: border-box;
+			}
+
+			td {
+			  height: 48px;
+			}
+
+			th {
+				font-weight: 500;
+				text-align:left;
+				white-space: nowrap;
+				
+				-webkit-user-select: none;
+				-ms-user-select: none;
+				-moz-user-select: none;
+				user-select: none;
+				color: rgba(0,0,0, .54);
+				font-size:12px;
+				transition: linear .1s color, padding-left .2s linear;
+				box-sizing: border-box;
+				height: 56px;
+			}
+
+
+			tr th span {
+			  vertical-align: middle;
+			}
+
+			tr td:first-child, tr th:first-child {
+			  padding-left: 24px;
+				padding-right: 0px;
+				width:56px;
+				min-width:56px;
+			}
+
+			tr td:nth-of-type(2), tr th:nth-of-type(2) {
+			  padding-left: 10px;
+			}
+
+			td:last-of-type, th:last-of-type {
+			  padding-right: 24px;
+			}
+
+			tr td, tr th {
+			  border-bottom:1px solid #e0e0e0;
+			}
+
+			th {
+			  font-family:'Roboto', 'Noto', sans-serif;
+				  -webkit-font-smoothing:antialiased;
+			}
+
+			tr:hover td {
+			  background:#eeeeee;
+			}
 		</style>
+		<h2>General</h2>
 		<form is="iron-form" id="form">
 			<paper-input label="Name" name="name" value="[[device.name]]"></paper-input>
 			<paper-input label="Tags (space sepparated)" name="tags" value="[[device.tags]]"></paper-input>
 
-			<h4>Parameters</h4>
-			<table>
-				<template is="dom-repeat" items="{{_toArray(device.config)}}" as="config" sort="_sort">
-					<tr>
-						<td>[[config.name]]</td>
-						<td>
-							<template is="dom-if" if="{{_isType(config.type, 'bool')}}">
-								<paper-toggle-button></paper-toggle-button>
-							</template>
-							<template is="dom-if" if="{{_isSet(config.options)}}">
-								<paper-dropdown-menu>
-									<paper-listbox class="dropdown-content">
-										<template is="dom-repeat" items="{{_toArray(config.options)}}">
-											<paper-item>[[item]]</paper-item>
-										</template>
-									</paper-listbox>
-								</paper-dropdown-menu>
-							</template>
-						</td>
-					</tr>
-				</template>
-			</table>
 			<paper-button id="save" raised=""><iron-icon icon="icons:save"></iron-icon> Save</paper-button>
 		</form>
+
+		<template is="dom-if" if="{{_isSet(device.config)}}">
+			<h2 style="margin-top:30px;">Parameters</h2>
+			<table>
+				<thead>
+					<tr>
+						<th>Status</th>
+						<th>Parameter</th>
+						<th>Name</th>
+						<th>Value</th>
+					</tr>
+				</thead>
+				<tbody>
+					<template is="dom-repeat" items="{{_toArray(device.config)}}" as="config" sort="_sort">
+						<tr>
+							<td>
+								<template is="dom-if" if="{{_isSet(config.row.state)}}">
+									<template is="dom-if" if="{{_isType(config.row.state, " ok")}}"="">
+										<iron-icon icon="check"></iron-icon>
+									</template>
+									<template is="dom-if" if="{{_isType(config.row.state, " pending")}}"="">
+										<iron-icon icon="autorenew"></iron-icon>
+									</template>
+								</template>
+							</td>
+							<td>[[config.key]]</td>
+							<td>[[config.row.name]]</td>
+							<td>
+								<template is="dom-if" if="{{_isType(config.row.type, 'bool')}}">
+									<paper-toggle-button on-change="saveParameter" data-parameter$="[[config.key]]"></paper-toggle-button>
+								</template>
+								<template is="dom-if" if="{{_isSet(config.row.options)}}">
+									<paper-dropdown-menu>
+										<paper-listbox class="dropdown-content" on-iron-select="saveParameter" data-parameter$="[[config.key]]">
+											<template is="dom-repeat" items="{{_toArray(config.row.options)}}">
+												<paper-item><span>[[item.key]]</span> - <span>[[item.row]]</span></paper-item>
+											</template>
+										</paper-listbox>
+									</paper-dropdown-menu>
+								</template>
+							</td>
+						</tr>
+					</template>
+				</tbody>
+			</table>
+		</template>
 	</template>
 
 	<script>
@@ -31686,7 +31830,6 @@ event and do your own custom submission:
 					pkg.data.uuid = this.device.node+"."+this.device.id;
 
 					app.fire('ws-send', pkg);
-
 					this.fire('stampzilla-dialog-dismiss')
 				},
 				save: function() {
@@ -31694,18 +31837,49 @@ event and do your own custom submission:
 				},
 				_toArray: function(obj) {
 					return Object.keys(obj).map(function(key) {
-						return obj[key];
+						return {
+							key: key, 
+							row: obj[key]
+						}
 					});
 				},
 				_sort: function(a, b) {
-					if (a.name === b.name) return 0;
-					return a.name.localeCompare(b.name);
+					if (a.id === b.id) return 0;
+					return a.id.localeCompare(b.id);
 				},
 				_isType(type, config) {
 					return config === type;
 				},
 				_isSet(type) {
 					return type !== undefined;
+				},
+				saveParameter: function(event) {
+					var param = event.target.dataset.parameter;
+					var config = this.device.config[param];
+
+					event.preventDefault();
+
+					var val;
+					if ( config.type === "bool" ) {
+						val = event.target.checked;
+					} else if ( config.options !== undefined ) {
+						val = event.target.selected;
+					}
+
+					//console.log("Save", event.target, this.device.config[param], "value", val);
+
+					var pkg = {
+						type: 'device/config/set',
+						data: {
+							device: this.device.node+"."+this.device.id,
+							parameter: param,
+							value: val,
+						}
+					};
+
+					this.device.config[param].state = "pending";
+
+					app.fire('ws-send', pkg);
 				}
 			});
 		})();

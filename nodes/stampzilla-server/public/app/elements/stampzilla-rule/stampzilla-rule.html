@@ -37,31 +37,52 @@
 			color: #666666;
 			font-size:0.8em;
 		}
+
+		.col {
+			padding:0 15px;
+		}
 	</style>
 	<template>
 			<div class="layout horizontal title">
-				<div id="title"><paper-toggle-button checked disabled></paper-toggle-button></div>
-				<div id="title" class="flex">{{data.name}}</div>
+				<div id="title"><paper-toggle-button checked$="[[data.enabled]]" disabled></paper-toggle-button></div>
+				<div id="title" class="flex">
+					<template is="dom-if" if="{{!data.active}}">
+						{{data.name}}
+					</template>
+					<template is="dom-if" if="{{data.active}}">
+						<span style="color:#090">{{data.name}}</span>
+					</template>
+				</div>
 				<div><paper-button raised id="trigger1" uuid="[[data.uuid]]">Run Enter</paper-button></div>
 				<div><paper-button raised id="trigger2" uuid="[[data.uuid]]">Run Exit</paper-button></div>
 			</div>
-			<div>
-				<template is="dom-repeat" items="{{data.commands}}" as="item" index-as="i">
-					<div class="horizontal layout row">
-						<template is="dom-if" if="{{item.command}}">
-							<div class="cell"></div>
-							<div class="cell"><iron-icon icon="icons:send"></iron-icon></div>
-							<div class="cell"><span>[[item.uuid]]</span>:<span>[[item.command.cmd]]</span></div>
-							<div class="cell args flex"><div>[[item.command.args]]</div></div>
-						</template>
-						<template is="dom-if" if="{{item.pause}}">
-							<div class="cell"></div>
-							<div class="cell"><iron-icon icon="image:timer"></iron-icon></div>
-							<div class="cell">[[item.pause]]</div>
-							<div class="cell flex"></div>
-						</template>
-					</div>
-				</template>
+			<div class="horizontal layout">
+				<div class="flex col">
+					<strong>Conditions</strong>
+					<template is="dom-repeat" items="{{data.conditions}}" as="item" index-as="i">
+						<div class="horizontal layout row">
+							<div ><span>[[item.uuid]]</span> - <span>[[item.statePath]]</span> <span>[[item.comparator]]</span> <span></span>[[item.value]]</div>
+						</div>
+					</template>
+				</div>
+
+				<div class="col">
+					<strong>Enter actions</strong>
+					<template is="dom-repeat" items="{{data.enterActions}}" as="item" index-as="i">
+						<div class="horizontal layout row">
+							<div >[[item]]</div>
+						</div>
+					</template>
+				</div>
+
+				<div class="col">
+					<strong>Exit actions</strong>
+					<template is="dom-repeat" items="{{data.exitActions}}" as="item" index-as="i">
+						<div class="horizontal layout row">
+							<div >[[item]]</div>
+						</div>
+					</template>
+				</div>
 			</div>
 	</template>
 	<script>
