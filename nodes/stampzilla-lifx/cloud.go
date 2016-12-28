@@ -14,7 +14,7 @@ type LifxCloudClient struct {
 	pollerResultFunc func([]*cloudGetAllResponse)
 }
 
-func NewLifxCloudClient(aat string) (*LifxCloudClient, error) {
+func newLifxCloudClient(aat string) (*LifxCloudClient, error) {
 	log.Info("create poller")
 	lc := &LifxCloudClient{
 		ApiAccessToken:   aat,
@@ -24,14 +24,14 @@ func NewLifxCloudClient(aat string) (*LifxCloudClient, error) {
 	return lc, nil
 }
 
-func (lc *LifxCloudClient) Start() {
+func (lc *LifxCloudClient) start() {
 	log.Info("Start poller")
-	go lc.Poller()
+	go lc.poller()
 }
 
-func (lc *LifxCloudClient) Poller() {
+func (lc *LifxCloudClient) poller() {
 	for {
-		lamps, err := lc.Poll()
+		lamps, err := lc.poll()
 		if err != nil {
 			log.Errorf("Poller failed: %s", err)
 			<-time.After(60 * time.Second)
@@ -44,7 +44,7 @@ func (lc *LifxCloudClient) Poller() {
 	}
 }
 
-func (lc *LifxCloudClient) Poll() ([]*cloudGetAllResponse, error) {
+func (lc *LifxCloudClient) poll() ([]*cloudGetAllResponse, error) {
 	resp, err := resty.R().
 		SetHeader("Accept", "application/json").
 		SetAuthToken(lc.ApiAccessToken).
@@ -69,7 +69,7 @@ func (lc *LifxCloudClient) Poll() ([]*cloudGetAllResponse, error) {
 
 type cloudGetAllResponse struct {
 	ID         string        `json:"id"`
-	Uuid       string        `json:"uuid"`
+	UUID       string        `json:"uuid"`
 	Label      string        `json:"label"`
 	Connected  bool          `json:"connected"`
 	Power      string        `json:"power"`
@@ -89,12 +89,12 @@ type cloudColor struct {
 }
 
 type cloudGroup struct {
-	Id   string `json:"id"`
+	ID   string `json:"id"`
 	Name string `json:"name"`
 }
 
 type cloudLocation struct {
-	Id   string `json:"id"`
+	ID   string `json:"id"`
 	Name string `json:"name"`
 }
 

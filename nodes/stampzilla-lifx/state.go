@@ -9,6 +9,7 @@ import (
 	"github.com/stampzilla/stampzilla-go/protocol/devices"
 )
 
+// State contains the lifx node state
 type State struct {
 	Lamps       map[string]*Lamp `json:"lamps"`
 	LifxClound  StateLifxCloud   `json:"lifx_clound"`
@@ -19,10 +20,11 @@ type State struct {
 	sync.Mutex
 }
 
+// Lamp is the state for each found lamp. Can be sourced from both lan and cloud protocols
 type Lamp struct {
-	Id   string `json:"id"`
+	ID   string `json:"id"`
 	Name string `json:"name"`
-	Ip   string `json:"ip"`
+	IP   string `json:"ip"`
 
 	Level float64    `json:"level"`
 	Color StateColor `json:"color"`
@@ -37,52 +39,44 @@ type Lamp struct {
 	sync.Mutex
 }
 
+// StateColor describes the current color at the lifx lamp
 type StateColor struct {
 	Hue        float64 `json:"hue"`
 	Saturation float64 `json:"saturation"`
 	Kelvin     int     `json:"kelvin"`
 }
 
+// StateLifxCloud is the current state of the Lifx cloud poller
 type StateLifxCloud struct {
-	State string `json:"state"`
-}
-type StateLanProtocol struct {
-	State string `json:"state"`
+	State         string `json:"state"`
+	FoundDevices  int    `json:"found_devices"`
+	OnlineDevices int    `json:"online_devices"`
 }
 
+// StateLanProtocol is the current state of the Lifx lan protocol
+type StateLanProtocol struct {
+	State         string `json:"state"`
+	FoundDevices  int    `json:"found_devices"`
+	OnlineDevices int    `json:"online_devices"`
+}
+
+// NewState creates a new State struct and initializes all values
 func NewState() *State {
 	return &State{Lamps: make(map[string]*Lamp), publishStateFunc: func() {}}
 }
 
+// Lamp Fetches a lamp from the state list based on id [4]byte
 func (s *State) Lamp(id [4]byte) *Lamp {
-	senderId := hex.EncodeToString(id[0:4])
+	senderID := hex.EncodeToString(id[0:4])
 	s.Lock()
 	defer s.Unlock()
-	if _, ok := s.Lamps[senderId]; ok {
-		return s.Lamps[senderId]
+	if _, ok := s.Lamps[senderID]; ok {
+		return s.Lamps[senderID]
 	}
 	return nil
 }
-func (s *State) AddLanDevice(light *client.Light) *Lamp {
-	d := s.GetByID(light.Id())
-	if d == nil {
-		d = NewLamp(light.Id(), light.Label(), light.Ip.String())
-		return s.Add(d)
-	}
 
-	return d
-}
-func (s *State) Add(d *Lamp) *Lamp {
-	log.Println("Added new ", d.Id)
-	d.publishState = s.publishState
-
-	s.Lock()
-	defer s.Unlock()
-	defer s.publishState()
-
-	s.Lamps[d.Id] = d
-	return d
-}
+// GetByID fetches a lamp from the state list based on id string
 func (s *State) GetByID(id string) *Lamp {
 	s.Lock()
 	defer s.Unlock()
@@ -93,13 +87,38 @@ func (s *State) GetByID(id string) *Lamp {
 	return nil
 }
 
+// AddLanDevice checks if the device already exists, else adds a new one based on the information provided
+func (s *State) AddLanDevice(light *client.Light) *Lamp {
+	d := s.GetByID(light.Id())
+	if d == nil {
+		d = NewLamp(light.Id(), light.Label(), light.Ip.String())
+		return s.Add(d)
+	}
+
+	return d
+}
+
+// Add a Lamp struct to the lamps list
+func (s *State) Add(d *Lamp) *Lamp {
+	log.Println("Added new ", d.ID)
+	d.publishState = s.publishState
+
+	s.Lock()
+	defer s.Unlock()
+	defer s.publishState()
+
+	s.Lamps[d.ID] = d
+	return d
+}
+
+// RemoveDevice removes a lamp that are no longer available from the list
 func (s *State) RemoveDevice(id [4]byte) {
 	s.Lock()
 	defer s.Unlock()
 	defer s.publishState()
 
-	senderId := hex.EncodeToString(id[0:4])
-	delete(s.Lamps, senderId)
+	senderID := hex.EncodeToString(id[0:4])
+	delete(s.Lamps, senderID)
 }
 
 func (s *State) publishState() {
@@ -107,12 +126,12 @@ func (s *State) publishState() {
 		node.Devices().Add(&devices.Device{
 			Type:   "dimmableLamp",
 			Name:   v.Name,
-			Id:     v.Id,
+			Id:     v.ID,
 			Online: v.LanConnected || v.CloudConnected,
 			Node:   node.Uuid(),
 			StateMap: map[string]string{
-				"on":    "lamps[" + v.Id + "]" + ".power",
-				"level": "lamps[" + v.Id + "]" + ".level",
+				"on":    "lamps[" + v.ID + "]" + ".power",
+				"level": "lamps[" + v.ID + "]" + ".level",
 			},
 		})
 	}
@@ -122,19 +141,22 @@ func (s *State) publishState() {
 
 // -----------------------------------------------------------
 
+// NewLamp initiates a new Lamp type
 func NewLamp(id, name, ip string) *Lamp {
-	d := &Lamp{Name: name, Ip: ip}
-	d.SetId(id)
+	d := &Lamp{Name: name, IP: ip}
+	d.SetID(id)
 	return d
 }
 
-func (d *Lamp) SetId(id string) {
+// SetID setter for the idf field
+func (d *Lamp) SetID(id string) {
 	d.Lock()
 	defer d.Unlock()
-	d.Id = id
+	d.ID = id
 
 }
 
+// SyncFromCloud syncronizes data from a cloudGetAllReponse struct received from the lifx cloud
 func (d *Lamp) SyncFromCloud(c *cloudGetAllResponse) {
 	d.Level = c.Brightness * 100
 	d.Color.Hue = c.Color.Hue
@@ -147,9 +169,10 @@ func (d *Lamp) SyncFromCloud(c *cloudGetAllResponse) {
 	defer d.publishState()
 }
 
+// SyncFromLan syncronizes data from the lan protocol
 func (d *Lamp) SyncFromLan(c *client.Light) {
 	d.LanConnected = true
-	d.Ip = c.Ip.String()
+	d.IP = c.Ip.String()
 
 	defer d.publishState()
 }

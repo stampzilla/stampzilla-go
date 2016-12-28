@@ -19,17 +19,19 @@ var VERSION string = "dev"
 var BUILD_DATE string = ""
 
 // GLOBAL VARS
-var node *Node = &Node{}
+var node = &Node{}
 var state *State
 var serverSendChannel chan interface{}
 var serverRecvChannel chan protocol.Command
 var lifxClient *client.Client
 
+// Config contains the lifx specific node configuration
 type Config struct {
 	BroadcastAddress string `json:"broadcastAddress"`
-	ApiAccessToken   string `json:"api_access_token"`
+	APIAccessToken   string `json:"api_access_token"`
 }
 
+// Node is an extended version of protocol.Node with a pointer to the connection
 type Node struct {
 	*protocol.Node
 	connection basenode.Connection
@@ -79,13 +81,13 @@ func main() {
 		return
 	}
 
-	if nc.ApiAccessToken != "" {
-		lifxCloudClient, err := NewLifxCloudClient(nc.ApiAccessToken)
+	if nc.APIAccessToken != "" {
+		lifxCloudClient, err := newLifxCloudClient(nc.APIAccessToken)
 		lifxCloudClient.pollerResultFunc = node.handleLifxCloudUpdate
 		if err != nil {
 			log.Error(err)
 		} else {
-			lifxCloudClient.Start()
+			lifxCloudClient.start()
 		}
 	}
 
