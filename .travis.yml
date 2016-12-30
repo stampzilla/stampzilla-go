@@ -6,7 +6,6 @@ addons:
     - libev-dev
 
 go:
-  - 1.6
   - 1.7
 
 install: 
@@ -14,6 +13,6 @@ install:
 
 script: 
   - make test
-  - make cover
+  - make cover-normal
 after_success:
   - bash <(curl -s https://codecov.io/bash)
