@@ -6,17 +6,13 @@ addons:
     - libev-dev
 
 go:
-  - 1.6
   - 1.7
 
 install: 
-  - go get golang.org/x/tools/cmd/cover
-  - go get github.com/mattn/goveralls
-  - curl -sLOf https://raw.githubusercontent.com/stampzilla/stampzilla-go/master/coverage
   - go get -d -t -v ./...
 
 script: 
-  - go test -v `go list ./... | grep -v telldus-events | grep -v stampzilla-hidcommander`
-  - bash coverage
+  - make test
+  - make cover-normal
 after_success:
-  - goveralls -coverprofile=./gover.coverprofile -service travis-ci
+  - bash <(curl -s https://codecov.io/bash)
