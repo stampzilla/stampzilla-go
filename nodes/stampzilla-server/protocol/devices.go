@@ -25,9 +25,7 @@ func NewDevices() *Devices {
 func (n *Devices) ByUuid(uuid string) *devices.Device {
 	n.RLock()
 	defer n.RUnlock()
-	if node, ok := n.devices[uuid]; ok {
-		return node
-	}
+	return n.devices.ByID(uuid)
 	return nil
 }
 func (n *Devices) All() map[string]*devices.Device {
@@ -61,14 +59,16 @@ func (n *Devices) Add(nodeUuid string, device *devices.Device) error {
 	n.Lock()
 	defer n.Unlock()
 
-	if dev, ok := n.devices[nodeUuid+"."+device.Id]; ok {
+	device.Node = nodeUuid
+
+	if dev := n.devices.ByID(nodeUuid + "." + device.Id); dev != nil {
 		// Save name and tags
 		device.Name = dev.Name
 		device.Tags = dev.Tags
 	}
 
-	n.devices[nodeUuid+"."+device.Id] = device
-
+	device.Node = nodeUuid
+	n.devices.Add(device)
 	return nil
 }
 func (n *Devices) Delete(uuid string) {

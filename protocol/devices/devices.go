@@ -67,8 +67,11 @@ func NewMap() Map {
 
 // Add adds a device the the device map. Its not safe for concurrent use.
 func (m Map) Add(dev *Device) {
+	if dev.Node != "" {
+		m[dev.Node+"."+dev.Id] = dev
+		return
+	}
 	m[dev.Id] = dev
-	//map[string]*Device(*m)[dev.Id] = dev
 }
 
 // Exists return true if device id exists in the map
@@ -77,6 +80,14 @@ func (m Map) Exists(id string) bool {
 		return true
 	}
 	return false
+}
+
+// ByID returns device based on id. If device has node set the id will be node.id
+func (m Map) ByID(uuid string) *Device {
+	if node, ok := m[uuid]; ok {
+		return node
+	}
+	return nil
 }
 
 // Len returns length of map
