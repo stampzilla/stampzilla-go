@@ -6,47 +6,56 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	log "github.com/cihub/seelog"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
+	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
+	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
+// Devices contains the websocket handler for devices
 type Devices struct {
-	Devices *protocol.Devices  `inject:""`
-	Nodes   *protocol.Nodes    `inject:""`
-	Router  *websocket.Router  `inject:""`
-	Clients *websocket.Clients `inject:""`
+	Devices *serverprotocol.Devices `inject:""`
+	Nodes   *serverprotocol.Nodes   `inject:""`
+	Router  *websocket.Router       `inject:""`
+	Clients *websocket.Clients      `inject:""`
 }
 
-func (wsr *Devices) Start() {
+// Start starts the websocket handler for devices by register its routes and client connect handler
+func (d *Devices) Start() {
 
 	//wh.Router.AddRoute("cmd", wh.RunCommand)
 
-	wsr.Router.AddClientConnectHandler(func() *websocket.Message {
-		return &websocket.Message{Type: "devices/all", Data: wsr.jsonRawMessage(wsr.Devices.All())}
+	d.Router.AddClientConnectHandler(func() *websocket.Message {
+		return &websocket.Message{Type: "devices/all", Data: d.jsonRawMessage(d.Devices.All())}
 	})
 
-	wsr.Router.AddRoute("devices/set", wsr.Set)
-	wsr.Router.AddRoute("device/config/set", wsr.SetConfig)
+	d.Router.AddRoute("devices/set", d.set)
+	d.Router.AddRoute("device/config/set", d.setConfig)
 
 }
-func (wh *Devices) SendAllDevices() {
-	go wh.Clients.SendToAll("devices/all", wh.Devices.All())
-}
-func (wh *Devices) SendSingleDevice(device interface{}) {
-	go wh.Clients.SendToAll("devices/single", device)
+func (d *Devices) sendAllDevices() {
+	go d.Clients.SendToAll("devices/all", d.Devices.All())
 }
 
-func (wh *Devices) Set(msg *websocket.Message) {
+// SendSingleDevice sends an update to webgui clients with a single device update
+func (d *Devices) SendSingleDevice(device interface{}) {
+	go d.Clients.SendToAll("devices/single", device)
+}
+
+func (d *Devices) set(msg *websocket.Message) {
 	type message struct {
-		Uuid string `json:"uuid"`
+		UUID string `json:"uuid"`
 		Name string `json:"name"`
 		Tags string `json:"tags"`
 	}
 	var data message
 
-	json.Unmarshal(msg.Data, &data)
+	err := json.Unmarshal(msg.Data, &data)
+	if err != nil {
+		log.Error("Failed to decode devices/set from websocket: ", err)
+		return
+	}
 
-	device := wh.Devices.ByUuid(data.Uuid)
+	device := d.Devices.ByUuid(data.UUID)
 	if device != nil {
 		if data.Name != "" {
 			device.Name = data.Name
@@ -60,13 +69,13 @@ func (wh *Devices) Set(msg *websocket.Message) {
 			device.Tags = tags
 		}
 
-		go wh.Clients.SendToAll("devices/single", device)
+		go d.Clients.SendToAll("devices/single", device)
 
-		wh.Devices.SaveToFile("devices.json")
+		d.Devices.SaveToFile("devices.json")
 	}
 }
 
-func (wh *Devices) SetConfig(msg *websocket.Message) {
+func (d *Devices) setConfig(msg *websocket.Message) {
 	type message struct {
 		Device    string      `json:"device"`
 		Parameter string      `json:"parameter"`
@@ -74,31 +83,47 @@ func (wh *Devices) SetConfig(msg *websocket.Message) {
 	}
 	var data message
 
-	json.Unmarshal(msg.Data, &data)
+	err := json.Unmarshal(msg.Data, &data)
+	if err != nil {
+		log.Error("Failed to decode device/config/set from websocket: ", err)
+		return
+	}
 
-	device := wh.Devices.ByUuid(data.Device)
+	device := d.Devices.ByUuid(data.Device)
 	if device == nil {
 		logrus.Errorf("Received config but device (%s) was not found", data.Device)
+		return
 	}
-	//device.SetConfig(data.Parameter, data.Value)
 
 	devid := strings.SplitN(data.Device, ".", 2)
 	if len(devid) < 2 {
 		logrus.Errorf("Received config but could not split device id (%s) ", data.Device)
+		return
 	}
 
-	node := wh.Nodes.ByUuid(devid[0])
+	node := d.Nodes.ByUuid(devid[0])
 	if node == nil {
 		logrus.Errorf("Received config but node (%s) was not found", devid[0])
+		return
 	}
 
-	err := node.SaveConfig(devid[1], data.Parameter, data.Value)
+	cfg := protocol.DeviceConfigSet{
+		Device: devid[1],
+		ID:     data.Parameter,
+		Value:  data.Value,
+	}
+
+	u := protocol.NewUpdateWithData(protocol.TypeDeviceConfigSet, cfg)
+	err = node.WriteUpdate(u)
 	if err != nil {
 		logrus.Errorf("Received config but failed to save: %s", err.Error())
+		return
 	}
+
+	return
 }
 
-func (wsr *Devices) jsonRawMessage(data interface{}) json.RawMessage {
+func (d *Devices) jsonRawMessage(data interface{}) json.RawMessage {
 	msg, err := json.Marshal(data)
 	if err != nil {
 		log.Error(err)

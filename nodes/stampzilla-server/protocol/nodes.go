@@ -36,7 +36,6 @@ type Node interface {
 	WriteUpdate(*protocol.Update) error
 	SetConn(conn net.Conn)
 	GetNotification(json.RawMessage) *notifications.Notification
-	SaveConfig(string, string, interface{}) error
 }
 
 type node struct {
@@ -52,20 +51,6 @@ type node struct {
 
 func NewNode() Node {
 	return &node{}
-}
-
-func (n *node) SaveConfig(deviceid string, parameter string, value interface{}) error {
-
-	cfg := protocol.DeviceConfigSet{
-		Device: deviceid,
-		ID:     parameter,
-		Value:  value,
-	}
-
-	msg := protocol.NewUpdateWithData(protocol.TypeDeviceConfigSet, cfg)
-	return n.WriteUpdate(msg)
-
-	return fmt.Errorf("Not implemented")
 }
 
 func (n *node) Conn() net.Conn {
@@ -94,7 +79,6 @@ func (n *node) Write(b []byte) error {
 func (n *node) WriteUpdate(msg *protocol.Update) error {
 	bytes, err := msg.ToJSON()
 	if err != nil {
-		log.Error(err)
 		return err
 	}
 

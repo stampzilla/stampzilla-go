@@ -2,7 +2,6 @@ package protocol
 
 import (
 	"encoding/json"
-	"fmt"
 	"sync"
 
 	"github.com/stampzilla/stampzilla-go/protocol/devices"
@@ -136,10 +135,6 @@ func (n *Node) JsonEncode() (string, error) {
 		return "", err
 	}
 	return string(ret), nil
-}
-
-func (n *Node) SaveConfig(deviceid string, Parameter string, v interface{}) error {
-	return fmt.Errorf("Not implemented")
 }
 
 type Identifiable interface {

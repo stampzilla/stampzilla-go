@@ -243,7 +243,6 @@ func (ns *NodeServer) addServerNode() {
 func writeUpdate(c io.Writer, msg *protocol.Update) error {
 	bytes, err := msg.ToJSON()
 	if err != nil {
-		log.Error(err)
 		return err
 	}
 
