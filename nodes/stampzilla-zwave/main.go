@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"os"
 	"strconv"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/stampzilla/gozwave"
 	"github.com/stampzilla/gozwave/events"
 	"github.com/stampzilla/gozwave/nodes"
+	"github.com/stampzilla/gozwave/serialrecorder"
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/stampzilla/stampzilla-go/pkg/notifier"
 	"github.com/stampzilla/stampzilla-go/protocol"
@@ -42,7 +44,15 @@ func main() {
 	//Activate the config
 	basenode.SetConfig(config)
 
-	z, err := gozwave.Connect(*port, "zwave-networkmap.json")
+	f, err := os.Create("/tmp/dat2")
+	if err != nil {
+		return
+	}
+	defer f.Close()
+
+	re := serialrecorder.New(*port, 115200)
+	re.Logger = f
+	z, err := gozwave.ConnectWithCustomPortOpener(*port, "zwave-networkmap.json", re)
 	if err != nil {
 		log.Error(err)
 		return
@@ -54,6 +64,8 @@ func main() {
 
 	//Start communication with the server
 	connection := basenode.Connect()
+	node.Config().ListenForConfigChanges(connection.ReceiveDeviceConfigSet())
+
 	notify = notifier.New(connection)
 	notify.SetSource(node)
 
@@ -156,7 +168,7 @@ func addOrUpdateDevice(node *protocol.Node, znode *nodes.Node) {
 				Min:  0,
 				Max:  99,
 			},
-		).Handler(func(device devices.Device, c *protocol.DeviceConfig) {
+		).Handler(func(device string, c *protocol.DeviceConfig) {
 			//save c....
 			//switch c.ID {
 			//case "46": // Dimvärde:

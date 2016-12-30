@@ -43,7 +43,7 @@ func main() { /*{{{*/
 	go serverRecv(connection.Receive())
 
 	state = State{
-		connection: &connection,
+		connection: connection,
 		node:       node,
 	}
 	node.SetState(&state.Devices)

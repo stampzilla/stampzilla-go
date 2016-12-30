@@ -126,7 +126,7 @@ func (self *router) Start() {
 func (self *router) AddTransport(transport Transport, levels []string) {
 	for _, level := range levels {
 		l := NewNotificationLevel(level)
-		log.Infof("Notifications - added transport (%T) for level %s", transport, l)
+		//log.Infof("Notifications - added transport (%T) for level %s", transport, l)
 		self.transports[l] = append(self.transports[l], transport)
 	}
 	transport.Start()
@@ -138,7 +138,7 @@ func (self *router) AddTransport(transport Transport, levels []string) {
 func (self *router) Dispatch(msg Notification) {
 	if transports, ok := self.transports[msg.Level]; ok {
 		for _, t := range transports {
-			log.Infof("Dispatching notification type \"%s\" to \"%T\"", msg.Level, t)
+			//log.Infof("Dispatching notification type \"%s\" to \"%T\"", msg.Level, t)
 			t.Dispatch(msg)
 		}
 		return

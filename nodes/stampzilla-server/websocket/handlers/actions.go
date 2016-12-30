@@ -46,15 +46,4 @@ func (wsa *Actions) Run(msg *websocket.Message) {
 	}
 
 	a.Run(wsa.Logic.ActionProgressChan)
-
-	//msg := wh.jsonDecode(str)
-	//node := wh.Nodes.Search(msg.To)
-	//if node != nil {
-	//jsonToSend, err := json.Marshal(&msg.Data)
-	//if err != nil {
-	//log.Error(err)
-	//return
-	//}
-	//node.Write(jsonToSend)
-	//}
 }

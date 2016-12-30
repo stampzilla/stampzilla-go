@@ -12,7 +12,13 @@ func TestAdd(t *testing.T) {
 	device := devices.NewDevice()
 	device.Id = "devuuid"
 	devs.Add("nodeuuid", device)
-	assert.Contains(t, devs.devices, "nodeuuid.devuuid")
+
+	if dev, ok := devs.devices["nodeuuid.devuuid"]; ok {
+		assert.Equal(t, "devuuid", dev.Id)
+		return
+	}
+
+	t.Fatalf("Device nodeuuid.devuuid was not found")
 }
 
 func TestShallowCopy(t *testing.T) {
@@ -23,7 +29,9 @@ func TestShallowCopy(t *testing.T) {
 	devs.Add("nodeuuid", device)
 
 	copied := devs.ShallowCopy()
-	assert.Contains(t, copied, "nodeuuid.devuuid")
+	if _, ok := copied["nodeuuid.devuuid"]; !ok {
+		t.Fatal("nodeuuid.devuuid not found")
+	}
 	device.Name = "NameChange"
 	assert.Equal(t, "Name", copied["nodeuuid.devuuid"].Name)
 	assert.Equal(t, "NameChange", devs.devices["nodeuuid.devuuid"].Name)

@@ -27,7 +27,11 @@ func New(uuid string, logicChannel chan string) serverprotocol.Node {
 }
 func (self *Node) SetConn(conn net.Conn) {
 }
-func (n *Node) Write(b []byte) {
+func (n *Node) Write(b []byte) error {
+	return nil
+}
+func (n *Node) WriteUpdate(*protocol.Update) error {
+	return nil
 }
 
 func (self *Node) LogicChannel() chan string {

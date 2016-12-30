@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"strings"
 
@@ -36,13 +35,11 @@ func (wh *WebHandler) GetNode(c *gin.Context) {
 
 func (wh *WebHandler) CommandToNodePut(c *gin.Context) {
 	id := c.Param("id")
-	log.Info("Sending command to:", id)
 	requestJsonPut, err := ioutil.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Error(err)
 		c.String(500, "Error")
 	}
-	log.Info("Command:", string(requestJsonPut))
 
 	node := wh.Nodes.Search(id)
 	if node == nil {
@@ -50,7 +47,9 @@ func (wh *WebHandler) CommandToNodePut(c *gin.Context) {
 		c.String(404, "Node not found")
 	}
 
-	node.Write(requestJsonPut)
+	log.Infof("Sending to node %s command: %#v", id, string(requestJsonPut))
+
+	node.WriteUpdate(protocol.NewUpdateWithData(protocol.TypeCommand, requestJsonPut))
 	c.JSON(200, protocol.Command{Cmd: "testresponse"})
 }
 
@@ -58,25 +57,17 @@ func (wh *WebHandler) CommandToNodeGet(c *gin.Context) {
 	id := c.Param("id")
 	node := wh.Nodes.Search(id)
 	if node == nil {
-		log.Debug("NODE: ", node)
 		c.String(404, "Node not found")
 		return
 	}
-
-	log.Info("Sending command to:", id)
 
 	// Split on / to add arguments
 	p := strings.Split(c.Param("cmd"), "/")
 	cmd := protocol.Command{Cmd: p[1], Args: p[2:]}
 
-	jsonCmd, err := json.Marshal(cmd)
-	if err != nil {
-		log.Error(err)
-		c.String(500, "Failed json marshal")
-		return
-	}
-	log.Info("Command:", string(jsonCmd))
-	node.Write(jsonCmd)
+	log.Infof("Sending to node %s command: %#v", id, cmd)
+
+	node.WriteUpdate(protocol.NewUpdateWithData(protocol.TypeCommand, cmd))
 	c.JSON(200, protocol.Command{Cmd: "testresponse"})
 }
 

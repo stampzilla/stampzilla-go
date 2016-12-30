@@ -32,16 +32,3 @@ func (wsr *Rules) jsonRawMessage(data interface{}) json.RawMessage {
 	}
 	return msg
 }
-
-//func (wsa *WebsocketActions) RunCommand(msg *websocket.Message) {
-////msg := wh.jsonDecode(str)
-//node := wh.Nodes.Search(msg.To)
-//if node != nil {
-//jsonToSend, err := json.Marshal(&msg.Data)
-//if err != nil {
-//log.Error(err)
-//return
-//}
-//node.Write(jsonToSend)
-//}
-//}

@@ -1,8 +1,6 @@
 package logic
 
 import (
-	"encoding/json"
-
 	log "github.com/cihub/seelog"
 	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 	"github.com/stampzilla/stampzilla-go/protocol"
@@ -34,15 +32,14 @@ func (c *command) Run(abort <-chan struct{}) {
 	}
 	node := c.nodes.Search(c.Uuid())
 	if node != nil {
-		jsonToSend, err := json.Marshal(&c.Command)
+		msg := protocol.NewUpdateWithData(protocol.TypeCommand, &c.Command)
+
+		err := node.WriteUpdate(msg)
 		if err != nil {
-			log.Warn("Node ", c.Uuid(), " - Failed to marshal command: ", c.Command)
-			log.Error(err)
+			log.Warn("Node ", c.Uuid(), " - Failed to run command:", err)
 			return
 		}
-
 		log.Infof("Running command %#v to %s", c.Command, c.Uuid())
-		node.Write(jsonToSend)
 
 		return
 	}

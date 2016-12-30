@@ -6,6 +6,7 @@ import (
 	"time"
 
 	log "github.com/cihub/seelog"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/notifications"
 	"github.com/stampzilla/stampzilla-go/protocol"
 )
@@ -26,11 +27,18 @@ type Connection interface {
 }
 
 type connection struct {
-	send    chan interface{}
-	receive chan protocol.Command
-	state   chan int
+	send                   chan interface{}
+	receive                chan protocol.Command
+	receiveDeviceConfigSet chan protocol.DeviceConfigSet
+	state                  chan int
 }
 
+func (c *connection) ReceiveCommands() chan protocol.Command {
+	return c.receive
+}
+func (c *connection) ReceiveDeviceConfigSet() chan protocol.DeviceConfigSet {
+	return c.receiveDeviceConfigSet
+}
 func (c *connection) Receive() chan protocol.Command {
 	return c.receive
 }
@@ -44,12 +52,12 @@ func (c *connection) Send(data interface{}) {
 	}
 }
 
-func Connect() Connection {
-
+func Connect() *connection {
 	connection := &connection{
-		send:    make(chan interface{}, 100),
-		receive: make(chan protocol.Command, 100),
-		state:   make(chan int),
+		send:                   make(chan interface{}, 100),
+		receive:                make(chan protocol.Command, 100),
+		receiveDeviceConfigSet: make(chan protocol.DeviceConfigSet, 100),
+		state: make(chan int),
 	}
 
 	go func() {
@@ -70,7 +78,7 @@ func Connect() Connection {
 			go timeoutMonitor(tcpConnection, serverIsAlive)
 			go sendWorker(tcpConnection, connection.send, quit)
 
-			connectionWorker(tcpConnection, connection.receive, serverIsAlive)
+			connection.connectionWorker(tcpConnection, serverIsAlive)
 			close(quit)
 			connection.State() <- ConnectionStateDisconnected
 
@@ -90,11 +98,11 @@ func sendWorker(connection net.Conn, send chan interface{}, quit chan bool) {
 			if a, ok := d.(*protocol.Node); ok {
 				a.SetUuid(config.Uuid)
 
-				pkg := protocol.NewUpdateWithData(protocol.UpdateNode, a.Node())
+				pkg := protocol.NewUpdateWithData(protocol.TypeUpdateNode, a.Node())
 				//log.Trace("Sending node package: ", spew.Sdump(pkg))
 				err = encoder.Encode(pkg)
 			} else if noti, ok := d.(notifications.Notification); ok {
-				pkg := protocol.NewUpdateWithData(protocol.Notification, noti)
+				pkg := protocol.NewUpdateWithData(protocol.TypeNotification, noti)
 				//log.Trace("Sending notification: ", spew.Sdump(pkg))
 				err = encoder.Encode(pkg)
 			} else {
@@ -115,32 +123,55 @@ func sendWorker(connection net.Conn, send chan interface{}, quit chan bool) {
 	}
 }
 
-func connectionWorker(connection net.Conn, recv chan protocol.Command, serverIsAlive chan bool) {
+func (conn *connection) connectionWorker(connection net.Conn, serverIsAlive chan bool) {
 	// Recive data
 	decoder := json.NewDecoder(connection)
 	for {
-		var cmd protocol.Command
-		err := decoder.Decode(&cmd)
+		msg := protocol.NewUpdate()
+		err := decoder.Decode(&msg)
 
 		if err != nil {
 			if err.Error() == "EOF" {
+				connection.Close()
 				log.Error("EOF:", err)
 				return
 			}
+			connection.Close()
 			log.Warn(err)
 			return
-		} else {
-			serverIsAlive <- true
+		}
 
-			if cmd.Ping {
-				//log.Debug("Recived ping - pong")
-				//PONG packet
-				connection.Write([]byte(`{"Type":5}`))
+		serverIsAlive <- true
+
+		switch msg.Type {
+		case protocol.TypePing:
+			//log.Debug("Recived ping - pong")
+			//PONG packet
+			connection.Write([]byte(`{"Type":5}`))
+		case protocol.TypeCommand:
+			var cmd protocol.Command
+			err = json.Unmarshal(*msg.Data, &cmd)
+			if err != nil {
+				log.Debug("Failed to decode command from server", err)
+				spew.Dump(string(*msg.Data))
 				continue
 			}
 
 			log.Debug("Command from server", cmd)
-			recv <- cmd
+			conn.receive <- cmd
+		case protocol.TypeDeviceConfigSet:
+			var cmd protocol.DeviceConfigSet
+			err = json.Unmarshal(*msg.Data, &cmd)
+			if err != nil {
+				log.Debug("Failed to decode DeviceConfigSet from server", err)
+				spew.Dump(string(*msg.Data))
+				continue
+			}
+
+			log.Debug("DeviceConfigSet from server", cmd)
+			conn.receiveDeviceConfigSet <- cmd
+		default:
+			log.Warnf("Received a %s from server, dont know what to do... throwing it away", msg.Type)
 		}
 
 	}

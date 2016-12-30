@@ -130,11 +130,11 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 		}
 
 		switch updatePaket.Type {
-		case protocol.Pong:
+		case protocol.TypePong:
 			break
-		case protocol.Ping:
-			connection.Write([]byte("{\"Ping\":true}"))
-		case protocol.UpdateNode:
+		case protocol.TypePing:
+			writeUpdate(connection, protocol.NewUpdateWithData(protocol.TypePing, nil))
+		case protocol.TypeUpdateNode:
 			if updatePaket.Data == nil {
 				continue // The packet was nil due to some reason
 			}
@@ -178,7 +178,7 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 			}
 			ns.WsNodesHandler.SendSingleNode(uuid)
 
-		case protocol.Notification:
+		case protocol.TypeNotification:
 			if note := existingNode.GetNotification(*updatePaket.Data); note != nil {
 				log.Tracef("Recived notification: %#v", note)
 				ns.Notifications.Dispatch(*note) // Send the notification to the router
@@ -189,9 +189,9 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 	}
 }
 
-func timeoutMonitor(connection net.Conn, nodeIsAlive chan bool) {
-	log.Debug("Timeout monitor started (", connection.RemoteAddr(), ")")
-	defer log.Debug("Timeout monitor closed (", connection.RemoteAddr(), ")")
+func timeoutMonitor(c net.Conn, nodeIsAlive chan bool) {
+	log.Debug("Timeout monitor started (", c.RemoteAddr(), ")")
+	defer log.Debug("Timeout monitor closed (", c.RemoteAddr(), ")")
 
 	for {
 		select {
@@ -200,14 +200,14 @@ func timeoutMonitor(connection net.Conn, nodeIsAlive chan bool) {
 			continue
 		case <-time.After(time.Second * 10):
 			// Send ping and wait for the answer
-			connection.Write([]byte("{\"Ping\":true}"))
+			writeUpdate(c, protocol.NewUpdateWithData(protocol.TypePing, nil))
 
 			select {
 			case <-nodeIsAlive:
 				continue
 			case <-time.After(time.Second * 2):
 				log.Warn("Connection timeout, no answer on ping")
-				connection.Close()
+				c.Close()
 				return
 			}
 		}
@@ -238,4 +238,15 @@ func (ns *NodeServer) addServerNode() {
 		log.Critical(err)
 		os.Exit(2)
 	}
+}
+
+func writeUpdate(c io.Writer, msg *protocol.Update) error {
+	bytes, err := msg.ToJSON()
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	_, err = c.Write(bytes)
+	return err
 }

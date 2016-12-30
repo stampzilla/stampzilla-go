@@ -79,6 +79,11 @@ func (m Map) Exists(id string) bool {
 	return false
 }
 
+// Len returns length of map
+func (m Map) Len() int {
+	return len(m)
+}
+
 func path(state interface{}, jp string) (interface{}, error) {
 	if jp == "" {
 		return nil, errors.New("invalid path")

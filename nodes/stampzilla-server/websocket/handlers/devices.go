@@ -12,6 +12,7 @@ import (
 
 type Devices struct {
 	Devices *protocol.Devices  `inject:""`
+	Nodes   *protocol.Nodes    `inject:""`
 	Router  *websocket.Router  `inject:""`
 	Clients *websocket.Clients `inject:""`
 }
@@ -67,18 +68,33 @@ func (wh *Devices) Set(msg *websocket.Message) {
 
 func (wh *Devices) SetConfig(msg *websocket.Message) {
 	type message struct {
-		Device    string          `json:"device"`
-		Parameter string          `json:"parameter"`
-		Value     json.RawMessage `json:"value"`
+		Device    string      `json:"device"`
+		Parameter string      `json:"parameter"`
+		Value     interface{} `json:"value"`
 	}
 	var data message
 
 	json.Unmarshal(msg.Data, &data)
 
 	device := wh.Devices.ByUuid(data.Device)
-	if device != nil {
-		//device.SetConfig(data.Parameter, data.Value)
-		logrus.Errorf("Recivec config %#v", data)
+	if device == nil {
+		logrus.Errorf("Received config but device (%s) was not found", data.Device)
+	}
+	//device.SetConfig(data.Parameter, data.Value)
+
+	devid := strings.SplitN(data.Device, ".", 2)
+	if len(devid) < 2 {
+		logrus.Errorf("Received config but could not split device id (%s) ", data.Device)
+	}
+
+	node := wh.Nodes.ByUuid(devid[0])
+	if node == nil {
+		logrus.Errorf("Received config but node (%s) was not found", devid[0])
+	}
+
+	err := node.SaveConfig(devid[1], data.Parameter, data.Value)
+	if err != nil {
+		logrus.Errorf("Received config but failed to save: %s", err.Error())
 	}
 }
 

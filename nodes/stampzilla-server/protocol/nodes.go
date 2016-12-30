@@ -32,9 +32,11 @@ type Node interface {
 	Name() string
 	SetUuid(string)
 	SetName(string)
-	Write(b []byte)
+	Write(b []byte) error
+	WriteUpdate(*protocol.Update) error
 	SetConn(conn net.Conn)
 	GetNotification(json.RawMessage) *notifications.Notification
+	SaveConfig(string, string, interface{}) error
 }
 
 type node struct {
@@ -52,6 +54,20 @@ func NewNode() Node {
 	return &node{}
 }
 
+func (n *node) SaveConfig(deviceid string, parameter string, value interface{}) error {
+
+	cfg := protocol.DeviceConfigSet{
+		Device: deviceid,
+		ID:     parameter,
+		Value:  value,
+	}
+
+	msg := protocol.NewUpdateWithData(protocol.TypeDeviceConfigSet, cfg)
+	return n.WriteUpdate(msg)
+
+	return fmt.Errorf("Not implemented")
+}
+
 func (n *node) Conn() net.Conn {
 	n.Lock()
 	defer n.Unlock()
@@ -64,14 +80,25 @@ func (n *node) SetConn(conn net.Conn) {
 	n.Host = conn.RemoteAddr().String()
 	n.Unlock()
 }
-func (n *node) Write(b []byte) {
+func (n *node) Write(b []byte) error {
 	b = append(b, []byte("\n")...)
 	_, err := n.conn.Write(b)
 	if err != nil {
 		n.conn.Close()
 		log.Error(err)
-		return
+		return err
 	}
+
+	return nil
+}
+func (n *node) WriteUpdate(msg *protocol.Update) error {
+	bytes, err := msg.ToJSON()
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	return n.Write(bytes)
 }
 
 func (n *node) GetNotification(notification json.RawMessage) *notifications.Notification {

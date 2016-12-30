@@ -10,14 +10,14 @@ import (
 
 type State struct {
 	Devices    map[string]*Chromecast
-	connection *basenode.Connection
+	connection basenode.Connection
 	node       *protocol.Node
 	sync.RWMutex
 }
 
 func (s *State) Publish() {
 	if s.node != nil {
-		(*s.connection).Send(s.node.Node())
+		s.connection.Send(s.node.Node())
 	}
 }
 

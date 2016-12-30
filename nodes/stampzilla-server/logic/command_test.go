@@ -1,10 +1,12 @@
 package logic
 
 import (
+	"log"
 	"sync"
 	"testing"
 
 	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
+	"github.com/stampzilla/stampzilla-go/protocol"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,11 +20,22 @@ func (n *nodeStub) Name() string {
 	return ""
 }
 
-func (n *nodeStub) Write(b []byte) {
+func (n *nodeStub) Write(b []byte) error {
 	n.written = append(n.written, b)
 	if n.wg != nil {
 		n.wg.Done()
 	}
+	return nil
+}
+
+func (n *nodeStub) WriteUpdate(msg *protocol.Update) error {
+	bytes, err := msg.ToJSON()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	return n.Write(bytes)
 }
 
 type nodesStub struct {
