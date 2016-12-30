@@ -25,11 +25,14 @@ var BUILD_DATE string = ""
 
 var notify *notifier.Notify
 
+var recordToFile string
+
 func main() {
 	log.Info("Starting ZWAVE node")
 
 	debug := flag.Bool("v", false, "Verbose - show more debuging info")
 	port := flag.String("controllerport", "/dev/ttyACM0", "SerialAPI communication port (to controller)")
+	flag.StringVar(&recordToFile, "recordtofile", "", "Enable recording of serial data to file")
 
 	// Parse all commandline arguments, host and port parameters are added in the basenode init function
 	flag.Parse()
@@ -44,18 +47,15 @@ func main() {
 	//Activate the config
 	basenode.SetConfig(config)
 
-	f, err := os.Create("/tmp/dat2")
-	if err != nil {
-		return
-	}
-	defer f.Close()
-
-	re := serialrecorder.New(*port, 115200)
-	re.Logger = f
-	z, err := gozwave.ConnectWithCustomPortOpener(*port, "zwave-networkmap.json", re)
+	var err error
+	var z *gozwave.Controller
+	z, f, err := getZwaveController(*port)
 	if err != nil {
 		log.Error(err)
 		return
+	}
+	if f != nil {
+		defer f.Close()
 	}
 
 	node := protocol.NewNode("zwave")
@@ -275,4 +275,22 @@ func processCommand(node *protocol.Node, connection basenode.Connection, cmd pro
 			log.Warnf("Unknown command '%s'", cmd.Cmd)
 		}
 	}
+}
+
+func getZwaveController(port string) (z *gozwave.Controller, f *os.File, err error) {
+	if recordToFile == "" {
+		z, err = gozwave.Connect(port, "zwave-networkmap.json")
+		return
+	}
+
+	f, err = os.Create("/tmp/dat2")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	re := serialrecorder.New(port, 115200)
+	re.Logger = f
+	z, err = gozwave.ConnectWithCustomPortOpener(port, "zwave-networkmap.json", re)
+	return
 }
