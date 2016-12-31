@@ -133,7 +133,7 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 		case protocol.TypePong:
 			break
 		case protocol.TypePing:
-			writeUpdate(connection, protocol.NewUpdateWithData(protocol.TypePing, nil))
+			serverprotocol.WriteUpdate(connection, protocol.NewUpdateWithData(protocol.TypePing, nil))
 		case protocol.TypeUpdateNode:
 			if updatePaket.Data == nil {
 				continue // The packet was nil due to some reason
@@ -202,7 +202,7 @@ func timeoutMonitor(c net.Conn, nodeIsAlive chan bool) {
 			continue
 		case <-time.After(time.Second * 10):
 			// Send ping and wait for the answer
-			writeUpdate(c, protocol.NewUpdateWithData(protocol.TypePing, nil))
+			serverprotocol.WriteUpdate(c, protocol.NewUpdateWithData(protocol.TypePing, nil))
 
 			select {
 			case <-nodeIsAlive:
@@ -241,14 +241,4 @@ func (ns *NodeServer) addServerNode() {
 		log.Critical(err)
 		os.Exit(2)
 	}
-}
-
-func writeUpdate(c io.Writer, msg *protocol.Update) error {
-	bytes, err := msg.ToJSON()
-	if err != nil {
-		return err
-	}
-
-	_, err = c.Write(bytes)
-	return err
 }
