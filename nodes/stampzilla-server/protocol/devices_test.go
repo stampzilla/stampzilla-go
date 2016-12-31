@@ -11,7 +11,8 @@ func TestAdd(t *testing.T) {
 	devs := NewDevices()
 	device := devices.NewDevice()
 	device.Id = "devuuid"
-	devs.Add("nodeuuid", device)
+	device.Node = "nodeuuid"
+	devs.Add(device)
 
 	if dev, ok := devs.devices["nodeuuid.devuuid"]; ok {
 		assert.Equal(t, "devuuid", dev.Id)
@@ -26,7 +27,8 @@ func TestShallowCopy(t *testing.T) {
 	device := devices.NewDevice()
 	device.Id = "devuuid"
 	device.Name = "Name"
-	devs.Add("nodeuuid", device)
+	device.Node = "nodeuuid"
+	devs.Add(device)
 
 	copied := devs.ShallowCopy()
 	if _, ok := copied["nodeuuid.devuuid"]; !ok {
@@ -50,8 +52,8 @@ func TestSetOfflineByNode(t *testing.T) {
 	device2.Node = "node2"
 	device2.Online = true
 
-	devs.Add("node1", device1)
-	devs.Add("node2", device2)
+	devs.Add(device1)
+	devs.Add(device2)
 
 	list := devs.SetOfflineByNode("node1")
 
