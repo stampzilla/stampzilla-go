@@ -83,7 +83,6 @@ func main() {
 			Name:   dev.Name,
 			Id:     dev.Id,
 			Online: true,
-			Node:   config.Uuid,
 			StateMap: map[string]string{
 				"on": "Devices[" + dev.Id + "]" + ".State.On",
 			},

@@ -225,7 +225,8 @@ func (ns *NodeServer) updateState(updateChan chan string, node serverprotocol.No
 
 func (ns *NodeServer) syncDevices(newDevices devices.Map, node serverprotocol.Node) {
 	for _, v := range newDevices {
-		ns.Devices.Add(node.Uuid(), v)
+		v.Node = node.Uuid()
+		ns.Devices.Add(v)
 		ns.WsDevicesHandler.SendSingleDevice(v)
 	}
 }

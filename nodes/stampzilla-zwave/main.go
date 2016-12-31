@@ -186,7 +186,6 @@ func addOrUpdateDevice(node *protocol.Node, znode *nodes.Node) {
 				Name:   znode.Device.Brand + " - " + znode.Device.Product + " (Address: " + devid + ")",
 				Id:     devid,
 				Online: true,
-				Node:   node.Uuid(),
 				StateMap: map[string]string{
 					"on":    "Nodes[" + strconv.Itoa(int(znode.Id)) + "]" + ".stateBool.on" + endpoint,
 					"level": "Nodes[" + strconv.Itoa(int(znode.Id)) + "]" + ".stateFloat.level" + endpoint,
@@ -200,7 +199,6 @@ func addOrUpdateDevice(node *protocol.Node, znode *nodes.Node) {
 				Name:   znode.Device.Brand + " - " + znode.Device.Product + " (Address: " + devid + ")",
 				Id:     devid,
 				Online: true,
-				Node:   node.Uuid(),
 				StateMap: map[string]string{
 					"on": "Nodes[" + strconv.Itoa(int(znode.Id)) + "]" + ".stateBool.on" + endpoint,
 				},
