@@ -191,6 +191,20 @@ func monitorState(node *protocol.Node, connection basenode.Connection) {
 		switch s {
 		case basenode.ConnectionStateConnected:
 			connection.Send(node.Node())
+			// Test to add a device to the node after some time
+			go func() {
+				<-time.After(time.Second * 5)
+				node.Devices().Add(&devices.Device{
+					Type:   "lamp",
+					Name:   "Lamp two",
+					Id:     "2",
+					Online: true,
+					StateMap: map[string]string{
+						"on": "Devices[2].State",
+					},
+				})
+				connection.Send(node.Node())
+			}()
 		case basenode.ConnectionStateDisconnected:
 		}
 	}
