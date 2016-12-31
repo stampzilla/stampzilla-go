@@ -95,17 +95,18 @@ func sendWorker(connection net.Conn, send chan interface{}, quit chan bool) {
 	for {
 		select {
 		case d := <-send:
-			if a, ok := d.(*protocol.Node); ok {
+			switch a := d.(type) {
+			case *protocol.Node:
 				a.SetUuid(config.Uuid)
 
 				pkg := protocol.NewUpdateWithData(protocol.TypeUpdateNode, a.Node())
 				//log.Trace("Sending node package: ", spew.Sdump(pkg))
 				err = encoder.Encode(pkg)
-			} else if noti, ok := d.(notifications.Notification); ok {
-				pkg := protocol.NewUpdateWithData(protocol.TypeNotification, noti)
+			case notifications.Notification:
+				pkg := protocol.NewUpdateWithData(protocol.TypeNotification, a)
 				//log.Trace("Sending notification: ", spew.Sdump(pkg))
 				err = encoder.Encode(pkg)
-			} else {
+			default:
 				//log.Tracef("Sending %T package: %#v", d, d)
 				err = encoder.Encode(d)
 			}

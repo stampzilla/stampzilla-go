@@ -184,6 +184,8 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 				ns.Notifications.Dispatch(*note) // Send the notification to the router
 				continue
 			}
+		default:
+			log.Warnf("Received %s package from %s but dont know what to do with it", updatePaket.Type, uuid)
 		}
 
 	}
