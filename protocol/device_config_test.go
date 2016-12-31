@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,6 +23,8 @@ func TestConfigMapHandlerIsCalled(t *testing.T) {
 	dcm := NewConfigMap(mockIdentifiable)
 
 	handlerRan := false
+	mutex := &sync.Mutex{}
+
 	dcm.Add("device1").Layout(
 		&DeviceConfig{
 			ID:   "46",
@@ -47,7 +50,9 @@ func TestConfigMapHandlerIsCalled(t *testing.T) {
 		assert.Equal(t, "device1", device)
 		assert.Equal(t, "47", c.ID)
 		assert.Equal(t, 123, c.Value)
+		mutex.Lock()
 		handlerRan = true
+		mutex.Unlock()
 	})
 
 	assert.Equal(t, false, handlerRan)
@@ -62,5 +67,7 @@ func TestConfigMapHandlerIsCalled(t *testing.T) {
 	}
 	c <- dcs
 
+	mutex.Lock()
 	assert.Equal(t, true, handlerRan)
+	mutex.Unlock()
 }
