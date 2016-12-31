@@ -96,7 +96,6 @@ func main() {
 			Name:   dev.Name,
 			Id:     "s" + id,
 			Online: true,
-			Node:   config.Uuid,
 			StateMap: map[string]string{
 				"temp":     "Sensors[" + id + "]" + ".Temp",
 				"humidity": "Sensors[" + id + "]" + ".Humidity",
