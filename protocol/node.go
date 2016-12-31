@@ -13,8 +13,6 @@ type Node struct {
 	Host      string
 	Version   string
 	BuildDate string
-	Actions   []*Action
-	Layout    []*Layout
 	Elements_ []*Element  `json:"Elements"`
 	State_    interface{} `json:"State"`
 	Devices_  devices.Map `json:"Devices"`
@@ -26,31 +24,13 @@ func NewNode(name string) *Node {
 	n := &Node{
 		Name_:     name,
 		Version:   "-",
-		Actions:   []*Action{},
 		Elements_: []*Element{},
-		Layout:    []*Layout{},
 		Devices_:  make(devices.Map),
 	}
 
 	n.Config_ = NewConfigMap(n)
 
 	return n
-}
-
-func (n *Node) AddAction(id, name string, args []string) {
-	a := NewAction(id, name, args)
-
-	n.Lock()
-	n.Actions = append(n.Actions, a)
-	n.Unlock()
-}
-
-func (n *Node) AddLayout(id, atype, action, using string, filter []string, section string) {
-	l := NewLayout(id, atype, action, using, filter, section)
-
-	n.Lock()
-	n.Layout = append(n.Layout, l)
-	n.Unlock()
 }
 
 func (n *Node) AddElement(el *Element) {

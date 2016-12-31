@@ -56,17 +56,6 @@ func main() {
 	state.Sensors["temp2"] = NewSensor("temp2", "Temperature - Top level", "30C")
 	state.Sensors["press"] = NewSensor("press", "Air pressure", "1019 hPa")
 
-	// Describe available actions
-	node.AddAction("set", "Set", []string{"Devices.Id"})
-	node.AddAction("toggle", "Toggle", []string{"Devices.Id"})
-	node.AddAction("dim", "Dim", []string{"Devices.Id", "value"})
-
-	// Describe available layouts
-	node.AddLayout("1", "switch", "toggle", "Devices", []string{"on"}, "Lights")
-	node.AddLayout("2", "slider", "dim", "Devices", []string{"dim"}, "Lights")
-	node.AddLayout("3", "color-picker", "dim", "Devices", []string{"color"}, "Lights")
-	node.AddLayout("4", "text", "", "Sensors", []string{}, "Sensors")
-
 	state.AddDevice("0", "Color", []string{"color"}, "0")
 	state.AddDevice("1", "Red", []string{"dim"}, "0")
 	state.AddDevice("2", "Green", []string{"dim"}, "0")

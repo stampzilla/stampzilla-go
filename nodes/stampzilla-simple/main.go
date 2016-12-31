@@ -43,11 +43,6 @@ func main() {
 	// Thit worker keeps track on our connection state, if we are connected or not
 	go monitorState(node, connection)
 
-	// Describe available actions
-	//node.AddAction("set", "Set", []string{"Devices.Id"})
-	//node.AddAction("toggle", "Toggle", []string{"Devices.Id"})
-	//node.AddAction("dim", "Dim", []string{"Devices.Id", "value"})
-
 	node.AddElement(&protocol.Element{
 		Type: protocol.ElementTypeText,
 		Name: "Example text",
