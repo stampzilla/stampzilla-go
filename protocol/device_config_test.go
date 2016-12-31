@@ -52,7 +52,15 @@ func TestConfigMapHandlerIsCalled(t *testing.T) {
 
 	assert.Equal(t, false, handlerRan)
 
-	dcm.SetConfig("device1", "47", 123)
+	c := make(chan DeviceConfigSet)
+	dcm.ListenForConfigChanges(c)
+
+	dcs := DeviceConfigSet{
+		Device: "device1",
+		ID:     "47",
+		Value:  123,
+	}
+	c <- dcs
 
 	assert.Equal(t, true, handlerRan)
 }
