@@ -1,7 +1,6 @@
 package protocol
 
 import (
-	"encoding/json"
 	"sync"
 
 	"github.com/stampzilla/stampzilla-go/protocol/devices"
@@ -60,6 +59,7 @@ func (n *Node) Config() *ConfigMap {
 	defer n.RUnlock()
 	return n.Config_
 }
+
 func (n *Node) SetConfig(c *ConfigMap) {
 	n.Lock()
 	n.Config_ = c
@@ -105,16 +105,6 @@ func (n *Node) SetName(name string) {
 	n.Lock()
 	defer n.Unlock()
 	n.Name_ = name
-}
-
-func (n *Node) JsonEncode() (string, error) {
-	n.RLock()
-	ret, err := json.Marshal(n)
-	n.RUnlock()
-	if err != nil {
-		return "", err
-	}
-	return string(ret), nil
 }
 
 type Identifiable interface {
