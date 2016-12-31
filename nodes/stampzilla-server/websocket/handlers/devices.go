@@ -114,7 +114,7 @@ func (d *Devices) setConfig(msg *websocket.Message) {
 	}
 
 	u := protocol.NewUpdateWithData(protocol.TypeDeviceConfigSet, cfg)
-	err = node.WriteUpdate(u)
+	err = serverprotocol.WriteUpdate(node, u)
 	if err != nil {
 		logrus.Errorf("Received config but failed to save: %s", err.Error())
 		return

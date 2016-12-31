@@ -34,7 +34,7 @@ func (c *command) Run(abort <-chan struct{}) {
 	if node != nil {
 		msg := protocol.NewUpdateWithData(protocol.TypeCommand, &c.Command)
 
-		err := node.WriteUpdate(msg)
+		err := serverprotocol.WriteUpdate(node, msg)
 		if err != nil {
 			log.Warn("Node ", c.Uuid(), " - Failed to run command:", err)
 			return

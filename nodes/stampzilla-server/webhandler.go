@@ -49,7 +49,7 @@ func (wh *WebHandler) CommandToNodePut(c *gin.Context) {
 
 	log.Infof("Sending to node %s command: %#v", id, string(requestJsonPut))
 
-	node.WriteUpdate(protocol.NewUpdateWithData(protocol.TypeCommand, requestJsonPut))
+	serverprotocol.WriteUpdate(node, protocol.NewUpdateWithData(protocol.TypeCommand, requestJsonPut))
 	c.JSON(200, protocol.Command{Cmd: "testresponse"})
 }
 
@@ -67,7 +67,7 @@ func (wh *WebHandler) CommandToNodeGet(c *gin.Context) {
 
 	log.Infof("Sending to node %s command: %#v", id, cmd)
 
-	node.WriteUpdate(protocol.NewUpdateWithData(protocol.TypeCommand, cmd))
+	serverprotocol.WriteUpdate(node, protocol.NewUpdateWithData(protocol.TypeCommand, cmd))
 	c.JSON(200, protocol.Command{Cmd: "testresponse"})
 }
 

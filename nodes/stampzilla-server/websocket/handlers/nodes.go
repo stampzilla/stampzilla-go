@@ -43,7 +43,7 @@ func (wh *Nodes) RunCommand(msg *websocket.Message) {
 		return
 	}
 
-	node.WriteUpdate(protocol.NewUpdateWithData(protocol.TypeCommand, msg.Data))
+	serverprotocol.WriteUpdate(node, protocol.NewUpdateWithData(protocol.TypeCommand, msg.Data))
 }
 
 func (wh *Nodes) SendAllNodes() {
