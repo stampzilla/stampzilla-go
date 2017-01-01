@@ -1,0 +1,6 @@
+#!/bin/sh
+
+ROOT_FOLDER=`git rev-parse --show-toplevel`
+
+cp -v $ROOT_FOLDER/hooks/pre-commit $ROOT_FOLDER/.git/hooks
+
