@@ -6,6 +6,7 @@ import (
 	log "github.com/cihub/seelog"
 	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
+	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
 type Nodes struct {
@@ -37,14 +38,12 @@ func (wh *Nodes) jsonRawMessage(data interface{}) json.RawMessage {
 func (wh *Nodes) RunCommand(msg *websocket.Message) {
 	//msg := wh.jsonDecode(str)
 	node := wh.Nodes.Search(msg.To)
-	if node != nil {
-		jsonToSend, err := json.Marshal(&msg.Data)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		node.Write(jsonToSend)
+	if node == nil {
+		log.Error("Nodes.RunCommand - Node %s not found", msg.To)
+		return
 	}
+
+	serverprotocol.WriteUpdate(node, protocol.NewUpdateWithData(protocol.TypeCommand, msg.Data))
 }
 
 func (wh *Nodes) SendAllNodes() {

@@ -18,11 +18,12 @@ func (n *nodeStub) Name() string {
 	return ""
 }
 
-func (n *nodeStub) Write(b []byte) {
+func (n *nodeStub) Write(b []byte) (int, error) {
 	n.written = append(n.written, b)
 	if n.wg != nil {
 		n.wg.Done()
 	}
+	return len(b), nil
 }
 
 type nodesStub struct {

@@ -25,9 +25,7 @@ func NewDevices() *Devices {
 func (n *Devices) ByUuid(uuid string) *devices.Device {
 	n.RLock()
 	defer n.RUnlock()
-	if node, ok := n.devices[uuid]; ok {
-		return node
-	}
+	return n.devices.ByID(uuid)
 	return nil
 }
 func (n *Devices) All() map[string]*devices.Device {
@@ -57,18 +55,17 @@ func (n *Devices) AllWithState(nodes *Nodes) devices.Map {
 	}
 	return devices
 }
-func (n *Devices) Add(nodeUuid string, device *devices.Device) error {
+func (n *Devices) Add(device *devices.Device) error {
 	n.Lock()
 	defer n.Unlock()
 
-	if dev, ok := n.devices[nodeUuid+"."+device.Id]; ok {
+	if dev := n.devices.ByID(device.Node + "." + device.Id); dev != nil {
 		// Save name and tags
 		device.Name = dev.Name
 		device.Tags = dev.Tags
 	}
 
-	n.devices[nodeUuid+"."+device.Id] = device
-
+	n.devices.Add(device)
 	return nil
 }
 func (n *Devices) Delete(uuid string) {
@@ -130,7 +127,7 @@ func (n *Devices) RestoreFromFile(path string) {
 	}
 
 	for _, v := range devs {
-		n.Add(v.Node, &devices.Device{
+		n.Add(&devices.Device{
 			Type:   v.Type,
 			Node:   v.Node,
 			Id:     v.ID,

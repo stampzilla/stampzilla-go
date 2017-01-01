@@ -41,16 +41,6 @@ func main() {
 	go monitorState(node, connection)
 	go serverRecv(connection)
 
-	// Describe available actions
-	node.AddAction("set", "Set", []string{"Devices.Id"})
-	node.AddAction("toggle", "Toggle", []string{"Devices.Id"})
-	node.AddAction("dim", "Dim", []string{"Devices.Id", "value"})
-
-	// Describe available layouts
-	node.AddLayout("1", "switch", "toggle", "Devices", []string{"on"}, "Switches")
-	node.AddLayout("2", "slider", "dim", "Devices", []string{"dim"}, "Dimmers")
-	node.AddLayout("3", "slider", "dim", "Devices", []string{"dim"}, "Specials")
-
 	node.AddElement(&protocol.Element{
 		Type: protocol.ElementTypeToggle,
 		Name: "Lamp 0186ff7d",
@@ -75,7 +65,6 @@ func main() {
 	state.Devices = readConfigFromFile()
 	node.SetState(state)
 
-	//TODO remove element generator and AddElement and AddLayout and AddAction. Devices will superseed that.
 	elementGenerator := &ElementGenerator{}
 	elementGenerator.State = state
 	elementGenerator.Node = node
@@ -88,7 +77,6 @@ func main() {
 			Name:   dev.Name,
 			Id:     dev.IdString(),
 			Online: true,
-			Node:   config.Uuid,
 			StateMap: map[string]string{
 				"on": "Devices." + dev.IdString() + ".On",
 			},

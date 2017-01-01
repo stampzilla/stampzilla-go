@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -13,15 +14,16 @@ import (
 )
 
 type ruleActionStub struct {
-	actionCount *int
-	cancelCount *int
+	actionCount *int64
+	cancelCount *int64
 	uuid        string
 	t           *testing.T
 }
 
 func (ra *ruleActionStub) Run(c chan ActionProgress) {
 	ra.t.Log("RuleActionStubRAN")
-	*ra.actionCount++
+	atomic.AddInt64(ra.actionCount, 1)
+	//*ra.actionCount++
 }
 func (ra *ruleActionStub) Cancel() {
 	*ra.cancelCount++
@@ -33,7 +35,8 @@ func (ra *ruleActionStub) Name() string {
 	return ""
 }
 
-func NewRuleActionStub(actionCount, actionCancelCount *int, t *testing.T) *ruleActionStub {
+
+func NewRuleActionStub(actionCount, actionCancelCount *int64, t *testing.T) *ruleActionStub {
 	return &ruleActionStub{
 		actionCount: actionCount,
 		cancelCount: actionCancelCount,
@@ -53,8 +56,8 @@ func TestParseRuleEnterExitActionsEvaluateTrue(t *testing.T) {
 
 	rule := logic.AddRule("test rule 1")
 
-	actionRunCount := 0
-	actionCancelCount := 0
+	actionRunCount := int64(0)
+	actionCancelCount := int64(0)
 	action := NewRuleActionStub(&actionRunCount, &actionCancelCount, t)
 	rule.AddEnterAction(action)
 	rule.AddExitAction(action)
@@ -137,8 +140,8 @@ func TestParseRuleEnterExitActionsEvaluateFalse(t *testing.T) {
 
 	rule := logic.AddRule("test rule 1")
 
-	actionRunCount := 0
-	actionCancelCount := 0
+	actionRunCount := int64(0)
+	actionCancelCount := int64(0)
 	action := NewRuleActionStub(&actionRunCount, &actionCancelCount, t)
 	rule.AddEnterAction(action)
 	rule.AddExitAction(action)
@@ -212,8 +215,8 @@ func TestParseRuleEnterExitActionsWithoutUuid(t *testing.T) {
 
 	rule := logic.AddRule("test rule 1")
 
-	actionRunCount := 0
-	actionCancelCount := 0
+	actionRunCount := int64(0)
+	actionCancelCount := int64(0)
 	action := NewRuleActionStub(&actionRunCount, &actionCancelCount, t)
 	rule.AddEnterAction(action)
 	rule.AddExitAction(action)
@@ -287,8 +290,8 @@ func TestListenForChanges(t *testing.T) {
 
 	rule := logic.AddRule("test rule 1")
 
-	actionRunCount := 0
-	actionCancelCount := 0
+	actionRunCount := int64(0)
+	actionCancelCount := int64(0)
 	action := NewRuleActionStub(&actionRunCount, &actionCancelCount, t)
 	rule.AddEnterAction(action)
 	rule.AddExitAction(action)
@@ -373,8 +376,8 @@ func TestParseRuleEnterExitActionsWithoutConditions(t *testing.T) {
 
 	rule := logic.AddRule("test rule without conditions")
 
-	actionRunCount := 0
-	actionCancelCount := 0
+	actionRunCount := int64(0)
+	actionCancelCount := int64(0)
 	action := NewRuleActionStub(&actionRunCount, &actionCancelCount, t)
 	rule.AddEnterAction(action)
 	rule.AddExitAction(action)
@@ -514,8 +517,8 @@ func TestParseRuleEnterExitActionsEvaluateTrueOperatorOr(t *testing.T) {
 		t.Errorf("length of logic.States should be 1. got: %d", len(logic.States()))
 	}
 
-	assert.Equal(t, 1, *testAction.enter.actionCount)
-	assert.Equal(t, 1, *testAction.exit.actionCount)
+	assert.Equal(t, int64(1), *testAction.enter.actionCount)
+	assert.Equal(t, int64(1), *testAction.exit.actionCount)
 	//if *actionCancelCount != 4 {
 	//t.Errorf("actionCancelCount wrong expected: %d got %d", 4, actionCancelCount)
 	//}
@@ -530,10 +533,10 @@ type test_action struct {
 
 func createTestRule(t *testing.T, l *Logic, name string) (*rule, *test_action) {
 	rule := l.AddRule(name)
-	actionRunCount := 0
-	actionCancelCount := 0
-	exitactionRunCount := 0
-	exitactionCancelCount := 0
+	actionRunCount := int64(0)
+	actionCancelCount := int64(0)
+	exitactionRunCount := int64(0)
+	exitactionCancelCount := int64(0)
 	action := &test_action{
 		enter: NewRuleActionStub(&actionRunCount, &actionCancelCount, t),
 		exit:  NewRuleActionStub(&exitactionRunCount, &exitactionCancelCount, t),
@@ -612,10 +615,10 @@ func TestParseRuleWithRuleActiveCondition(t *testing.T) {
 	logic.EvaluateRules()
 
 	assert.Len(t, logic.States(), 1)
-	assert.Equal(t, 1, *rule1Action.enter.actionCount)
-	assert.Equal(t, 1, *rule1Action.exit.actionCount)
-	assert.Equal(t, 1, *rule2Action.enter.actionCount)
-	assert.Equal(t, 1, *rule2Action.exit.actionCount)
+	assert.Equal(t, int64(1), *rule1Action.enter.actionCount)
+	assert.Equal(t, int64(1), *rule1Action.exit.actionCount)
+	assert.Equal(t, int64(1), *rule2Action.enter.actionCount)
+	assert.Equal(t, int64(1), *rule2Action.exit.actionCount)
 
 	log.Flush()
 

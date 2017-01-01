@@ -9,8 +9,8 @@ import (
 func TestSchedulerAddTask(t *testing.T) {
 
 	scheduler := NewScheduler()
-	actionRunCount := 0
-	actionCancelCount := 0
+	actionRunCount := int64(0)
+	actionCancelCount := int64(0)
 	action := NewRuleActionStub(&actionRunCount, &actionCancelCount, t)
 	action.uuid = "actionuuid"
 
@@ -41,8 +41,8 @@ func TestSchedulerAddTask(t *testing.T) {
 func TestSchedulerRemoveTask(t *testing.T) {
 
 	scheduler := NewScheduler()
-	actionRunCount := 0
-	actionCancelCount := 0
+	actionRunCount := int64(0)
+	actionCancelCount := int64(0)
 	action := NewRuleActionStub(&actionRunCount, &actionCancelCount, t)
 
 	//Add first task.
@@ -101,8 +101,8 @@ func TestSchedulersaveToFile(t *testing.T) {
 	scheduler := NewScheduler()
 	scheduler.ActionService = NewActionService()
 
-	actionRunCount := 0
-	actionCancelCount := 0
+	actionRunCount := int64(0)
+	actionCancelCount := int64(0)
 	action := NewRuleActionStub(&actionRunCount, &actionCancelCount, t)
 
 	task1 := scheduler.AddTask("Test1")

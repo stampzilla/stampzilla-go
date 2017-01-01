@@ -130,11 +130,11 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 		}
 
 		switch updatePaket.Type {
-		case protocol.Pong:
+		case protocol.TypePong:
 			break
-		case protocol.Ping:
-			connection.Write([]byte("{\"Ping\":true}"))
-		case protocol.UpdateNode:
+		case protocol.TypePing:
+			serverprotocol.WriteUpdate(connection, protocol.NewUpdateWithData(protocol.TypePing, nil))
+		case protocol.TypeUpdateNode:
 			if updatePaket.Data == nil {
 				continue // The packet was nil due to some reason
 			}
@@ -178,20 +178,22 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 			}
 			ns.WsNodesHandler.SendSingleNode(uuid)
 
-		case protocol.Notification:
+		case protocol.TypeNotification:
 			if note := existingNode.GetNotification(*updatePaket.Data); note != nil {
 				log.Tracef("Recived notification: %#v", note)
 				ns.Notifications.Dispatch(*note) // Send the notification to the router
 				continue
 			}
+		default:
+			log.Warnf("Received %s package from %s but dont know what to do with it", updatePaket.Type, uuid)
 		}
 
 	}
 }
 
-func timeoutMonitor(connection net.Conn, nodeIsAlive chan bool) {
-	log.Debug("Timeout monitor started (", connection.RemoteAddr(), ")")
-	defer log.Debug("Timeout monitor closed (", connection.RemoteAddr(), ")")
+func timeoutMonitor(c net.Conn, nodeIsAlive chan bool) {
+	log.Debug("Timeout monitor started (", c.RemoteAddr(), ")")
+	defer log.Debug("Timeout monitor closed (", c.RemoteAddr(), ")")
 
 	for {
 		select {
@@ -200,14 +202,14 @@ func timeoutMonitor(connection net.Conn, nodeIsAlive chan bool) {
 			continue
 		case <-time.After(time.Second * 10):
 			// Send ping and wait for the answer
-			connection.Write([]byte("{\"Ping\":true}"))
+			serverprotocol.WriteUpdate(c, protocol.NewUpdateWithData(protocol.TypePing, nil))
 
 			select {
 			case <-nodeIsAlive:
 				continue
 			case <-time.After(time.Second * 2):
 				log.Warn("Connection timeout, no answer on ping")
-				connection.Close()
+				c.Close()
 				return
 			}
 		}
@@ -225,7 +227,8 @@ func (ns *NodeServer) updateState(updateChan chan string, node serverprotocol.No
 
 func (ns *NodeServer) syncDevices(newDevices devices.Map, node serverprotocol.Node) {
 	for _, v := range newDevices {
-		ns.Devices.Add(node.Uuid(), v)
+		v.Node = node.Uuid()
+		ns.Devices.Add(v)
 		ns.WsDevicesHandler.SendSingleDevice(v)
 	}
 }

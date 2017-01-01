@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/stampzilla/stampzilla-go/pkg/notifier"
@@ -34,6 +35,7 @@ func main() {
 	node := protocol.NewNode("simple")
 	node.Version = VERSION
 	node.BuildDate = BUILD_DATE
+	node.SetUuid(config.Uuid)
 
 	//Start communication with the server
 	connection := basenode.Connect()
@@ -42,11 +44,6 @@ func main() {
 
 	// Thit worker keeps track on our connection state, if we are connected or not
 	go monitorState(node, connection)
-
-	// Describe available actions
-	//node.AddAction("set", "Set", []string{"Devices.Id"})
-	//node.AddAction("toggle", "Toggle", []string{"Devices.Id"})
-	//node.AddAction("dim", "Dim", []string{"Devices.Id", "value"})
 
 	node.AddElement(&protocol.Element{
 		Type: protocol.ElementTypeText,
@@ -148,12 +145,37 @@ func main() {
 	node.Devices().Add(&devices.Device{
 		Type:   "lamp",
 		Name:   "Lamp ten",
-		Id:     "10",
+		Id:     "1",
 		Online: true,
-		Node:   config.GetUuid(),
 		StateMap: map[string]string{
 			"on": "Devices[1].State",
 		},
+	})
+
+	node.Config().ListenForConfigChanges(connection.ReceiveDeviceConfigSet())
+	node.Config().Add("1").Layout(
+		&protocol.DeviceConfig{
+			ID:   "46",
+			Name: "LOAD ERROR Alarmreport",
+			Options: map[string]string{
+				"0": "No reaction",
+				"1": "Send an alarm frame",
+			},
+		},
+		&protocol.DeviceConfig{
+			ID:   "47",
+			Name: "Ignorera",
+			Type: "bool",
+		},
+		&protocol.DeviceConfig{
+			ID:   "48",
+			Name: "Ignorera",
+			Type: "float",
+			Min:  0,
+			Max:  99,
+		},
+	).Handler(func(device string, c *protocol.DeviceConfig) {
+		logrus.Warnf("Got config update: %s = %s", c.ID, c.Value)
 	})
 
 	//go startToggler(node, connection, "1", time.Second)
@@ -169,6 +191,20 @@ func monitorState(node *protocol.Node, connection basenode.Connection) {
 		switch s {
 		case basenode.ConnectionStateConnected:
 			connection.Send(node.Node())
+			// Test to add a device to the node after some time
+			go func() {
+				<-time.After(time.Second * 5)
+				node.Devices().Add(&devices.Device{
+					Type:   "lamp",
+					Name:   "Lamp two",
+					Id:     "2",
+					Online: true,
+					StateMap: map[string]string{
+						"on": "Devices[2].State",
+					},
+				})
+				connection.Send(node.Node())
+			}()
 		case basenode.ConnectionStateDisconnected:
 		}
 	}

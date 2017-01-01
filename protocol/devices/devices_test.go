@@ -39,3 +39,28 @@ func TestSyncState(t *testing.T) {
 	assert.Equal(t, true, device.State["On"])
 	assert.Equal(t, false, device.State["Off"])
 }
+
+func TestMapAdd(t *testing.T) {
+
+	m := NewMap()
+	dev := NewDevice()
+	dev.Name = "name"
+	dev.Id = "id"
+	m.Add(dev)
+
+	assert.True(t, m.Exists("id"))
+	assert.Equal(t, "name", m.ByID("id").Name)
+}
+
+func TestMapAddAutoAddNodeId(t *testing.T) {
+
+	m := NewMap()
+	dev := NewDevice()
+	dev.Name = "name"
+	dev.Id = "id"
+	dev.Node = "nodeuuid"
+	m.Add(dev)
+
+	assert.True(t, m.Exists("nodeuuid.id"))
+	assert.Equal(t, "name", m.ByID("nodeuuid.id").Name)
+}

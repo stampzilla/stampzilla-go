@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"os"
 	"strconv"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/stampzilla/gozwave"
 	"github.com/stampzilla/gozwave/events"
 	"github.com/stampzilla/gozwave/nodes"
+	"github.com/stampzilla/gozwave/serialrecorder"
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/stampzilla/stampzilla-go/pkg/notifier"
 	"github.com/stampzilla/stampzilla-go/protocol"
@@ -23,11 +25,14 @@ var BUILD_DATE string = ""
 
 var notify *notifier.Notify
 
+var recordToFile string
+
 func main() {
 	log.Info("Starting ZWAVE node")
 
 	debug := flag.Bool("v", false, "Verbose - show more debuging info")
 	port := flag.String("controllerport", "/dev/ttyACM0", "SerialAPI communication port (to controller)")
+	flag.StringVar(&recordToFile, "recordtofile", "", "Enable recording of serial data to file")
 
 	// Parse all commandline arguments, host and port parameters are added in the basenode init function
 	flag.Parse()
@@ -42,10 +47,15 @@ func main() {
 	//Activate the config
 	basenode.SetConfig(config)
 
-	z, err := gozwave.Connect(*port, "zwave-networkmap.json")
+	var err error
+	var z *gozwave.Controller
+	z, f, err := getZwaveController(*port)
 	if err != nil {
 		log.Error(err)
 		return
+	}
+	if f != nil {
+		defer f.Close()
 	}
 
 	node := protocol.NewNode("zwave")
@@ -54,6 +64,8 @@ func main() {
 
 	//Start communication with the server
 	connection := basenode.Connect()
+	node.Config().ListenForConfigChanges(connection.ReceiveDeviceConfigSet())
+
 	notify = notifier.New(connection)
 	notify.SetSource(node)
 
@@ -156,7 +168,7 @@ func addOrUpdateDevice(node *protocol.Node, znode *nodes.Node) {
 				Min:  0,
 				Max:  99,
 			},
-		).Handler(func(device devices.Device, c *protocol.DeviceConfig) {
+		).Handler(func(device string, c *protocol.DeviceConfig) {
 			//save c....
 			//switch c.ID {
 			//case "46": // Dimvärde:
@@ -174,7 +186,6 @@ func addOrUpdateDevice(node *protocol.Node, znode *nodes.Node) {
 				Name:   znode.Device.Brand + " - " + znode.Device.Product + " (Address: " + devid + ")",
 				Id:     devid,
 				Online: true,
-				Node:   node.Uuid(),
 				StateMap: map[string]string{
 					"on":    "Nodes[" + strconv.Itoa(int(znode.Id)) + "]" + ".stateBool.on" + endpoint,
 					"level": "Nodes[" + strconv.Itoa(int(znode.Id)) + "]" + ".stateFloat.level" + endpoint,
@@ -188,7 +199,6 @@ func addOrUpdateDevice(node *protocol.Node, znode *nodes.Node) {
 				Name:   znode.Device.Brand + " - " + znode.Device.Product + " (Address: " + devid + ")",
 				Id:     devid,
 				Online: true,
-				Node:   node.Uuid(),
 				StateMap: map[string]string{
 					"on": "Nodes[" + strconv.Itoa(int(znode.Id)) + "]" + ".stateBool.on" + endpoint,
 				},
@@ -263,4 +273,22 @@ func processCommand(node *protocol.Node, connection basenode.Connection, cmd pro
 			log.Warnf("Unknown command '%s'", cmd.Cmd)
 		}
 	}
+}
+
+func getZwaveController(port string) (z *gozwave.Controller, f *os.File, err error) {
+	if recordToFile == "" {
+		z, err = gozwave.Connect(port, "zwave-networkmap.json")
+		return
+	}
+
+	f, err = os.Create("/tmp/dat2")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	re := serialrecorder.New(port, 115200)
+	re.Logger = f
+	z, err = gozwave.ConnectWithCustomPortOpener(port, "zwave-networkmap.json", re)
+	return
 }

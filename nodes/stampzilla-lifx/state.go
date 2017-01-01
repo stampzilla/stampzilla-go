@@ -128,7 +128,6 @@ func (s *State) publishState() {
 			Name:   v.Name,
 			Id:     v.ID,
 			Online: v.LanConnected || v.CloudConnected,
-			Node:   node.Uuid(),
 			StateMap: map[string]string{
 				"on":    "lamps[" + v.ID + "]" + ".power",
 				"level": "lamps[" + v.ID + "]" + ".level",

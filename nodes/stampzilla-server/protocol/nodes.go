@@ -3,6 +3,7 @@ package protocol
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"sync"
 
@@ -32,7 +33,7 @@ type Node interface {
 	Name() string
 	SetUuid(string)
 	SetName(string)
-	Write(b []byte)
+	Write(b []byte) (int, error)
 	SetConn(conn net.Conn)
 	GetNotification(json.RawMessage) *notifications.Notification
 }
@@ -64,14 +65,16 @@ func (n *node) SetConn(conn net.Conn) {
 	n.Host = conn.RemoteAddr().String()
 	n.Unlock()
 }
-func (n *node) Write(b []byte) {
+func (n *node) Write(b []byte) (int, error) {
 	b = append(b, []byte("\n")...)
-	_, err := n.conn.Write(b)
+	count, err := n.conn.Write(b)
 	if err != nil {
 		n.conn.Close()
 		log.Error(err)
-		return
+		return count, err
 	}
+
+	return count, nil
 }
 
 func (n *node) GetNotification(notification json.RawMessage) *notifications.Notification {
@@ -162,4 +165,14 @@ func (n *Nodes) Delete(uuid string) {
 	n.Lock()
 	defer n.Unlock()
 	delete(n.nodes, uuid)
+}
+
+func WriteUpdate(w io.Writer, msg *protocol.Update) error {
+	bytes, err := msg.ToJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = w.Write(bytes)
+	return err
 }

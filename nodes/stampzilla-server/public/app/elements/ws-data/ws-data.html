@@ -262,20 +262,26 @@
 					if ( !(this.devices instanceof Object) ) {
 						return;
 					}
-					for (var prop in this.devices) {
-						if(!this.devices.hasOwnProperty(prop)) continue;
+					for (var deviceId in this.devices) {
+						if(!this.devices.hasOwnProperty(deviceId)){
+							continue;
+						}
 
-						var dev = this.devices[prop];
+						var dev = this.devices[deviceId];
 
 						var self = this;
 						this.nodes.forEach(function(el,index){
 							if ( el.Uuid === dev.node ) {
 								for (var prop2 in el.config.config) {
-									if ( !el.config.config.hasOwnProperty(prop2) ) continue;
-									if ( prop2 !== prop ) continue;
+									if ( !el.config.config.hasOwnProperty(prop2) ){
+										continue;
+									}
+									if ( prop2 !== dev.id ){
+										continue;
+									}
 
 									var cfg = el.config.config[prop2];
-									self.devices[prop]['config'] = cfg.layout;
+									self.devices[deviceId]['config'] = cfg.layout;
 								}
 							}
 						});

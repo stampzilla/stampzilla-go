@@ -1,28 +1,56 @@
 package protocol
 
-import "github.com/stampzilla/stampzilla-go/protocol/devices"
-
 type ConfigMap struct {
-	node   Identifiable
+	//node   Identifiable
 	Config map[string]*DeviceConfigMap `json:"config"`
 }
 
-type DeviceConfigMap struct {
-	Layout_ map[string]*DeviceConfig `json:"layout"`
-	handler func(devices.Device, *DeviceConfig)
+func NewConfigMap(n Identifiable) *ConfigMap {
+	return &ConfigMap{
+		//node:   n,
+		Config: make(map[string]*DeviceConfigMap),
+	}
 }
 
+func (cm *ConfigMap) ListenForConfigChanges(c chan DeviceConfigSet) {
+	go func() {
+		for conf := range c {
+			cm.runHandler(conf.Device, conf.ID, conf.Value)
+		}
+	}()
+}
 func (cm *ConfigMap) Add(devid string) *DeviceConfigMap {
-	if dcm, ok := cm.Config[cm.node.Uuid()+"."+devid]; ok {
+	if dcm, ok := cm.Config[devid]; ok {
 		return dcm
 	}
 
 	dcm := &DeviceConfigMap{
 		Layout_: make(map[string]*DeviceConfig),
 	}
-	cm.Config[cm.node.Uuid()+"."+devid] = dcm
+	cm.Config[devid] = dcm
 
 	return dcm
+}
+
+func (cm *ConfigMap) runHandler(device, id string, value interface{}) {
+	dev, ok := cm.Config[device]
+	if !ok {
+		return
+	}
+
+	dc, ok := dev.Layout_[id]
+	if !ok {
+		return
+	}
+
+	dc.Value = value
+
+	dev.handler(device, dc)
+}
+
+type DeviceConfigMap struct {
+	Layout_ map[string]*DeviceConfig `json:"layout"`
+	handler func(string, *DeviceConfig)
 }
 
 func (cm *DeviceConfigMap) Layout(layout ...*DeviceConfig) *DeviceConfigMap {
@@ -37,7 +65,7 @@ func (cm *DeviceConfigMap) Layout(layout ...*DeviceConfig) *DeviceConfigMap {
 	return cm
 }
 
-func (cm *DeviceConfigMap) Handler(f func(devices.Device, *DeviceConfig)) *DeviceConfigMap {
+func (cm *DeviceConfigMap) Handler(f func(string, *DeviceConfig)) *DeviceConfigMap {
 	cm.handler = f
 
 	return cm
@@ -51,4 +79,10 @@ type DeviceConfig struct {
 	Min     int               `json:"min,omitempty"`
 	Max     int               `json:"max,omitempty"`
 	Value   interface{}       `json:"value,omitempty"`
+}
+
+type DeviceConfigSet struct {
+	Device string `json:"device"`
+	ID     string `json:"id"`
+	Value  interface{}
 }

@@ -63,16 +63,6 @@ func main() {
 	node.BuildDate = BUILD_DATE
 	node.SetState(state)
 
-	// Describe available actions
-	node.AddAction("set", "Set", []string{"Devices.Id"})
-	node.AddAction("toggle", "Toggle", []string{"Devices.Id"})
-	node.AddAction("dim", "Dim", []string{"Devices.Id", "value"})
-
-	// Describe available layouts
-	//node.AddLayout("1", "switch", "toggle", "Devices", []string{"on"}, "Switches")
-	//node.AddLayout("2", "slider", "dim", "Devices", []string{"dim"}, "Dimmers")
-	//node.AddLayout("3", "slider", "dim", "Devices", []string{"dim"}, "Specials")
-
 	// Add devices
 	cnt := C.updateDevices()
 	log.Println("Updated devices (", cnt, " in total)")
@@ -93,7 +83,6 @@ func main() {
 			Name:   dev.Name,
 			Id:     dev.Id,
 			Online: true,
-			Node:   config.Uuid,
 			StateMap: map[string]string{
 				"on": "Devices[" + dev.Id + "]" + ".State.On",
 			},
@@ -107,7 +96,6 @@ func main() {
 			Name:   dev.Name,
 			Id:     "s" + id,
 			Online: true,
-			Node:   config.Uuid,
 			StateMap: map[string]string{
 				"temp":     "Sensors[" + id + "]" + ".Temp",
 				"humidity": "Sensors[" + id + "]" + ".Humidity",

@@ -1,7 +1,6 @@
 package protocol
 
 import (
-	"encoding/json"
 	"sync"
 
 	"github.com/stampzilla/stampzilla-go/protocol/devices"
@@ -13,8 +12,6 @@ type Node struct {
 	Host      string
 	Version   string
 	BuildDate string
-	Actions   []*Action
-	Layout    []*Layout
 	Elements_ []*Element  `json:"Elements"`
 	State_    interface{} `json:"State"`
 	Devices_  devices.Map `json:"Devices"`
@@ -26,34 +23,13 @@ func NewNode(name string) *Node {
 	n := &Node{
 		Name_:     name,
 		Version:   "-",
-		Actions:   []*Action{},
 		Elements_: []*Element{},
-		Layout:    []*Layout{},
 		Devices_:  make(devices.Map),
-		Config_: &ConfigMap{
-			Config: make(map[string]*DeviceConfigMap),
-		},
 	}
 
-	n.Config_.node = n
+	n.Config_ = NewConfigMap(n)
 
 	return n
-}
-
-func (n *Node) AddAction(id, name string, args []string) {
-	a := NewAction(id, name, args)
-
-	n.Lock()
-	n.Actions = append(n.Actions, a)
-	n.Unlock()
-}
-
-func (n *Node) AddLayout(id, atype, action, using string, filter []string, section string) {
-	l := NewLayout(id, atype, action, using, filter, section)
-
-	n.Lock()
-	n.Layout = append(n.Layout, l)
-	n.Unlock()
 }
 
 func (n *Node) AddElement(el *Element) {
@@ -83,6 +59,7 @@ func (n *Node) Config() *ConfigMap {
 	defer n.RUnlock()
 	return n.Config_
 }
+
 func (n *Node) SetConfig(c *ConfigMap) {
 	n.Lock()
 	n.Config_ = c
@@ -128,16 +105,6 @@ func (n *Node) SetName(name string) {
 	n.Lock()
 	defer n.Unlock()
 	n.Name_ = name
-}
-
-func (n *Node) JsonEncode() (string, error) {
-	n.RLock()
-	ret, err := json.Marshal(n)
-	n.RUnlock()
-	if err != nil {
-		return "", err
-	}
-	return string(ret), nil
 }
 
 type Identifiable interface {

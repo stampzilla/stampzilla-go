@@ -11,8 +11,15 @@ func TestAdd(t *testing.T) {
 	devs := NewDevices()
 	device := devices.NewDevice()
 	device.Id = "devuuid"
-	devs.Add("nodeuuid", device)
-	assert.Contains(t, devs.devices, "nodeuuid.devuuid")
+	device.Node = "nodeuuid"
+	devs.Add(device)
+
+	if dev, ok := devs.devices["nodeuuid.devuuid"]; ok {
+		assert.Equal(t, "devuuid", dev.Id)
+		return
+	}
+
+	t.Fatalf("Device nodeuuid.devuuid was not found")
 }
 
 func TestShallowCopy(t *testing.T) {
@@ -20,10 +27,13 @@ func TestShallowCopy(t *testing.T) {
 	device := devices.NewDevice()
 	device.Id = "devuuid"
 	device.Name = "Name"
-	devs.Add("nodeuuid", device)
+	device.Node = "nodeuuid"
+	devs.Add(device)
 
 	copied := devs.ShallowCopy()
-	assert.Contains(t, copied, "nodeuuid.devuuid")
+	if _, ok := copied["nodeuuid.devuuid"]; !ok {
+		t.Fatal("nodeuuid.devuuid not found")
+	}
 	device.Name = "NameChange"
 	assert.Equal(t, "Name", copied["nodeuuid.devuuid"].Name)
 	assert.Equal(t, "NameChange", devs.devices["nodeuuid.devuuid"].Name)
@@ -42,8 +52,8 @@ func TestSetOfflineByNode(t *testing.T) {
 	device2.Node = "node2"
 	device2.Online = true
 
-	devs.Add("node1", device1)
-	devs.Add("node2", device2)
+	devs.Add(device1)
+	devs.Add(device2)
 
 	list := devs.SetOfflineByNode("node1")
 

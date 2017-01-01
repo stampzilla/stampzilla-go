@@ -200,7 +200,8 @@
 					var pkg = {
 						type: 'device/config/set',
 						data: {
-							device: this.device.node+"."+this.device.id,
+							node: this.device.node,
+							device: this.device.id,
 							parameter: param,
 							value: val,
 						}
