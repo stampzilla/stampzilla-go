@@ -12,7 +12,7 @@ func TestActionsMapperSave(t *testing.T) {
 	mapper := NewActionsMapper()
 
 	actions := &ActionService{}
-	actions.Actions_ = []*action{
+	actions.actions = []Action{
 		&action{
 			Commands: []Command{
 				NewCommand(&protocol.Command{}, "uuid1"),
@@ -47,29 +47,29 @@ func TestActionsMapperLoad(t *testing.T) {
 	assert.NotNil(t, a.Nodes)
 	assert.NotNil(t, a.Nodes.Search("nodeuuid"))
 
-	assert.Equal(t, "actionuuid1", a.Actions_[0].Uuid())
-	assert.Equal(t, "actionuuid2", a.Actions_[1].Uuid())
+	assert.Equal(t, "actionuuid1", a.actions[0].Uuid())
+	assert.Equal(t, "actionuuid2", a.actions[1].Uuid())
 
 	assert.Equal(t, "actionuuid1", a.GetByUuid("actionuuid1").Uuid())
 	assert.Equal(t, "actionuuid2", a.GetByUuid("actionuuid2").Uuid())
 
 	assert.Nil(t, a.GetByUuid("unknown"))
 
-	assert.IsType(t, &command{}, a.Actions_[0].Commands[0])
-	assert.Equal(t, "uuid1", a.Actions_[0].Commands[0].(*command).Uuid_)
+	assert.IsType(t, &command{}, a.actions[0].(*action).Commands[0])
+	assert.Equal(t, "uuid1", a.actions[0].(*action).Commands[0].(*command).Uuid_)
 
-	assert.IsType(t, &command_pause{}, a.Actions_[0].Commands[1])
+	assert.IsType(t, &command_pause{}, a.actions[0].(*action).Commands[1])
 
-	assert.IsType(t, &command{}, a.Actions_[0].Commands[2])
-	assert.Equal(t, "uuid2", a.Actions_[0].Commands[2].(*command).Uuid_)
+	assert.IsType(t, &command{}, a.actions[0].(*action).Commands[2])
+	assert.Equal(t, "uuid2", a.actions[0].(*action).Commands[2].(*command).Uuid_)
 
-	if cmd, ok := a.Actions_[1].Commands[0].(*command); ok {
+	if cmd, ok := a.actions[1].(*action).Commands[0].(*command); ok {
 		assert.Equal(t, "nodename", cmd.nodes.Search("nodeuuid").Name())
 	} else {
 		t.Error("Wrong type for command, should be *command")
 	}
 
-	assert.IsType(t, &command_notify{}, a.Actions_[0].Commands[3])
+	assert.IsType(t, &command_notify{}, a.actions[0].(*action).Commands[3])
 
 	//fmt.Printf("%#v\n", a)
 }

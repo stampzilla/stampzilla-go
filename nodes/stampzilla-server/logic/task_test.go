@@ -16,6 +16,11 @@ func TestTaskRunAndAddActions(t *testing.T) {
 	actionRunCount := 0
 	actionCancelCount := 0
 	action := NewRuleActionStub(&actionRunCount, &actionCancelCount, t)
+
+	actionService := NewActionService()
+	actionService.Add(action)
+	task.actionService = actionService
+
 	task.AddAction(action)
 	task.AddAction(action)
 	task.Run()

@@ -61,6 +61,7 @@ func (s *Scheduler) AddTask(name string) Task {
 	if s.Logic != nil {
 		task.ActionProgressChan = s.Logic.ActionProgressChan
 	}
+	task.actionService = s.ActionService
 
 	//task.nodes = s.Nodes
 	task.cron = s.Cron
@@ -120,14 +121,15 @@ func (s *Scheduler) loadFromFile(filepath string) {
 		return
 	}
 
-	type local_tasks struct {
+	//TODO we can use normal task here if we refactor some stuff :)
+	type localTasks struct {
 		Name     string   `json:"name"`
 		Uuid     string   `json:"uuid"`
 		Actions  []string `json:"actions"`
 		CronWhen string   `json:"when"`
 	}
 
-	var tasks []*local_tasks
+	var tasks []*localTasks
 	jsonParser := json.NewDecoder(configFile)
 	if err = jsonParser.Decode(&tasks); err != nil {
 		log.Error(err)
@@ -142,6 +144,10 @@ func (s *Scheduler) loadFromFile(filepath string) {
 		}
 		for _, uuid := range task.Actions {
 			a := s.ActionService.GetByUuid(uuid)
+			if a == nil {
+				log.Errorf("Could not find action %s. Skipping adding it to task.\n", uuid)
+				continue
+			}
 			t.AddAction(a)
 		}
 		//Schedule the task!
