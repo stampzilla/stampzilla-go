@@ -65,6 +65,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 		<!-- build:js bower_components/webcomponentsjs/webcomponents-lite.min.js -->
 		<script src="bower_components/webcomponentsjs/webcomponents.js"></script>
 		<script src="bower_components/moment/min/moment.min.js"></script>
+		<script src="bower_components/later/later.min.js"></script>
+		<script src="bower_components/prettycron/prettycron.js"></script>
 		<!-- endbuild -->
 
 		<!-- will be replaced with elements/elements.vulcanized.html -->
@@ -188,13 +190,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 							<section data-route="rules">
 								<template is="dom-repeat" items="[[rules]]" as="item">
-									<stampzilla-rule data=[[item]] actions={{rules}}></stampzilla-rule>
+									<stampzilla-rule data=[[item]] actions={{actions}}></stampzilla-rule>
 								</template>
 							</section>
 
 							<section data-route="schedule">
 								<template is="dom-repeat" items="[[schedule]]" as="item">
-									<stampzilla-schedule data=[[item]] schedule={{schedule}}></stampzilla-schedule>
+									<stampzilla-schedule data=[[item]] actions={{actions}} schedule={{schedule}}></stampzilla-schedule>
 								</template>
 							</section>
 
