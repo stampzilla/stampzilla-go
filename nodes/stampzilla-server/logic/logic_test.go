@@ -16,6 +16,7 @@ import (
 type ruleActionStub struct {
 	actionCount *int64
 	cancelCount *int64
+	uuid        string
 	t           *testing.T
 }
 
@@ -28,14 +29,20 @@ func (ra *ruleActionStub) Cancel() {
 	*ra.cancelCount++
 }
 func (ra *ruleActionStub) Uuid() string {
-	return ""
+	return ra.uuid
 }
 func (ra *ruleActionStub) Name() string {
 	return ""
 }
 
+
 func NewRuleActionStub(actionCount, actionCancelCount *int64, t *testing.T) *ruleActionStub {
-	return &ruleActionStub{actionCount, actionCancelCount, t}
+	return &ruleActionStub{
+		actionCount: actionCount,
+		cancelCount: actionCancelCount,
+		t:           t,
+		uuid:        "",
+	}
 }
 
 func TestParseRuleEnterExitActionsEvaluateTrue(t *testing.T) {
