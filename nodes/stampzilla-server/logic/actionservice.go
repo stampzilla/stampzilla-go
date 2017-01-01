@@ -1,8 +1,9 @@
 package logic
 
-import "encoding/json"
-
 import (
+	"encoding/json"
+	"sync"
+
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/notifications"
 	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 )
@@ -14,26 +15,36 @@ import (
 //}
 
 type ActionService struct {
-	Actions_           []*action             `json:"actions"`
+	actions            []Action              `json:"actions"`
 	Nodes              *serverprotocol.Nodes `json:"-" inject:""`
 	NotificationRouter notifications.Router  `json:"-" inject:""`
+	sync.RWMutex
 }
 
-func NewActions() *ActionService {
+func NewActionService() *ActionService {
 	return &ActionService{}
 }
 
-func (a *ActionService) Get() []*action {
-	return a.Actions_
+func (as *ActionService) Add(a Action) {
+	as.Lock()
+	//r.actions = append(r.actions, a)
+	as.actions = append(as.actions, a)
+	as.Unlock()
+}
+
+func (a *ActionService) Get() []Action {
+	a.RLock()
+	defer a.RUnlock()
+	return a.actions
 }
 func (a *ActionService) Start() {
-	a.Actions_ = make([]*action, 0)
+	a.actions = make([]Action, 0)
 	mapper := NewActionsMapper()
 	mapper.Load(a)
 }
 
 func (a *ActionService) GetByUuid(uuid string) Action {
-	for _, v := range a.Actions_ {
+	for _, v := range a.actions {
 		if v.Uuid() == uuid {
 			return v
 		}
@@ -50,7 +61,7 @@ func (a *ActionService) UnmarshalJSON(b []byte) (err error) {
 			for _, c := range action.Commands {
 				a.SetCommandDependencies(c)
 			}
-			a.Actions_ = append(a.Actions_, action)
+			a.actions = append(a.actions, action)
 		}
 		return
 	}
@@ -66,5 +77,5 @@ func (a *ActionService) SetCommandDependencies(cmd Command) {
 }
 
 func (a *ActionService) MarshalJSON() (res []byte, err error) {
-	return json.Marshal(a.Actions_)
+	return json.Marshal(a.actions)
 }

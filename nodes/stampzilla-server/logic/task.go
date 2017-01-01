@@ -6,13 +6,14 @@ import (
 
 	log "github.com/cihub/seelog"
 	"github.com/jonaz/cron"
+	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
 type task struct {
-	Name_    string   `json:"name"`
-	Uuid_    string   `json:"uuid"`
-	Actions  []string `json:"actions"`
-	actions  []Action
+	Name_   string   `json:"name"`
+	Uuid_   string   `json:"uuid"`
+	Actions []string `json:"actions"`
+	//actions  []Action
 	cronId   int
 	CronWhen string `json:"when"`
 	sync.RWMutex
@@ -20,6 +21,7 @@ type task struct {
 	entryTime time.Time
 
 	ActionProgressChan chan ActionProgress `json:"-"`
+	actionService      *ActionService      `json:"-"`
 }
 
 type Task interface {
@@ -28,7 +30,7 @@ type Task interface {
 	Uuid() string
 	Name() string
 	CronId() int
-	AddAction(a Action)
+	AddAction(a protocol.Identifiable)
 	Schedule(string)
 }
 
@@ -55,8 +57,13 @@ func (r *task) CronId() int {
 
 func (t *task) Run() {
 	t.RLock()
-	for _, action := range t.actions {
-		action.Run(t.ActionProgressChan)
+	for _, uuid := range t.Actions {
+		a := t.actionService.GetByUuid(uuid)
+		if a == nil {
+			log.Errorf("Action %s not found in actionService", uuid)
+			continue
+		}
+		a.Run(t.ActionProgressChan)
 	}
 	t.RUnlock()
 
@@ -74,16 +81,8 @@ func (t *task) Schedule(when string) {
 	t.Unlock()
 }
 
-func (r *task) AddAction(a Action) {
-	//if a, ok := a.(*command); ok {
-	//a.nodes = r.nodes
-	//}
-	if a == nil {
-		log.Error("Action is nil")
-		return
-	}
+func (r *task) AddAction(i protocol.Identifiable) {
 	r.Lock()
-	r.actions = append(r.actions, a)
-	r.Actions = append(r.Actions, a.Uuid())
+	r.Actions = append(r.Actions, i.Uuid())
 	r.Unlock()
 }
