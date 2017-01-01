@@ -80,7 +80,7 @@ func TestNodeConfig(t *testing.T) {
 	n := NewNode("name")
 	n.SetUuid("uuid")
 	n.Config().Add("asdf")
-	if _, ok := n.Config().Config["uuid.asdf"]; !ok {
+	if _, ok := n.Config().Config["asdf"]; !ok {
 		t.Error("failed to find uuid.asdf in config")
 	}
 }

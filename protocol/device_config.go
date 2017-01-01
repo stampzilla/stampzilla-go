@@ -1,13 +1,13 @@
 package protocol
 
 type ConfigMap struct {
-	node   Identifiable
+	//node   Identifiable
 	Config map[string]*DeviceConfigMap `json:"config"`
 }
 
 func NewConfigMap(n Identifiable) *ConfigMap {
 	return &ConfigMap{
-		node:   n,
+		//node:   n,
 		Config: make(map[string]*DeviceConfigMap),
 	}
 }
@@ -15,25 +15,25 @@ func NewConfigMap(n Identifiable) *ConfigMap {
 func (cm *ConfigMap) ListenForConfigChanges(c chan DeviceConfigSet) {
 	go func() {
 		for conf := range c {
-			cm.SetConfig(conf.Device, conf.ID, conf.Value)
+			cm.runHandler(conf.Device, conf.ID, conf.Value)
 		}
 	}()
 }
 func (cm *ConfigMap) Add(devid string) *DeviceConfigMap {
-	if dcm, ok := cm.Config[cm.node.Uuid()+"."+devid]; ok {
+	if dcm, ok := cm.Config[devid]; ok {
 		return dcm
 	}
 
 	dcm := &DeviceConfigMap{
 		Layout_: make(map[string]*DeviceConfig),
 	}
-	cm.Config[cm.node.Uuid()+"."+devid] = dcm
+	cm.Config[devid] = dcm
 
 	return dcm
 }
 
-func (cm *ConfigMap) SetConfig(device, id string, value interface{}) {
-	dev, ok := cm.Config[cm.node.Uuid()+"."+device]
+func (cm *ConfigMap) runHandler(device, id string, value interface{}) {
+	dev, ok := cm.Config[device]
 	if !ok {
 		return
 	}

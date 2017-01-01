@@ -77,6 +77,7 @@ func (d *Devices) set(msg *websocket.Message) {
 
 func (d *Devices) setConfig(msg *websocket.Message) {
 	type message struct {
+		Node      string      `json:"node"`
 		Device    string      `json:"device"`
 		Parameter string      `json:"parameter"`
 		Value     interface{} `json:"value"`
@@ -89,26 +90,14 @@ func (d *Devices) setConfig(msg *websocket.Message) {
 		return
 	}
 
-	device := d.Devices.ByUuid(data.Device)
-	if device == nil {
-		logrus.Errorf("Received config but device (%s) was not found", data.Device)
-		return
-	}
-
-	devid := strings.SplitN(data.Device, ".", 2)
-	if len(devid) < 2 {
-		logrus.Errorf("Received config but could not split device id (%s) ", data.Device)
-		return
-	}
-
-	node := d.Nodes.ByUuid(devid[0])
+	node := d.Nodes.ByUuid(data.Node)
 	if node == nil {
-		logrus.Errorf("Received config but node (%s) was not found", devid[0])
+		logrus.Errorf("Received config but node (%s) was not found", data.Node)
 		return
 	}
 
 	cfg := protocol.DeviceConfigSet{
-		Device: devid[1],
+		Device: data.Device,
 		ID:     data.Parameter,
 		Value:  data.Value,
 	}

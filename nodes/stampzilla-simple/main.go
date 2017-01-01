@@ -153,7 +153,7 @@ func main() {
 	})
 
 	node.Config().ListenForConfigChanges(connection.ReceiveDeviceConfigSet())
-	node.Config().Add("10").Layout(
+	node.Config().Add("1").Layout(
 		&protocol.DeviceConfig{
 			ID:   "46",
 			Name: "LOAD ERROR Alarmreport",
