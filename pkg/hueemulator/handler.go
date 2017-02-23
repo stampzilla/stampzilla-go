@@ -11,12 +11,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var handlerMap map[string]*huestate
+var handlerMap map[int]*huestate
 var debug bool
 
 func init() {
 	log.SetOutput(ioutil.Discard)
-	handlerMap = make(map[string]*huestate)
+	handlerMap = make(map[int]*huestate)
 	upnpTemplateInit()
 }
 
@@ -65,7 +65,7 @@ type Handler func(Request) error
 
 func Handle(id int, deviceName string, h Handler) {
 	log.Println("[HANDLE]", deviceName)
-	handlerMap[deviceName] = &huestate{
+	handlerMap[id] = &huestate{
 		Handler: h,
 		Light:   initLight(deviceName),
 		Id:      id,
