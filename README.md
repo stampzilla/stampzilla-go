@@ -5,7 +5,7 @@ New version of this awesome homeautomation software written in Go and javascript
 
 Installation
 ```bash
-go get github.com/stampzilla/stampzilla-go/stampzilla
+go get -u github.com/stampzilla/stampzilla-go/stampzilla
 sudo stampzilla install
 ```
 This creates a stampzilla user. checksout the code in stampzilla user home folder and creates some required folders. 
