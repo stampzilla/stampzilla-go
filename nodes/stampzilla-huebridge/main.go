@@ -29,7 +29,7 @@ func init() {
 	flag.BoolVar(&standalone, "standalone", false, "Run standalone without communicating with stampzilla-server Host:Port configured in config.json.")
 }
 
-type NodeSpecific struct {
+type nodeSpecific struct {
 	Port       string
 	ListenPort string
 	Devices    []*Device
@@ -49,7 +49,7 @@ func main() {
 	node.BuildDate = BUILD_DATE
 
 	//devices := NewDevices()
-	nodespecific := &NodeSpecific{}
+	nodespecific := &nodeSpecific{}
 	err := config.NodeSpecific(&nodespecific)
 	if err != nil {
 		log.Println(err)
@@ -68,7 +68,9 @@ func main() {
 				if debug {
 					log.Println("Syncing devices from server")
 				}
-				syncDevicesFromServer(config, nodespecific)
+				if syncDevicesFromServer(config, nodespecific) {
+					setupHueHandlers(nodespecific)
+				}
 			}
 		}()
 		connection := basenode.Connect()
@@ -77,7 +79,14 @@ func main() {
 
 	//spew.Dump(config)
 
-	for _, d := range nodespecific.Devices {
+	setupHueHandlers(nodespecific)
+	// it is very important to use a full IP here or the UPNP does not work correctly.
+	ip := hueemulator.GetPrimaryIp()
+	panic(hueemulator.ListenAndServe(ip + ":" + listenPort))
+}
+
+func setupHueHandlers(ns *nodeSpecific) {
+	for _, d := range ns.Devices {
 		log.Println("Setting up handler for device: ", d.Name)
 		dev := d
 		hueemulator.Handle(d.Id, d.Name, func(req hueemulator.Request) error {
@@ -117,11 +126,6 @@ func main() {
 		})
 
 	}
-
-	// it is very important to use a full IP here or the UPNP does not work correctly.
-	ip := hueemulator.GetPrimaryIp()
-	panic(hueemulator.ListenAndServe(ip + ":" + listenPort))
-	//panic(hueemulator.ListenAndServe("192.168.13.86:8080"))
 }
 
 //func NewDevices() *Devices {
@@ -144,13 +148,13 @@ type Device struct {
 	Url  *URL
 }
 
-func syncDevicesFromServer(config *basenode.Config, ns *NodeSpecific) {
+func syncDevicesFromServer(config *basenode.Config, ns *nodeSpecific) bool {
 	didChange := false
 
 	serverDevs, err := fetchDevices(config, ns)
 	if err != nil {
 		log.Println(err)
-		return
+		return false
 	}
 
 outer:
@@ -188,20 +192,21 @@ outer:
 
 	//Dont save file if no new devices are found
 	if !didChange {
-		return
+		return false
 	}
 
 	data, err := json.Marshal(ns)
 	if err != nil {
 		log.Println(err)
-		return
+		return false
 	}
 	raw := json.RawMessage(data)
 	config.Node = &raw
 	basenode.SaveConfigToFile(config)
+	return true
 }
 
-func fetchDevices(config *basenode.Config, ns *NodeSpecific) (devices.Map, error) {
+func fetchDevices(config *basenode.Config, ns *nodeSpecific) (devices.Map, error) {
 	//TODO use nodespecific config
 	url := fmt.Sprintf("http://%s:%s/api/devices", config.Host, ns.Port)
 	resp, err := http.Get(url)

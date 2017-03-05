@@ -48,9 +48,11 @@ func initLight(name string) *light {
 
 func enumerateLights() map[string]*light {
 	lightList := make(map[string]*light)
+	handlerMapLock.Lock()
 	for _, hstate := range handlerMap {
 		lightList[strconv.Itoa(hstate.Id)] = hstate.Light
 	}
+	handlerMapLock.Unlock()
 	return lightList
 }
 

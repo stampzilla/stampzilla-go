@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"io/ioutil"
 	"log"
 	"os"
@@ -81,7 +82,8 @@ func update(wg *sync.WaitGroup) {
 
 func getLatestCommitTimeInFolder(folder string) (*time.Time, error) {
 	client := github.NewClient(nil)
-	commits, _, err := client.Repositories.ListCommits("stampzilla", "stampzilla-go",
+	ctx := context.Background()
+	commits, _, err := client.Repositories.ListCommits(ctx, "stampzilla", "stampzilla-go",
 		&github.CommitsListOptions{
 			Path: folder,
 			SHA:  "master",
