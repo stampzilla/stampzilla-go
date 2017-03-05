@@ -7,12 +7,14 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 )
 
 var handlerMap map[int]*huestate
 var debug bool
+var handlerMapLock sync.Mutex
 
 func init() {
 	log.SetOutput(ioutil.Discard)
@@ -65,11 +67,13 @@ type Handler func(Request) error
 
 func Handle(id int, deviceName string, h Handler) {
 	log.Println("[HANDLE]", deviceName)
+	handlerMapLock.Lock()
 	handlerMap[id] = &huestate{
 		Handler: h,
 		Light:   initLight(deviceName),
 		Id:      id,
 	}
+	handlerMapLock.Unlock()
 }
 
 func requestLogger(h http.Handler) http.Handler {
