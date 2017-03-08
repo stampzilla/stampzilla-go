@@ -68,6 +68,18 @@ type Device struct {
 	sync.RWMutex
 }
 
+func (d *Device) HasSingleRecvEEP(eep string) bool {
+	d.RLock()
+	defer d.RUnlock()
+	for _, v := range d.RecvEEPs {
+		if v == eep {
+			return true
+		}
+
+	}
+	return false
+}
+
 func (d *Device) AddEepForSending(eep string) {
 	d.Lock()
 	defer d.Unlock()

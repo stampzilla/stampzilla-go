@@ -71,9 +71,8 @@ func main() {
 	elementGenerator.Run()
 
 	for _, dev := range state.Devices {
-		// TODO if RecvEEPs is f60201 then its a button and not lamp
 		node.Devices().Add(&devices.Device{
-			Type:   "lamp",
+			Type:   getDeviceType(dev),
 			Name:   dev.Name,
 			Id:     dev.IdString(),
 			Online: true,
@@ -86,6 +85,13 @@ func main() {
 	checkDuplicateSenderIds()
 
 	setupEnoceanCommunication(node, connection)
+}
+
+func getDeviceType(d *Device) string {
+	if d.HasSingleRecvEEP("f60201") {
+		return "button"
+	}
+	return "lamp"
 }
 
 func monitorState(node *protocol.Node, connection basenode.Connection) {
