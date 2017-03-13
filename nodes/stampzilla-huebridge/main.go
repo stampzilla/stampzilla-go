@@ -29,12 +29,6 @@ func init() {
 	flag.BoolVar(&standalone, "standalone", false, "Run standalone without communicating with stampzilla-server Host:Port configured in config.json.")
 }
 
-type nodeSpecific struct {
-	Port       string
-	ListenPort string
-	Devices    []*Device
-}
-
 func main() {
 	flag.Parse()
 	hueemulator.SetLogger(os.Stdout)
@@ -128,26 +122,6 @@ func setupHueHandlers(ns *nodeSpecific) {
 	}
 }
 
-//func NewDevices() *Devices {
-//return &Devices{
-//Devices: make([]*Device, 0),
-//}
-//}
-
-// URL containing urls for dim and on and off
-type URL struct {
-	Level string
-	On    string
-	Off   string
-}
-
-type Device struct {
-	Name string
-	Id   int
-	UUID string
-	Url  *URL
-}
-
 func syncDevicesFromServer(config *basenode.Config, ns *nodeSpecific) bool {
 	didChange := false
 
@@ -177,7 +151,7 @@ outer:
 		baseURL := fmt.Sprintf("http://%s:%s/api/nodes/", config.Host, ns.Port)
 		dev := &Device{
 			Name: sdev.Name,
-			Id:   len(ns.Devices) + 1,
+			Id:   ns.Devices.maxId() + 1,
 			Url: &URL{
 				Level: baseURL + sdev.Node + "/cmd/level/" + sdev.Id + "/%f",
 				On:    baseURL + sdev.Node + "/cmd/on/" + sdev.Id,

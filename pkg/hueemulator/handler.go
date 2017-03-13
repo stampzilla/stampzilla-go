@@ -70,7 +70,7 @@ func Handle(id int, deviceName string, h Handler) {
 	handlerMapLock.Lock()
 	handlerMap[id] = &huestate{
 		Handler: h,
-		Light:   initLight(deviceName),
+		Light:   initLight(id, deviceName),
 		Id:      id,
 	}
 	handlerMapLock.Unlock()
