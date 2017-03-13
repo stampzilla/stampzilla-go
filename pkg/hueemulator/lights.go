@@ -33,14 +33,14 @@ type lights struct {
 	Lights map[string]light `json:"lights"`
 }
 
-func initLight(name string) *light {
+func initLight(id int, name string) *light {
 	l := &light{
 		Type:             "Dimmable light",
 		ModelId:          "LWB014",
 		SwVersion:        "1.15.0_r18729",
 		ManufacturerName: "Philips",
 		Name:             name,
-		UniqueId:         name,
+		UniqueId:         strconv.Itoa(id),
 	}
 	l.State.Reachable = true
 	return l
@@ -84,7 +84,6 @@ func setLightState(c *gin.Context) {
 	lightId := c.Param("lightId")
 
 	log.Println("[DEVICE]", c.Param("userId"), "requested state:", req.On, "requested brightness: ", req.Brightness)
-	response := Response{}
 
 	//if hstate, ok := handlerMap[lightId]; ok {
 	if hstate := getHueStateById(lightId); hstate != nil {
@@ -96,11 +95,9 @@ func setLightState(c *gin.Context) {
 		})
 		hstate.Light.State.On = req.On
 		hstate.Light.State.Bri = req.Brightness
-		log.Println("[DEVICE] handler replied with state:", response.On)
+		log.Println("[DEVICE] handler replied with state:", req.On)
 		//handlerMap[lightId] = hstate
-	}
-	if !response.ErrorState {
-		c.Writer.Write([]byte("[{\"success\":{\"/lights/" + lightId + "/state/on\":" + strconv.FormatBool(response.On) + "}}]"))
+		c.Writer.Write([]byte("[{\"success\":{\"/lights/" + lightId + "/state/on\":" + strconv.FormatBool(req.On) + "}}]"))
 	}
 }
 
