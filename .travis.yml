@@ -29,9 +29,9 @@ deploy:
     secure: JBuaQNghrwATvyFiItYUeXMGIFr7Fy7SQwnM/kk1poMBoKTo2KduC7q+E5i+H7ZJCSOmO+IFLMEhnFDaAJ4tq4JWHC6lt56KXkkVz0XNyGSc69QoSWfv8vDBClYKpyhdNVTk3O73gK+h3R7etvFiMLccYJ4zGhJ6QxQVbFv5qoA=
   file_glob: true
   file: 
-  - /build/*/linux_amd64/*
+  - build/*/linux_amd64/*
   - build/*/linux_arm/*
-  - build/*/*.deb
+  #- build/*/*.deb
   on:
     tags: true
     repo: stampzilla/stampzilla-go
