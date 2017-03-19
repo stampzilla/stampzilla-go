@@ -96,6 +96,10 @@ func (t *Installer) GoGet(url string, update bool) {
 	var err error
 	fmt.Print("go get " + filepath.Base(url) + "... ")
 
+	pwd, _ := os.Getwd()
+	defer os.Chdir(pwd)
+	os.Chdir("/tmp")
+
 	gobin, err := exec.LookPath("go")
 	if err != nil {
 		fmt.Printf("LookPath Error: %s", err)
