@@ -62,8 +62,7 @@ func (p *Process) Start() {
 
 	chdircmd := ""
 	if p.ConfDir != "" {
-		i := &Installer{}
-		i.CreateDirAsUser(p.ConfDir, "stampzilla")
+		CreateDirAsUser(p.ConfDir, "stampzilla")
 		chdircmd = " cd " + p.ConfDir + "; "
 	}
 

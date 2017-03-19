@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+
+	"github.com/Sirupsen/logrus"
 )
 
 type Daemon struct {
@@ -83,4 +85,26 @@ func (c *Config) ReadConfigFromFile(filepath string) error {
 
 	*c = *config
 	return nil
+}
+
+func (c *Config) Start(what string) {
+	cdir := ""
+	if dir := c.GetConfigForNode(what); dir != nil {
+		cdir = dir.Config
+	}
+
+	process := NewProcess(what, cdir)
+	process.Start()
+}
+
+func (c *Config) CreateConfig() {
+	action := "Check config /etc/stampzilla/nodes.conf... "
+
+	if _, err := os.Stat("/etc/stampzilla/nodes.conf"); os.IsNotExist(err) {
+		c.GenerateDefault()
+		c.SaveToFile("/etc/stampzilla/nodes.conf")
+		logrus.Info(action + "(created) DONE")
+	} else {
+		logrus.Debug(action + "(exists) DONE")
+	}
 }

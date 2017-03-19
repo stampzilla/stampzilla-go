@@ -3,8 +3,8 @@ package main
 import (
 	"os"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
-	"github.com/stampzilla/stampzilla-go/stampzilla/installer"
 )
 
 var VERSION string = "dev"
@@ -15,8 +15,17 @@ func main() {
 	app.Name = "stampzilla"
 	app.Version = VERSION + " (" + BUILD_DATE + ")"
 	app.Usage = "Manage stampzilla on the command line"
+	app.EnableBashCompletion = true
 
-	cliHandler := &cliHandler{installer.NewInstaller()}
+	logrus.SetLevel(logrus.InfoLevel)
+	for _, v := range os.Args {
+		if v == "-d" {
+			logrus.SetLevel(logrus.DebugLevel)
+			logrus.Info("Debug output activated")
+		}
+	}
+
+	cliHandler := &cliHandler{}
 
 	app.Commands = []cli.Command{
 		{
@@ -61,12 +70,16 @@ func main() {
 		{
 			Name:      "install",
 			ShortName: "i",
-			Usage:     "installs all stampzilla nodes and the server.",
+			Usage:     "Downloads and installs all stampzilla nodes and the server from precompiled binaries",
 			Action:    cliHandler.Install,
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:  "u",
-					Usage: "Do upgrade",
+					Usage: "Force update of existing binaries",
+				},
+				cli.BoolFlag{
+					Name:  "d",
+					Usage: "Show debug output",
 				},
 			},
 		},
@@ -74,8 +87,30 @@ func main() {
 			Name:      "upgrade",
 			ShortName: "u",
 			Aliases:   []string{"update"},
-			Usage:     "upgrades currently installed nodes and the server",
+			Usage:     "Upgrades currently installed nodes and the server",
 			Action:    cliHandler.Upgrade,
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "d",
+					Usage: "Show debug output",
+				},
+			},
+		},
+		{
+			Name:      "build",
+			ShortName: "b",
+			Usage:     "Compile and install stampzilla nodes. If none is specified, all available nodes will be installed",
+			Action:    cliHandler.Build,
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "u",
+					Usage: "Force update of source files before compile",
+				},
+				cli.BoolFlag{
+					Name:  "d",
+					Usage: "Show debug output",
+				},
+			},
 		},
 		{
 			Name:      "updateconfig",

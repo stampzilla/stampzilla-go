@@ -11,11 +11,11 @@ import (
 	"text/tabwriter"
 
 	"github.com/codegangsta/cli"
+	"github.com/coreos/fleet/log"
 	"github.com/stampzilla/stampzilla-go/stampzilla/installer"
 )
 
 type cliHandler struct {
-	Installer *installer.Installer
 }
 
 func (t *cliHandler) UpdateConfig(c *cli.Context) {
@@ -40,15 +40,58 @@ func (t *cliHandler) UpdateConfig(c *cli.Context) {
 }
 
 func (t *cliHandler) Install(c *cli.Context) {
-	t.install(c, c.Bool("u"))
+	i, err := installer.New("binaries")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	t.runInstaller(c, i, c.Bool("u"))
 }
 func (t *cliHandler) Upgrade(c *cli.Context) {
-	t.install(c, true)
+	i, err := installer.New("binaries")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	t.runInstaller(c, i, true)
 }
 
-func (t *cliHandler) install(c *cli.Context, upgrade bool) {
+func (t *cliHandler) Build(c *cli.Context) {
+	i, err := installer.New("source")
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	t.runInstaller(c, i, c.Bool("u"))
+}
+
+func (t *cliHandler) runInstaller(c *cli.Context, i installer.Installer, upgrade bool) {
 	requireRoot()
 
+	err := installer.Prepare()
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	err = i.Prepare()
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	if upgrade {
+		i.Update(c.Args()...)
+	} else {
+		i.Install(c.Args()...)
+	}
+}
+
+/*
+func (t *cliHandler) build(c *cli.Context, upgrade bool) {
 	nodes, err := ioutil.ReadDir("/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/")
 	if err != nil {
 		fmt.Println("Found no nodes. installing stampzilla cli first!")
@@ -106,31 +149,25 @@ func (t *cliHandler) installSpecificNodesFromArguments(c *cli.Context, upgrade b
 		t.Installer.GoGet("github.com/stampzilla/stampzilla-go/nodes/"+node, upgrade)
 	}
 }
+*/
 
 func (t *cliHandler) Start(c *cli.Context) {
 	requireRoot()
 
-	t.Installer.Config.ReadConfigFromFile("/etc/stampzilla/nodes.conf")
-	t.Installer.CreateDirAsUser("/var/log/stampzilla", "stampzilla")
+	cfg := installer.Config{}
+	cfg.ReadConfigFromFile("/etc/stampzilla/nodes.conf")
+	installer.CreateDirAsUser("/var/log/stampzilla", "stampzilla")
 
 	if c.Args().First() != "" {
-		for _, what := range c.Args() {
-			t.start(what)
+		for _, name := range c.Args() {
+			cfg.Start(name)
 		}
 		return
 	}
 
-	for _, d := range t.Installer.Config.GetAutostartingNodes() {
-		t.start(d.Name)
+	for _, d := range cfg.GetAutostartingNodes() {
+		cfg.Start(d.Name)
 	}
-}
-func (t *cliHandler) start(what string) {
-	cdir := ""
-	if dir := t.Installer.Config.GetConfigForNode(what); dir != nil {
-		cdir = dir.Config
-	}
-	process := installer.NewProcess(what, cdir)
-	process.Start()
 }
 
 func (t *cliHandler) Stop(c *cli.Context) {
@@ -184,12 +221,13 @@ func (t *cliHandler) Debug(c *cli.Context) {
 	if err != nil {
 		fmt.Printf("LookPath Error: %s", err)
 	}
-	t.Installer.Config.ReadConfigFromFile("/etc/stampzilla/nodes.conf")
+	cfg := installer.Config{}
+	cfg.ReadConfigFromFile("/etc/stampzilla/nodes.conf")
 	chdircmd := ""
-	if dir := t.Installer.Config.GetConfigForNode(what); dir != nil {
+	if dir := cfg.GetConfigForNode(what); dir != nil {
 		//i := &Installer{}
 		//i.CreateDirAsUser(dir.Config, "stampzilla")
-		t.Installer.CreateDirAsUser(dir.Config, "stampzilla")
+		installer.CreateDirAsUser(dir.Config, "stampzilla")
 		chdircmd = " cd " + dir.Config + "; "
 	}
 	toRun := chdircmd + "$GOPATH/bin/stampzilla-" + what
