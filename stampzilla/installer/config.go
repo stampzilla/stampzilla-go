@@ -98,13 +98,17 @@ func (c *Config) Start(what string) {
 }
 
 func (c *Config) CreateConfig() {
-	action := "Check config /etc/stampzilla/nodes.conf... "
+	action := "Check config /etc/stampzilla/nodes.conf"
 
 	if _, err := os.Stat("/etc/stampzilla/nodes.conf"); os.IsNotExist(err) {
 		c.GenerateDefault()
 		c.SaveToFile("/etc/stampzilla/nodes.conf")
-		logrus.Info(action + "(created) DONE")
+		logrus.WithFields(logrus.Fields{
+			"created": "true",
+		}).Info(action)
 	} else {
-		logrus.Debug(action + "(exists) DONE")
+		logrus.WithFields(logrus.Fields{
+			"exists": "true",
+		}).Debug(action)
 	}
 }

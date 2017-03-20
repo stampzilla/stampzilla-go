@@ -10,8 +10,8 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
-	"github.com/coreos/fleet/log"
 	"github.com/stampzilla/stampzilla-go/stampzilla/installer"
 )
 
@@ -40,18 +40,22 @@ func (t *cliHandler) UpdateConfig(c *cli.Context) {
 }
 
 func (t *cliHandler) Install(c *cli.Context) {
-	i, err := installer.New("binaries")
+	i, err := installer.New(installer.Binaries)
 	if err != nil {
-		log.Error(err)
+		logrus.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("Failed to create installer")
 		return
 	}
 
 	t.runInstaller(c, i, c.Bool("u"))
 }
 func (t *cliHandler) Upgrade(c *cli.Context) {
-	i, err := installer.New("binaries")
+	i, err := installer.New(installer.Binaries)
 	if err != nil {
-		log.Error(err)
+		logrus.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("Failed to create installer")
 		return
 	}
 
@@ -59,9 +63,11 @@ func (t *cliHandler) Upgrade(c *cli.Context) {
 }
 
 func (t *cliHandler) Build(c *cli.Context) {
-	i, err := installer.New("source")
+	i, err := installer.New(installer.SourceCode)
 	if err != nil {
-		log.Error(err)
+		logrus.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("Failed to create installer")
 		return
 	}
 
@@ -73,13 +79,17 @@ func (t *cliHandler) runInstaller(c *cli.Context, i installer.Installer, upgrade
 
 	err := installer.Prepare()
 	if err != nil {
-		log.Error(err)
+		logrus.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("Failed to run common prepare")
 		return
 	}
 
 	err = i.Prepare()
 	if err != nil {
-		log.Error(err)
+		logrus.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("Failed to run installer prepare")
 		return
 	}
 

@@ -9,19 +9,28 @@ import (
 )
 
 func CreateUser(username string) {
-	action := "Checking user '" + username + "'... "
+	action := "Check user '" + username + "'"
 	if userExists(username) {
-		logrus.Debug(action + "(exists) DONE")
+		logrus.WithFields(logrus.Fields{
+			"exists": "true",
+		}).Debug(action)
 		return
 	}
 
 	out, err := Run("useradd", "-m", "-r", "-s", "/bin/false", username)
 	if err != nil {
-		logrus.Error(action+"ERROR", err, out)
+		logrus.WithFields(logrus.Fields{
+			"exists": "false",
+			"error":  err,
+			"output": out,
+		}).Panic(action)
 		return
 	}
 
-	logrus.Info(action + "(created) DONE")
+	logrus.WithFields(logrus.Fields{
+		"exists":  "false",
+		"created": "true",
+	}).Info(action)
 }
 func userExists(username string) bool {
 	_, err := Run("id", "-u", username)
@@ -32,40 +41,66 @@ func userExists(username string) bool {
 }
 
 func CreateDirAsUser(directory string, username string) {
-	action := "Check directory " + directory + "... "
+	action := "Check directory " + directory
+	var created = false
 
 	if _, err := os.Stat(directory); os.IsNotExist(err) {
 		err := os.MkdirAll(directory, 0777)
 		if err != nil {
-			logrus.Error(action+"ERROR", err)
+			logrus.WithFields(logrus.Fields{
+				"exists": "false",
+				"error":  err,
+			}).Panic(action)
 			return
 		}
-		logrus.Info(action + "(created) ")
-	} else {
-		action += "(exists) "
+		created = true
 	}
 
 	u, err := user.Lookup(username)
 	if err != nil {
-		logrus.Error(action+"ERROR: User lookup", err)
+		logrus.WithFields(logrus.Fields{
+			"exists": "true",
+			"step":   "User lookup",
+			"error":  err,
+		}).Panic(action)
 		return
 	}
 
 	uid, err := strconv.Atoi(u.Uid)
 	if err != nil {
-		logrus.Error(action+"ERROR: strconv.Atoi(u.Uid)", err)
+		logrus.WithFields(logrus.Fields{
+			"exists": "true",
+			"step":   "strconv.Atoi(u.Uid)",
+			"error":  err,
+		}).Panic(action)
 		return
 	}
 	gid, err := strconv.Atoi(u.Gid)
 	if err != nil {
-		logrus.Error(action+"ERROR: strconv.Atoi(u.Gid)", err)
+		logrus.WithFields(logrus.Fields{
+			"exists": "true",
+			"step":   "strconv.Atoi(u.Gid)",
+			"error":  err,
+		}).Panic(action)
 		return
 	}
 	err = os.Chown(directory, uid, gid)
 	if err != nil {
-		logrus.Error(action+"ERROR: Set permissions", err)
+		logrus.WithFields(logrus.Fields{
+			"exists": "true",
+			"step":   "Set permissions",
+			"error":  err,
+		}).Panic(action)
 		return
 	}
 
-	logrus.Debug(action + "DONE")
+	if created {
+		logrus.WithFields(logrus.Fields{
+			"created": "true",
+		}).Info(action)
+	} else {
+		logrus.WithFields(logrus.Fields{
+			"exists": "true",
+		}).Debug(action)
+	}
 }

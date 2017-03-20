@@ -13,20 +13,19 @@ type Installer interface {
 	Update(...string)
 }
 
-func New(t string) (Installer, error) {
-	switch t {
-	case "binaries":
-		return newFromBinaries(), nil
-	case "source":
-		return newFromSource(), nil
+type InstallSource uint8
+
+const (
+	Binaries = iota
+	SourceCode
+)
+
+func New(s InstallSource) (Installer, error) {
+	switch s {
+	case Binaries:
+		return binary.NewInstaller(), nil
+	case SourceCode:
+		return source.NewInstaller(), nil
 	}
-
-	return nil, fmt.Errorf("No installer named \"%s\" is available", t)
-}
-
-func newFromBinaries() Installer {
-	return binary.NewInstaller()
-}
-func newFromSource() Installer {
-	return source.NewInstaller()
+	return nil, fmt.Errorf("No installer with value %d is available", s)
 }

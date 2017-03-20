@@ -56,7 +56,7 @@ func update(wg *sync.WaitGroup) {
 
 	if NewCommitExists() {
 		log.Println("New commit exists. Checking if we need to update")
-		installer, err := installer.New("source")
+		installer, err := installer.New(installer.SourceCode)
 		if err != nil {
 			log.Println(err)
 			return
