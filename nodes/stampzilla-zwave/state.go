@@ -33,13 +33,11 @@ func newZwavenode(znode *nodes.Node) *Zwavenode {
 }
 
 func (znode *Zwavenode) sync(node *nodes.Node) {
-	if node.Device != nil {
-		znode.Brand = node.Device.Brand
-		znode.Product = node.Device.Product
+	znode.Brand = node.Brand
+	znode.Product = node.Product
 
-		znode.StateBool = node.StateBool
-		znode.StateFloat = node.StateFloat
-	}
+	znode.StateBool = node.StateBool
+	znode.StateFloat = node.StateFloat
 }
 
 type State struct {
