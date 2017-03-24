@@ -1,11 +1,14 @@
+//go:generate go get github.com/rakyll/statik
+//go:generate statik -src=./public/dist
 package main
 
 import (
 	"net/http"
 
 	log "github.com/cihub/seelog"
-	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
+	"github.com/rakyll/statik/fs"
+	_ "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/statik"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
 )
 
@@ -38,8 +41,10 @@ func (ws *WebServer) Start() {
 	//})
 
 	r := gin.Default()
-	r.Use(static.Serve("/", static.LocalFile(ws.Config.WebRoot, false)))
-	r.StaticFile("/", ws.Config.WebRoot+"/index.html")
+
+	statikFS, _ := fs.New()
+	r.StaticFS("/app", statikFS)
+	r.GET("/", func(c *gin.Context) { c.Redirect(302, "/app") })
 
 	//m.Get("/socket", sockets.JSON(websocket.Message{}, &sockets.Options{AllowedOrigin: "https?://(localhost:5000|{{host}})$"}), ws.WsClients.WebsocketRoute)
 	r.GET("/socket", ws.WsClients.WebsocketRoute)

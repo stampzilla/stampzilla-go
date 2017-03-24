@@ -1,7 +1,7 @@
 .PHONY:	test cover cover-html cover-test
 
 test:
-	go test -v `go list ./... | grep -v /vendor/ | grep -v telldus-events | grep -v stampzilla-hidcommander`
+	go test `go list ./... | grep -v /vendor/ | grep -v telldus-events | grep -v stampzilla-hidcommander`
 
 cover-e2e:
 	@echo Running coverage
