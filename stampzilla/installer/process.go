@@ -98,7 +98,7 @@ func (p *Process) Stop() {
 	p.Pidfile.delete()
 }
 
-func Run(head string, parts ...string) (string, error) { // {{{
+func Run(head string, parts ...string) (string, error) {
 	var err error
 	var out []byte
 
@@ -118,4 +118,4 @@ func Run(head string, parts ...string) (string, error) { // {{{
 		return string(out), err
 	}
 	return string(out), nil
-} // }}}
+}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
+	"github.com/google/go-github/github"
 	"github.com/stampzilla/stampzilla-go/stampzilla/installer"
 )
 
@@ -72,6 +74,21 @@ func (t *cliHandler) Build(c *cli.Context) {
 	}
 
 	t.runInstaller(c, i, c.Bool("u"))
+}
+
+func (t *cliHandler) List(c *cli.Context) {
+	client := github.NewClient(nil)
+	ctx := context.Background()
+	releases, _, err := client.Repositories.ListReleases(ctx, "stampzilla", "stampzilla-go", &github.ListOptions{})
+
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
+
+	for _, v := range releases {
+		fmt.Println(*v.TagName)
+	}
 }
 
 func (t *cliHandler) runInstaller(c *cli.Context, i installer.Installer, upgrade bool) {

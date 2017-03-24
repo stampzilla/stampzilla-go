@@ -18,12 +18,6 @@ func main() {
 	app.EnableBashCompletion = true
 
 	logrus.SetLevel(logrus.InfoLevel)
-	for _, v := range os.Args {
-		if v == "-d" {
-			logrus.SetLevel(logrus.DebugLevel)
-			logrus.Info("Debug output activated")
-		}
-	}
 
 	cliHandler := &cliHandler{}
 
@@ -31,35 +25,35 @@ func main() {
 		{
 			Name:   "start",
 			Usage:  "start processes",
-			Action: cliHandler.Start,
+			Action: addDebug(cliHandler.Start),
 		},
 		{
 			Name:   "stop",
 			Usage:  "start processes",
-			Action: cliHandler.Stop,
+			Action: addDebug(cliHandler.Stop),
 		},
 		{
 			Name:      "restart",
 			ShortName: "r",
 			Usage:     "restart processes",
-			Action:    cliHandler.Restart,
+			Action:    addDebug(cliHandler.Restart),
 		},
 		{
 			Name:      "status",
 			ShortName: "st",
 			Usage:     "show process status",
-			Action:    cliHandler.Status,
+			Action:    addDebug(cliHandler.Status),
 		},
 		{
 			Name:   "debug",
 			Usage:  "Start one process and get stdout and stderr print on console.",
-			Action: cliHandler.Debug,
+			Action: addDebug(cliHandler.Debug),
 		},
 		{
 			Name:      "log",
 			ShortName: "l",
 			Usage:     "Open the log of the supplied process in less",
-			Action:    cliHandler.Log,
+			Action:    addDebug(cliHandler.Log),
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:  "f",
@@ -68,10 +62,21 @@ func main() {
 			},
 		},
 		{
+			Name:   "list",
+			Usage:  "Lists avilable releases",
+			Action: addDebug(cliHandler.List),
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "d",
+					Usage: "Show debug output",
+				},
+			},
+		},
+		{
 			Name:      "install",
 			ShortName: "i",
 			Usage:     "Downloads and installs all stampzilla nodes and the server from precompiled binaries",
-			Action:    cliHandler.Install,
+			Action:    addDebug(cliHandler.Install),
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:  "u",
@@ -88,7 +93,7 @@ func main() {
 			ShortName: "u",
 			Aliases:   []string{"update"},
 			Usage:     "Upgrades currently installed nodes and the server",
-			Action:    cliHandler.Upgrade,
+			Action:    addDebug(cliHandler.Upgrade),
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:  "d",
@@ -100,7 +105,7 @@ func main() {
 			Name:      "build",
 			ShortName: "b",
 			Usage:     "Compile and install stampzilla nodes. If none is specified, all available nodes will be installed",
-			Action:    cliHandler.Build,
+			Action:    addDebug(cliHandler.Build),
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:  "u",
@@ -121,4 +126,15 @@ func main() {
 	}
 
 	app.Run(os.Args)
+}
+
+func addDebug(in func(c *cli.Context)) func(c *cli.Context) {
+	return func(c *cli.Context) {
+		if c.Bool("d") {
+			logrus.SetLevel(logrus.DebugLevel)
+			logrus.Info("Debug output activated")
+		}
+
+		in(c)
+	}
 }

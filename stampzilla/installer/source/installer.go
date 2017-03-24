@@ -2,10 +2,14 @@ package source
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"strings"
+
+	"github.com/Sirupsen/logrus"
 )
 
 type Installer struct {
@@ -16,19 +20,57 @@ func NewInstaller() *Installer {
 }
 
 func (t *Installer) Prepare() error {
+	_, err := os.Stat("/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/")
+	if os.IsNotExist(err) {
+		logrus.Info("Found no nodes. Installing stampzilla cli first!")
+		GoGet("github.com/stampzilla/stampzilla-go/stampzilla", true)
+	}
+
 	return nil
 }
 func (t *Installer) Install(nodes ...string) {
-
+	build(nodes, false)
 }
 func (t *Installer) Update(nodes ...string) {
-
+	build(nodes, true)
 }
 
-func (t *Installer) GoGet(url string, update bool) {
+func build(n []string, upgrade bool) {
+	// Install only specified nodes
+	for _, name := range n {
+		node := "stampzilla-" + name
+		GoGet("github.com/stampzilla/stampzilla-go/nodes/"+node, upgrade)
+	}
+
+	if len(n) != 0 {
+		return
+	}
+
+	// Install all nodes
+	nodes, err := ioutil.ReadDir("/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/")
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
+
+	for _, node := range nodes {
+		if !strings.Contains(node.Name(), "stampzilla-") {
+			continue
+		}
+
+		//Skip telldus-events since it contains C bindings if we dont explicly requests it to install
+		if node.Name() == "stampzilla-telldus-events" {
+			continue
+		}
+
+		GoGet("github.com/stampzilla/stampzilla-go/nodes/"+node.Name(), upgrade)
+	}
+}
+
+func GoGet(url string, update bool) {
 	var out string
 	var err error
-	fmt.Print("go get " + filepath.Base(url) + "... ")
+	logrus.Info("go get " + filepath.Base(url) + "... ")
 
 	pwd, _ := os.Getwd()
 	defer os.Chdir(pwd)
@@ -36,7 +78,7 @@ func (t *Installer) GoGet(url string, update bool) {
 
 	gobin, err := exec.LookPath("go")
 	if err != nil {
-		fmt.Printf("LookPath Error: %s", err)
+		logrus.Error("LookPath Error: %s", err)
 	}
 
 	// If we already is stampzilla user no need to sudo!
@@ -55,11 +97,11 @@ func (t *Installer) GoGet(url string, update bool) {
 	}
 
 	if err != nil {
-		fmt.Println(err)
-		fmt.Println(out)
+		logrus.Error(err)
+		logrus.Debug(out)
 		return
 	}
-	fmt.Println("DONE")
+
 	if out != "" {
 		fmt.Println(out)
 	}
