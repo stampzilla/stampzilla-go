@@ -13,11 +13,13 @@ for target in $targets; do
 	#target="$cwd${target/_$cwd\///}"
 	target=${target/github.com\/stampzilla\/stampzilla-go\//}
 
-	echo $target
 	if [ -e "$target/.goxc.json" ] 
 	then
+		echo "- Building $target"
 		cd $target
 		goxc -d "$cwd/build" -pv=$v
+	else
+		echo "- Skipping $target (no .goxc.json file)"
 	fi
 done
 
