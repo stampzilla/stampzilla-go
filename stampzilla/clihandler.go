@@ -117,67 +117,6 @@ func (t *cliHandler) runInstaller(c *cli.Context, i installer.Installer, upgrade
 	}
 }
 
-/*
-func (t *cliHandler) build(c *cli.Context, upgrade bool) {
-	nodes, err := ioutil.ReadDir("/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/")
-	if err != nil {
-		fmt.Println("Found no nodes. installing stampzilla cli first!")
-		t.Installer.CreateUser("stampzilla")
-		t.Installer.CreateDirAsUser("/home/stampzilla/go", "stampzilla")
-		t.Installer.GoGet("github.com/stampzilla/stampzilla-go/stampzilla", upgrade)
-	}
-
-	if upgrade {
-		fmt.Println("Updating stampzilla")
-	} else {
-		fmt.Println("Installing stampzilla")
-
-		// Create required user and folders
-		t.Installer.CreateUser("stampzilla")
-		t.Installer.CreateDirAsUser("/var/spool/stampzilla", "stampzilla")
-		//t.Installer.CreateDirAsUser("/var/spool/stampzilla/config", "stampzilla")
-		t.Installer.CreateDirAsUser("/var/log/stampzilla", "stampzilla")
-		t.Installer.CreateDirAsUser("/home/stampzilla/go", "stampzilla")
-		t.Installer.CreateDirAsUser("/etc/stampzilla", "stampzilla")
-		t.Installer.CreateDirAsUser("/etc/stampzilla/nodes", "stampzilla")
-		t.Installer.CreateConfig()
-	}
-
-	nodes, err = ioutil.ReadDir("/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	if len(c.Args()) != 0 {
-		t.installSpecificNodesFromArguments(c, upgrade)
-		return
-	}
-
-	for _, node := range nodes {
-		if !strings.Contains(node.Name(), "stampzilla-") {
-			continue
-		}
-
-		//Skip telldus-events since it contains C bindings if we dont explicly requests it to install
-		if len(c.Args()) == 0 && node.Name() == "stampzilla-telldus-events" {
-			continue
-		}
-
-		t.Installer.GoGet("github.com/stampzilla/stampzilla-go/nodes/"+node.Name(), upgrade)
-	}
-
-	return
-}
-
-func (t *cliHandler) installSpecificNodesFromArguments(c *cli.Context, upgrade bool) {
-	for _, name := range c.Args() {
-		node := "stampzilla-" + name
-		t.Installer.GoGet("github.com/stampzilla/stampzilla-go/nodes/"+node, upgrade)
-	}
-}
-*/
-
 func (t *cliHandler) Start(c *cli.Context) {
 	requireRoot()
 
@@ -270,9 +209,9 @@ func (t *cliHandler) Debug(c *cli.Context) {
 
 func (t *cliHandler) Log(c *cli.Context) {
 	follow := c.Bool("f")
-	cmd := exec.Command("less", "-R", "/var/log/stampzilla/stampzilla-"+c.Args().First())
+	cmd := exec.Command("less", "-R", "/var/log/stampzilla/stampzilla-"+c.Args().First()+".log")
 	if follow {
-		cmd = exec.Command("tail", "-f", "/var/log/stampzilla/stampzilla-"+c.Args().First())
+		cmd = exec.Command("tail", "-f", "/var/log/stampzilla/stampzilla-"+c.Args().First()+".log")
 	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

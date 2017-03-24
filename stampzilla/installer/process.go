@@ -67,7 +67,7 @@ func (p *Process) Start() {
 	}
 
 	log.Println("Starting: " + p.Command)
-	cmd := chdircmd + nohupbin + " $GOPATH/bin/" + p.Command + " > /var/log/stampzilla/" + p.Command + " 2>&1 & echo $! > " + p.Pidfile.String()
+	cmd := chdircmd + nohupbin + " $GOPATH/bin/" + p.Command + " > /var/log/stampzilla/" + p.Command + ".log 2>&1 & echo $! > " + p.Pidfile.String()
 
 	//Run("sh", "-c", cmd)
 
