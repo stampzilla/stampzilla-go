@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
+	"fmt"
 	"os"
 
 	log "github.com/cihub/seelog"
@@ -40,6 +42,14 @@ type Startable interface {
 var notify *notifier.Notify
 
 func main() {
+	printVersion := flag.Bool("v", false, "Prints current version")
+	flag.Parse()
+
+	if *printVersion != false {
+		fmt.Println(VERSION + " (" + BUILD_DATE + ")")
+		os.Exit(0)
+	}
+
 	config := &ServerConfig{}
 	m := loadMultiConfig()
 	m.MustLoad(config)

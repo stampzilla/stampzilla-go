@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"strconv"
 	"time"
@@ -31,12 +32,19 @@ var recordToFile string
 func main() {
 	log.Info("Starting ZWAVE node")
 
-	debug := flag.Bool("v", false, "Verbose - show more debuging info")
+	printVersion := flag.Bool("v", false, "Prints current version")
+	debug := flag.Bool("d", false, "Debug - show more debuging info")
 	port := flag.String("controllerport", "/dev/ttyACM0", "SerialAPI communication port (to controller)")
 	flag.StringVar(&recordToFile, "recordtofile", "", "Enable recording of serial data to file")
 
 	// Parse all commandline arguments, host and port parameters are added in the basenode init function
 	flag.Parse()
+
+	if *printVersion != false {
+		fmt.Println(VERSION + " (" + BUILD_DATE + ")")
+		os.Exit(0)
+	}
+
 	logrus.SetLevel(logrus.WarnLevel)
 	if *debug {
 		logrus.SetLevel(logrus.DebugLevel)

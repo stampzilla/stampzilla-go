@@ -20,14 +20,14 @@ var BUILD_DATE string = ""
 var state State
 
 func main() {
-	printVersion := flag.Bool("version", false, "Prints current version")
+	printVersion := flag.Bool("v", false, "Prints current version")
+	// Parse all commandline arguments, host and port parameters are added in the basenode init function
+	flag.Parse()
+
 	if *printVersion != false {
 		fmt.Println(VERSION + " (" + BUILD_DATE + ")")
 		os.Exit(0)
 	}
-
-	// Parse all commandline arguments, host and port parameters are added in the basenode init function
-	flag.Parse()
 
 	log.Info("Starting CHROMECAST node")
 
