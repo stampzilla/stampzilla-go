@@ -1,3 +1,5 @@
+<link rel="import" href="../stampzilla-action/stampzilla-action-badge.html">
+
 <dom-module id="stampzilla-rule">
 	<style is="custom-style">
 		:host {
@@ -53,12 +55,11 @@
 						<span style="color:#090">{{data.name}}</span>
 					</template>
 				</div>
-				<div><paper-button raised id="trigger1" uuid="[[data.uuid]]">Run Enter</paper-button></div>
-				<div><paper-button raised id="trigger2" uuid="[[data.uuid]]">Run Exit</paper-button></div>
+				<paper-icon-button icon="settings" id="settings"></paper-icon-button>
 			</div>
 			<div class="horizontal layout">
 				<div class="flex col">
-					<strong>Conditions</strong>
+					<strong>Schedule</strong>
 					<template is="dom-repeat" items="{{data.conditions}}" as="item" index-as="i">
 						<div class="horizontal layout row">
 							<div ><span>[[item.uuid]]</span> - <span>[[item.statePath]]</span> <span>[[item.comparator]]</span> <span></span>[[item.value]]</div>
@@ -68,18 +69,26 @@
 
 				<div class="col">
 					<strong>Enter actions</strong>
-					<template is="dom-repeat" items="{{data.enterActions}}" as="item" index-as="i">
+					<template is="dom-repeat" items="{{data.enterCancelActions}}" as="item" index-as="i">
 						<div class="horizontal layout row">
-							<div >[[item]]</div>
+							<stampzilla-action-badge cancel="true" uuid="[[item]]" actions={{actions}}></stampzilla-action-badge>
 						</div>
 					</template>
-				</div>
+					<template is="dom-repeat" items="{{data.enterActions}}" as="item" index-as="i">
+						<div class="horizontal layout row">
+							<stampzilla-action-badge uuid="[[item]]" actions={{actions}}></stampzilla-action-badge>
+						</div>
+					</template>
 
-				<div class="col">
 					<strong>Exit actions</strong>
+					<template is="dom-repeat" items="{{data.exitCancelActions}}" as="item" index-as="i">
+						<div class="horizontal layout row">
+							<stampzilla-action-badge cancel="true" uuid="[[item]]" actions={{actions}}></stampzilla-action-badge>
+						</div>
+					</template>
 					<template is="dom-repeat" items="{{data.exitActions}}" as="item" index-as="i">
 						<div class="horizontal layout row">
-							<div >[[item]]</div>
+							<stampzilla-action-badge uuid="[[item]]" actions={{actions}}></stampzilla-action-badge>
 						</div>
 					</template>
 				</div>
@@ -96,6 +105,10 @@
 						notify: true
 					},
 					rules: {
+						type: Object,
+						notify: true
+					},
+					actions: {
 						type: Object,
 						notify: true
 					}
