@@ -29,5 +29,6 @@ rename 's/(.*)/$1-amd64/' $cwd/build/$v/linux_amd64/*
 mkdir $cwd/build/$v/prepare
 mv $cwd/build/$v/linux_arm/* $cwd/build/$v/prepare
 mv $cwd/build/$v/linux_amd64/* $cwd/build/$v/prepare
-sha512sum $cwd/build/$v/prepare/* > $cwd/build/$v/prepare/checksum 
+cd $cwd/build/$v/prepare/
+sha512sum * > checksum 
 
