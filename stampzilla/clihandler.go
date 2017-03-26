@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -10,12 +11,13 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
+	"github.com/google/go-github/github"
 	"github.com/stampzilla/stampzilla-go/stampzilla/installer"
 )
 
 type cliHandler struct {
-	Installer *installer.Installer
 }
 
 func (t *cliHandler) UpdateConfig(c *cli.Context) {
@@ -40,97 +42,98 @@ func (t *cliHandler) UpdateConfig(c *cli.Context) {
 }
 
 func (t *cliHandler) Install(c *cli.Context) {
-	t.install(c, c.Bool("u"))
+	i, err := installer.New(installer.Binaries)
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("Failed to create installer")
+		return
+	}
+
+	t.runInstaller(c, i, c.Bool("u"))
 }
 func (t *cliHandler) Upgrade(c *cli.Context) {
-	t.install(c, true)
+	i, err := installer.New(installer.Binaries)
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("Failed to create installer")
+		return
+	}
+
+	t.runInstaller(c, i, true)
 }
 
-func (t *cliHandler) install(c *cli.Context, upgrade bool) {
+func (t *cliHandler) Build(c *cli.Context) {
+	i, err := installer.New(installer.SourceCode)
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("Failed to create installer")
+		return
+	}
+
+	t.runInstaller(c, i, c.Bool("u"))
+}
+
+func (t *cliHandler) List(c *cli.Context) {
+	client := github.NewClient(nil)
+	ctx := context.Background()
+	releases, _, err := client.Repositories.ListReleases(ctx, "stampzilla", "stampzilla-go", &github.ListOptions{})
+
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
+
+	for _, v := range releases {
+		fmt.Println(*v.TagName)
+	}
+}
+
+func (t *cliHandler) runInstaller(c *cli.Context, i installer.Installer, upgrade bool) {
 	requireRoot()
 
-	nodes, err := ioutil.ReadDir("/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/")
+	err := installer.Prepare()
 	if err != nil {
-		fmt.Println("Found no nodes. installing stampzilla cli first!")
-		t.Installer.CreateUser("stampzilla")
-		t.Installer.CreateDirAsUser("/home/stampzilla/go", "stampzilla")
-		t.Installer.GoGet("github.com/stampzilla/stampzilla-go/stampzilla", upgrade)
+		logrus.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("Failed to run common prepare")
+		return
+	}
+
+	err = i.Prepare()
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("Failed to run installer prepare")
+		return
 	}
 
 	if upgrade {
-		fmt.Println("Updating stampzilla")
+		i.Update(c.Args()...)
 	} else {
-		fmt.Println("Installing stampzilla")
-
-		// Create required user and folders
-		t.Installer.CreateUser("stampzilla")
-		t.Installer.CreateDirAsUser("/var/spool/stampzilla", "stampzilla")
-		//t.Installer.CreateDirAsUser("/var/spool/stampzilla/config", "stampzilla")
-		t.Installer.CreateDirAsUser("/var/log/stampzilla", "stampzilla")
-		t.Installer.CreateDirAsUser("/home/stampzilla/go", "stampzilla")
-		t.Installer.CreateDirAsUser("/etc/stampzilla", "stampzilla")
-		t.Installer.CreateDirAsUser("/etc/stampzilla/nodes", "stampzilla")
-		t.Installer.CreateConfig()
-	}
-
-	nodes, err = ioutil.ReadDir("/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	if len(c.Args()) != 0 {
-		t.installSpecificNodesFromArguments(c, upgrade)
-		return
-	}
-
-	for _, node := range nodes {
-		if !strings.Contains(node.Name(), "stampzilla-") {
-			continue
-		}
-
-		//Skip telldus-events since it contains C bindings if we dont explicly requests it to install
-		if len(c.Args()) == 0 && node.Name() == "stampzilla-telldus-events" {
-			continue
-		}
-
-		t.Installer.GoGet("github.com/stampzilla/stampzilla-go/nodes/"+node.Name(), upgrade)
-	}
-
-	return
-}
-
-func (t *cliHandler) installSpecificNodesFromArguments(c *cli.Context, upgrade bool) {
-	for _, name := range c.Args() {
-		node := "stampzilla-" + name
-		t.Installer.GoGet("github.com/stampzilla/stampzilla-go/nodes/"+node, upgrade)
+		i.Install(c.Args()...)
 	}
 }
 
 func (t *cliHandler) Start(c *cli.Context) {
 	requireRoot()
 
-	t.Installer.Config.ReadConfigFromFile("/etc/stampzilla/nodes.conf")
-	t.Installer.CreateDirAsUser("/var/log/stampzilla", "stampzilla")
+	cfg := installer.Config{}
+	cfg.ReadConfigFromFile("/etc/stampzilla/nodes.conf")
+	installer.CreateDirAsUser("/var/log/stampzilla", "stampzilla")
 
 	if c.Args().First() != "" {
-		for _, what := range c.Args() {
-			t.start(what)
+		for _, name := range c.Args() {
+			cfg.Start(name)
 		}
 		return
 	}
 
-	for _, d := range t.Installer.Config.GetAutostartingNodes() {
-		t.start(d.Name)
+	for _, d := range cfg.GetAutostartingNodes() {
+		cfg.Start(d.Name)
 	}
-}
-func (t *cliHandler) start(what string) {
-	cdir := ""
-	if dir := t.Installer.Config.GetConfigForNode(what); dir != nil {
-		cdir = dir.Config
-	}
-	process := installer.NewProcess(what, cdir)
-	process.Start()
 }
 
 func (t *cliHandler) Stop(c *cli.Context) {
@@ -184,12 +187,13 @@ func (t *cliHandler) Debug(c *cli.Context) {
 	if err != nil {
 		fmt.Printf("LookPath Error: %s", err)
 	}
-	t.Installer.Config.ReadConfigFromFile("/etc/stampzilla/nodes.conf")
+	cfg := installer.Config{}
+	cfg.ReadConfigFromFile("/etc/stampzilla/nodes.conf")
 	chdircmd := ""
-	if dir := t.Installer.Config.GetConfigForNode(what); dir != nil {
+	if dir := cfg.GetConfigForNode(what); dir != nil {
 		//i := &Installer{}
 		//i.CreateDirAsUser(dir.Config, "stampzilla")
-		t.Installer.CreateDirAsUser(dir.Config, "stampzilla")
+		installer.CreateDirAsUser(dir.Config, "stampzilla")
 		chdircmd = " cd " + dir.Config + "; "
 	}
 	toRun := chdircmd + "$GOPATH/bin/stampzilla-" + what
@@ -205,9 +209,9 @@ func (t *cliHandler) Debug(c *cli.Context) {
 
 func (t *cliHandler) Log(c *cli.Context) {
 	follow := c.Bool("f")
-	cmd := exec.Command("less", "-R", "/var/log/stampzilla/stampzilla-"+c.Args().First())
+	cmd := exec.Command("less", "-R", "/var/log/stampzilla/stampzilla-"+c.Args().First()+".log")
 	if follow {
-		cmd = exec.Command("tail", "-f", "/var/log/stampzilla/stampzilla-"+c.Args().First())
+		cmd = exec.Command("tail", "-f", "/var/log/stampzilla/stampzilla-"+c.Args().First()+".log")
 	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

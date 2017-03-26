@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"os"
 
 	log "github.com/cihub/seelog"
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
@@ -21,10 +23,16 @@ type Config struct {
 }
 
 func main() {
-	log.Info("Starting squeezebox node")
-
+	printVersion := flag.Bool("v", false, "Prints current version")
 	// Parse all commandline arguments, host and port parameters are added in the basenode init function
 	flag.Parse()
+
+	if *printVersion != false {
+		fmt.Println(VERSION + " (" + BUILD_DATE + ")")
+		os.Exit(0)
+	}
+
+	log.Info("Starting squeezebox node")
 
 	//Get a config with the correct parameters
 	config := basenode.NewConfig()

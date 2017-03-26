@@ -56,7 +56,12 @@ func update(wg *sync.WaitGroup) {
 
 	if NewCommitExists() {
 		log.Println("New commit exists. Checking if we need to update")
-		installer := installer.NewInstaller()
+		installer, err := installer.New(installer.SourceCode)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
 		nodes, err := ioutil.ReadDir("/home/stampzilla/go/bin")
 		if err != nil {
 			log.Println(err)
@@ -74,7 +79,8 @@ func update(wg *sync.WaitGroup) {
 
 			if repoDate.After(n.ModTime()) {
 				log.Printf("Update date: %s for node: %s\n", repoDate, n.Name())
-				installer.GoGet("github.com/stampzilla/stampzilla-go/nodes/"+n.Name(), true)
+				//installer.GoGet("github.com/stampzilla/stampzilla-go/nodes/"+n.Name(), true)
+				installer.Update(n.Name())
 			}
 		}
 	}

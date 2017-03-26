@@ -62,13 +62,12 @@ func (p *Process) Start() {
 
 	chdircmd := ""
 	if p.ConfDir != "" {
-		i := &Installer{}
-		i.CreateDirAsUser(p.ConfDir, "stampzilla")
+		CreateDirAsUser(p.ConfDir, "stampzilla")
 		chdircmd = " cd " + p.ConfDir + "; "
 	}
 
 	log.Println("Starting: " + p.Command)
-	cmd := chdircmd + nohupbin + " $GOPATH/bin/" + p.Command + " > /var/log/stampzilla/" + p.Command + " 2>&1 & echo $! > " + p.Pidfile.String()
+	cmd := chdircmd + nohupbin + " $GOPATH/bin/" + p.Command + " > /var/log/stampzilla/" + p.Command + ".log 2>&1 & echo $! > " + p.Pidfile.String()
 
 	//Run("sh", "-c", cmd)
 
@@ -99,7 +98,7 @@ func (p *Process) Stop() {
 	p.Pidfile.delete()
 }
 
-func Run(head string, parts ...string) (string, error) { // {{{
+func Run(head string, parts ...string) (string, error) {
 	var err error
 	var out []byte
 
@@ -119,4 +118,4 @@ func Run(head string, parts ...string) (string, error) { // {{{
 		return string(out), err
 	}
 	return string(out), nil
-} // }}}
+}

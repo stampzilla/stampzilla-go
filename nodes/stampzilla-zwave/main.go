@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"strconv"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/stampzilla/gozwave"
 	"github.com/stampzilla/gozwave/events"
 	"github.com/stampzilla/gozwave/nodes"
+	zp "github.com/stampzilla/gozwave/protocol"
 	"github.com/stampzilla/gozwave/serialrecorder"
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/stampzilla/stampzilla-go/pkg/notifier"
@@ -30,12 +32,19 @@ var recordToFile string
 func main() {
 	log.Info("Starting ZWAVE node")
 
-	debug := flag.Bool("v", false, "Verbose - show more debuging info")
+	printVersion := flag.Bool("v", false, "Prints current version")
+	debug := flag.Bool("d", false, "Debug - show more debuging info")
 	port := flag.String("controllerport", "/dev/ttyACM0", "SerialAPI communication port (to controller)")
 	flag.StringVar(&recordToFile, "recordtofile", "", "Enable recording of serial data to file")
 
 	// Parse all commandline arguments, host and port parameters are added in the basenode init function
 	flag.Parse()
+
+	if *printVersion != false {
+		fmt.Println(VERSION + " (" + BUILD_DATE + ")")
+		os.Exit(0)
+	}
+
 	logrus.SetLevel(logrus.WarnLevel)
 	if *debug {
 		logrus.SetLevel(logrus.DebugLevel)
@@ -129,10 +138,6 @@ func main() {
 }
 
 func addOrUpdateDevice(node *protocol.Node, znode *nodes.Node) {
-	if znode.Device == nil {
-		return
-	}
-
 	log.Errorf("Endpoints: %#v", znode.Endpoints)
 
 	for i := 0; i < len(znode.Endpoints); i++ {
@@ -178,12 +183,12 @@ func addOrUpdateDevice(node *protocol.Node, znode *nodes.Node) {
 		})
 
 		switch {
-		case znode.IsDeviceClass(gozwave.GENERIC_TYPE_SWITCH_MULTILEVEL,
-			gozwave.SPECIFIC_TYPE_POWER_SWITCH_MULTILEVEL):
+		case znode.IsDeviceClass(zp.GENERIC_TYPE_SWITCH_MULTILEVEL,
+			zp.SPECIFIC_TYPE_POWER_SWITCH_MULTILEVEL):
 			//znode.HasCommand(commands.SwitchMultilevel):
 			node.Devices().Add(&devices.Device{
 				Type:   "dimmableLamp",
-				Name:   znode.Device.Brand + " - " + znode.Device.Product + " (Address: " + devid + ")",
+				Name:   znode.Brand + " - " + znode.Product + " (Address: " + devid + ")",
 				Id:     devid,
 				Online: true,
 				StateMap: map[string]string{
@@ -192,11 +197,11 @@ func addOrUpdateDevice(node *protocol.Node, znode *nodes.Node) {
 				},
 			})
 		//case znode.HasCommand(commands.SwitchBinary):
-		case znode.IsDeviceClass(gozwave.GENERIC_TYPE_SWITCH_BINARY,
-			gozwave.SPECIFIC_TYPE_POWER_SWITCH_BINARY):
+		case znode.IsDeviceClass(zp.GENERIC_TYPE_SWITCH_BINARY,
+			zp.SPECIFIC_TYPE_POWER_SWITCH_BINARY):
 			node.Devices().Add(&devices.Device{
 				Type:   "lamp",
-				Name:   znode.Device.Brand + " - " + znode.Device.Product + " (Address: " + devid + ")",
+				Name:   znode.Brand + " - " + znode.Product + " (Address: " + devid + ")",
 				Id:     devid,
 				Online: true,
 				StateMap: map[string]string{
