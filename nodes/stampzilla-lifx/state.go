@@ -92,8 +92,11 @@ func (s *State) AddLanDevice(light *client.Light) *Lamp {
 	d := s.GetByID(light.Id())
 	if d == nil {
 		d = NewLamp(light.Id(), light.Label(), light.Ip.String())
+		d.LanConnected = true
 		return s.Add(d)
 	}
+
+	d.LanConnected = true
 
 	return d
 }

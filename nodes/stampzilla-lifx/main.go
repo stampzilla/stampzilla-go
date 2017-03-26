@@ -127,6 +127,7 @@ func monitorLampCollection(lights *client.LightCollection, connection basenode.C
 		switch s.Event {
 		case client.LampAdded:
 			log.Warnf("Added: %s (%s)", s.Lamp.Id(), s.Lamp.Label())
+			state.LanProtocol.FoundDevices++
 
 			state.AddLanDevice(s.Lamp)
 
@@ -151,8 +152,18 @@ func monitorLampCollection(lights *client.LightCollection, connection basenode.C
 			//log.Infof("Collection: %#v", lights.Lights)
 		case client.LampUpdated:
 			log.Warnf("Changed: %s (%s)", s.Lamp.Id(), s.Lamp.Label())
+			l := state.GetByID(s.Lamp.Id())
+			if l != nil {
+				l.LanConnected = true
+			}
 		case client.LampRemoved:
+			state.LanProtocol.FoundDevices--
+
 			log.Warnf("Removed: %s (%s)", s.Lamp.Id(), s.Lamp.Label())
+			l := state.GetByID(s.Lamp.Id())
+			if l != nil {
+				l.LanConnected = false
+			}
 		default:
 			log.Infof("Received unknown event: %d", s.Event)
 		}
