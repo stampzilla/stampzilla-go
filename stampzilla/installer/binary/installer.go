@@ -164,6 +164,8 @@ func getChecksums(assets []github.ReleaseAsset) map[string]string {
 				if len(line) < 2 {
 					continue
 				}
+
+				line[1] = strings.TrimSpace(line[1])
 				checksums[filepath.Base(line[1])] = line[0]
 			}
 		}
