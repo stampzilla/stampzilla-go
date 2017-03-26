@@ -7,7 +7,7 @@ func Prepare() error {
 	CreateUser("stampzilla")
 	CreateDirAsUser("/var/spool/stampzilla", "stampzilla")
 	CreateDirAsUser("/var/log/stampzilla", "stampzilla")
-	CreateDirAsUser("/home/stampzilla/go", "stampzilla")
+	CreateDirAsUser("/home/stampzilla/go/bin", "stampzilla")
 	CreateDirAsUser("/etc/stampzilla", "stampzilla")
 	CreateDirAsUser("/etc/stampzilla/nodes", "stampzilla")
 
