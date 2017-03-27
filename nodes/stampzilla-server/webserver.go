@@ -1,3 +1,4 @@
+//go:generate rm statik/statik.go
 //go:generate go get github.com/rakyll/statik
 //go:generate statik -src=./public/dist
 package main
