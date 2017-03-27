@@ -16,3 +16,7 @@ cover-normal:
 
 cover-html: cover
 	go tool cover -html coverage.txt
+
+build-ui: 
+	cd nodes/stampzilla-server/public && gulp
+	cd nodes/stampzilla-server && go generate
