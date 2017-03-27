@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"log"
 	"sync"
 
@@ -17,7 +18,7 @@ type State struct {
 
 	publishStateFunc func()
 
-	sync.Mutex
+	sync.RWMutex
 }
 
 // Lamp is the state for each found lamp. Can be sourced from both lan and cloud protocols
@@ -139,6 +140,16 @@ func (s *State) publishState() {
 	}
 
 	s.publishStateFunc()
+}
+
+
+
+func (s *State) MarshalJSON() ([]byte, error) {
+	type alias State
+
+	s.RLock()
+	defer s.RUnlock()
+	return json.Marshal(alias(*s)) 
 }
 
 // -----------------------------------------------------------
