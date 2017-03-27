@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"encoding/json"
 	"sync"
 
 	"github.com/stampzilla/stampzilla-go/protocol/devices"
@@ -12,10 +13,10 @@ type Node struct {
 	Host      string
 	Version   string
 	BuildDate string
-	Elements_ []*Element  `json:"Elements"`
-	State_    interface{} `json:"State"`
-	Devices_  devices.Map `json:"Devices"`
-	Config_   *ConfigMap  `json:"config"`
+	Elements_ []*Element   `json:"Elements"`
+	State_    interface{}  `json:"State"`
+	Devices_  *devices.Map `json:"Devices"`
+	Config_   *ConfigMap   `json:"config"`
 	sync.RWMutex
 }
 
@@ -24,7 +25,7 @@ func NewNode(name string) *Node {
 		Name_:     name,
 		Version:   "-",
 		Elements_: []*Element{},
-		Devices_:  make(devices.Map),
+		Devices_:  devices.NewMap(),
 	}
 
 	n.Config_ = NewConfigMap(n)
@@ -43,12 +44,12 @@ func (n *Node) SetState(state interface{}) {
 	n.State_ = state
 	n.Unlock()
 }
-func (n *Node) Devices() devices.Map {
+func (n *Node) Devices() *devices.Map {
 	n.RLock()
 	defer n.RUnlock()
 	return n.Devices_
 }
-func (n *Node) SetDevices(devices devices.Map) {
+func (n *Node) SetDevices(devices *devices.Map) {
 	n.Lock()
 	n.Devices_ = devices
 	n.Unlock()
@@ -105,6 +106,13 @@ func (n *Node) SetName(name string) {
 	n.Lock()
 	defer n.Unlock()
 	n.Name_ = name
+}
+
+func (n *Node) MarshalJSON() ([]byte, error) {
+	type alias Node
+	n.RLock()
+	defer n.RUnlock()
+	return json.Marshal(alias(*n))
 }
 
 type Identifiable interface {

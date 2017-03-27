@@ -132,7 +132,7 @@ func syncDevicesFromServer(config *basenode.Config, ns *nodeSpecific) bool {
 	}
 
 outer:
-	for uuid, sdev := range serverDevs {
+	for uuid, sdev := range serverDevs.All() {
 		for _, v := range ns.Devices {
 			if v.UUID == uuid {
 				if debug {
@@ -180,7 +180,7 @@ outer:
 	return true
 }
 
-func fetchDevices(config *basenode.Config, ns *nodeSpecific) (devices.Map, error) {
+func fetchDevices(config *basenode.Config, ns *nodeSpecific) (*devices.Map, error) {
 	//TODO use nodespecific config
 	url := fmt.Sprintf("http://%s:%s/api/devices", config.Host, ns.Port)
 	resp, err := http.Get(url)

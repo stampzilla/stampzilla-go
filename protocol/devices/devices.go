@@ -1,10 +1,12 @@
 package devices
 
 import (
+	"encoding/json"
 	"errors"
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	log "github.com/cihub/seelog"
 )
@@ -27,6 +29,8 @@ type Device struct {
 	StateMap map[string]string      `json:"stateMap,omitempty"`
 	State    map[string]interface{} `json:"state,omitempty"`
 	Tags     []string               `json:"tags"`
+
+	sync.RWMutex
 }
 
 // NewDevice returns a new Device
@@ -58,41 +62,95 @@ func (d *Device) SyncState(state interface{}) {
 }
 
 // Map is a list of all devices. The key should be "<nodeuuid>.<deviceuuid>"
-type Map map[string]*Device
-
-// NewMap returns initialized Map
-func NewMap() Map {
-	return make(map[string]*Device)
+type Map struct {
+	devices map[string]*Device
+	sync.RWMutex
 }
 
-// Add adds a device the the device map. Its not safe for concurrent use.
-func (m Map) Add(dev *Device) {
+// NewMap returns initialized Map
+func NewMap() *Map {
+	return &Map{
+		devices: make(map[string]*Device),
+	}
+}
+
+// Add adds a device the the device map.
+func (m *Map) Add(dev *Device) {
+	m.Lock()
+	defer m.Unlock()
+
 	if dev.Node != "" {
-		m[dev.Node+"."+dev.Id] = dev
+		m.devices[dev.Node+"."+dev.Id] = dev
 		return
 	}
-	m[dev.Id] = dev
+	m.devices[dev.Id] = dev
+}
+
+// Deletes a device from the map.
+func (m *Map) Delete(id string) {
+	m.Lock()
+	defer m.Unlock()
+
+	delete(m.devices, id)
 }
 
 // Exists return true if device id exists in the map
-func (m Map) Exists(id string) bool {
-	if _, ok := m[id]; ok {
+func (m *Map) Exists(id string) bool {
+	m.RLock()
+	defer m.RUnlock()
+
+	if _, ok := m.devices[id]; ok {
 		return true
 	}
 	return false
 }
 
 // ByID returns device based on id. If device has node set the id will be node.id
-func (m Map) ByID(uuid string) *Device {
-	if node, ok := m[uuid]; ok {
+func (m *Map) ByID(uuid string) *Device {
+	m.RLock()
+	defer m.RUnlock()
+
+	if node, ok := m.devices[uuid]; ok {
 		return node
 	}
 	return nil
 }
 
+// All returns a list of all devices
+func (m *Map) All() map[string]*Device {
+	m.RLock()
+	defer m.RUnlock()
+
+	return m.devices
+}
+
 // Len returns length of map
-func (m Map) Len() int {
-	return len(m)
+func (m *Map) Len() int {
+	m.RLock()
+	defer m.RUnlock()
+
+	return len(m.devices)
+}
+
+func (m *Map) MarshalJSON() ([]byte, error) {
+	type alias map[string]*Device
+	m.RLock()
+	defer m.RUnlock()
+	return json.Marshal(alias(m.devices))
+}
+
+func (m *Map) UnmarshalJSON(b []byte) error {
+	var alias map[string]*Device
+	err := json.Unmarshal(b, &alias)
+	if err != nil {
+		return err
+	}
+
+	m.Lock()
+	m.devices = alias
+	m.Unlock()
+
+	return nil
 }
 
 func path(state interface{}, jp string) (interface{}, error) {
