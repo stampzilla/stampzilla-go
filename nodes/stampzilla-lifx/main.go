@@ -127,37 +127,41 @@ func monitorLampCollection(lights *client.LightCollection, connection basenode.C
 		switch s.Event {
 		case client.LampAdded:
 			log.Warnf("Added: %s (%s)", s.Lamp.Id(), s.Lamp.Label())
-			state.LanProtocol.FoundDevices++
+			state.Lock()
+			state.lanProtocol.FoundDevices++
+			state.Unlock()
 
 			state.AddLanDevice(s.Lamp)
 
-			node.AddElement(&protocol.Element{
-				Type: protocol.ElementTypeToggle,
-				Name: s.Lamp.Label(),
-				Command: &protocol.Command{
-					Cmd:  "set",
-					Args: []string{s.Lamp.Id()},
-				},
-				Feedback: "Devices[2].State",
-			})
-			node.AddElement(&protocol.Element{
-				Type: protocol.ElementTypeColorPicker,
-				Name: s.Lamp.Label(),
-				Command: &protocol.Command{
-					Cmd:  "color",
-					Args: []string{s.Lamp.Id()},
-				},
-				Feedback: "Devices[4].State",
-			})
+			//node.AddElement(&protocol.Element{
+			//Type: protocol.ElementTypeToggle,
+			//Name: s.Lamp.Label(),
+			//Command: &protocol.Command{
+			//Cmd:  "set",
+			//Args: []string{s.Lamp.Id()},
+			//},
+			//Feedback: "Devices[2].State",
+			//})
+			//node.AddElement(&protocol.Element{
+			//Type: protocol.ElementTypeColorPicker,
+			//Name: s.Lamp.Label(),
+			//Command: &protocol.Command{
+			//Cmd:  "color",
+			//Args: []string{s.Lamp.Id()},
+			//},
+			//Feedback: "Devices[4].State",
+			//})
 			//log.Infof("Collection: %#v", lights.Lights)
 		case client.LampUpdated:
-			log.Warnf("Changed: %s (%s)", s.Lamp.Id(), s.Lamp.Label())
+			log.Debugf("Changed: %s (%s)", s.Lamp.Id(), s.Lamp.Label())
 			l := state.GetByID(s.Lamp.Id())
 			if l != nil {
 				l.LanConnected = true
 			}
 		case client.LampRemoved:
-			state.LanProtocol.FoundDevices--
+			state.Lock()
+			state.lanProtocol.FoundDevices--
+			state.Unlock()
 
 			log.Warnf("Removed: %s (%s)", s.Lamp.Id(), s.Lamp.Label())
 			l := state.GetByID(s.Lamp.Id())

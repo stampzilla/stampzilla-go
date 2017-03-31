@@ -81,15 +81,20 @@ func fetchURL(t *testing.T, method, u, body string) string {
 }
 
 func TestFetchDevices(t *testing.T) {
-
 	config, ns, ts := fakeConfig(t, getDataFunc())
 	defer ts.Close()
 	devs, err := fetchDevices(config, ns)
 	assert.NoError(t, err)
-	assert.Equal(t, "1", devs["nodeUuid.1"].Id)
-	assert.Equal(t, "Test 1", devs["nodeUuid.1"].Name)
-	assert.Equal(t, "2", devs["nodeUuid.2"].Id)
-	assert.Equal(t, "Test 2", devs["nodeUuid.2"].Name)
+	dev1 := devs.ByID("nodeUuid.1")
+	dev2 := devs.ByID("nodeUuid.2")
+	if assert.NotNil(t, dev1) {
+		assert.Equal(t, "1", dev1.Id)
+		assert.Equal(t, "Test 1", dev1.Name)
+	}
+	if assert.NotNil(t, dev2) {
+		assert.Equal(t, "2", dev2.Id)
+		assert.Equal(t, "Test 2", dev2.Name)
+	}
 }
 func TestSyncDevicesFromServer(t *testing.T) {
 	config, ns, ts := fakeConfig(t, getDataFunc())

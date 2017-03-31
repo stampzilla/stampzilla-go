@@ -41,7 +41,7 @@ func (s *State) Add(c *Chromecast) {
 	s.Devices[c.Uuid()] = c
 	s.Unlock()
 
-	s.node.Devices_[c.Id] = &devices.Device{
+	s.node.Devices_.Add(&devices.Device{
 		Type:   "chromecast",
 		Name:   c.Name_,
 		Id:     c.Id,
@@ -56,11 +56,12 @@ func (s *State) Add(c *Chromecast) {
 			"Url":        c.Id + ".Media.Url",
 			"Duration":   c.Id + ".Media.Duration",
 		},
-	}
+	})
 
 	s.Publish()
 }
 
+// Remove removes a chromecast from the state
 func (s *State) Remove(c *Chromecast) {
 	_, ok := s.Devices[c.Uuid()]
 
@@ -70,8 +71,8 @@ func (s *State) Remove(c *Chromecast) {
 		s.Unlock()
 	}
 
-	if dev, ok := s.node.Devices_[c.Id]; ok {
-		dev.Online = false
+	if dev := s.node.Devices_.ByID(c.Id); dev != nil {
+		dev.SetOnline(false)
 	}
 
 	s.Publish()

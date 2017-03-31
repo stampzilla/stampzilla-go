@@ -156,7 +156,7 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 				existingNode.SetDevices(node.Devices())
 				existingNode.SetConfig(node.Config())
 				ns.updateState(logicChannel, existingNode)
-				ns.syncDevices(existingNode.Devices(), node)
+				ns.syncDevices(existingNode.Devices().All(), node)
 
 				existingNode.SetElements(node.Elements())
 			} else {
@@ -174,7 +174,7 @@ func (ns *NodeServer) newNodeConnection(connection net.Conn) {
 				logicChannel = ns.Logic.ListenForChanges(node.Uuid())
 				node.SetConn(connection)
 				ns.updateState(logicChannel, node)
-				ns.syncDevices(node.Devices(), node)
+				ns.syncDevices(node.Devices().All(), node)
 			}
 			ns.WsNodesHandler.SendSingleNode(uuid)
 
@@ -225,7 +225,7 @@ func (ns *NodeServer) updateState(updateChan chan string, node serverprotocol.No
 	ns.Metrics.Update(node)
 }
 
-func (ns *NodeServer) syncDevices(newDevices devices.Map, node serverprotocol.Node) {
+func (ns *NodeServer) syncDevices(newDevices map[string]*devices.Device, node serverprotocol.Node) {
 	for _, v := range newDevices {
 		v.Node = node.Uuid()
 		ns.Devices.Add(v)

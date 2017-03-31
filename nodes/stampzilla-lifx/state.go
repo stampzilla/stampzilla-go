@@ -12,9 +12,9 @@ import (
 
 // State contains the lifx node state
 type State struct {
-	Lamps       map[string]*Lamp `json:"lamps"`
-	LifxClound  StateLifxCloud   `json:"lifx_clound"`
-	LanProtocol StateLanProtocol `json:"lan_protocol"`
+	lamps       map[string]Lamp  `json:"lamps"`
+	lifxCloud   StateLifxCloud   `json:"lifx_clound"`
+	lanProtocol StateLanProtocol `json:"lan_protocol"`
 
 	publishStateFunc func()
 
@@ -37,7 +37,7 @@ type Lamp struct {
 	Capabilities map[string]bool `json:"capabilities"`
 
 	publishState func()
-	sync.Mutex
+	sync.RWMutex
 }
 
 // StateColor describes the current color at the lifx lamp
@@ -63,26 +63,30 @@ type StateLanProtocol struct {
 
 // NewState creates a new State struct and initializes all values
 func NewState() *State {
-	return &State{Lamps: make(map[string]*Lamp), publishStateFunc: func() {}}
+	return &State{lamps: make(map[string]Lamp), publishStateFunc: func() {}}
 }
 
 // Lamp Fetches a lamp from the state list based on id [4]byte
 func (s *State) Lamp(id [4]byte) *Lamp {
 	senderID := hex.EncodeToString(id[0:4])
-	s.Lock()
-	defer s.Unlock()
-	if _, ok := s.Lamps[senderID]; ok {
-		return s.Lamps[senderID]
+	s.RLock()
+	defer s.RUnlock()
+
+	if _, ok := s.lamps[senderID]; ok {
+		l := s.lamps[senderID]
+		return &l
 	}
 	return nil
 }
 
 // GetByID fetches a lamp from the state list based on id string
 func (s *State) GetByID(id string) *Lamp {
-	s.Lock()
-	defer s.Unlock()
-	if _, ok := s.Lamps[id]; ok {
-		return s.Lamps[id]
+	s.RLock()
+	defer s.RUnlock()
+
+	if _, ok := s.lamps[id]; ok {
+		l := s.lamps[id]
+		return &l
 	}
 
 	return nil
@@ -108,26 +112,30 @@ func (s *State) Add(d *Lamp) *Lamp {
 	d.publishState = s.publishState
 
 	s.Lock()
-	defer s.Unlock()
-	defer s.publishState()
+	s.lamps[d.ID] = *d
+	s.Unlock()
 
-	s.Lamps[d.ID] = d
+	s.publishState()
+
 	return d
 }
 
 // RemoveDevice removes a lamp that are no longer available from the list
 func (s *State) RemoveDevice(id [4]byte) {
-	s.Lock()
-	defer s.Unlock()
-	defer s.publishState()
-
 	senderID := hex.EncodeToString(id[0:4])
-	delete(s.Lamps, senderID)
+
+	s.Lock()
+	delete(s.lamps, senderID)
+	s.Unlock()
+
+	s.publishState()
 }
 
 func (s *State) publishState() {
-	for _, v := range s.Lamps {
-		node.Devices().Add(&devices.Device{
+	s.RLock()
+	for _, v := range s.lamps {
+		v.RLock()
+		d := &devices.Device{
 			Type:   "dimmableLamp",
 			Name:   v.Name,
 			Id:     v.ID,
@@ -136,20 +144,37 @@ func (s *State) publishState() {
 				"on":    "lamps[" + v.ID + "]" + ".power",
 				"level": "lamps[" + v.ID + "]" + ".level",
 			},
-		})
+		}
+		v.RUnlock()
+
+		node.Devices().Add(d)
 	}
+	s.RUnlock()
 
 	s.publishStateFunc()
 }
 
-
-
 func (s *State) MarshalJSON() ([]byte, error) {
-	type alias State
+	type alias struct {
+		Lamps       map[string]Lamp  `json:"lamps"`
+		LifxCloud   StateLifxCloud   `json:"lifx_clound"`
+		LanProtocol StateLanProtocol `json:"lan_protocol"`
+	}
 
 	s.RLock()
+	a := alias{
+		Lamps:       make(map[string]Lamp),
+		LifxCloud:   s.lifxCloud,
+		LanProtocol: s.lanProtocol,
+	}
+	for k, v := range s.lamps {
+		v.Lock()
+		a.Lamps[k] = v
+		v.Unlock()
+	}
 	defer s.RUnlock()
-	return json.Marshal(alias(*s)) 
+
+	return json.Marshal(a)
 }
 
 // -----------------------------------------------------------
@@ -164,13 +189,13 @@ func NewLamp(id, name, ip string) *Lamp {
 // SetID setter for the idf field
 func (d *Lamp) SetID(id string) {
 	d.Lock()
-	defer d.Unlock()
 	d.ID = id
-
+	d.Unlock()
 }
 
 // SyncFromCloud syncronizes data from a cloudGetAllReponse struct received from the lifx cloud
 func (d *Lamp) SyncFromCloud(c *cloudGetAllResponse) {
+	d.Lock()
 	d.Level = c.Brightness * 100
 	d.Color.Hue = c.Color.Hue
 	d.Color.Saturation = c.Color.Saturation
@@ -178,14 +203,17 @@ func (d *Lamp) SyncFromCloud(c *cloudGetAllResponse) {
 	d.Capabilities = c.Product.Capabilites
 	d.CloudConnected = c.Connected
 	d.Power = c.Power == "on"
+	d.Unlock()
 
 	defer d.publishState()
 }
 
 // SyncFromLan syncronizes data from the lan protocol
 func (d *Lamp) SyncFromLan(c *client.Light) {
+	d.Lock()
 	d.LanConnected = true
 	d.IP = c.Ip.String()
+	d.Unlock()
 
 	defer d.publishState()
 }

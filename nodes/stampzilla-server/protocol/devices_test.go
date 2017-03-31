@@ -14,7 +14,7 @@ func TestAdd(t *testing.T) {
 	device.Node = "nodeuuid"
 	devs.Add(device)
 
-	if dev, ok := devs.devices["nodeuuid.devuuid"]; ok {
+	if dev := devs.devices.ByID("nodeuuid.devuuid"); dev != nil {
 		assert.Equal(t, "devuuid", dev.Id)
 		return
 	}
@@ -36,7 +36,10 @@ func TestShallowCopy(t *testing.T) {
 	}
 	device.Name = "NameChange"
 	assert.Equal(t, "Name", copied["nodeuuid.devuuid"].Name)
-	assert.Equal(t, "NameChange", devs.devices["nodeuuid.devuuid"].Name)
+	dev := devs.devices.ByID("nodeuuid.devuuid")
+	if assert.NotNil(t, dev) {
+		assert.Equal(t, "NameChange", dev.Name)
+	}
 }
 
 func TestSetOfflineByNode(t *testing.T) {

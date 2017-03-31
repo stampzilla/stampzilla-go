@@ -12,13 +12,13 @@ import (
 )
 
 type Devices struct {
-	devices devices.Map
+	devices *devices.Map
 	sync.RWMutex
 }
 
 func NewDevices() *Devices {
 	n := &Devices{}
-	n.devices = make(devices.Map)
+	n.devices = devices.NewMap()
 	return n
 }
 
@@ -31,19 +31,19 @@ func (n *Devices) ByUuid(uuid string) *devices.Device {
 func (n *Devices) All() map[string]*devices.Device {
 	n.RLock()
 	defer n.RUnlock()
-	return n.devices
+	return n.devices.All()
 }
-func (n *Devices) ShallowCopy() devices.Map {
+func (n *Devices) ShallowCopy() map[string]*devices.Device {
 	n.RLock()
 	defer n.RUnlock()
 	r := make(map[string]*devices.Device)
-	for k, v := range n.devices {
+	for k, v := range n.devices.All() {
 		copy := *v
 		r[k] = &copy
 	}
 	return r
 }
-func (n *Devices) AllWithState(nodes *Nodes) devices.Map {
+func (n *Devices) AllWithState(nodes *Nodes) map[string]*devices.Device {
 	devices := n.ShallowCopy()
 	for _, device := range devices {
 		node := nodes.ByUuid(device.Node)
@@ -71,7 +71,7 @@ func (n *Devices) Add(device *devices.Device) error {
 func (n *Devices) Delete(uuid string) {
 	n.Lock()
 	defer n.Unlock()
-	delete(n.devices, uuid)
+	n.devices.Delete(uuid)
 }
 
 //SetOfflineByNode marks device from a single node offline and returns a list of all marked devices
@@ -80,9 +80,9 @@ func (n *Devices) SetOfflineByNode(nodeUUID string) (list []*devices.Device) {
 	defer n.Unlock()
 
 	list = make([]*devices.Device, 0)
-	for _, dev := range n.devices {
+	for _, dev := range n.devices.All() {
 		if dev.Node == nodeUUID {
-			dev.Online = false
+			dev.SetOnline(false)
 			list = append(list, dev)
 		}
 	}
