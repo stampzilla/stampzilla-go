@@ -91,7 +91,7 @@ func main() {
 
 	for _, dev := range nc.MonitorSensors {
 		id := strconv.Itoa(dev.Id)
-		node.Devices_["s"+id] = &devices.Device{
+		node.Devices.Add(&devices.Device{
 			Type:   "sensor",
 			Name:   dev.Name,
 			Id:     "s" + id,
@@ -100,7 +100,7 @@ func main() {
 				"temp":     "Sensors[" + id + "]" + ".Temp",
 				"humidity": "Sensors[" + id + "]" + ".Humidity",
 			},
-		}
+		})
 	}
 
 	// Start the connection
