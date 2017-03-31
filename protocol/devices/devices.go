@@ -61,6 +61,13 @@ func (d *Device) SyncState(state interface{}) {
 	d.StateMap = nil
 }
 
+// SetOnline sets the online state of the device
+func (d *Device) SetOnline(online bool) {
+	d.Lock()
+	d.Online = online
+	d.Unlock()
+}
+
 // Map is a list of all devices. The key should be "<nodeuuid>.<deviceuuid>"
 type Map struct {
 	devices map[string]*Device

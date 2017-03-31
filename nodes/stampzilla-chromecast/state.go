@@ -61,6 +61,7 @@ func (s *State) Add(c *Chromecast) {
 	s.Publish()
 }
 
+// Remove removes a chromecast from the state
 func (s *State) Remove(c *Chromecast) {
 	_, ok := s.Devices[c.Uuid()]
 
@@ -71,9 +72,7 @@ func (s *State) Remove(c *Chromecast) {
 	}
 
 	if dev := s.node.Devices_.ByID(c.Id); dev != nil {
-		dev.Lock()
-		dev.Online = false
-		dev.Unlock()
+		dev.SetOnline(false)
 	}
 
 	s.Publish()

@@ -82,7 +82,7 @@ func (n *Devices) SetOfflineByNode(nodeUUID string) (list []*devices.Device) {
 	list = make([]*devices.Device, 0)
 	for _, dev := range n.devices.All() {
 		if dev.Node == nodeUUID {
-			dev.Online = false
+			dev.SetOnline(false)
 			list = append(list, dev)
 		}
 	}
