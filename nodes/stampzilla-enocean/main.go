@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"sync"
 
-	log "github.com/cihub/seelog"
+	"github.com/Sirupsen/logrus"
 	"github.com/jonaz/goenocean"
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/stampzilla/stampzilla-go/protocol"
@@ -119,22 +119,22 @@ func checkDuplicateSenderIds() {
 			}
 			id2 := d1.Id()[3] & 0x7f
 			if id2 == id1 {
-				log.Error("DUPLICATE ID FOUND when generating senderIds for eltako devices")
+				logrus.Error("DUPLICATE ID FOUND when generating senderIds for eltako devices")
 			}
 		}
 	}
 }
 
 func processCommand(cmd protocol.Command) {
-	log.Debug("INCOMING COMMAND", cmd)
+	logrus.Debug("INCOMING COMMAND", cmd)
 	if len(cmd.Args) == 0 {
-		log.Error("Missing device ID in arguments")
+		logrus.Error("Missing device ID in arguments")
 		return
 	}
 
 	device := state.DeviceByString(cmd.Args[0])
 	if device == nil {
-		log.Errorf("Device %s does not exist", device)
+		logrus.Errorf("Device %s does not exist", device)
 		return
 	}
 	switch cmd.Cmd {
@@ -177,7 +177,7 @@ func reciever(node *protocol.Node, connection basenode.Connection, recv chan goe
 	for p := range recv {
 		if p.PacketType() == goenocean.PacketTypeResponse && len(p.Data()) == 5 {
 			copy(usb300SenderId[:], p.Data()[1:4])
-			log.Debugf("senderid: % x ( % x )", usb300SenderId, p.Data())
+			logrus.Debugf("senderid: % x ( % x )", usb300SenderId, p.Data())
 			continue
 		}
 		if p.SenderId() != [4]byte{0, 0, 0, 0} {
@@ -197,18 +197,18 @@ func incomingPacket(node *protocol.Node, connection basenode.Connection, p goeno
 		connection.Send(node)
 	}
 
-	log.Debug("Incoming packet")
+	logrus.Debug("Incoming packet")
 	if t, ok := p.(goenocean.Telegram); ok {
-		log.Debug("Packet is goenocean.Telegram")
+		logrus.Debug("Packet is goenocean.Telegram")
 		for _, deviceEep := range d.RecvEEPs {
 			if deviceEep[0:2] != hex.EncodeToString([]byte{t.TelegramType()}) {
-				log.Debug("Packet is wrong deviceEep ", deviceEep, t.TelegramType())
+				logrus.Debug("Packet is wrong deviceEep ", deviceEep, t.TelegramType())
 				continue
 			}
 
 			if h := handlers.getHandler(deviceEep); h != nil {
 				h.Process(d, t)
-				log.Info("Incoming packet processed from", d.IdString())
+				logrus.Info("Incoming packet processed from", d.IdString())
 				//TODO add return bool in process and to send depending on that!
 				connection.Send(node)
 				return
@@ -227,12 +227,12 @@ func saveDevicesToFile() {
 	defer devFileMutex.Unlock()
 	configFile, err := os.Create("devices.json")
 	if err != nil {
-		log.Error("creating config file", err.Error())
+		logrus.Error("creating config file", err.Error())
 	}
 	var out bytes.Buffer
 	b, err := json.MarshalIndent(state.Devices, "", "\t")
 	if err != nil {
-		log.Error("error marshal json", err)
+		logrus.Error("error marshal json", err)
 	}
 	json.Indent(&out, b, "", "\t")
 	out.WriteTo(configFile)
@@ -242,13 +242,13 @@ func readConfigFromFile() map[string]*Device {
 	defer devFileMutex.Unlock()
 	configFile, err := os.Open("devices.json")
 	if err != nil {
-		log.Error("opening config file", err.Error())
+		logrus.Error("opening config file", err.Error())
 	}
 
 	config := make(map[string]*Device)
 	jsonParser := json.NewDecoder(configFile)
 	if err = jsonParser.Decode(&config); err != nil {
-		log.Error("parsing config file", err.Error())
+		logrus.Error("parsing config file", err.Error())
 	}
 
 	return config

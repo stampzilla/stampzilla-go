@@ -2,7 +2,10 @@ package main
 
 import (
 	"encoding/hex"
+	"fmt"
 	"sync"
+
+	"github.com/Sirupsen/logrus"
 )
 
 type State struct {
@@ -92,16 +95,16 @@ func (d *Device) AddEepForReceiving(eep string) {
 }
 
 func (d *Device) Id() [4]byte {
-	d.Lock()
-	defer d.Unlock()
+	d.RLock()
+	defer d.RUnlock()
 	senderid, _ := hex.DecodeString(d.SenderId)
 	var ret [4]byte
 	copy(ret[:], senderid[0:4])
 	return ret
 }
 func (d *Device) IdString() string {
-	d.Lock()
-	defer d.Unlock()
+	d.RLock()
+	defer d.RUnlock()
 	return d.SenderId
 }
 func (d *Device) SetOn(s bool) {
@@ -128,8 +131,8 @@ func (d *Device) SetPowerW(pwr int64) {
 }
 
 func (d *Device) GetPowerW() int64 {
-	d.Lock()
-	defer d.Unlock()
+	d.RLock()
+	defer d.RUnlock()
 	return d.PowerW
 }
 func (d *Device) SetPowerkWh(pwr int64) {
@@ -139,26 +142,55 @@ func (d *Device) SetPowerkWh(pwr int64) {
 }
 
 func (d *Device) GetPowerkWh() int64 {
-	d.Lock()
-	defer d.Unlock()
+	d.RLock()
+	defer d.RUnlock()
 	return d.PowerkWh
 }
 
-func (d *Device) handler() Handler {
-	return handlers.getHandler(d.SendEEPs[0])
+func (d *Device) handler() (Handler, error) {
+	if len(d.SendEEPs) < 1 {
+		return nil, fmt.Errorf("No SendEEPs defined on device %s", d.IdString())
+	}
+	return handlers.getHandler(d.SendEEPs[0]), nil
 }
 func (d *Device) CmdOn() {
-	d.handler().On(d)
+	h, err := d.handler()
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
+
+	h.On(d)
 }
 func (d *Device) CmdOff() {
-	d.handler().Off(d)
+	h, err := d.handler()
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
+	h.Off(d)
 }
 func (d *Device) CmdToggle() {
-	d.handler().Toggle(d)
+	h, err := d.handler()
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
+	h.Toggle(d)
 }
 func (d *Device) CmdDim(val int) {
-	d.handler().Dim(val, d)
+	h, err := d.handler()
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
+	h.Dim(val, d)
 }
 func (d *Device) CmdLearn() {
-	d.handler().Learn(d)
+	h, err := d.handler()
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
+	h.Learn(d)
 }
