@@ -140,10 +140,14 @@ func (m *Map) Len() int {
 }
 
 func (m *Map) MarshalJSON() ([]byte, error) {
-	type alias map[string]*Device
+	alias := make(map[string]Device)
 	m.RLock()
+
+	for k, v := range m.devices {
+		alias[k] = *v
+	}
 	defer m.RUnlock()
-	return json.Marshal(alias(m.devices))
+	return json.Marshal(alias)
 }
 
 func (m *Map) UnmarshalJSON(b []byte) error {
