@@ -55,7 +55,7 @@ func (d *Device) SyncState(state interface{}) {
 	d.State = make(map[string]interface{})
 	for k, v := range d.StateMap {
 		if value, err := path(state, v); err == nil {
-			if reflect.ValueOf(value).IsNil() { // Dont accept nil values
+			if !reflect.ValueOf(value).IsValid() { // Dont accept nil values
 				delete(d.State, k) // Remove it from the map
 				continue
 			}
