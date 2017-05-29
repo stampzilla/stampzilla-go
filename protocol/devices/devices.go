@@ -3,6 +3,7 @@ package devices
 import (
 	"encoding/json"
 	"errors"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -48,17 +49,24 @@ func NewDevice() *Device {
 
 // SyncState syncs the state between the node data and the device
 func (d *Device) SyncState(state interface{}) {
+	d.Lock()
 
 	var err error
 	d.State = make(map[string]interface{})
 	for k, v := range d.StateMap {
 		if value, err := path(state, v); err == nil {
+			if !reflect.ValueOf(value).IsValid() { // Dont accept nil values
+				delete(d.State, k) // Remove it from the map
+				continue
+			}
 			d.State[k] = value
 			continue
 		}
 		log.Error(err)
 	}
 	d.StateMap = nil
+
+	d.Unlock()
 }
 
 // SetOnline sets the online state of the device
@@ -140,10 +148,16 @@ func (m *Map) Len() int {
 }
 
 func (m *Map) MarshalJSON() ([]byte, error) {
-	type alias map[string]*Device
+	alias := make(map[string]Device)
 	m.RLock()
+
+	for k, v := range m.devices {
+		if v != nil {
+			alias[k] = *v
+		}
+	}
 	defer m.RUnlock()
-	return json.Marshal(alias(m.devices))
+	return json.Marshal(alias)
 }
 
 func (m *Map) UnmarshalJSON(b []byte) error {
