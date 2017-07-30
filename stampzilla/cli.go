@@ -29,7 +29,7 @@ func main() {
 		},
 		{
 			Name:   "stop",
-			Usage:  "start processes",
+			Usage:  "stop processes",
 			Action: addDebug(cliHandler.Stop),
 		},
 		{
