@@ -34,6 +34,6 @@ func TestCommandNotifyRun(t *testing.T) {
 		t.Errorf("Got %s Expected %s", fakeRouter.notifications[0].Message, "Testing")
 	}
 	if fakeRouter.notifications[0].Level != notifications.ErrorLevel {
-		t.Errorf("Got %s Expected %s", fakeRouter.notifications[0].Level, notifications.ErrorLevel)
+		t.Errorf("Got %d Expected %d", fakeRouter.notifications[0].Level, notifications.ErrorLevel)
 	}
 }

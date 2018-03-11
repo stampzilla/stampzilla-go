@@ -31,7 +31,7 @@ func TestSearch(t *testing.T) {
 
 	found = nodes.Search("notfound")
 	if found != nil {
-		t.Errorf("nodes.Search expected: nil got: %s", found.Name)
+		t.Errorf("nodes.Search expected: nil got: %s", found.Name())
 	}
 
 }
