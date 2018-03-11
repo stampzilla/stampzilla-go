@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/jonaz/goenocean"
+	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/basenode"
 	"github.com/stampzilla/stampzilla-go/protocol"
 	"github.com/stampzilla/stampzilla-go/protocol/devices"

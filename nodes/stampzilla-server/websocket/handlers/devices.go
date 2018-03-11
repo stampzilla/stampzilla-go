@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
 	log "github.com/cihub/seelog"
+	"github.com/sirupsen/logrus"
 	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
 	"github.com/stampzilla/stampzilla-go/protocol"

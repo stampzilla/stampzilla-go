@@ -11,9 +11,9 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
 	"github.com/google/go-github/github"
+	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/stampzilla/installer"
 )
 
