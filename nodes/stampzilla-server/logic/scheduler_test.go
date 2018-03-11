@@ -91,7 +91,7 @@ func TestSchedulerLoadFromFile(t *testing.T) {
 
 	if task, ok := scheduler.Tasks()[0].(*task); ok {
 		if task.CronWhen != "0 * * * * *" {
-			t.Errorf("expected 0 * * * * * . Got: %d", task.CronWhen)
+			t.Errorf("expected 0 * * * * * . Got: %s", task.CronWhen)
 		}
 	} else {
 		t.Error("scheudler.Tasks() schould return task compatible with *task")
@@ -129,7 +129,7 @@ func TestSchedulersaveToFile(t *testing.T) {
 
 	if task, ok := scheduler.Tasks()[0].(*task); ok {
 		if task.CronWhen != "* * * * * *" {
-			t.Errorf("expected * * * * * * . Got: %d", task.CronWhen)
+			t.Errorf("expected * * * * * * . Got: %s", task.CronWhen)
 		}
 	} else {
 		t.Error("scheudler.Tasks() schould return task compatible with *task")

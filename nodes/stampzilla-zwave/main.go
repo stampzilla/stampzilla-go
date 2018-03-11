@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	log "github.com/cihub/seelog"
+	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/gozwave"
 	"github.com/stampzilla/gozwave/events"
 	"github.com/stampzilla/gozwave/nodes"

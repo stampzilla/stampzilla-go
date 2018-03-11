@@ -35,7 +35,6 @@ func (ra *ruleActionStub) Name() string {
 	return ""
 }
 
-
 func NewRuleActionStub(actionCount, actionCancelCount *int64, t *testing.T) *ruleActionStub {
 	return &ruleActionStub{
 		actionCount: actionCount,
@@ -194,13 +193,13 @@ func TestParseRuleEnterExitActionsEvaluateFalse(t *testing.T) {
 	logic.EvaluateRules()
 
 	if len(logic.States()) != 1 {
-		t.Errorf("length of logic.States should be 1. got: %s", len(logic.States()))
+		t.Errorf("length of logic.States should be 1. got: %d", len(logic.States()))
 	}
 
 	if actionRunCount == 0 {
 		return
 	}
-	t.Errorf("actionRunCount wrong expected: %s got %s", 0, actionRunCount)
+	t.Errorf("actionRunCount wrong expected: %d got %d", 0, actionRunCount)
 	log.Flush()
 }
 
@@ -360,13 +359,13 @@ func TestListenForChanges(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	if len(logic.States()) != 1 {
-		t.Errorf("length of logic.States should be 1. got: %s", len(logic.States()))
+		t.Errorf("length of logic.States should be 1. got: %d", len(logic.States()))
 	}
 
 	if actionRunCount == 2 {
 		return
 	}
-	t.Errorf("actionRunCount wrong expected: %s got %s", 2, actionRunCount)
+	t.Errorf("actionRunCount wrong expected: %d got %d", 2, actionRunCount)
 	log.Flush()
 }
 
@@ -430,13 +429,13 @@ func TestParseRuleEnterExitActionsWithoutConditions(t *testing.T) {
 	logic.EvaluateRules()
 
 	if len(logic.States()) != 1 {
-		t.Errorf("length of logic.States should be 1. got: %s", len(logic.States()))
+		t.Errorf("length of logic.States should be 1. got: %d", len(logic.States()))
 	}
 
 	if actionRunCount == 0 {
 		return
 	}
-	t.Errorf("actionRunCount wrong expected: %s got %s", 0, actionRunCount)
+	t.Errorf("actionRunCount wrong expected: %d got %d", 0, actionRunCount)
 	log.Flush()
 }
 func TestEmptyRules(t *testing.T) {

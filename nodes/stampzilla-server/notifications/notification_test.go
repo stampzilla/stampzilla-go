@@ -31,7 +31,7 @@ func TestNotificationUnmarshalJson(t *testing.T) {
 		fmt.Println("error:", err)
 	}
 	if n.Level != ErrorLevel {
-		t.Errorf("Got %s expected %s", n.Level, ErrorLevel)
+		t.Errorf("Got %d expected %d", n.Level, ErrorLevel)
 	}
 	if n.Message != "test" {
 		t.Errorf("Got %s expected %s", n.Message, "test")
