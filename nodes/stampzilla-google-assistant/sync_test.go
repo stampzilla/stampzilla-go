@@ -53,9 +53,9 @@ func fakeConfig(t *testing.T, h func(w http.ResponseWriter, r *http.Request)) (*
 	config := &basenode.Config{
 		Host: host,
 	}
-	ns := &nodeSpecificConfig{
-		Port: port,
-	}
+
+	ns := newNodeSpecificConfig()
+	ns.Port = port
 	return config, ns, ts
 }
 
@@ -99,6 +99,6 @@ func TestSyncDevicesFromServer(t *testing.T) {
 
 	success := syncDevicesFromServer(config, ns)
 	t.Log("success:", success)
-	assert.Equal(t, "nodeUuid.1", ns.Devices()[0].ID)
-	assert.Equal(t, "nodeUuid.2", ns.Devices()[1].ID)
+	assert.Equal(t, "nodeUuid.1", ns.Device("nodeUuid.1").ID)
+	assert.Equal(t, "nodeUuid.2", ns.Device("nodeUuid.2").ID)
 }

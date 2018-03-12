@@ -13,6 +13,12 @@ type nodeSpecificConfig struct {
 	sync.Mutex
 }
 
+func newNodeSpecificConfig() *nodeSpecificConfig {
+	return &nodeSpecificConfig{
+		DevicesField: make(deviceList),
+	}
+}
+
 func (ns *nodeSpecificConfig) Devices() deviceList {
 	ns.Lock()
 	defer ns.Unlock()
@@ -21,16 +27,13 @@ func (ns *nodeSpecificConfig) Devices() deviceList {
 func (ns *nodeSpecificConfig) Device(id string) *Device {
 	ns.Lock()
 	defer ns.Unlock()
-	for _, v := range ns.DevicesField {
-		if v.ID == id {
-			return v
-		}
-
+	if v, ok := ns.DevicesField[id]; ok {
+		return v
 	}
 	return nil
 }
 func (ns *nodeSpecificConfig) AddDevice(dev *Device) {
 	ns.Lock()
 	defer ns.Unlock()
-	ns.DevicesField = append(ns.DevicesField, dev)
+	ns.DevicesField[dev.ID] = dev
 }

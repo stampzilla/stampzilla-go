@@ -26,7 +26,7 @@ var BUILDDATE = ""
 var listenPort string
 var debug bool
 var standalone bool
-var nodespecific = &nodeSpecificConfig{}
+var nodespecific = newNodeSpecificConfig()
 
 func init() {
 	flag.StringVar(&listenPort, "listenport", "80", "Port to listen to. Must be 80 for Google Home to work")

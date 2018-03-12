@@ -1,6 +1,6 @@
 package main
 
-type deviceList []*Device
+type deviceList map[string]*Device
 
 // URL containing urls for dim and on and off
 type URL struct {
