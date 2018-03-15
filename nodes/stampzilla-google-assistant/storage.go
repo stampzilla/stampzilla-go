@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"os"
 	"sync"
 
@@ -10,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type TestStorage struct {
+type JSONStorage struct {
 	Clients         map[string]osin.Client
 	Authorize       map[string]*osin.AuthorizeData
 	Access          map[string]*osin.AccessData
@@ -19,8 +19,8 @@ type TestStorage struct {
 	sync.RWMutex
 }
 
-func NewTestStorage() *TestStorage {
-	r := &TestStorage{
+func NewTestStorage() *JSONStorage {
+	r := &JSONStorage{
 		Clients:         make(map[string]osin.Client),
 		Authorize:       make(map[string]*osin.AuthorizeData),
 		Access:          make(map[string]*osin.AccessData),
@@ -31,14 +31,14 @@ func NewTestStorage() *TestStorage {
 	return r
 }
 
-func (s *TestStorage) Clone() osin.Storage {
+func (s *JSONStorage) Clone() osin.Storage {
 	return s
 }
 
-func (s *TestStorage) Close() {
+func (s *JSONStorage) Close() {
 }
 
-func (s *TestStorage) LoadFromDisk(filename string) {
+func (s *JSONStorage) LoadFromDisk(filename string) {
 
 	file, err := os.Open(filename)
 	if err != nil {
@@ -51,7 +51,7 @@ func (s *TestStorage) LoadFromDisk(filename string) {
 	dec.Decode(s)
 
 }
-func (s *TestStorage) saveToDisk(filename string) {
+func (s *JSONStorage) saveToDisk(filename string) {
 
 	file, err := os.Create(filename)
 	if err != nil {
@@ -69,24 +69,24 @@ func (s *TestStorage) saveToDisk(filename string) {
 	enc.Encode(s)
 }
 
-func (s *TestStorage) Unlock() {
+func (s *JSONStorage) Unlock() {
 	s.saveToDisk("storage.json")
 	s.RWMutex.Unlock()
 }
 
-func (s *TestStorage) GetClient(id string) (osin.Client, error) {
+func (s *JSONStorage) GetClient(id string) (osin.Client, error) {
 	s.RLock()
 	defer s.RUnlock()
-	fmt.Printf("GetClient: %s\n", id)
+	log.Printf("GetClient: %s\n", id)
 	if c, ok := s.Clients[id]; ok {
 		return c, nil
 	}
 	return nil, osin.ErrNotFound
 }
 
-func (s *TestStorage) SetClient(id string, client osin.Client) error {
+func (s *JSONStorage) SetClient(id string, client osin.Client) error {
 	s.Lock()
-	fmt.Printf("SetClient: %s\n", id)
+	log.Printf("SetClient: %s\n", id)
 	s.Clients[id] = client
 	for _, v := range s.Access {
 		if clientID, ok := s.AccessClientMap[v.AccessToken]; ok {
@@ -99,34 +99,34 @@ func (s *TestStorage) SetClient(id string, client osin.Client) error {
 	return nil
 }
 
-func (s *TestStorage) SaveAuthorize(data *osin.AuthorizeData) error {
+func (s *JSONStorage) SaveAuthorize(data *osin.AuthorizeData) error {
 	s.Lock()
-	fmt.Printf("SaveAuthorize: %s\n", data.Code)
+	log.Printf("SaveAuthorize: %s\n", data.Code)
 	s.Authorize[data.Code] = data
 	s.Unlock()
 	return nil
 }
 
-func (s *TestStorage) LoadAuthorize(code string) (*osin.AuthorizeData, error) {
+func (s *JSONStorage) LoadAuthorize(code string) (*osin.AuthorizeData, error) {
 	s.RLock()
 	defer s.RUnlock()
-	fmt.Printf("LoadAuthorize: %s\n", code)
+	log.Printf("LoadAuthorize: %s\n", code)
 	if d, ok := s.Authorize[code]; ok {
 		return d, nil
 	}
 	return nil, osin.ErrNotFound
 }
 
-func (s *TestStorage) RemoveAuthorize(code string) error {
-	fmt.Printf("RemoveAuthorize: %s\n", code)
+func (s *JSONStorage) RemoveAuthorize(code string) error {
+	log.Printf("RemoveAuthorize: %s\n", code)
 	s.Lock()
 	delete(s.Authorize, code)
 	s.Unlock()
 	return nil
 }
 
-func (s *TestStorage) SaveAccess(data *osin.AccessData) error {
-	fmt.Printf("SaveAccess: %s\n", data.AccessToken)
+func (s *JSONStorage) SaveAccess(data *osin.AccessData) error {
+	log.Printf("SaveAccess: %s\n", data.AccessToken)
 	s.Lock()
 	s.Access[data.AccessToken] = data
 	if data.RefreshToken != "" {
@@ -136,36 +136,36 @@ func (s *TestStorage) SaveAccess(data *osin.AccessData) error {
 	return nil
 }
 
-func (s *TestStorage) LoadAccess(code string) (*osin.AccessData, error) {
+func (s *JSONStorage) LoadAccess(code string) (*osin.AccessData, error) {
 	s.RLock()
 	defer s.RUnlock()
-	fmt.Printf("LoadAccess: %s\n", code)
+	log.Printf("LoadAccess: %s\n", code)
 	if d, ok := s.Access[code]; ok {
 		return d, nil
 	}
 	return nil, osin.ErrNotFound
 }
 
-func (s *TestStorage) RemoveAccess(code string) error {
-	fmt.Printf("RemoveAccess: %s\n", code)
+func (s *JSONStorage) RemoveAccess(code string) error {
+	log.Printf("RemoveAccess: %s\n", code)
 	s.Lock()
 	delete(s.Access, code)
 	s.Unlock()
 	return nil
 }
 
-func (s *TestStorage) LoadRefresh(code string) (*osin.AccessData, error) {
+func (s *JSONStorage) LoadRefresh(code string) (*osin.AccessData, error) {
 	s.RLock()
 	defer s.RUnlock()
-	fmt.Printf("LoadRefresh: %s\n", code)
+	log.Printf("LoadRefresh: %s\n", code)
 	if d, ok := s.Refresh[code]; ok {
 		return s.LoadAccess(d)
 	}
 	return nil, osin.ErrNotFound
 }
 
-func (s *TestStorage) RemoveRefresh(code string) error {
-	fmt.Printf("RemoveRefresh: %s\n", code)
+func (s *JSONStorage) RemoveRefresh(code string) error {
+	log.Printf("RemoveRefresh: %s\n", code)
 	s.Lock()
 	delete(s.Refresh, code)
 	s.Unlock()
