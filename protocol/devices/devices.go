@@ -20,16 +20,27 @@ import (
 
 var regex = regexp.MustCompile(`^([^\s\[][^\s\[]*)?(\[.*?([0-9]+).*?\])?$`)
 
+type DeviceState map[string]interface{}
+
+//Bool fetches a state by string and if its a bool returns its value otherwise returns false
+func (ds DeviceState) Bool(key string) bool {
+
+	if val, ok := ds[key].(bool); ok {
+		return val
+	}
+	return false
+}
+
 //Device is the abstraction between devices on the nodes and the device on the server
 type Device struct {
-	Type     string                 `json:"type"`
-	Node     string                 `json:"node,omitempty"`
-	Id       string                 `json:"id,omitempty"`
-	Name     string                 `json:"name,omitempty"`
-	Online   bool                   `json:"online"`
-	StateMap map[string]string      `json:"stateMap,omitempty"`
-	State    map[string]interface{} `json:"state,omitempty"`
-	Tags     []string               `json:"tags"`
+	Type     string            `json:"type"`
+	Node     string            `json:"node,omitempty"`
+	Id       string            `json:"id,omitempty"`
+	Name     string            `json:"name,omitempty"`
+	Online   bool              `json:"online"`
+	StateMap map[string]string `json:"stateMap,omitempty"`
+	State    DeviceState       `json:"state,omitempty"`
+	Tags     []string          `json:"tags"`
 
 	sync.RWMutex
 }
