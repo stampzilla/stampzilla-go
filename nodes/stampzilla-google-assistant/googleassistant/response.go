@@ -46,9 +46,9 @@ func NewResponseCommand() ResponseCommand {
 }
 
 type ResponseCommand struct {
-	IDs    []string
-	Status string
-	States ResponseStates
+	IDs    []string       `json:"ids"`
+	Status string         `json:"status"`
+	States ResponseStates `json:"states"`
 }
 
 type Response struct {
