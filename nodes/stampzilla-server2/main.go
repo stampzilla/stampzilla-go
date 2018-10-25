@@ -2,10 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"net/http"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/gin-gonic/gin"
-	"github.com/olahol/melody"
+	"github.com/stamp/melody"
 )
 
 func main() {
@@ -22,8 +23,14 @@ func main() {
 		m.HandleRequest(c.Writer, c.Request)
 	})
 
-	m.HandleMessage(func(s *melody.Session, msg []byte) {
+	m.Upgrader.CheckOrigin = func(r *http.Request) bool { return true }
+	m.HandleMessage(handleMessage(m, store))
 
+	r.Run(":5000")
+}
+
+func handleMessage(m *melody.Melody, store *Store) func(s *melody.Session, msg []byte) {
+	return func(s *melody.Session, msg []byte) {
 		data := &Message{}
 		err := json.Unmarshal(msg, data)
 		if err != nil {
@@ -31,36 +38,39 @@ func main() {
 			return
 		}
 
-		if data.Type == "all-nodes" {
-			s.Set("all-nodes", true)
-			WriteJSON(s, "nodes", store.GetNodes())
+		switch data.Type {
+		case "all-nodes":
+			handleAllNodes(s, store, msg)
+		case "update-node":
+			handleNodeUpdate(m, s, store, msg, data)
 		}
+	}
+}
 
-		if data.Type == "update-node" {
+func handleAllNodes(s *melody.Session, store *Store, msg []byte) {
+	s.Set("all-nodes", true)
+	WriteJSON(s, "nodes", store.GetNodes())
+}
 
-			node := &Node{}
-			err := json.Unmarshal(data.Body, node)
-			if err != nil {
-				logrus.Error(err)
-				return
-			}
+func handleNodeUpdate(m *melody.Melody, s *melody.Session, store *Store, msg []byte, data *Message) {
+	node := &Node{}
+	err := json.Unmarshal(data.Body, node)
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
 
-			store.AddOrUpdateNode(node)
+	store.AddOrUpdateNode(node)
 
-			msg, err := NewMessageJSON("nodes", store.GetNodes())
-			if err != nil {
-				logrus.Error(err)
-				return
-			}
-			m.BroadcastFilter(msg, func(s *melody.Session) bool {
-				v, exists := s.Get("all-nodes")
-				return exists && v == true
-			})
-		}
-
+	msg, err = NewMessageJSON("nodes", store.GetNodes())
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
+	m.BroadcastFilter(msg, func(s *melody.Session) bool {
+		v, exists := s.Get("all-nodes")
+		return exists && v == true
 	})
-
-	r.Run(":5000")
 }
 
 func NewMessageJSON(t string, body interface{}) ([]byte, error) {

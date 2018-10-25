@@ -1,6 +1,10 @@
 package main
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/Sirupsen/logrus"
+)
 
 type Nodes map[string]*Node
 
@@ -24,7 +28,7 @@ func NewStore() *Store {
 }
 
 func (store *Store) AddOrUpdateNode(node *Node) {
-
+	logrus.Info("Update store")
 	return
 }
 
