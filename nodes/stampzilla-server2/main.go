@@ -6,7 +6,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/gin-gonic/gin"
-	"github.com/stamp/melody"
+	"github.com/olahol/melody"
 )
 
 func main() {
