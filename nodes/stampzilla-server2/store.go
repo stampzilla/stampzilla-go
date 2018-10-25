@@ -2,8 +2,6 @@ package main
 
 import (
 	"sync"
-
-	"github.com/Sirupsen/logrus"
 )
 
 type Nodes map[string]*Node
@@ -24,16 +22,20 @@ type Node struct {
 }
 
 func NewStore() *Store {
-	return &Store{}
+	return &Store{
+		Nodes: make(Nodes),
+	}
 }
 
 func (store *Store) AddOrUpdateNode(node *Node) {
-	logrus.Info("Update store")
-	return
+	store.Lock()
+	store.Nodes[node.Uuid] = node
+	store.Unlock()
 }
 
 func (store *Store) GetNodes() Nodes {
-
+	store.RLock()
+	defer store.RUnlock()
 	return store.Nodes
 }
 

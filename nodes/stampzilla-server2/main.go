@@ -4,12 +4,15 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/gin-gonic/gin"
 	"github.com/olahol/melody"
+	"github.com/onrik/logrus/filename"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
+	filenameHook := filename.NewHook()
+	logrus.AddHook(filenameHook)
 
 	r := gin.Default()
 	m := melody.New()
@@ -40,14 +43,14 @@ func handleMessage(m *melody.Melody, store *Store) func(s *melody.Session, msg [
 
 		switch data.Type {
 		case "all-nodes":
-			handleAllNodes(s, store, msg)
+			handleAllNodes(s, store)
 		case "update-node":
 			handleNodeUpdate(m, s, store, msg, data)
 		}
 	}
 }
 
-func handleAllNodes(s *melody.Session, store *Store, msg []byte) {
+func handleAllNodes(s *melody.Session, store *Store) {
 	s.Set("all-nodes", true)
 	WriteJSON(s, "nodes", store.GetNodes())
 }

@@ -1,7 +1,7 @@
 import React, { Component } from "react";
-import Node from "../components/Node";
 
-import { write } from './Websocket'; 
+import Node from "../components/Node";
+import { write } from './Websocket';
 
 class Nodes extends Component {
     constructor() {
@@ -15,7 +15,7 @@ class Nodes extends Component {
     onClickTestButton = () => () => {
       write({
         type: 'update-node',
-        message: {
+        body: {
           uuid: '123',
           version: '1',
           name: 'web client',

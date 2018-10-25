@@ -22,6 +22,10 @@ class Websocket extends Component {
 
   onOpen = () => () => {
     this.props.dispatch(connected());
+
+    write({
+      type: 'all-nodes'
+    });
   }
   onClose = () => () => {
     this.props.dispatch(disconnected());
