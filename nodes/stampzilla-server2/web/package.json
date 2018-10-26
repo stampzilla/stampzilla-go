@@ -48,8 +48,16 @@
     "webpack-dev-server": "^3.1.10"
   },
   "dependencies": {
+    "admin-lte": "^3.0.0-alpha.2",
+    "bootstrap": "^4.1.3",
+    "classnames": "^2.2.6",
+    "file-loader": "^2.0.0",
+    "font-awesome": "^4.7.0",
     "immutable": "^3.8.2",
     "import-sort": "^5.2.0",
+    "ionicons": "^4.4.6",
+    "jquery": "^3.3.1",
+    "node-sass": "^4.9.4",
     "reconnectable-websocket": "^0.1.10",
     "redux-immutable": "^4.0.0"
   },

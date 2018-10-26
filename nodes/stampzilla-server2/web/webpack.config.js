@@ -1,5 +1,10 @@
+const webpack = require('webpack');
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 const HtmlWebPackPlugin = require("html-webpack-plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+
+const DEV = process.env.NODE_ENV === 'development';
+
 
 module.exports = {
   module: {
@@ -13,7 +18,17 @@ module.exports = {
       },
       {
         test: /\.scss$/,
-        use: ['style-loader', 'css-loader', 'sass-loader']
+        use: [{
+            loader: process.env.NODE_ENV !== 'production' ? 'style-loader' : MiniCssExtractPlugin.loader,
+        }, {
+            loader: "css-loader", options: {
+                sourceMap: true
+            }
+        }, {
+            loader: "sass-loader", options: {
+                sourceMap: true
+            }
+        }]
       },
       {
         test: /\.html$/,
@@ -33,7 +48,20 @@ module.exports = {
             }
           }
         ]
-      }
+      },
+      {
+        test: /\.(eot|svg|ttf|woff|woff2)$/,
+        use: [
+          {
+            loader: 'file-loader',
+            options: {
+              //useRelativePath: !process.env.NODE_ENV,
+              //publicPath: (DEV && CDN_URL === '') ? '/' : '', // Remove the default root slash because we load images from our CDN
+              outputPath: 'assets/',
+            },
+          },
+        ],
+      },
     ]
   },
   optimization: {
@@ -51,6 +79,12 @@ module.exports = {
     new HtmlWebPackPlugin({
       template: "./src/index.html",
       filename: "./index.html"
+    }),
+    new webpack.ProvidePlugin({
+      $: 'jquery',
+      jQuery: 'jquery'
+    }),
+    new MiniCssExtractPlugin({
     })
-  ]
+  ],
 };

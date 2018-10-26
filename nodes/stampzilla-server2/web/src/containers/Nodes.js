@@ -1,16 +1,10 @@
 import React, { Component } from "react";
 
 import Node from "../components/Node";
+import Card from "../components/Card";
 import { write } from './Websocket';
 
 class Nodes extends Component {
-    constructor() {
-        super();
-
-        this.state = {
-            nodes: ['a', 'b', 'c', 'd']
-        };
-    }
   
     onClickTestButton = () => () => {
       write({
@@ -35,12 +29,37 @@ class Nodes extends Component {
     }
 
     render () {
-        const { nodes } = this.state;
-
         return (
             <div>
-                <button onClick={this.onClickTestButton()}>Test send message</button>
-                {nodes.map(node => <Node key={node} uuid={node} />)}    
+                <Card
+                  title="Send message"
+                >
+                  <button onClick={this.onClickTestButton()} className="btn btn-primary">Test send message</button>
+                </Card>
+
+                <Card
+                  title="Command bus"
+                  bodyClassName="p-0"
+                >
+                  <table className="table table-striped table-valign-middle">
+                    <thead>
+                    <tr>
+                      <th>Node</th>
+                      <th>Type</th>
+                      <th>Body</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                      <td>
+                        Some Product
+                      </td>
+                      <td>$13 USD</td>
+                      <td>$13 USD</td>
+                    </tr>
+                    </tbody>
+                  </table>
+                </Card>
             </div>
         );
     }
