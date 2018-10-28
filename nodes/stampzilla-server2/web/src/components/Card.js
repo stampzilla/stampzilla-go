@@ -2,9 +2,9 @@ import React, { Component } from "react";
 import classnames from 'classnames';
 
 const Card = (props) => {
-  const { title, children, toolbar, bodyClassName } = props;
+  const { title, children, toolbar, bodyClassName, className } = props;
   return (
-    <div className="card">
+    <div className={classnames("card", className)}>
       <div className="card-header no-border">
         <h3 className="card-title">{title}</h3>
         <div className="card-tools">

@@ -5,25 +5,20 @@ import (
 )
 
 type Nodes map[string]*Node
+type Connections map[string]*Connection
 
 type Store struct {
-	Nodes Nodes
+	Nodes       Nodes
+	Connections Connections
+	onUpdate    []func(*Store)
 	sync.RWMutex
-}
-
-type Node struct {
-	Uuid      string            `json:"uuid"`
-	Connected bool              `json:"connected"`
-	Version   string            `json:"version"`
-	Name      string            `json:"name"`
-	State     interface{}       `json:"state"`
-	WriteMap  map[string]bool   `json:"writeMap"`
-	Config    map[string]string `json:"config"`
 }
 
 func NewStore() *Store {
 	return &Store{
-		Nodes: make(Nodes),
+		Nodes:       make(Nodes),
+		Connections: make(Connections),
+		onUpdate:    make([]func(*Store), 0),
 	}
 }
 
@@ -31,6 +26,30 @@ func (store *Store) AddOrUpdateNode(node *Node) {
 	store.Lock()
 	store.Nodes[node.Uuid] = node
 	store.Unlock()
+
+	for _, callback := range store.onUpdate {
+		callback(store)
+	}
+}
+
+func (store *Store) AddOrUpdateConnection(id string, c *Connection) {
+	store.Lock()
+	store.Connections[id] = c
+	store.Unlock()
+
+	for _, callback := range store.onUpdate {
+		callback(store)
+	}
+}
+
+func (store *Store) RemoveConnection(id string) {
+	store.Lock()
+	delete(store.Connections, id)
+	store.Unlock()
+
+	for _, callback := range store.onUpdate {
+		callback(store)
+	}
 }
 
 func (store *Store) GetNodes() Nodes {
@@ -40,6 +59,17 @@ func (store *Store) GetNodes() Nodes {
 }
 
 func (store *Store) GetNode(uuid string) *Node {
-
 	return nil
+}
+
+func (store *Store) GetConnections() Connections {
+	store.RLock()
+	defer store.RUnlock()
+	return store.Connections
+}
+
+func (store *Store) OnUpdate(callback func(*Store)) {
+	store.Lock()
+	store.onUpdate = append(store.onUpdate, callback)
+	store.Unlock()
 }

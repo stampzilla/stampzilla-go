@@ -2,7 +2,8 @@ import ReconnectableWebSocket from 'reconnectable-websocket'
 import React, { Component } from "react";
 import { connect } from 'react-redux';
 
-import { connected, disconnected, error } from '../ducks/connection';
+import { connected, disconnected, error, received } from '../ducks/connection';
+import { update as updateConnections } from '../ducks/connections';
 
 // Placeholder until we have the write func from the websocket
 let writeFunc = () => {
@@ -12,7 +13,7 @@ let writeFunc = () => {
 class Websocket extends Component {
   componentDidMount() {
     const { url } = this.props;
-    this.socket = new ReconnectableWebSocket(url, undefined, {reconnectInterval: 3000, debug: true});
+    this.socket = new ReconnectableWebSocket(url, ['gui'], {reconnectInterval: 3000, debug: true});
     writeFunc = this.socket.send;
     this.socket.onmessage = this.onMessage();
     this.socket.onopen = this.onOpen();
@@ -22,10 +23,6 @@ class Websocket extends Component {
 
   onOpen = () => () => {
     this.props.dispatch(connected());
-
-    write({
-      type: 'all-nodes'
-    });
   }
   onClose = () => () => {
     this.props.dispatch(disconnected());
@@ -33,7 +30,16 @@ class Websocket extends Component {
   onError = () => (err) => {
     this.props.dispatch(error(err));
   }
-  onMessage = () => () => {
+  onMessage = () => (event) => {
+    const {dispatch } = this.props;
+    const parsed = JSON.parse(event.data);
+    
+    dispatch(received(parsed));
+    switch(parsed.type) {
+      case "connections": {
+        dispatch(updateConnections(parsed.body));
+      }
+    }
   }
 
   componentWillUnmount() {

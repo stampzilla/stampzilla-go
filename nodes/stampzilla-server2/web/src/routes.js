@@ -1,11 +1,11 @@
 import React from "react";
 import { Switch, Route } from 'react-router-dom';
-import Nodes from './containers/Nodes';
+import Debug from './containers/Debug';
 import { hot } from 'react-hot-loader';
 
 const Routes = () => (
     <Switch>
-        <Route component={Nodes} />
+        <Route component={Debug} />
     </Switch>
 );
 
