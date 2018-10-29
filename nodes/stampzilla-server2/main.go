@@ -1,9 +1,11 @@
 package main
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/olahol/melody"
@@ -34,7 +36,23 @@ func main() {
 
 	r.GET("/ws", handleWs(m))
 
-	r.Run(":5000")
+	ca := &CA{}
+	ca.LoadOrCreate()
+
+	cert, err := LoadOrCreate("localhost", ca)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	cfg := &tls.Config{Certificates: []tls.Certificate{*cert.TLS}}
+	srv := &http.Server{
+		Addr:         ":5000",
+		Handler:      r,
+		TLSConfig:    cfg,
+		ReadTimeout:  time.Minute,
+		WriteTimeout: time.Minute,
+	}
+	logrus.Fatal(srv.ListenAndServeTLS("", ""))
 }
 
 func handleWs(m *melody.Melody) func(c *gin.Context) {
