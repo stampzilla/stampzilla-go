@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/contrib/ginrus"
 	"github.com/gin-gonic/gin"
 	"github.com/olahol/melody"
 	"github.com/onrik/logrus/filename"
@@ -21,8 +22,10 @@ func main() {
 	filenameHook := filename.NewHook()
 	logrus.AddHook(filenameHook)
 
-	r := gin.Default()
+	r := gin.New()
 	m := melody.New()
+
+	r.Use(ginrus.Ginrus(logrus.StandardLogger(), time.RFC3339, true))
 
 	// Startup the store
 	store := NewStore()
@@ -37,6 +40,7 @@ func main() {
 	// Setup gin
 	r.StaticFile("/", "./web/dist/index.html")
 	r.StaticFile("/main.js", "./web/dist/main.js")
+	r.Static("/assets", "./web/dist/assets")
 
 	r.GET("/ws", handleWs(m))
 
@@ -51,7 +55,7 @@ func main() {
 	// Setup connection mux
 	l, err := net.Listen("tcp", ":5000")
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
 
 	mux := cmux.New(l)
@@ -59,16 +63,19 @@ func main() {
 	muxTLS := mux.Match(cmux.Any())
 
 	// Start http server
+	logger := log.New(logrus.StandardLogger().Writer(), "http: ", log.LstdFlags)
 	http1 := &http.Server{
 		Handler:      r,
 		ReadTimeout:  time.Minute,
 		WriteTimeout: time.Minute,
+		ErrorLog:     logger,
 	}
 	go http1.Serve(muxHTTP1)
 
 	// Start tls server
 	tls := tls.NewListener(muxTLS, &tls.Config{
 		Certificates: []tls.Certificate{*cert.TLS},
+		ClientAuth:   tls.RequestClientCert,
 	})
 	go http1.Serve(tls)
 
@@ -84,12 +91,19 @@ func handleWs(m *melody.Melody) func(c *gin.Context) {
 		counter++
 		keys := make(map[string]interface{})
 		keys["ID"] = strconv.Itoa(counter)
+		r := c.Request
+
+		if r.TLS != nil {
+			certs := r.TLS.PeerCertificates
+			logrus.Warn("HTTP CERTS", certs)
+			keys["secure"] = true
+		}
 
 		// Accept the requested protocol
 		// TODO: only accept known protocols
-		if c.Request.Header.Get("Sec-WebSocket-Protocol") != "" {
-			c.Writer.Header().Set("Sec-WebSocket-Protocol", c.Request.Header.Get("Sec-WebSocket-Protocol"))
-			keys["protocol"] = c.Request.Header.Get("Sec-WebSocket-Protocol")
+		if r.Header.Get("Sec-WebSocket-Protocol") != "" {
+			c.Writer.Header().Set("Sec-WebSocket-Protocol", r.Header.Get("Sec-WebSocket-Protocol"))
+			keys["protocol"] = r.Header.Get("Sec-WebSocket-Protocol")
 		}
 
 		m.HandleRequestWithKeys(c.Writer, c.Request, keys)
@@ -104,6 +118,7 @@ func handleConnect(store *Store) func(s *melody.Session) {
 		store.AddOrUpdateConnection(id.(string), &Connection{
 			Type:       t.(string),
 			RemoteAddr: s.Request.RemoteAddr,
+			Attributes: s.Keys,
 		})
 
 		if exists && t == "gui" {

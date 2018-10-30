@@ -57,6 +57,7 @@
     "import-sort": "^5.2.0",
     "ionicons": "^4.4.6",
     "jquery": "^3.3.1",
+    "mini-css-extract-plugin": "^0.4.4",
     "node-sass": "^4.9.4",
     "reconnectable-websocket": "^0.1.10",
     "redux-immutable": "^4.0.0"
