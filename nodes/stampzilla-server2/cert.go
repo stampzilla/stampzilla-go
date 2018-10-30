@@ -65,6 +65,7 @@ func (cert *Cert) Create(ca *CA) error {
 		KeyUsage:              x509.KeyUsageDigitalSignature,
 		BasicConstraintsValid: true,
 		//IPAddresses:           []net.IP{net.ParseIP("127.0.0.1")},
+		DNSNames: []string{"localhost"},
 	}
 
 	// Generate keys

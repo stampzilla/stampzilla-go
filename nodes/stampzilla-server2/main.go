@@ -3,14 +3,18 @@ package main
 import (
 	"crypto/tls"
 	"encoding/json"
+	"log"
+	"net"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/olahol/melody"
 	"github.com/onrik/logrus/filename"
 	"github.com/sirupsen/logrus"
+	"github.com/soheilhy/cmux"
 )
 
 func main() {
@@ -44,21 +48,40 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	cfg := &tls.Config{Certificates: []tls.Certificate{*cert.TLS}}
-	srv := &http.Server{
-		Addr:         ":5000",
+	// Setup connection mux
+	l, err := net.Listen("tcp", ":5000")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	mux := cmux.New(l)
+	muxHTTP1 := mux.Match(cmux.HTTP1Fast())
+	muxTLS := mux.Match(cmux.Any())
+
+	// Start http server
+	http1 := &http.Server{
 		Handler:      r,
-		TLSConfig:    cfg,
 		ReadTimeout:  time.Minute,
 		WriteTimeout: time.Minute,
 	}
-	logrus.Fatal(srv.ListenAndServeTLS("", ""))
+	go http1.Serve(muxHTTP1)
+
+	// Start tls server
+	tls := tls.NewListener(muxTLS, &tls.Config{
+		Certificates: []tls.Certificate{*cert.TLS},
+	})
+	go http1.Serve(tls)
+
+	if err := mux.Serve(); !strings.Contains(err.Error(),
+		"use of closed network connection") {
+		logrus.Fatal(err)
+	}
 }
 
 func handleWs(m *melody.Melody) func(c *gin.Context) {
 	counter := 0
 	return func(c *gin.Context) {
-		counter += 1
+		counter++
 		keys := make(map[string]interface{})
 		keys["ID"] = strconv.Itoa(counter)
 
