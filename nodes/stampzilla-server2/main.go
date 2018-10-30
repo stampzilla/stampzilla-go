@@ -3,9 +3,11 @@ package main
 import (
 	"crypto/tls"
 	"encoding/json"
+	"io"
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -37,15 +39,16 @@ func main() {
 	m.HandleMessage(handleMessage(m, store))
 	m.HandleDisconnect(handleDisconnect(store))
 
+	ca := &CA{}
+	ca.LoadOrCreate()
+
 	// Setup gin
 	r.StaticFile("/", "./web/dist/index.html")
 	r.StaticFile("/main.js", "./web/dist/main.js")
 	r.Static("/assets", "./web/dist/assets")
+	r.GET("/ca", handleDownloadCA(ca))
 
 	r.GET("/ws", handleWs(m))
-
-	ca := &CA{}
-	ca.LoadOrCreate()
 
 	cert, err := LoadOrCreate("localhost", ca)
 	if err != nil {
@@ -107,6 +110,24 @@ func handleWs(m *melody.Melody) func(c *gin.Context) {
 		}
 
 		m.HandleRequestWithKeys(c.Writer, c.Request, keys)
+	}
+}
+
+func handleDownloadCA(ca *CA) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		header := c.Writer.Header()
+		header["Content-Type"] = []string{"application/x-x509-ca-cert"}
+		//header["Content-Type"] = []string{"application/x-x509-user-cert"}
+		//header["Content-Disposition"] = []string{"attachment; filename=stampzilla.crt"}
+
+		file, err := os.Open("ca.crt")
+		if err != nil {
+			c.String(http.StatusOK, "%v", err)
+			return
+		}
+		defer file.Close()
+
+		io.Copy(c.Writer, file)
 	}
 }
 
