@@ -1,4 +1,4 @@
-package main
+package models
 
 import (
 	"encoding/json"
@@ -21,6 +21,12 @@ func NewMessage(t string, body interface{}) (*Message, error) {
 		Type: t,
 		Body: json.RawMessage(b),
 	}, nil
+}
+
+func ParseMessage(msg []byte) (*Message, error) {
+	data := &Message{}
+	err := json.Unmarshal(msg, data)
+	return data, err
 }
 
 func (m *Message) Write(s *melody.Session) error {

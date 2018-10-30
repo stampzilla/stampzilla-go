@@ -16,7 +16,7 @@ import store from './store';
 render(
     <Provider store={store}>
       <App>
-        <Websocket url={(location.protocol.match(/^https/) ? "wss" : "ws" ).concat("://localhost:5000/ws")}/>
+        <Websocket url={`${ location.protocol.match(/^https/) ? "wss" : "ws" }://${location.host}/ws`}/>
 
         <Router>
           <Routes /> 

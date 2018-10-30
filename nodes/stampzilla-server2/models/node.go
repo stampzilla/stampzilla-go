@@ -1,4 +1,4 @@
-package main
+package models
 
 type Node struct {
 	Uuid      string            `json:"uuid"`

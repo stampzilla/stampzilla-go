@@ -1,11 +1,13 @@
-package main
+package store
 
 import (
 	"sync"
+
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
 )
 
-type Nodes map[string]*Node
-type Connections map[string]*Connection
+type Nodes map[string]*models.Node
+type Connections map[string]*models.Connection
 
 type Store struct {
 	Nodes       Nodes
@@ -14,7 +16,7 @@ type Store struct {
 	sync.RWMutex
 }
 
-func NewStore() *Store {
+func New() *Store {
 	return &Store{
 		Nodes:       make(Nodes),
 		Connections: make(Connections),
@@ -22,7 +24,7 @@ func NewStore() *Store {
 	}
 }
 
-func (store *Store) AddOrUpdateNode(node *Node) {
+func (store *Store) AddOrUpdateNode(node *models.Node) {
 	store.Lock()
 	store.Nodes[node.Uuid] = node
 	store.Unlock()
@@ -32,7 +34,7 @@ func (store *Store) AddOrUpdateNode(node *Node) {
 	}
 }
 
-func (store *Store) AddOrUpdateConnection(id string, c *Connection) {
+func (store *Store) AddOrUpdateConnection(id string, c *models.Connection) {
 	store.Lock()
 	store.Connections[id] = c
 	store.Unlock()
@@ -58,7 +60,7 @@ func (store *Store) GetNodes() Nodes {
 	return store.Nodes
 }
 
-func (store *Store) GetNode(uuid string) *Node {
+func (store *Store) GetNode(uuid string) *models.Node {
 	return nil
 }
 
