@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/contrib/ginrus"
 	"github.com/gin-gonic/gin"
+	"github.com/jonaz/ginlogrus"
 	"github.com/olahol/melody"
 	"github.com/onrik/logrus/filename"
 	"github.com/sirupsen/logrus"
@@ -27,7 +27,7 @@ func main() {
 	r := gin.New()
 	m := melody.New()
 
-	r.Use(ginrus.Ginrus(logrus.StandardLogger(), time.RFC3339, true))
+	r.Use(ginlogrus.New(logrus.StandardLogger()))
 
 	// Startup the store
 	store := NewStore()

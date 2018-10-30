@@ -14,7 +14,7 @@ cover-e2e:
 cover-normal:
 	bash coverage
 
-cover-html: cover
+cover-html: cover-normal
 	go tool cover -html coverage.txt
 
 build-ui: 

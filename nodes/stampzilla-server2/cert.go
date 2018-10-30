@@ -76,20 +76,12 @@ func (cert *Cert) Create(ca *CA) error {
 		return err
 	}
 
-	crt := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certBytes})
-	key := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(priv)})
-
-	certTLS, err := tls.X509KeyPair(crt, key)
-	if err != nil {
-		return err
-	}
-
 	// Write public key
 	certOut, err := os.Create(cert.CN + ".crt")
 	if err != nil {
 		return err
 	}
-	_, err = certOut.Write(crt)
+	err = pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: certBytes})
 	if err != nil {
 		return err
 	}
@@ -101,20 +93,12 @@ func (cert *Cert) Create(ca *CA) error {
 	if err != nil {
 		return err
 	}
-	_, err = keyOut.Write(key)
+	err = pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(priv)})
 	if err != nil {
 		return err
 	}
 	keyOut.Close()
 	logrus.Info("Wrote " + cert.CN + ".key\n")
 
-	certX509, err := x509.ParseCertificate(certTLS.Certificate[0])
-	if err != nil {
-		return err
-	}
-
-	cert.TLS = &certTLS
-	cert.X509 = certX509
-
-	return nil
+	return cert.Load()
 }
