@@ -1,14 +1,33 @@
 import ReconnectableWebSocket from 'reconnectable-websocket'
 import React, { Component } from "react";
 import { connect } from 'react-redux';
+import Modal from 'react-bootstrap4-modal';
 
 
 class App extends Component {
+  state = {
+    socketModal: false,
+  }
+
   render = () => {
     const { children, connected } = this.props;
+    const { socketModal } = this.state;
 
     return (
       <div class="wrapper">
+        <Modal visible={socketModal} onClickBackdrop={() => this.setState({ socketModal: false })}>
+          <div className="modal-header">
+            <h5 className="modal-title">Change websocket url</h5>
+          </div>
+		  <div className="modal-body">
+		    <p>Enemy vessel approaching!</p>
+		  </div>
+		  <div className="modal-footer">
+			<button type="button" className="btn btn-primary" onClick={this.onFirePhasers}>
+			  Change
+			</button>
+		  </div>
+        </Modal>
         <nav class="main-header navbar navbar-expand bg-white navbar-light border-bottom">
 
           <ul class="navbar-nav">
@@ -41,6 +60,7 @@ class App extends Component {
         <div class="content-wrapper">
           {!connected && 
           <div class="p-4 bg-danger" >
+            <button className="btn btn-secondary float-right" style={{ marginTop: "-8px"}} onClick={() => this.setState({ socketModal: true })}>Change socket url</button>
             Not connected!
           </div>
           }
