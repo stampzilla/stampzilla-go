@@ -49,3 +49,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/jonaz/gograce"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/gin-contrib/gzip"

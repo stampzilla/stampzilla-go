@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/jonaz/ginlogrus"
@@ -34,6 +35,7 @@ func New(s *store.Store, conf *models.Config) *Webserver {
 func (ws *Webserver) Init() *gin.Engine {
 
 	r := gin.New()
+	r.Use(gzip.Gzip(gzip.DefaultCompression))
 
 	m := ws.initMelody()
 

@@ -1,9 +1,10 @@
-const webpack = require('webpack');
-const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
+const GoogleFontsPlugin = require("@beyonk/google-fonts-webpack-plugin")
 const HtmlWebPackPlugin = require("html-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin");
+const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 const path = require('path');
+const webpack = require('webpack');
 
 const DEV = process.env.NODE_ENV === 'development';
 
@@ -105,6 +106,13 @@ module.exports = {
     new MiniCssExtractPlugin({
       filename: "assets/[name].css",
       chunkFilename: "assets/[id].css"
+    }),
+    new GoogleFontsPlugin({
+      fonts: [
+        { family: "Source Sans Pro", variants: [ "300", "400", "600", "700", "300italic", "400italic", "600italic" ] }
+      ],
+      path: 'assets/',
+      filename: 'assets/fonts.css',
     })
   ],
 };

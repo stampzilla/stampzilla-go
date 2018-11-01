@@ -27,6 +27,14 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:4502ebf1d3fff349d694807160ce3a4dea1834729e6cedf7f58f0b385bd8ee58"
+  name = "github.com/gin-contrib/gzip"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "f4623742155704b95c69be0017fd88ba93445808"
+
+[[projects]]
+  branch = "master"
   digest = "1:36fe9527deed01d2a317617e59304eb2c4ce9f8a24115bcc5c2e37b3aee5bae4"
   name = "github.com/gin-contrib/sse"
   packages = ["."]
@@ -185,6 +193,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/gin-contrib/gzip",
     "github.com/gin-gonic/gin",
     "github.com/google/uuid",
     "github.com/jonaz/ginlogrus",
