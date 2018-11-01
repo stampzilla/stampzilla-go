@@ -1,4 +1,4 @@
-package main
+package models
 
 type Connection struct {
 	Type       string                 `json:"type"`
