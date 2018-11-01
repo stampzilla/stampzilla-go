@@ -1,12 +1,13 @@
-import React from "react";
-import { Switch, Route } from 'react-router-dom';
-import Debug from './containers/Debug';
+import { Route, Switch } from 'react-router-dom';
 import { hot } from 'react-hot-loader';
+import React from 'react';
+
+import Debug from './containers/Debug';
 
 const Routes = () => (
-    <Switch>
-        <Route component={Debug} />
-    </Switch>
+  <Switch>
+    <Route component={Debug} />
+  </Switch>
 );
 
 export default hot(module)(Routes);

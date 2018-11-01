@@ -2,11 +2,34 @@ const webpack = require('webpack');
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 const HtmlWebPackPlugin = require("html-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin");
+const path = require('path');
 
 const DEV = process.env.NODE_ENV === 'development';
 
-
 module.exports = {
+  devtool: DEV ? 'cheap-module-eval-source-map' : 'source-map',
+  output: {
+    filename: 'assets/[name].js',
+  },
+  optimization: {
+    minimizer: [
+      new UglifyJsPlugin({
+        cache: true,
+        parallel: true,
+        sourceMap: true // set to true if you want JS source maps
+      }),
+      new OptimizeCSSAssetsPlugin({})
+    ],
+    usedExports: true,
+    sideEffects: true
+  },
+  //optimization: {
+    //minimize: true,
+    //minimizer: [
+      //new UglifyJsPlugin()
+    //],
+  //},
   module: {
     rules: [
       {
@@ -17,17 +40,19 @@ module.exports = {
         }
       },
       {
-        test: /\.scss$/,
+        test: /\.s?css$/,
         use: [{
-            loader: process.env.NODE_ENV !== 'production' ? 'style-loader' : MiniCssExtractPlugin.loader,
+          loader: DEV ? 'style-loader' : MiniCssExtractPlugin.loader,
         }, {
-            loader: "css-loader", options: {
-                sourceMap: true
-            }
+          loader: "css-loader", 
+          options: {
+            sourceMap: true
+          }
         }, {
-            loader: "sass-loader", options: {
-                sourceMap: true
-            }
+          loader: "sass-loader",
+          options: {
+            sourceMap: true
+          }
         }]
       },
       {
@@ -58,19 +83,12 @@ module.exports = {
               //useRelativePath: !process.env.NODE_ENV,
               //publicPath: (DEV && CDN_URL === '') ? '/' : '', // Remove the default root slash because we load images from our CDN
               outputPath: 'assets/',
+              publicPath: '/assets',
             },
           },
         ],
       },
     ]
-  },
-  optimization: {
-    minimize: true,
-    minimizer: [
-      new UglifyJsPlugin()
-    ],
-    usedExports: true,
-    sideEffects: true
   },
   devServer: {
     overlay: true
@@ -85,6 +103,8 @@ module.exports = {
       jQuery: 'jquery'
     }),
     new MiniCssExtractPlugin({
+      filename: "assets/[name].css",
+      chunkFilename: "assets/[id].css"
     })
   ],
 };

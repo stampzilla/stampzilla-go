@@ -2,26 +2,26 @@ import { Map } from 'immutable';
 import { defineAction } from 'redux-define';
 
 const c = defineAction(
-  'connections',
+  'app',
   ['UPDATE'],
 );
 
 const defaultState = Map({
-  list: Map(),
+  url: `${window.location.protocol.match(/^https/) ? 'wss' : 'ws'}://${window.location.host}/ws`,
 });
 
-// Actions
-export function update(connections) {
-  return { type: c.UPDATE, connections };
-}
+export const update = state => (
+  { type: c.UPDATE, state }
+);
 
-// Reducer
 export default function reducer(state = defaultState, action) {
   switch (action.type) {
     case c.UPDATE: {
       return state
-        .set('list', Map(action.connections));
+        .mergeDeep(action.state);
     }
-    default: return state;
+    default: {
+      return state;
+    }
   }
 }

@@ -1,50 +1,51 @@
-import { Map, List } from 'immutable';
+import { List, Map } from 'immutable';
+import { defineAction } from 'redux-define';
 
-const CONNECTED   = 'connection/CONNECTED';
-const DISCONNECTED = 'connection/DISCONNECTED';
-const ERROR = 'connection/ERROR';
-const RECEIVED = 'connection/RECEIVED';
+const c = defineAction(
+  'connection',
+  ['CONNECTED', 'DISCONNECTED', 'ERROR', 'RECEIVED'],
+);
 
 const defaultState = Map({
-  connected: false,
+  connected: null,
   error: null,
   messages: List(),
 });
 
 // Actions
 export function connected() {
-  return { type: CONNECTED };
+  return { type: c.CONNECTED };
 }
 
 export function disconnected() {
-  return { type: DISCONNECTED };
+  return { type: c.DISCONNECTED };
 }
 
-export function error(error) {
-  return { type: ERROR, error };
+export function error(err) {
+  return { type: c.ERROR, error: err };
 }
 
 export function received(message) {
-  return { type: RECEIVED, message };
+  return { type: c.RECEIVED, message };
 }
 
 // Reducer
 export default function reducer(state = defaultState, action) {
   switch (action.type) {
-    case CONNECTED: {
+    case c.CONNECTED: {
       return state
         .set('error', null)
         .set('connected', true);
     }
-    case DISCONNECTED: {
+    case c.DISCONNECTED: {
       return state
         .set('connected', false);
     }
-    case ERROR: {
+    case c.ERROR: {
       return state
         .set('error', action.error);
     }
-    case RECEIVED: {
+    case c.RECEIVED: {
       return state
         .set('messages', state.get('messages').push(action.message));
     }
