@@ -1,12 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"crypto/tls"
-	"encoding/json"
-	"os"
 
-	"github.com/koding/multiconfig"
 	"github.com/olahol/melody"
 	"github.com/onrik/logrus/filename"
 	"github.com/sirupsen/logrus"
@@ -18,8 +14,7 @@ import (
 func main() {
 
 	config := &models.Config{}
-	m := loadMultiConfig()
-	m.MustLoad(config)
+	config.MustLoad()
 
 	filenameHook := filename.NewHook()
 	logrus.AddHook(filenameHook)
@@ -36,7 +31,7 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	saveConfigToFile(config)
+	config.WriteToFile("config.json")
 
 	done := httpServer.Start(":8080")
 	tlsDone := tlsServer.Start(":6443", &tls.Config{
@@ -49,57 +44,15 @@ func main() {
 
 	<-done
 	<-tlsDone
-	saveConfigToFile(config)
+	config.WriteToFile("config.json")
 }
 
-func saveConfigToFile(config *models.Config) {
-	configFile, err := os.Create("config.json")
-	if err != nil {
-		logrus.Error("creating config file", err.Error())
-	}
-
-	logrus.Info("Save config: ", config)
-	var out bytes.Buffer
-	b, err := json.MarshalIndent(config, "", "\t")
-	if err != nil {
-		logrus.Error("error marshal json", err)
-	}
-	json.Indent(&out, b, "", "\t")
-	out.WriteTo(configFile)
-}
-
-func loadMultiConfig() *multiconfig.DefaultLoader {
-	loaders := []multiconfig.Loader{}
-
-	// Read default values defined via tag fields "default"
-	loaders = append(loaders, &multiconfig.TagLoader{})
-
-	if _, err := os.Stat("config.json"); err == nil {
-		loaders = append(loaders, &multiconfig.JSONLoader{Path: "config.json"})
-	}
-
-	e := &multiconfig.EnvironmentLoader{}
-	e.Prefix = "STAMPZILLA"
-	f := &multiconfig.FlagLoader{}
-	f.EnvPrefix = "STAMPZILLA"
-
-	loaders = append(loaders, e, f)
-	loader := multiconfig.MultiLoader(loaders...)
-
-	d := &multiconfig.DefaultLoader{}
-	d.Loader = loader
-	d.Validator = multiconfig.MultiValidator(&multiconfig.RequiredValidator{})
-	return d
-
-}
-
-func broadcastNodeUpdate(m *melody.Melody) func(*store.Store) {
-	return func(store *store.Store) {
+func broadcastNodeUpdate(m *melody.Melody) func(*store.Store) error {
+	return func(store *store.Store) error {
 
 		msg, err := models.NewMessage("nodes", store.GetNodes())
 		if err != nil {
-			logrus.Error(err)
-			return
+			return err
 		}
 
 		err = msg.WriteWithFilter(m, func(s *melody.Session) bool {
@@ -107,23 +60,17 @@ func broadcastNodeUpdate(m *melody.Melody) func(*store.Store) {
 			return exists && v == "gui"
 		})
 		if err != nil {
-			logrus.Error(err)
-			return
+			return err
 		}
 
 		msg, err = models.NewMessage("connections", store.GetConnections())
 		if err != nil {
-			logrus.Error(err)
-			return
+			return err
 		}
 
-		err = msg.WriteWithFilter(m, func(s *melody.Session) bool {
+		return msg.WriteWithFilter(m, func(s *melody.Session) bool {
 			v, exists := s.Get("protocol")
 			return exists && v == "gui"
 		})
-		if err != nil {
-			logrus.Error(err)
-			return
-		}
 	}
 }

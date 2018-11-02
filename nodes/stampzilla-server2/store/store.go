@@ -3,6 +3,7 @@ package store
 import (
 	"sync"
 
+	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
 )
 
@@ -12,7 +13,7 @@ type Connections map[string]*models.Connection
 type Store struct {
 	Nodes       Nodes
 	Connections Connections
-	onUpdate    []func(*Store)
+	onUpdate    []func(*Store) error
 	sync.RWMutex
 }
 
@@ -20,7 +21,7 @@ func New() *Store {
 	return &Store{
 		Nodes:       make(Nodes),
 		Connections: make(Connections),
-		onUpdate:    make([]func(*Store), 0),
+		onUpdate:    make([]func(*Store) error, 0),
 	}
 }
 
@@ -40,7 +41,9 @@ func (store *Store) AddOrUpdateConnection(id string, c *models.Connection) {
 	store.Unlock()
 
 	for _, callback := range store.onUpdate {
-		callback(store)
+		if err := callback(store); err != nil {
+			logrus.Error("store: ", err)
+		}
 	}
 }
 
@@ -70,7 +73,7 @@ func (store *Store) GetConnections() Connections {
 	return store.Connections
 }
 
-func (store *Store) OnUpdate(callback func(*Store)) {
+func (store *Store) OnUpdate(callback func(*Store) error) {
 	store.Lock()
 	store.onUpdate = append(store.onUpdate, callback)
 	store.Unlock()
