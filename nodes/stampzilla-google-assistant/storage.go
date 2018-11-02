@@ -32,6 +32,8 @@ func NewTestStorage() *JSONStorage {
 }
 
 func (s *JSONStorage) Clone() osin.Storage {
+	s.RLock()
+	defer s.RUnlock()
 	return s
 }
 

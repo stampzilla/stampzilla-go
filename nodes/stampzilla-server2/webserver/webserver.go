@@ -13,23 +13,25 @@ import (
 	"github.com/jonaz/gograce"
 	"github.com/olahol/melody"
 	"github.com/sirupsen/logrus"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/handlers"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/store"
 )
 
 type Webserver struct {
-	Store  *store.Store
-	Melody *melody.Melody
-	Config *models.Config
+	Store            *store.Store
+	Melody           *melody.Melody
+	Config           *models.Config
+	WebsocketHandler handlers.WebsocketHandler
 }
 
-func New(s *store.Store, conf *models.Config) *Webserver {
+func New(s *store.Store, conf *models.Config, wsh handlers.WebsocketHandler) *Webserver {
 
 	return &Webserver{
-		Store:  s,
-		Config: conf,
+		Store:            s,
+		Config:           conf,
+		WebsocketHandler: wsh,
 	}
-
 }
 
 func (ws *Webserver) Init() *gin.Engine {
@@ -74,7 +76,7 @@ func (ws *Webserver) initMelody() *melody.Melody {
 	m := melody.New()
 	m.Upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	m.HandleConnect(ws.handleConnect(ws.Store))
-	m.HandleMessage(ws.handleMessage(m, ws.Store))
+	m.HandleMessage(ws.handleMessage(ws.Store))
 	m.HandleDisconnect(ws.handleDisconnect(ws.Store))
 	return m
 }
@@ -88,32 +90,16 @@ func cspMiddleware() gin.HandlerFunc {
 
 func (ws *Webserver) handleConnect(store *store.Store) func(s *melody.Session) {
 	return func(s *melody.Session) {
-		id, _ := s.Get("ID")
-		t, _ := s.Get("protocol")
-
-		store.AddOrUpdateConnection(id.(string), &models.Connection{
-			Type:       t.(string),
-			RemoteAddr: s.Request.RemoteAddr,
-			Attributes: s.Keys,
-		})
-
-		//if exists && t == "gui" {
-		msg, err := models.NewMessage("server-info", models.ServerInfo{
-			Name:    ws.Config.Name,
-			UUID:    ws.Config.UUID,
-			TLSPort: ws.Config.TLSPort,
-			Port:    ws.Config.Port,
-		})
+		err := ws.WebsocketHandler.Connect(s, s.Request, s.Keys)
 		if err != nil {
 			logrus.Error(err)
 			return
 		}
-		msg.Write(s)
-		//}
+
 	}
 }
 
-func (ws *Webserver) handleMessage(m *melody.Melody, store *store.Store) func(s *melody.Session, msg []byte) {
+func (ws *Webserver) handleMessage(store *store.Store) func(s *melody.Session, msg []byte) {
 	return func(s *melody.Session, msg []byte) {
 		data, err := models.ParseMessage(msg)
 		if err != nil {
@@ -121,19 +107,22 @@ func (ws *Webserver) handleMessage(m *melody.Melody, store *store.Store) func(s 
 			return
 		}
 
-		logrus.Warn(data)
+		err = ws.WebsocketHandler.Message(data)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
 
-		//switch data.Type {
-		//case "update-node":
-		//ws.handleNodeUpdate(m, s, store, data)
-		//}
 	}
 }
 
 func (ws *Webserver) handleDisconnect(store *store.Store) func(s *melody.Session) {
 	return func(s *melody.Session) {
-		id, _ := s.Get("ID")
-		store.RemoveConnection(id.(string))
+		err := ws.WebsocketHandler.Disconnect(s)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
 	}
 }
 

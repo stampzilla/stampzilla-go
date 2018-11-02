@@ -2,8 +2,10 @@ package models
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/olahol/melody"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/interfaces"
 )
 
 type Message struct {
@@ -29,7 +31,7 @@ func ParseMessage(msg []byte) (*Message, error) {
 	return data, err
 }
 
-func (m *Message) Write(s *melody.Session) error {
+func (m *Message) Write(s interfaces.MelodyWriter) error {
 	msg, err := m.Encode()
 	if err != nil {
 		return err
@@ -51,4 +53,7 @@ func (m *Message) Encode() ([]byte, error) {
 	msg, err := json.Marshal(m)
 
 	return msg, err
+}
+func (m *Message) String() string {
+	return fmt.Sprintf("Type: %s Body: %s", m.Type, string(m.Body))
 }
