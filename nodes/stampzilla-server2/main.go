@@ -31,7 +31,7 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	config.WriteToFile("config.json")
+	config.Save("config.json")
 
 	done := httpServer.Start(":8080")
 	tlsDone := tlsServer.Start(":6443", &tls.Config{
@@ -44,7 +44,7 @@ func main() {
 
 	<-done
 	<-tlsDone
-	config.WriteToFile("config.json")
+	config.Save("config.json")
 }
 
 func broadcastNodeUpdate(m *melody.Melody) func(*store.Store) error {
