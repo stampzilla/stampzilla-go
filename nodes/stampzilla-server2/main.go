@@ -6,6 +6,7 @@ import (
 	"github.com/olahol/melody"
 	"github.com/onrik/logrus/filename"
 	"github.com/sirupsen/logrus"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/handlers"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/store"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/webserver"
@@ -20,8 +21,8 @@ func main() {
 	logrus.AddHook(filenameHook)
 
 	store := store.New()
-	httpServer := webserver.New(store, config)
-	tlsServer := webserver.NewSecure(store, config)
+	httpServer := webserver.New(store, config, handlers.NewInSecureWebsockerHandler(store, config))
+	tlsServer := webserver.NewSecure(store, config, handlers.NewSecureWebsockerHandler(store, config))
 
 	// Startup the store
 	ca := &CA{}

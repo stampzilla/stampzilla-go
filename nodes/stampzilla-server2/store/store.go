@@ -31,7 +31,9 @@ func (store *Store) AddOrUpdateNode(node *models.Node) {
 	store.Unlock()
 
 	for _, callback := range store.onUpdate {
-		callback(store)
+		if err := callback(store); err != nil {
+			logrus.Error("store: ", err)
+		}
 	}
 }
 
@@ -53,7 +55,9 @@ func (store *Store) RemoveConnection(id string) {
 	store.Unlock()
 
 	for _, callback := range store.onUpdate {
-		callback(store)
+		if err := callback(store); err != nil {
+			logrus.Error("store: ", err)
+		}
 	}
 }
 
