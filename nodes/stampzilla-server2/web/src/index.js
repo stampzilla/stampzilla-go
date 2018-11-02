@@ -7,19 +7,40 @@ import React from 'react';
 
 import './index.scss';
 import App from './containers/App';
+import Landing from './containers/Landing';
 import Routes from './routes';
 import Websocket from './containers/Websocket';
 import store from './store';
 
+const secure = false;
+
 render(
   <Provider store={store}>
-    <App>
-      <Websocket url={`${window.location.protocol.match(/^https/) ? 'wss' : 'ws'}://${window.location.host}/ws`} />
+    <React.Fragment>
+      <Websocket />
+      {!secure &&
+        <Landing />
+      }
+      {secure &&
+      <App>
 
-      <Router>
-        <Routes />
-      </Router>
-    </App>
+        <Router>
+          <Routes />
+        </Router>
+
+      </App>
+      }
+    </React.Fragment>
   </Provider>,
   document.getElementById('app'),
 );
+
+if (NODE_ENV === 'production') { // eslint-disable-line no-undef
+  (function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js', { scope: '/' })
+        .then(() => console.log('Service Worker registered successfully.'))
+        .catch(error => console.log('Service Worker registration failed:', error));
+    }
+  }());
+}

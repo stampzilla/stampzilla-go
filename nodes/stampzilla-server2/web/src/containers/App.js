@@ -1,39 +1,25 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import Modal from 'react-bootstrap4-modal';
 
 import { update } from '../ducks/app';
+import SocketModal from '../components/SocketModal';
 
 class App extends Component {
   state = {
     socketModal: false,
   }
 
-  onSocketModalClick = () => () => {
-    this.props.dispatch(update({
-      url: 'asd',
-    }));
-  }
-
   render = () => {
-    const { children, connected } = this.props;
+    const { children, connected, dispatch } = this.props;
     const { socketModal } = this.state;
 
     return (
       <React.Fragment>
-        <Modal visible={socketModal} onClickBackdrop={() => this.setState({ socketModal: false })}>
-          <div className="modal-header">
-            <h5 className="modal-title">Change websocket url</h5>
-          </div>
-          <div className="modal-body">
-            <p>Enemy vessel approaching!</p>
-          </div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-primary" onClick={this.onSocketModalClick()}>
-              Change
-            </button>
-          </div>
-        </Modal>
+        <SocketModal
+          visible={socketModal}
+          onClose={() => this.setState({ socketModal: false })}
+          onChange={() => dispatch(update({ url: 'ws://localhost:8080/ws' }))}
+        />
         <nav className="main-header navbar navbar-expand bg-white navbar-light border-bottom">
 
           <ul className="navbar-nav">

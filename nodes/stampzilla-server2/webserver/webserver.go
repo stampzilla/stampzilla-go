@@ -44,8 +44,11 @@ func (ws *Webserver) Init() *gin.Engine {
 	r.Use(ginlogrus.New(logrus.StandardLogger()))
 
 	// Setup gin
-	r.StaticFile("/", "./web/dist/index.html")
-	r.StaticFile("/main.js", "./web/dist/main.js")
+	csp := r.Group("/")
+	csp.Use(cspMiddleware())
+	csp.StaticFile("/", "./web/dist/index.html")
+	csp.StaticFile("/index.html", "./web/dist/index.html")
+	csp.StaticFile("/service-worker.js", "./web/dist/service-worker.js")
 	r.Static("/assets", "./web/dist/assets")
 	r.GET("/ca.crt", ws.handleDownloadCA())
 
@@ -74,6 +77,13 @@ func (ws *Webserver) initMelody() *melody.Melody {
 	m.HandleMessage(ws.handleMessage(m, ws.Store))
 	m.HandleDisconnect(ws.handleDisconnect(ws.Store))
 	return m
+}
+
+func cspMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Content-Security-Policy", "worker-src 'self';")
+		c.Next()
+	}
 }
 
 func (ws *Webserver) handleConnect(store *store.Store) func(s *melody.Session) {

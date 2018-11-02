@@ -2,7 +2,9 @@ const GoogleFontsPlugin = require("@beyonk/google-fonts-webpack-plugin")
 const HtmlWebPackPlugin = require("html-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin");
+const SWPrecacheWebpackPlugin = require('sw-precache-webpack-plugin');
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
+const WebpackPwaManifest = require('webpack-pwa-manifest');
 const path = require('path');
 const webpack = require('webpack');
 
@@ -113,6 +115,33 @@ module.exports = {
       ],
       path: 'assets/',
       filename: 'assets/fonts.css',
-    })
+    }),
+    new SWPrecacheWebpackPlugin({
+      cacheId: 'stampzilla-go',
+      dontCacheBustUrlsMatching: /\.\w{8}\./,
+      filename: 'service-worker.js',
+      minify: true,
+      staticFileGlobsIgnorePatterns: [/\.map$/, /manifest\.json$/, /ws$/]
+    }),
+    new WebpackPwaManifest({
+      filename: 'assets/manifest.[hash].json',
+      name: 'stampzilla-go',
+      short_name: 'stampzilla',
+      description: 'Homeautomation :)',
+      background_color: '#01579b',
+      theme_color: '#01579b',
+      'theme-color': '#01579b',
+      start_url: '/',
+      icons: [
+        //{
+          //src: path.resolve('src/images/icon.png'),
+          //sizes: [96, 128, 192, 256, 384, 512],
+          //destination: path.join('assets', 'icons')
+        //}
+      ]
+    }),
+    new webpack.DefinePlugin({
+      NODE_ENV: `${process.env.NODE_ENV}`,
+    }),
   ],
 };

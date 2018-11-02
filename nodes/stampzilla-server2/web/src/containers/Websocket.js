@@ -9,6 +9,7 @@ import {
   received,
 } from '../ducks/connection';
 import { update as updateConnections } from '../ducks/connections';
+import { update as updateServer } from '../ducks/server';
 
 // Placeholder until we have the write func from the websocket
 let writeFunc = () => {
@@ -18,7 +19,10 @@ let writeFunc = () => {
 class Websocket extends Component {
   componentDidMount() {
     const { url } = this.props;
-    this.socket = new ReconnectableWebSocket(url, ['gui'], { reconnectInterval: 3000, debug: true });
+    this.socket = new ReconnectableWebSocket(url, ['gui'], {
+      reconnectInterval: 3000,
+      timeoutInterval: 1000,
+    });
     writeFunc = this.socket.send;
     this.socket.onmessage = this.onMessage();
     this.socket.onopen = this.onOpen();
@@ -45,6 +49,10 @@ class Websocket extends Component {
 
     dispatch(received(parsed));
     switch (parsed.type) {
+      case 'server-info': {
+        dispatch(updateServer(parsed.body));
+        break;
+      }
       case 'connections': {
         dispatch(updateConnections(parsed.body));
         break;
@@ -60,7 +68,7 @@ class Websocket extends Component {
 }
 
 const mapToProps = state => ({
-  connected: state.getIn(['app', 'url']),
+  url: state.getIn(['app', 'url']),
 });
 export default connect(mapToProps)(Websocket);
 
