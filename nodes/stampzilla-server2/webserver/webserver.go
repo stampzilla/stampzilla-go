@@ -90,6 +90,12 @@ func cspMiddleware() gin.HandlerFunc {
 
 func (ws *Webserver) handleConnect(store *store.Store) func(s *melody.Session) {
 	return func(s *melody.Session) {
+		_, exists := s.Get("protocol")
+		if !exists {
+			logrus.Error("No Sec-WebSocket-Protocol defined. Aborting")
+			return
+		}
+
 		err := ws.WebsocketHandler.Connect(s, s.Request, s.Keys)
 		if err != nil {
 			logrus.Error(err)
@@ -103,7 +109,7 @@ func (ws *Webserver) handleMessage(store *store.Store) func(s *melody.Session, m
 	return func(s *melody.Session, msg []byte) {
 		data, err := models.ParseMessage(msg)
 		if err != nil {
-			logrus.Error(err)
+			logrus.Error("cannot parse incoming websocket message: ", err)
 			return
 		}
 
