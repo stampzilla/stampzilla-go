@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/jonaz/gograce"
+	"github.com/olahol/melody"
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/handlers"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
@@ -15,9 +16,9 @@ type Secure struct {
 	*Webserver
 }
 
-func NewSecure(s *store.Store, conf *models.Config, wsh handlers.WebsocketHandler) *Secure {
+func NewSecure(s *store.Store, conf *models.Config, wsh handlers.WebsocketHandler, m *melody.Melody) *Secure {
 	return &Secure{
-		Webserver: New(s, conf, wsh),
+		Webserver: New(s, conf, wsh, m),
 	}
 
 }

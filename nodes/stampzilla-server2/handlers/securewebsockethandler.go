@@ -8,17 +8,20 @@ import (
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/interfaces"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/store"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/websocket"
 )
 
 type secureWebsocketHandler struct {
-	Store  *store.Store
-	Config *models.Config
+	Store           *store.Store
+	Config          *models.Config
+	WebsocketSender websocket.Sender
 }
 
-func NewSecureWebsockerHandler(store *store.Store, config *models.Config) WebsocketHandler {
+func NewSecureWebsockerHandler(store *store.Store, config *models.Config, ws websocket.Sender) WebsocketHandler {
 	return &secureWebsocketHandler{
-		Store:  store,
-		Config: config,
+		Store:           store,
+		Config:          config,
+		WebsocketSender: ws,
 	}
 }
 

@@ -25,12 +25,13 @@ type Webserver struct {
 	WebsocketHandler handlers.WebsocketHandler
 }
 
-func New(s *store.Store, conf *models.Config, wsh handlers.WebsocketHandler) *Webserver {
+func New(s *store.Store, conf *models.Config, wsh handlers.WebsocketHandler, m *melody.Melody) *Webserver {
 
 	return &Webserver{
 		Store:            s,
 		Config:           conf,
 		WebsocketHandler: wsh,
+		Melody:           m,
 	}
 }
 
@@ -39,9 +40,7 @@ func (ws *Webserver) Init() *gin.Engine {
 	r := gin.New()
 	r.Use(gzip.Gzip(gzip.DefaultCompression))
 
-	m := ws.initMelody()
-
-	ws.Melody = m
+	ws.initMelody()
 
 	r.Use(ginlogrus.New(logrus.StandardLogger()))
 
@@ -54,7 +53,7 @@ func (ws *Webserver) Init() *gin.Engine {
 	r.Static("/assets", "./web/dist/assets")
 	r.GET("/ca.crt", ws.handleDownloadCA())
 
-	r.GET("/ws", ws.handleWs(m))
+	r.GET("/ws", ws.handleWs(ws.Melody))
 
 	return r
 }
@@ -71,14 +70,12 @@ func (ws *Webserver) Start(addr string) chan struct{} {
 	return done
 }
 
-func (ws *Webserver) initMelody() *melody.Melody {
+func (ws *Webserver) initMelody() {
 	// Setup melody
-	m := melody.New()
-	m.Upgrader.CheckOrigin = func(r *http.Request) bool { return true }
-	m.HandleConnect(ws.handleConnect(ws.Store))
-	m.HandleMessage(ws.handleMessage(ws.Store))
-	m.HandleDisconnect(ws.handleDisconnect(ws.Store))
-	return m
+	ws.Melody.Upgrader.CheckOrigin = func(r *http.Request) bool { return true }
+	ws.Melody.HandleConnect(ws.handleConnect(ws.Store))
+	ws.Melody.HandleMessage(ws.handleMessage(ws.Store))
+	ws.Melody.HandleDisconnect(ws.handleDisconnect(ws.Store))
 }
 
 func cspMiddleware() gin.HandlerFunc {
@@ -113,6 +110,8 @@ func (ws *Webserver) handleMessage(store *store.Store) func(s *melody.Session, m
 			return
 		}
 
+		id, _ := s.Get("ID")
+		data.FromUUID = id.(string)
 		err = ws.WebsocketHandler.Message(data)
 		if err != nil {
 			logrus.Error(err)

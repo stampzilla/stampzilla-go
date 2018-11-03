@@ -1,28 +1,49 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
+	"os"
 
 	"github.com/sirupsen/logrus"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/ca"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/interfaces"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/store"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/websocket"
 )
 
 type insecureWebsocketHandler struct {
-	Store  *store.Store
-	Config *models.Config
+	Store           *store.Store
+	Config          *models.Config
+	WebsocketSender websocket.Sender
+	ca              *ca.CA
 }
 
-func NewInSecureWebsockerHandler(store *store.Store, config *models.Config) WebsocketHandler {
+func NewInSecureWebsockerHandler(store *store.Store, config *models.Config, ws websocket.Sender, ca *ca.CA) WebsocketHandler {
 	return &insecureWebsocketHandler{
-		Store:  store,
-		Config: config,
+		Store:           store,
+		Config:          config,
+		WebsocketSender: ws,
+		ca:              ca,
 	}
 }
 
 func (wsh *insecureWebsocketHandler) Message(msg *models.Message) error {
 	logrus.Warn("Unsecure ws sent data: ", msg)
+
+	// client requested certificate. We must approve manually
+
+	if msg.Type == "certificate-signing-request" {
+		var body string
+		json.Unmarshal(msg.Body, &body)
+		err := wsh.ca.CreateCertificateFromRequest(os.Stdout, "nodename", []byte(body))
+		if err != nil {
+			return err
+		}
+
+	}
+
 	return nil
 }
 

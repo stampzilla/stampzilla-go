@@ -6,10 +6,12 @@ import (
 	"github.com/olahol/melody"
 	"github.com/onrik/logrus/filename"
 	"github.com/sirupsen/logrus"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/ca"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/handlers"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/store"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/webserver"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/websocket"
 )
 
 func main() {
@@ -20,23 +22,39 @@ func main() {
 	filenameHook := filename.NewHook()
 	logrus.AddHook(filenameHook)
 
-	store := store.New()
-	httpServer := webserver.New(store, config, handlers.NewInSecureWebsockerHandler(store, config))
-	tlsServer := webserver.NewSecure(store, config, handlers.NewSecureWebsockerHandler(store, config))
-
 	// Startup the store
-	ca := &CA{}
-	ca.LoadOrCreate()
-	cert, err := LoadOrCreate("server", ca)
+	ca, err := ca.LoadOrCreate("")
 	if err != nil {
 		logrus.Fatal(err)
 	}
+	err = ca.LoadOrCreate("server")
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	logrus.Info("tls:", ca.CATLS)
+	logrus.Info("x509:", ca.CAX509)
+	logrus.Info("x509 subject:", ca.CAX509.Subject)
+
+	insecureMelody := melody.New()
+	//TODO i dont like melody anymore.. raw gorilla seems fine?
+	insecureMelody.Config.MaxMessageSize = 0
+	secureMelody := melody.New()
+	//TODO i dont like melody anymore.. raw gorilla seems fine?
+	secureMelody.Config.MaxMessageSize = 0
+
+	insecureSender := websocket.NewWebsocketSender(insecureMelody)
+	secureSender := websocket.NewWebsocketSender(secureMelody)
+
+	store := store.New()
+	httpServer := webserver.New(store, config, handlers.NewInSecureWebsockerHandler(store, config, insecureSender, ca), insecureMelody)
+	tlsServer := webserver.NewSecure(store, config, handlers.NewSecureWebsockerHandler(store, config, secureSender), secureMelody)
 
 	config.Save("config.json")
 
 	done := httpServer.Start(":8080")
 	tlsDone := tlsServer.Start(":6443", &tls.Config{
-		Certificates: []tls.Certificate{*cert.TLS},
+		Certificates: []tls.Certificate{*ca.TLS},
 		ClientAuth:   tls.RequestClientCert,
 	})
 
@@ -56,6 +74,7 @@ func broadcastNodeUpdate(m *melody.Melody) func(*store.Store) error {
 			return err
 		}
 
+		// TODO move this to websocket.Sender and depend on it here. Does not belong on *Message
 		err = msg.WriteWithFilter(m, func(s *melody.Session) bool {
 			v, exists := s.Get("protocol")
 			return exists && v == "gui"
@@ -69,6 +88,7 @@ func broadcastNodeUpdate(m *melody.Melody) func(*store.Store) error {
 			return err
 		}
 
+		// TODO move this to websocket.Sender and depend on it here. Does not belong on *Message
 		return msg.WriteWithFilter(m, func(s *melody.Session) bool {
 			v, exists := s.Get("protocol")
 			return exists && v == "gui"
