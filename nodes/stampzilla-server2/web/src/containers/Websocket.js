@@ -27,7 +27,7 @@ class Websocket extends Component {
   }
 
   componentWillUnmount() {
-    if ( typeof this.socket !== 'undefined') {
+    if (typeof this.socket !== 'undefined') {
       this.socket.close();
     }
   }
