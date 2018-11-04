@@ -45,7 +45,7 @@ func NewWebsocketClient() *WebsocketClient {
 		write:        make(chan interface{}),
 		read:         make(chan *models.Message, 1),
 		wg:           &sync.WaitGroup{},
-		disconnected: make(chan error, 1),
+		disconnected: make(chan error),
 	}
 }
 

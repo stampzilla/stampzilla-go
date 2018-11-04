@@ -44,26 +44,39 @@ func (n *Node) Wait() {
 	n.wg.Wait()
 }
 
-func (n *Node) Connect() error {
+func (n *Node) setup() {
 	logrus.SetReportCaller(true)
+	logrus.SetFormatter(&logrus.TextFormatter{TimestampFormat: time.RFC3339Nano, FullTimestamp: true})
+
 	//Make sure we have a config
 	n.Config = &models.Config{}
 	n.Config.MustLoad()
-
 	n.Config.Save("config.json")
+}
+
+func (n *Node) WriteMessage(msgType string, data interface{}) error {
+	msg, err := models.NewMessage(msgType, data)
+	if err != nil {
+		return err
+	}
+	n.Client.WriteJSON(msg)
+	return nil
+}
+
+func (n *Node) Connect() error {
+	n.setup()
 
 	err := n.LoadCertificateKeyPair("crt")
 
 	if err != nil {
+		logrus.Error("Error trying to load certificate: ", err)
 		u := fmt.Sprintf("ws://%s:%s/ws", n.Config.Host, n.Config.Port)
 		err = n.ConnectWithRetry(u)
 		if err != nil {
 			return err
 		}
 
-		// {"fromUUID":"","type":"server-info","body":{"name":"stampzilla server","uuid":"2beec593-758a-4d48-b39a-13b36a760389","tlsPort":"6443","port":"8080"}}
 		// wait for server info so we can update our config
-
 		serverInfo := &models.ServerInfo{}
 		err = n.Client.WaitForMessage("server-info", serverInfo)
 		if err != nil {
@@ -78,11 +91,10 @@ func (n *Node) Connect() error {
 			return err
 		}
 
-		msg, err := models.NewMessage("certificate-signing-request", string(csr))
+		n.WriteMessage("certificate-signing-request", string(csr))
 		if err != nil {
 			return err
 		}
-		n.Client.WriteJSON(msg)
 
 		// wait for our new certificate
 
@@ -102,11 +114,19 @@ func (n *Node) Connect() error {
 			return err
 		}
 
-		return err
+		logrus.Info("Disconnect inseure connection")
+		n.Disconnect()
+		n.Wait()
+		n.Client.Wait()
+
+		// We should have a certificate now. Try to load it
+		err = n.LoadCertificateKeyPair("crt")
+		if err != nil {
+			return err
+		}
 	}
 
 	//If we have certificate we can connect to TLS immedietly
-	// connect tls
 	tlsConfig := &tls.Config{
 		Certificates: []tls.Certificate{*n.TLS},
 		RootCAs:      n.CA,
@@ -119,11 +139,6 @@ func (n *Node) Connect() error {
 	if err != nil {
 		logrus.Error(err)
 	}
-	// if we dont have tls we must request certificate over http
-
-	n.Wait()
-	n.Client.Wait()
-
 	return nil
 }
 
@@ -137,12 +152,13 @@ func (n *Node) connect(addr string) error {
 		cancel()
 		return err
 	}
+	logrus.Info("Connected to ", addr)
 	return nil
 }
 
 func (n *Node) Disconnect() {
-	n.Cancel()
 	n.stopRetry <- struct{}{}
+	n.Cancel()
 }
 
 func (n *Node) ConnectWithRetry(addr string) error {
@@ -156,17 +172,22 @@ func (n *Node) ConnectWithRetry(addr string) error {
 		for {
 			select {
 			case <-n.stopRetry:
-				logrus.Info("Stopping ws retry worker")
+				signal.Stop(interrupt)
+				close(interrupt)
 				return
 			case err := <-n.Client.Disconnected():
 				logrus.Error("disconnected")
 				if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
 					return
 				}
-				logrus.Info("connection retry because: ", err)
-				//TODO this makes shutdown using interrupt delayed for maximum 5 secs. Other solutions?
-				time.Sleep(5 * time.Second)
-				n.connect(addr)
+				logrus.Info("Reconnect because error: ", err)
+				go func() {
+					time.Sleep(5 * time.Second)
+					err := n.connect(addr)
+					if err != nil {
+						logrus.Error("Reconnect failed with error: ", err)
+					}
+				}()
 			case <-interrupt:
 				n.Cancel()
 				return
