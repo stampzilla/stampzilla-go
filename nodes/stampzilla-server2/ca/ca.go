@@ -24,7 +24,11 @@ type CA struct {
 	CATLS  *tls.Certificate
 }
 
-func LoadOrCreate(name string) (*CA, error) {
+func LoadOrCreate(names ...string) (*CA, error) {
+	name := ""
+	if len(names) == 1 {
+		name = names[0]
+	}
 	cert := &CA{}
 	return cert, cert.LoadOrCreate(name)
 }
@@ -35,7 +39,7 @@ func (ca *CA) LoadOrCreate(name string) error {
 		return nil
 	}
 
-	if name == "ca" {
+	if name == "" {
 		return ca.CreateCA()
 	}
 	return ca.CreateCertificate(name)

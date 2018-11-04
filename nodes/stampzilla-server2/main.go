@@ -23,7 +23,7 @@ func main() {
 	logrus.AddHook(filenameHook)
 
 	// Startup the store
-	ca, err := ca.LoadOrCreate("ca")
+	ca, err := ca.LoadOrCreate()
 	if err != nil {
 		logrus.Fatal(err)
 	}
