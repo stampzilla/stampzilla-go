@@ -39,32 +39,28 @@ func (wsh *insecureWebsocketHandler) Message(msg *models.Message) error {
 		var body string
 		json.Unmarshal(msg.Body, &body)
 
+		//TODO we want to add this to for example store to make it statefull and so the admin can approve the request
+		// for now we just approve automaticly and send it directly
+
 		cert := &strings.Builder{}
 		err := wsh.ca.CreateCertificateFromRequest(cert, "nodename", []byte(body))
 		if err != nil {
 			return err
 		}
 
-		//TODO we want to add this to for example store to make it statefull and so the admin can approve the request
-		// for now we just approve automaticly and send it directly
-
-		message, err := models.NewMessage("approved-certificate-signing-request", cert.String())
+		// send certificate to node
+		err = wsh.WebsocketSender.SendTo(msg.FromUUID, "approved-certificate-signing-request", cert.String())
 		if err != nil {
 			return err
 		}
-
-		// send certificate to node
-		wsh.WebsocketSender.SendMessageTo(msg.FromUUID, message)
 
 		// send ca to node
 		ca := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: wsh.ca.CAX509.Raw})
-		message, err = models.NewMessage("certificate-authority", string(ca))
+
+		err = wsh.WebsocketSender.SendTo(msg.FromUUID, "certificate-authority", string(ca))
 		if err != nil {
 			return err
 		}
-
-		// send certificate to node
-		wsh.WebsocketSender.SendMessageTo(msg.FromUUID, message)
 
 	}
 
