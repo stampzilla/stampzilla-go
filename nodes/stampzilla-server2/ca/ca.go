@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	mrand "math/rand"
 	"os"
 	"time"
 
@@ -50,7 +51,7 @@ func (ca *CA) Load(name string) error {
 		return err
 	}
 
-	if name == "" {
+	if name == "ca" {
 		ca.CATLS = &certTLS
 		ca.CAX509 = certX509
 		return nil
@@ -63,7 +64,7 @@ func (ca *CA) Load(name string) error {
 func (ca *CA) CreateCA() error {
 	// Create a 10year CA cert
 	recipe := &x509.Certificate{
-		SerialNumber: big.NewInt(1653),
+		SerialNumber: big.NewInt(int64(mrand.Int())),
 		Subject: pkix.Name{
 			Organization: []string{"stampzilla-go"},
 			CommonName:   "stampzilla-go CA",
@@ -114,7 +115,7 @@ func (ca *CA) CreateCertificate(name string) error {
 
 	// Generate keys
 	priv, _ := rsa.GenerateKey(rand.Reader, 2048) // key size
-	certBytes, err := x509.CreateCertificate(rand.Reader, recipe, recipe, &priv.PublicKey, priv)
+	certBytes, err := x509.CreateCertificate(rand.Reader, recipe, ca.CAX509, &priv.PublicKey, ca.CATLS.PrivateKey)
 	if err != nil {
 		return err
 	}

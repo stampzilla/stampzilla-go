@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"os"
 
+	"github.com/google/uuid"
 	"github.com/koding/multiconfig"
 	"github.com/sirupsen/logrus"
 )
 
 //Config is the main server configuration
 type Config struct {
-	Port    string `json:"port"`
-	TLSPort string `json:"tlsPort"`
+	Port    string `json:"port" default:"8080"`
+	TLSPort string `json:"tlsPort" default:"6443"`
 	UUID    string `json:"uuid"`
 	Name    string `json:"name"`
 }
@@ -38,6 +39,10 @@ func (c *Config) Save(filename string) {
 func (c *Config) MustLoad() {
 	m := c.createMultiConfig()
 	m.MustLoad(c)
+
+	if c.UUID == "" {
+		c.UUID = uuid.New().String()
+	}
 }
 
 func (c *Config) createMultiConfig() *multiconfig.DefaultLoader {

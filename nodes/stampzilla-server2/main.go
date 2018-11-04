@@ -23,7 +23,7 @@ func main() {
 	logrus.AddHook(filenameHook)
 
 	// Startup the store
-	ca, err := ca.LoadOrCreate("")
+	ca, err := ca.LoadOrCreate("ca")
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -32,9 +32,9 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	logrus.Info("tls:", ca.CATLS)
-	logrus.Info("x509:", ca.CAX509)
-	logrus.Info("x509 subject:", ca.CAX509.Subject)
+	//logrus.Infof("tls: %#v", ca.CATLS)
+	//logrus.Infof("x509: %#v", ca.CAX509)
+	//logrus.Info("x509 subject:", ca.CAX509.Subject)
 
 	insecureMelody := melody.New()
 	//TODO i dont like melody anymore.. raw gorilla seems fine?

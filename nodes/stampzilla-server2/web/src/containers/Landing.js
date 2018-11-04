@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
+import { get } from 'axios';
 
 import { update } from '../ducks/app';
 import SocketModal from '../components/SocketModal';
@@ -7,6 +8,18 @@ import SocketModal from '../components/SocketModal';
 class Landing extends Component {
   state = {
     socketModal: false,
+  }
+
+  componentWillReceiveProps(props) {
+    if (props.server.get('tlsPort') !== this.props.server.get('tlsPort')) {
+      console.log('got new TLS port', props.server.get('tlsPort'));
+
+      get(`https://localhost:${props.server.get('tlsPort')}/`).then(() => {
+        console.log('SUCCESS');
+      }).catch((err) => {
+        console.log('FAIL', err);
+      });
+    }
   }
 
   render = () => {
@@ -38,12 +51,13 @@ class Landing extends Component {
 
           <h1>stampzilla-go</h1>
           <h2>{server.get('name')}</h2>
-          <button
+          <a
+            href={`http://localhost:${server.get('port')}/ca.crt`}
             className="btn btn-outline-secondary mt-3"
             disabled={!server.get('port')}
           >
             Download CA certificate
-          </button>
+          </a>
 
           <button
             className="btn btn-primary mt-4"

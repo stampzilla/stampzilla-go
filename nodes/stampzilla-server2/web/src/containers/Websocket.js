@@ -18,20 +18,18 @@ let writeFunc = () => {
 
 class Websocket extends Component {
   componentDidMount() {
-    const { url } = this.props;
-    this.socket = new ReconnectableWebSocket(url, ['gui'], {
-      reconnectInterval: 3000,
-      timeoutInterval: 1000,
-    });
-    writeFunc = this.socket.send;
-    this.socket.onmessage = this.onMessage();
-    this.socket.onopen = this.onOpen();
-    this.socket.onclose = this.onClose();
-    this.socket.onerror = this.onError();
+    this.setupSocket(this.props);
+  }
+
+  componentWillReceiveProps(props) {
+    this.socket.close();
+    this.setupSocket(props);
   }
 
   componentWillUnmount() {
-    this.socket.close();
+    if ( typeof this.socket !== 'undefined') {
+      this.socket.close();
+    }
   }
 
   onOpen = () => () => {
@@ -63,6 +61,18 @@ class Websocket extends Component {
     }
   }
 
+  setupSocket(props) {
+    const { url } = props;
+    this.socket = new ReconnectableWebSocket(url, ['gui'], {
+      reconnectInterval: 3000,
+      timeoutInterval: 1000,
+    });
+    writeFunc = this.socket.send;
+    this.socket.onmessage = this.onMessage();
+    this.socket.onopen = this.onOpen();
+    this.socket.onclose = this.onClose();
+    this.socket.onerror = this.onError();
+  }
 
   render = () => null;
 }

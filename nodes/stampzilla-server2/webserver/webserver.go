@@ -36,6 +36,7 @@ func New(s *store.Store, conf *models.Config, wsh handlers.WebsocketHandler, m *
 }
 
 func (ws *Webserver) Init() *gin.Engine {
+	gin.SetMode(gin.TestMode)
 
 	r := gin.New()
 	r.Use(gzip.Gzip(gzip.DefaultCompression))
