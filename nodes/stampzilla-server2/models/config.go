@@ -16,6 +16,7 @@ type Config struct {
 	TLSPort string `json:"tlsPort" default:"6443"`
 	UUID    string `json:"uuid"`
 	Name    string `json:"name"`
+	Host    string `json:"host,omitempty"`
 }
 
 //Save writes the config as json to specified filename

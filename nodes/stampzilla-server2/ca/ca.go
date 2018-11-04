@@ -25,7 +25,7 @@ type CA struct {
 }
 
 func LoadOrCreate(names ...string) (*CA, error) {
-	name := ""
+	name := "ca"
 	if len(names) == 1 {
 		name = names[0]
 	}
@@ -39,7 +39,7 @@ func (ca *CA) LoadOrCreate(name string) error {
 		return nil
 	}
 
-	if name == "" {
+	if name == "ca" {
 		return ca.CreateCA()
 	}
 	return ca.CreateCertificate(name)
