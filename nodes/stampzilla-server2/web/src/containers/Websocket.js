@@ -1,6 +1,7 @@
 import { Component } from 'react';
 import { connect } from 'react-redux';
 import ReconnectableWebSocket from 'reconnectable-websocket';
+import Url from 'url';
 
 import {
   connected,
@@ -34,6 +35,11 @@ class Websocket extends Component {
 
   onOpen = () => () => {
     this.props.dispatch(connected());
+
+    const url = Url.parse(this.props.url);
+    if (url.protocol === 'wss:') {
+      this.props.dispatch(updateServer({ secure: true }));
+    }
   }
   onClose = () => () => {
     this.props.dispatch(disconnected());

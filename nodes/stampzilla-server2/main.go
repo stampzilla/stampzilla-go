@@ -55,7 +55,7 @@ func main() {
 	done := httpServer.Start(":8080")
 	tlsDone := tlsServer.Start(":6443", &tls.Config{
 		Certificates: []tls.Certificate{*ca.TLS},
-		ClientAuth:   tls.RequestClientCert,
+		ClientAuth:   tls.VerifyClientCertIfGiven,
 	})
 
 	//store.OnUpdate(broadcastNodeUpdate(httpServer.Melody))

@@ -49,16 +49,51 @@ class Debug extends Component {
                 <table className="table table-striped table-valign-middle">
                   <thead>
                     <tr>
+                      <th />
+                      <th>Identity</th>
                       <th>Address</th>
                       <th>Type</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {connections.map(message => (
-                      <tr>
-                        <td>{message.remoteAddr}</td>
-                        <td>{message.type}</td>
-                      </tr>
+                    {connections
+                      .sort((a, b) => {
+                        if (a.attributes.secure !== b.attributes.secure) {
+                          return a.attributes.secure ? -1 : 1;
+                        }
+
+                        const t = a.type.localeCompare(b.type);
+                        if (t !== 0) {
+                          return -t;
+                        }
+
+                        if (typeof a.attributes.identity === 'undefined') {
+                          return -1;
+                        }
+
+                        if (typeof b.attributes.identity === 'undefined') {
+                          return 1;
+                        }
+                        return a.attributes.identity.localeCompare(b.attributes.identity);
+                      })
+                      .map(c => (
+                        <tr key={c.attributes.ID}>
+                          <td>
+                            {c.attributes.secure &&
+                            <React.Fragment>
+                              {c.attributes.identity &&
+                                <i className="nav-icon fa fa-lock text-success" />
+                              }
+                              {!c.attributes.identity &&
+                                <i className="nav-icon fa fa-lock" />
+                              }
+                            </React.Fragment>
+                            }
+                          </td>
+                          <td>{c.attributes.identity}</td>
+                          <td>{c.remoteAddr}</td>
+                          <td>{c.type}</td>
+                        </tr>
                     )).toArray()}
                   </tbody>
                 </table>

@@ -130,6 +130,7 @@ func (n *Node) Connect() error {
 	tlsConfig := &tls.Config{
 		Certificates: []tls.Certificate{*n.TLS},
 		RootCAs:      n.CA,
+		ServerName:   "localhost",
 	}
 
 	n.Client.TLSClientConfig = tlsConfig

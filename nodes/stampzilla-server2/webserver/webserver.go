@@ -155,9 +155,12 @@ func (ws *Webserver) handleWs(m *melody.Melody) func(c *gin.Context) {
 		keys["ID"] = uuid.String()
 
 		if c.Request.TLS != nil {
-			certs := c.Request.TLS.PeerCertificates
-			logrus.Warn("HTTP CERTS", certs)
 			keys["secure"] = true
+
+			certs := c.Request.TLS.PeerCertificates
+			if len(certs) > 0 {
+				keys["identity"] = certs[0].Subject.CommonName
+			}
 		}
 
 		// Accept the requested protocol
