@@ -146,6 +146,9 @@ func (n *Node) Connect() error {
 
 func (n *Node) connect(addr string) error {
 	ctx, cancel := context.WithCancel(context.Background())
+	if n.Cancel != nil {
+		n.Cancel()
+	}
 	n.Cancel = cancel
 	logrus.Info("Connecting to ", addr)
 	headers := http.Header{}
