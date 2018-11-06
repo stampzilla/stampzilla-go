@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { get } from 'axios';
+import Url from 'url';
+import classnames from 'classnames';
 
 import { update } from '../ducks/app';
 import SocketModal from '../components/SocketModal';
@@ -22,6 +24,18 @@ class Landing extends Component {
     }
   }
 
+  onGoSecureClick = () => () => {
+    const { dispatch, server } = this.props;
+
+    const url = Url.format({
+      protocol: 'wss:',
+      hostname: 'localhost',
+      port: server.get('tlsPort'),
+      pathname: '/ws'
+    });
+    dispatch(update({ url: url }));
+  }
+
   render = () => {
     const { connected, dispatch, server } = this.props;
     const { socketModal } = this.state;
@@ -33,7 +47,7 @@ class Landing extends Component {
           onClose={() => this.setState({ socketModal: false })}
           onChange={() => dispatch(update({ url: 'ws://localhost:8080/ws' }))}
         />
-        {!connected &&
+        {connected === false &&
         <div className="p-4 bg-danger" >
           Not connected!
 
@@ -50,11 +64,13 @@ class Landing extends Component {
         <div className="d-flex flex-column justify-content-center  align-items-center">
 
           <h1>stampzilla-go</h1>
-          <h2>{server.get('name')}</h2>
+          <h2>{server.get('name') || '-'}</h2>
           <a
             href={`http://localhost:${server.get('port')}/ca.crt`}
-            className="btn btn-outline-secondary mt-3"
-            disabled={!server.get('port')}
+            className={classnames({
+              ["btn btn-outline-secondary mt-3"]: true,
+              "disabled": !server.get('port'),
+            })}
           >
             Download CA certificate
           </a>
@@ -62,6 +78,7 @@ class Landing extends Component {
           <button
             className="btn btn-primary mt-4"
             disabled={!server.get('tlsPort')}
+            onClick={this.onGoSecureClick()}
           >Go secure
           </button>
         </div>

@@ -23,7 +23,6 @@ class Websocket extends Component {
   }
 
   componentWillReceiveProps(props) {
-    this.socket.close();
     this.setupSocket(props);
   }
 
@@ -43,9 +42,6 @@ class Websocket extends Component {
   }
   onClose = () => () => {
     this.props.dispatch(disconnected());
-  }
-  onError = () => (err) => {
-    this.props.dispatch(error(err));
   }
   onMessage = () => (event) => {
     const { dispatch } = this.props;
@@ -69,6 +65,13 @@ class Websocket extends Component {
 
   setupSocket(props) {
     const { url } = props;
+    if ( this.socket ) {
+      // this is becuase there is a bug in reconnecting websocket causing it to retry forever
+      this.socket.onclose = () => throw('force close socket');
+      // Close the existing connection
+      this.socket.close();
+    }
+
     this.socket = new ReconnectableWebSocket(url, ['gui'], {
       reconnectInterval: 3000,
       timeoutInterval: 1000,
@@ -77,7 +80,6 @@ class Websocket extends Component {
     this.socket.onmessage = this.onMessage();
     this.socket.onopen = this.onOpen();
     this.socket.onclose = this.onClose();
-    this.socket.onerror = this.onError();
   }
 
   render = () => null;

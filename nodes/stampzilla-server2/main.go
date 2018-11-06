@@ -52,8 +52,8 @@ func main() {
 
 	config.Save("config.json")
 
-	done := httpServer.Start(":8080")
-	tlsDone := tlsServer.Start(":6443", &tls.Config{
+	done := httpServer.Start(":" + config.Port)
+	tlsDone := tlsServer.Start(":"+config.TLSPort, &tls.Config{
 		Certificates: []tls.Certificate{*ca.TLS},
 		ClientAuth:   tls.VerifyClientCertIfGiven,
 	})

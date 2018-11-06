@@ -32,6 +32,7 @@ func (ws *Secure) Start(addr string, tlsConfig *tls.Config) chan struct{} {
 	server.TLSConfig = tlsConfig
 
 	go func() {
+		logrus.Infof("Starting secure webserver at %s", addr)
 		logrus.Error(server.ListenAndServeTLS("", ""))
 	}()
 	return done

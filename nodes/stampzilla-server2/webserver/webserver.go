@@ -66,6 +66,7 @@ func (ws *Webserver) Start(addr string) chan struct{} {
 	server.Addr = addr
 
 	go func() {
+		logrus.Infof("Starting webserver at %s", addr)
 		logrus.Error(server.ListenAndServe())
 	}()
 	return done
