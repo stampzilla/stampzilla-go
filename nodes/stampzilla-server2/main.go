@@ -30,7 +30,7 @@ func main() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	err = ca.LoadOrCreate("server")
+	err = ca.LoadOrCreate("localhost")
 	if err != nil {
 		logrus.Fatal(err)
 	}

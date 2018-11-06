@@ -3,6 +3,7 @@ package ca
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha1"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -78,6 +79,7 @@ func (ca *CA) CreateCA() error {
 			//StreetAddress: []string{"ADDRESS"},
 			//PostalCode:    []string{"POSTAL_CODE"},
 		},
+		SubjectKeyId:          bigIntHash(big.NewInt(int64(mrand.Int()))),
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().AddDate(10, 0, 0), // 10 years
 		IsCA:                  true,
@@ -101,6 +103,12 @@ func (ca *CA) CreateCA() error {
 	return ca.Load("ca")
 }
 
+func bigIntHash(n *big.Int) []byte {
+	h := sha1.New()
+	h.Write(n.Bytes())
+	return h.Sum(nil)
+}
+
 func (ca *CA) CreateCertificate(name string) error {
 	recipe := &x509.Certificate{
 		SerialNumber: big.NewInt(1653),
@@ -110,8 +118,8 @@ func (ca *CA) CreateCertificate(name string) error {
 		},
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().AddDate(10, 0, 0), // 10 years
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
-		KeyUsage:              x509.KeyUsageDigitalSignature,
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 		BasicConstraintsValid: true,
 		//IPAddresses:           []net.IP{net.ParseIP("127.0.0.1")},
 		DNSNames: []string{"localhost"},
