@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -147,7 +148,10 @@ func (n *Node) connect(addr string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	n.Cancel = cancel
 	logrus.Info("Connecting to ", addr)
-	err := n.Client.ConnectContext(ctx, addr)
+	headers := http.Header{}
+	headers.Add("X-UUID", n.Config.UUID)
+	headers.Add("Sec-WebSocket-Protocol", "node")
+	err := n.Client.ConnectContext(ctx, addr, headers)
 
 	if err != nil {
 		cancel()

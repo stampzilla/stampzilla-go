@@ -2,6 +2,9 @@ package main
 
 import (
 	"crypto/tls"
+	"crypto/x509"
+	"io/ioutil"
+	"log"
 
 	"github.com/olahol/melody"
 	"github.com/onrik/logrus/filename"
@@ -53,7 +56,17 @@ func main() {
 	config.Save("config.json")
 
 	done := httpServer.Start(":" + config.Port)
+
+	// Load CA cert
+	caCert, err := ioutil.ReadFile("ca.crt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
 	tlsDone := tlsServer.Start(":"+config.TLSPort, &tls.Config{
+		// Needed to verify client certificates
+		ClientCAs:    caCertPool,
 		Certificates: []tls.Certificate{*ca.TLS},
 		ClientAuth:   tls.VerifyClientCertIfGiven,
 	})

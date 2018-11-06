@@ -37,6 +37,15 @@ func (store *Store) AddOrUpdateNode(node *models.Node) {
 	}
 }
 
+func (store *Store) Connection(id string) *models.Connection {
+	store.RLock()
+	defer store.RUnlock()
+	if conn, ok := store.Connections["foo"]; ok {
+		return conn
+	}
+	return nil
+}
+
 func (store *Store) AddOrUpdateConnection(id string, c *models.Connection) {
 	store.Lock()
 	store.Connections[id] = c

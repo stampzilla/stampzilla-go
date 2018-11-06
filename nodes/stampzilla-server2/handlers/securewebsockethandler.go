@@ -40,15 +40,9 @@ func (wsh *secureWebsocketHandler) Message(msg *models.Message) error {
 }
 
 func (wsh *secureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.Request, keys map[string]interface{}) error {
-	id, _ := s.Get("ID")
 	t, exists := s.Get("protocol")
-	logrus.Info("ws handle secure connect")
-
-	wsh.Store.AddOrUpdateConnection(id.(string), &models.Connection{
-		Type:       t.(string),
-		RemoteAddr: r.RemoteAddr,
-		Attributes: keys,
-	})
+	id, exists := s.Get("ID")
+	logrus.Infof("ws handle secure connect with id %s", id)
 
 	if exists && t == "gui" {
 		msg, err := models.NewMessage("nodes", wsh.Store.GetNodes())

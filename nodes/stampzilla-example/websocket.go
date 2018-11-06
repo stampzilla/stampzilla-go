@@ -35,7 +35,6 @@ type WebsocketClient struct {
 	write        chan interface{}
 	read         chan *models.Message
 	wg           *sync.WaitGroup
-	ctx          context.Context
 	disconnected chan error
 }
 
@@ -43,18 +42,13 @@ func NewWebsocketClient() *WebsocketClient {
 	return &WebsocketClient{
 		readDone:     make(chan struct{}),
 		write:        make(chan interface{}),
-		read:         make(chan *models.Message, 1),
+		read:         make(chan *models.Message, 100),
 		wg:           &sync.WaitGroup{},
 		disconnected: make(chan error),
 	}
 }
 
-func (ws *WebsocketClient) ConnectContext(ctx context.Context, addr string) error {
-	headers := http.Header{}
-	headers.Add("Sec-WebSocket-Protocol", "node")
-
-	ws.ctx = ctx
-
+func (ws *WebsocketClient) ConnectContext(ctx context.Context, addr string, headers http.Header) error {
 	var err error
 	var c *websocket.Conn
 	if ws.TLSClientConfig != nil {
@@ -77,7 +71,7 @@ func (ws *WebsocketClient) ConnectContext(ctx context.Context, addr string) erro
 	ws.Conn = c
 	ws.wg.Add(2)
 	go ws.readPump()
-	go ws.writePump()
+	go ws.writePump(ctx)
 	return nil
 }
 func (ws *WebsocketClient) Wait() {
@@ -134,7 +128,7 @@ func (wc *WebsocketClient) WriteJSON(v interface{}) {
 	wc.write <- v
 }
 
-func (ws *WebsocketClient) writePump() {
+func (ws *WebsocketClient) writePump(ctx context.Context) {
 	defer ws.wg.Done()
 	ticker := time.NewTicker(pingPeriod)
 	defer ticker.Stop()
@@ -146,7 +140,7 @@ func (ws *WebsocketClient) writePump() {
 				log.Println("error WriteJSON:", err)
 				return
 			}
-		case <-ws.ctx.Done():
+		case <-ctx.Done():
 			err := ws.Conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 			if err != nil {
 				logrus.Error("write close:", err)

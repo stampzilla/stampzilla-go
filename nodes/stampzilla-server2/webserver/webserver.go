@@ -89,11 +89,19 @@ func cspMiddleware() gin.HandlerFunc {
 
 func (ws *Webserver) handleConnect(store *store.Store) func(s *melody.Session) {
 	return func(s *melody.Session) {
-		_, exists := s.Get("protocol")
+		t, exists := s.Get("protocol")
 		if !exists {
 			logrus.Error("No Sec-WebSocket-Protocol defined. Aborting")
 			return
 		}
+
+		id, _ := s.Get("ID")
+
+		store.AddOrUpdateConnection(id.(string), &models.Connection{
+			Type:       t.(string),
+			RemoteAddr: s.Request.RemoteAddr,
+			Attributes: s.Keys,
+		})
 
 		err := ws.WebsocketHandler.Connect(s, s.Request, s.Keys)
 		if err != nil {
@@ -153,6 +161,8 @@ func (ws *Webserver) handleWs(m *melody.Melody) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		uuid := uuid.New()
 		keys := make(map[string]interface{})
+		//TODO check if node sent uuid then use that
+
 		keys["ID"] = uuid.String()
 
 		if c.Request.TLS != nil {
@@ -169,6 +179,16 @@ func (ws *Webserver) handleWs(m *melody.Melody) func(c *gin.Context) {
 		if c.Request.Header.Get("Sec-WebSocket-Protocol") != "" {
 			c.Writer.Header().Set("Sec-WebSocket-Protocol", c.Request.Header.Get("Sec-WebSocket-Protocol"))
 			keys["protocol"] = c.Request.Header.Get("Sec-WebSocket-Protocol")
+		}
+
+		if c.Request.Header.Get("X-UUID") != "" {
+			keys["ID"] = c.Request.Header.Get("X-UUID")
+		}
+
+		if ws.Store.Connection(keys["ID"].(string)) != nil {
+			logrus.Error("Connection with same UUID already exists")
+			c.AbortWithStatus(http.StatusForbidden)
+			return
 		}
 
 		m.HandleRequestWithKeys(c.Writer, c.Request, keys)

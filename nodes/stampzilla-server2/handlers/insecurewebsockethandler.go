@@ -68,16 +68,8 @@ func (wsh *insecureWebsocketHandler) Message(msg *models.Message) error {
 }
 
 func (wsh *insecureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.Request, keys map[string]interface{}) error {
-	id, _ := s.Get("ID")
-	t, _ := s.Get("protocol")
+
 	logrus.Info("ws handle insecure connect")
-
-	wsh.Store.AddOrUpdateConnection(id.(string), &models.Connection{
-		Type:       t.(string),
-		RemoteAddr: r.RemoteAddr,
-		Attributes: keys,
-	})
-
 	msg, err := models.NewMessage("server-info", models.ServerInfo{
 		Name:    wsh.Config.Name,
 		UUID:    wsh.Config.UUID,
