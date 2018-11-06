@@ -31,9 +31,9 @@ class Landing extends Component {
       protocol: 'wss:',
       hostname: 'localhost',
       port: server.get('tlsPort'),
-      pathname: '/ws'
+      pathname: '/ws',
     });
-    dispatch(update({ url: url }));
+    dispatch(update({ url }));
   }
 
   render = () => {
@@ -68,8 +68,8 @@ class Landing extends Component {
           <a
             href={`http://localhost:${server.get('port')}/ca.crt`}
             className={classnames({
-              ["btn btn-outline-secondary mt-3"]: true,
-              "disabled": !server.get('port'),
+              'btn btn-outline-secondary mt-3': true,
+              disabled: !server.get('port'),
             })}
           >
             Download CA certificate

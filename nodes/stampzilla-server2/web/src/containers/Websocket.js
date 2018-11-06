@@ -6,7 +6,6 @@ import Url from 'url';
 import {
   connected,
   disconnected,
-  error,
   received,
 } from '../ducks/connection';
 import { update as updateConnections } from '../ducks/connections';
@@ -65,9 +64,9 @@ class Websocket extends Component {
 
   setupSocket(props) {
     const { url } = props;
-    if ( this.socket ) {
+    if (this.socket) {
       // this is becuase there is a bug in reconnecting websocket causing it to retry forever
-      this.socket.onclose = () => throw('force close socket');
+      this.socket.onclose = () => throw ('force close socket');
       // Close the existing connection
       this.socket.close();
     }

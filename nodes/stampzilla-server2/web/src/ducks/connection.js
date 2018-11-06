@@ -19,11 +19,10 @@ export function connected() {
 
 export function disconnected() {
   return (dispatch, getState) => {
-    const connected = getState().getIn(['connection','connected']);
-    if ( connected !== false ) {
+    if (getState().getIn(['connection', 'connected']) !== false) {
       dispatch({ type: c.DISCONNECTED });
     }
-  }
+  };
 }
 
 export function error(err) {
