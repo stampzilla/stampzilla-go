@@ -19,13 +19,11 @@ const Wrapper = (props) => {
         <Landing />
       }
       {secure &&
-      <App>
-
-        <Router>
+      <Router>
+        <App>
           <Routes />
-        </Router>
-
-      </App>
+        </App>
+      </Router>
       }
     </React.Fragment>
   );

@@ -1,9 +1,19 @@
 import React, { Component } from 'react';
-import Modal from 'react-bootstrap4-modal';
+
+import FormModal from './FormModal';
+
+const schema = {
+  type: 'object',
+  required: ['hostname', 'port'],
+  properties: {
+    hostname: { type: 'string', title: 'Hostname', default: 'localhost' },
+    port: { type: 'string', title: 'Port', default: '8080' },
+  },
+};
 
 class SocketModal extends Component {
-  onChange = () => () => {
-    this.props.onChange();
+  onChange = () => ({ formData }) => {
+    this.props.onChange(formData);
     this.props.onClose();
   }
 
@@ -11,19 +21,14 @@ class SocketModal extends Component {
     const { visible, onClose } = this.props;
 
     return (
-      <Modal visible={visible} onClickBackdrop={onClose}>
-        <div className="modal-header">
-          <h5 className="modal-title">Change websocket url</h5>
-        </div>
-        <div className="modal-body">
-          <p>Enemy vessel approaching!</p>
-        </div>
-        <div className="modal-footer">
-          <button type="button" className="btn btn-primary" onClick={this.onChange()}>
-              Change
-          </button>
-        </div>
-      </Modal>
+      <FormModal
+        title="Change websocket url"
+        schema={schema}
+        isOpen={visible}
+        onClose={onClose}
+        onSubmit={this.onChange()}
+        submitButton="Change"
+      />
     );
   }
 }

@@ -45,7 +45,7 @@ class Landing extends Component {
         <SocketModal
           visible={socketModal}
           onClose={() => this.setState({ socketModal: false })}
-          onChange={() => dispatch(update({ url: 'ws://localhost:8080/ws' }))}
+          onChange={({ hostname, port }) => dispatch(update({ url: `ws://${hostname}:${port}/ws` }))}
         />
         {connected === false &&
         <div className="p-4 bg-danger" >

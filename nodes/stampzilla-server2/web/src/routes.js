@@ -6,7 +6,7 @@ import Debug from './containers/Debug';
 
 const Routes = () => (
   <Switch>
-    <Route component={Debug} />
+    <Route path="/debug" component={Debug} />
   </Switch>
 );
 

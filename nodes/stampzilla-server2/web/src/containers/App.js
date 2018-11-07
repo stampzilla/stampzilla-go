@@ -1,7 +1,9 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
+import { withRouter } from 'react-router';
 
 import { update } from '../ducks/app';
+import Link from '../components/Link';
 import SocketModal from '../components/SocketModal';
 
 class App extends Component {
@@ -18,7 +20,7 @@ class App extends Component {
         <SocketModal
           visible={socketModal}
           onClose={() => this.setState({ socketModal: false })}
-          onChange={() => dispatch(update({ url: 'ws://localhost:8080/ws' }))}
+          onChange={({ hostname, port }) => dispatch(update({ url: `ws://${hostname}:${port}/ws` }))}
         />
         <nav className="main-header navbar navbar-expand bg-white navbar-light border-bottom">
 
@@ -39,10 +41,34 @@ class App extends Component {
             <nav className="mt-2">
               <ul className="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
                 <li className="nav-item">
-                  <a href="#" className="nav-link active">
+                  <Link to="/" className="nav-link" activeClass="active">
+                    <i className="nav-icon fa fa-tachometer" />
+                      Dashboard
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link to="/aut" className="nav-link" activeClass="active">
+                    <i className="nav-icon fa fa-magic" />
+                      Automation
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link to="/nodes" className="nav-link" activeClass="active">
+                    <i className="nav-icon fa fa-code" />
+                      Nodes
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link to="/security" className="nav-link" activeClass="active">
+                    <i className="nav-icon fa fa-shield" />
+                      Security
+                  </Link>
+                </li>
+                <li className="nav-item mt-4">
+                  <Link to="/debug" className="nav-link" activeClass="active">
                     <i className="nav-icon fa fa-terminal" />
                       Debug
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </nav>
@@ -60,7 +86,7 @@ class App extends Component {
             <div className="container-fluid">
               <div className="row mb-2">
                 <div className="col-sm-6">
-                  <h1 className="m-0 text-dark">Debug</h1>
+                  <h1 className="m-0 text-dark" style={{ display: 'none' }}>Debug</h1>
                 </div>
               </div>
             </div>
@@ -81,4 +107,4 @@ const mapToProps = state => ({
   connected: state.getIn(['connection', 'connected']),
 });
 
-export default connect(mapToProps)(App);
+export default withRouter(connect(mapToProps)(App));

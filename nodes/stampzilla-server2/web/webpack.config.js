@@ -94,7 +94,8 @@ module.exports = {
     ]
   },
   devServer: {
-    overlay: true
+    overlay: true,
+    historyApiFallback: true,
   },
   plugins: [
     new HtmlWebPackPlugin({
