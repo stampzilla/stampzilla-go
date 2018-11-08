@@ -13,7 +13,7 @@ class Debug extends Component {
       });
     }
 
-    onClickNode = (uuid) => () => {
+    onClickNode = uuid => () => {
       const { history } = this.props;
       history.push(`/nodes/${uuid}`);
     }
@@ -43,13 +43,13 @@ class Debug extends Component {
                       .map(n => (
                         <tr key={n.get('uuid')} style={{ cursor: 'pointer' }} onClick={this.onClickNode(n.get('uuid'))}>
                           <td>
-                            {connections.getIn([n.get('uuid'), 'attributes','secure']) &&
+                            {connections.getIn([n.get('uuid'), 'attributes', 'secure']) &&
                             <React.Fragment>
-                              {connections.getIn([n.get('uuid'), 'attributes','identity']) &&
-                                <i className="nav-icon fa fa-lock text-success" title="Securly connected"/>
+                              {connections.getIn([n.get('uuid'), 'attributes', 'identity']) &&
+                                <i className="nav-icon fa fa-lock text-success" title="Securly connected" />
                               }
-                              {!connections.getIn([n.get('uuid'), 'attributes','identity']) &&
-                                <i className="nav-icon fa fa-lock" title="Missing identity"/>
+                              {!connections.getIn([n.get('uuid'), 'attributes', 'identity']) &&
+                                <i className="nav-icon fa fa-lock" title="Missing identity" />
                               }
                             </React.Fragment>
                             }

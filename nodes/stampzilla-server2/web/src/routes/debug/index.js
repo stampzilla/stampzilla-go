@@ -58,8 +58,8 @@ class Debug extends Component {
                   <tbody>
                     {connections
                       .sort((a, b) => {
-                        if (a.getIn(['attributes','secure']) !== b.getIn(['attributes','secure'])) {
-                          return a.getIn(['attributes','secure']) ? -1 : 1;
+                        if (a.getIn(['attributes', 'secure']) !== b.getIn(['attributes', 'secure'])) {
+                          return a.getIn(['attributes', 'secure']) ? -1 : 1;
                         }
 
                         const t = b.get('type').localeCompare(a.get('type'));
@@ -67,23 +67,23 @@ class Debug extends Component {
                           return t;
                         }
 
-                        return a.getIn(['attributes','identity']).localeCompare(b.getIn(['attributes','identity']));
+                        return a.getIn(['attributes', 'identity']).localeCompare(b.getIn(['attributes', 'identity']));
                       })
                       .map(c => (
                         <tr key={c.get('id')}>
                           <td>
-                            {c.getIn(['attributes','secure']) &&
+                            {c.getIn(['attributes', 'secure']) &&
                             <React.Fragment>
-                              {c.getIn(['attributes','identity']) &&
+                              {c.getIn(['attributes', 'identity']) &&
                                 <i className="nav-icon fa fa-lock text-success" />
                               }
-                              {!c.getIn(['attributes','identity']) &&
+                              {!c.getIn(['attributes', 'identity']) &&
                                 <i className="nav-icon fa fa-lock" />
                               }
                             </React.Fragment>
                             }
                           </td>
-                          <td>{c.getIn(['attributes','identity'])}</td>
+                          <td>{c.getIn(['attributes', 'identity'])}</td>
                           <td>{c.get('remoteAddr')}</td>
                           <td>{c.get('type')}</td>
                         </tr>
