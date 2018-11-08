@@ -18,12 +18,16 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
 )
 
 type Node struct {
+	UUID string
+	Type string
+
 	Client    *WebsocketClient
 	Cancel    context.CancelFunc
 	wg        *sync.WaitGroup
@@ -67,10 +71,18 @@ func (n *Node) WriteMessage(msgType string, data interface{}) error {
 func (n *Node) Connect() error {
 	n.setup()
 
+	// Load our signed certificate and get our UUID
 	err := n.LoadCertificateKeyPair("crt")
 
 	if err != nil {
 		logrus.Error("Error trying to load certificate: ", err)
+
+		// Start with creating a CSR and assign a UUID
+		csr, err := n.GenerateCSR()
+		if err != nil {
+			return err
+		}
+
 		u := fmt.Sprintf("ws://%s:%s/ws", n.Config.Host, n.Config.Port)
 		err = n.ConnectWithRetry(u)
 		if err != nil {
@@ -86,11 +98,6 @@ func (n *Node) Connect() error {
 		n.Config.Port = serverInfo.Port
 		n.Config.TLSPort = serverInfo.TLSPort
 		n.Config.Save("config.json")
-
-		csr, err := n.GenerateCSR()
-		if err != nil {
-			return err
-		}
 
 		n.WriteMessage("certificate-signing-request", string(csr))
 		if err != nil {
@@ -152,7 +159,8 @@ func (n *Node) connect(addr string) error {
 	n.Cancel = cancel
 	logrus.Info("Connecting to ", addr)
 	headers := http.Header{}
-	headers.Add("X-UUID", n.Config.UUID)
+	headers.Add("X-UUID", n.UUID)
+	headers.Add("X-TYPE", n.Type)
 	headers.Add("Sec-WebSocket-Protocol", "node")
 	err := n.Client.ConnectContext(ctx, addr, headers)
 
@@ -220,6 +228,7 @@ func (n *Node) LoadCertificateKeyPair(name string) error {
 
 	n.TLS = &certTLS
 	n.X509 = certX509
+	n.UUID = certX509.Subject.CommonName
 
 	// Load CA cert
 	caCert, err := ioutil.ReadFile("ca.crt")
@@ -259,7 +268,7 @@ func (n *Node) generateKey() (*rsa.PrivateKey, error) {
 func (n *Node) GenerateCSR() ([]byte, error) {
 
 	subj := pkix.Name{
-		CommonName: "example",
+		CommonName: uuid.New().String(),
 		Country:    []string{"SE"},
 		//Province:           []string{"Some-State"},
 		//Locality:           []string{"MyCity"},
@@ -279,6 +288,8 @@ func (n *Node) GenerateCSR() ([]byte, error) {
 
 	csrBytes, _ := x509.CreateCertificateRequest(rand.Reader, &template, priv)
 	d := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrBytes})
+
+	n.UUID = template.Subject.CommonName
 
 	return d, nil
 }

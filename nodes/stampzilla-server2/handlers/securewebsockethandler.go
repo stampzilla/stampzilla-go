@@ -40,12 +40,33 @@ func (wsh *secureWebsocketHandler) Message(msg *models.Message) error {
 }
 
 func (wsh *secureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.Request, keys map[string]interface{}) error {
-	t, exists := s.Get("protocol")
+	proto, exists := s.Get("protocol")
 	id, exists := s.Get("ID")
-	logrus.Infof("ws handle secure connect with id %s", id)
+	t, _ := s.Get("type")
+	logrus.Infof("ws handle secure connect with id %s (%s)", id, proto)
 
-	if exists && t == "gui" {
+	// Send a list of all nodes if its a webgui
+	if exists && proto == "gui" {
 		msg, err := models.NewMessage("nodes", wsh.Store.GetNodes())
+		if err != nil {
+			return err
+		}
+		msg.Write(s)
+	}
+
+	// Send node setup if its a node
+	if exists && proto == "node" {
+		n := wsh.Store.GetNode(id.(string))
+		if n == nil {
+			// New node, register the new node
+			n = &models.Node{
+				UUID: id.(string),
+				Type: t.(string),
+			}
+			wsh.Store.AddOrUpdateNode(n)
+		}
+
+		msg, err := models.NewMessage("setup", n)
 		if err != nil {
 			return err
 		}

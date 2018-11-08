@@ -2,10 +2,10 @@ import { BrowserRouter as Router } from 'react-router-dom';
 import { connect } from 'react-redux';
 import React from 'react';
 
-import App from '../containers/App';
-import Landing from '../containers/Landing';
+import App from './App';
+import Landing from './Landing';
 import Routes from '../routes';
-import Websocket from '../containers/Websocket';
+import Websocket from './Websocket';
 
 const Wrapper = (props) => {
   const { server } = props;

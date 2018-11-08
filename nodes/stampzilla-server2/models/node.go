@@ -1,11 +1,13 @@
 package models
 
+import "encoding/json"
+
 type Node struct {
-	Uuid      string            `json:"uuid"`
+	UUID      string            `json:"uuid"`
 	Connected bool              `json:"connected"`
 	Version   string            `json:"version"`
+	Type      string            `json:"type"`
 	Name      string            `json:"name"`
-	State     interface{}       `json:"state"`
-	WriteMap  map[string]bool   `json:"writeMap"`
-	Config    map[string]string `json:"config"`
+	Devices   map[string]Device `json:"devices"`
+	Config    json.RawMessage   `json:"config"`
 }

@@ -14,8 +14,8 @@ import (
 type Config struct {
 	Port    string `json:"port" default:"8080"`
 	TLSPort string `json:"tlsPort" default:"6443"`
-	UUID    string `json:"uuid"`
-	Name    string `json:"name"`
+	UUID    string `json:"uuid,omitempty"`
+	Name    string `json:"name,omitempty"`
 	Host    string `json:"host,omitempty"`
 }
 

@@ -184,6 +184,9 @@ func (ws *Webserver) handleWs(m *melody.Melody) func(c *gin.Context) {
 		if c.Request.Header.Get("X-UUID") != "" {
 			keys["ID"] = c.Request.Header.Get("X-UUID")
 		}
+		if c.Request.Header.Get("X-TYPE") != "" {
+			keys["type"] = c.Request.Header.Get("X-TYPE")
+		}
 
 		if ws.Store.Connection(keys["ID"].(string)) != nil {
 			logrus.Error("Connection with same UUID already exists")

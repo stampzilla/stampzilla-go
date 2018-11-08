@@ -6,6 +6,7 @@ func main() {
 
 	client := NewWebsocketClient()
 	node := NewNode(client)
+	node.Type = "example"
 
 	err := node.Connect()
 

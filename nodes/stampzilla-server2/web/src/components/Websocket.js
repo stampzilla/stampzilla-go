@@ -9,6 +9,7 @@ import {
   received,
 } from '../ducks/connection';
 import { update as updateConnections } from '../ducks/connections';
+import { update as updateNodes } from '../ducks/nodes';
 import { update as updateServer } from '../ducks/server';
 
 // Placeholder until we have the write func from the websocket
@@ -54,6 +55,10 @@ class Websocket extends Component {
       }
       case 'connections': {
         dispatch(updateConnections(parsed.body));
+        break;
+      }
+      case 'nodes': {
+        dispatch(updateNodes(parsed.body));
         break;
       }
       default: {

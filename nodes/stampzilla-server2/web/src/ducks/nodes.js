@@ -2,7 +2,7 @@ import { Map, fromJS } from 'immutable';
 import { defineAction } from 'redux-define';
 
 const c = defineAction(
-  'connections',
+  'nodes',
   ['UPDATE'],
 );
 

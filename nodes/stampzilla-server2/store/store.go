@@ -27,7 +27,7 @@ func New() *Store {
 
 func (store *Store) AddOrUpdateNode(node *models.Node) {
 	store.Lock()
-	store.Nodes[node.Uuid] = node
+	store.Nodes[node.UUID] = node
 	store.Unlock()
 
 	for _, callback := range store.onUpdate {
@@ -77,7 +77,10 @@ func (store *Store) GetNodes() Nodes {
 }
 
 func (store *Store) GetNode(uuid string) *models.Node {
-	return nil
+	store.RLock()
+	defer store.RUnlock()
+	n, _ := store.Nodes[uuid]
+	return n
 }
 
 func (store *Store) GetConnections() Connections {

@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 
-import { write } from './Websocket';
-import Card from '../components/Card';
+import { write } from '../../components/Websocket';
+import Card from '../../components/Card';
 
 class Debug extends Component {
     onClickTestButton = () => () => {
@@ -58,41 +58,34 @@ class Debug extends Component {
                   <tbody>
                     {connections
                       .sort((a, b) => {
-                        if (a.attributes.secure !== b.attributes.secure) {
-                          return a.attributes.secure ? -1 : 1;
+                        if (a.getIn(['attributes','secure']) !== b.getIn(['attributes','secure'])) {
+                          return a.getIn(['attributes','secure']) ? -1 : 1;
                         }
 
-                        const t = a.type.localeCompare(b.type);
+                        const t = b.get('type').localeCompare(a.get('type'));
                         if (t !== 0) {
-                          return -t;
+                          return t;
                         }
 
-                        if (typeof a.attributes.identity === 'undefined') {
-                          return -1;
-                        }
-
-                        if (typeof b.attributes.identity === 'undefined') {
-                          return 1;
-                        }
-                        return a.attributes.identity.localeCompare(b.attributes.identity);
+                        return a.getIn(['attributes','identity']).localeCompare(b.getIn(['attributes','identity']));
                       })
                       .map(c => (
-                        <tr key={c.attributes.ID}>
+                        <tr key={c.get('id')}>
                           <td>
-                            {c.attributes.secure &&
+                            {c.getIn(['attributes','secure']) &&
                             <React.Fragment>
-                              {c.attributes.identity &&
+                              {c.getIn(['attributes','identity']) &&
                                 <i className="nav-icon fa fa-lock text-success" />
                               }
-                              {!c.attributes.identity &&
+                              {!c.getIn(['attributes','identity']) &&
                                 <i className="nav-icon fa fa-lock" />
                               }
                             </React.Fragment>
                             }
                           </td>
-                          <td>{c.attributes.identity}</td>
-                          <td>{c.remoteAddr}</td>
-                          <td>{c.type}</td>
+                          <td>{c.getIn(['attributes','identity'])}</td>
+                          <td>{c.get('remoteAddr')}</td>
+                          <td>{c.get('type')}</td>
                         </tr>
                     )).toArray()}
                   </tbody>
