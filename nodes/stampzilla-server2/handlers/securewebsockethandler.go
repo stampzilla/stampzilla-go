@@ -35,6 +35,19 @@ func (wsh *secureWebsocketHandler) Message(msg *models.Message) error {
 		}
 
 		wsh.Store.AddOrUpdateNode(node)
+	case "setup-node":
+		node := &models.Node{}
+		err := json.Unmarshal(msg.Body, node)
+		if err != nil {
+			return err
+		}
+
+		wsh.Store.AddOrUpdateNode(node)
+		err = wsh.Store.WriteToDisk()
+		if err != nil {
+			return err
+		}
+		wsh.WebsocketSender.SendTo(node.UUID, "setup", node)
 	}
 	return nil
 }

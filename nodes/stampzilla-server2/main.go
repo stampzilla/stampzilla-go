@@ -50,6 +50,9 @@ func main() {
 	secureSender := websocket.NewWebsocketSender(secureMelody)
 
 	store := store.New()
+	if err := store.LoadFromDisk(); err != nil {
+		log.Fatalf("Failed to load state from disk: %s", err)
+	}
 	httpServer := webserver.New(store, config, handlers.NewInSecureWebsockerHandler(store, config, insecureSender, ca), insecureMelody)
 	tlsServer := webserver.NewSecure(store, config, handlers.NewSecureWebsockerHandler(store, config, secureSender), secureMelody)
 

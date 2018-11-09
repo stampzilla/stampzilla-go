@@ -121,7 +121,7 @@ class Node extends Component {
     const node = nodes.find(n => n.get('uuid') === match.params.uuid);
 
     write({
-      type: 'update-node',
+      type: 'setup-node',
       body: {
         ...node.toJS(),
         ...formData,
