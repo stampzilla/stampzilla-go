@@ -14,6 +14,7 @@ module.exports = {
   devtool: DEV ? 'cheap-module-eval-source-map' : 'source-map',
   output: {
     filename: 'assets/[name].js',
+    publicPath: '/',
   },
   optimization: {
     minimizer: [

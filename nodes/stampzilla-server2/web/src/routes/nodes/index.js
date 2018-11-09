@@ -4,7 +4,7 @@ import { connect } from 'react-redux';
 import { write } from '../../components/Websocket';
 import Card from '../../components/Card';
 
-class Debug extends Component {
+class Nodes extends Component {
     onClickTestButton = () => () => {
       write({
         type: 'update-node',
@@ -77,4 +77,4 @@ const mapToProps = state => ({
   connections: state.getIn(['connections', 'list']),
 });
 
-export default connect(mapToProps)(Debug);
+export default connect(mapToProps)(Nodes);

@@ -69,6 +69,7 @@
     "react-bootstrap4-modal": "^1.6.2",
     "react-dom": "^16.6.0",
     "react-hot-loader": "^4.3.11",
+    "react-json-editor-ajrm": "^2.5.8",
     "react-jsonschema-form": "^1.0.5",
     "react-redux": "^5.0.7",
     "react-router": "^4.3.1",
