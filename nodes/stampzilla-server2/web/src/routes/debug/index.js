@@ -1,5 +1,7 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
+import JSONInput from 'react-json-editor-ajrm';
+import locale from 'react-json-editor-ajrm/locale/en';
 
 import { write } from '../../components/Websocket';
 import Card from '../../components/Card';
@@ -100,9 +102,18 @@ class Debug extends Component {
                   <tr>
                     <td />
                     <td>{message.type}</td>
-                    <td>{JSON.stringify(message.body)}</td>
+                    <td>
+                      <JSONInput
+                        placeholder={message.body}
+                        theme="dark_vscode_tribute"
+                        locale={locale}
+                        height="200px"
+                        width="100%"
+                        viewOnly
+                      />
+                    </td>
                   </tr>
-                    ))}
+                ))}
               </tbody>
             </table>
           </Card>
