@@ -67,7 +67,7 @@ class Debug extends Component {
                           return t;
                         }
 
-                        return a.getIn(['attributes', 'identity']).localeCompare(b.getIn(['attributes', 'identity']));
+                        return (a.getIn(['attributes', 'identity']) || '').localeCompare(b.getIn(['attributes', 'identity']));
                       })
                       .map(c => (
                         <tr key={c.get('id')}>
