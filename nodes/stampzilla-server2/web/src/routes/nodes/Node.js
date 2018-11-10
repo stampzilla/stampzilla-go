@@ -46,9 +46,18 @@ const JsonWidget = (props) => {
     onChange,
   } = props;
 
+  let parsedValue = {};
+  try {
+    parsedValue = value && JSON.parse(value);
+  } catch (err) {
+    parsedValue = {
+      'parse error': err,
+    };
+  }
+
   return (
     <JSONInput
-      placeholder={value && JSON.parse(value)}
+      placeholder={parsedValue || {}}
       onChange={({ jsObject }) => onChange(jsObject && JSON.stringify(jsObject))}
       theme="dark_vscode_tribute"
       locale={locale}

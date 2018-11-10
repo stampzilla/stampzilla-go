@@ -12,17 +12,7 @@ class Debug extends Component {
           uuid: '123',
           version: '1',
           name: 'web client',
-          state: {
-            connected: true,
-            writeTest: false,
-          },
-          writemap: {
-            connected: false,
-            writeTest: true,
-          },
-          config: {
-            background: '#fff',
-          },
+          config: 'trasig json;',
         },
       });
     }
