@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
@@ -24,25 +25,30 @@ import (
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
 )
 
+type OnFunc func(json.RawMessage) error
+
 type Node struct {
 	UUID string
 	Type string
 
-	Client    *WebsocketClient
-	Cancel    context.CancelFunc
-	wg        *sync.WaitGroup
-	stopRetry chan struct{}
-	Config    *models.Config
-	X509      *x509.Certificate
-	TLS       *tls.Certificate
-	CA        *x509.CertPool
+	Client           *WebsocketClient
+	DisconnectClient context.CancelFunc
+	Shutdown         context.CancelFunc
+	wg               *sync.WaitGroup
+	Config           *models.Config
+	X509             *x509.Certificate
+	TLS              *tls.Certificate
+	CA               *x509.CertPool
+	callbacks        map[string][]OnFunc
+	devices          models.Devices
 }
 
 func NewNode(client *WebsocketClient) *Node {
 	return &Node{
 		Client:    client,
 		wg:        &sync.WaitGroup{},
-		stopRetry: make(chan struct{}),
+		callbacks: make(map[string][]OnFunc),
+		devices:   make(models.Devices),
 	}
 }
 func (n *Node) Wait() {
@@ -64,8 +70,7 @@ func (n *Node) WriteMessage(msgType string, data interface{}) error {
 	if err != nil {
 		return err
 	}
-	n.Client.WriteJSON(msg)
-	return nil
+	return n.Client.WriteJSON(msg)
 }
 
 func (n *Node) Connect() error {
@@ -84,7 +89,9 @@ func (n *Node) Connect() error {
 		}
 
 		u := fmt.Sprintf("ws://%s:%s/ws", n.Config.Host, n.Config.Port)
-		err = n.ConnectWithRetry(u)
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		err = n.ConnectWithRetry(ctx, u)
 		if err != nil {
 			return err
 		}
@@ -123,7 +130,7 @@ func (n *Node) Connect() error {
 		}
 
 		logrus.Info("Disconnect inseure connection")
-		n.Disconnect()
+		cancel()
 		n.Wait()
 		n.Client.Wait()
 
@@ -144,19 +151,42 @@ func (n *Node) Connect() error {
 	n.Client.TLSClientConfig = tlsConfig
 
 	u := fmt.Sprintf("wss://%s:%s/ws", n.Config.Host, n.Config.TLSPort)
-	err = n.ConnectWithRetry(u)
+	ctx, cancel := context.WithCancel(context.Background())
+	n.Shutdown = cancel
+	err = n.ConnectWithRetry(ctx, u)
 	if err != nil {
 		logrus.Error(err)
 	}
+	n.wg.Add(1)
+	go n.reader(ctx)
 	return nil
 }
 
-func (n *Node) connect(addr string) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	if n.Cancel != nil {
-		n.Cancel()
+func (n *Node) reader(ctx context.Context) {
+	defer n.wg.Done()
+	for {
+		select {
+		case <-ctx.Done():
+			logrus.Info("Stopping node reader", ctx.Err())
+			return
+		case msg := <-n.Client.Message():
+			for _, cb := range n.callbacks[msg.Type] {
+				err := cb(msg.Body)
+				if err != nil {
+					logrus.Error(err)
+					return
+				}
+			}
+		}
 	}
-	n.Cancel = cancel
+}
+
+func (n *Node) connect(ctx context.Context, addr string) error {
+	ctx, cancel := context.WithCancel(ctx)
+	if n.DisconnectClient != nil {
+		n.DisconnectClient()
+	}
+	n.DisconnectClient = cancel
 	logrus.Info("Connecting to ", addr)
 	headers := http.Header{}
 	headers.Add("X-UUID", n.UUID)
@@ -169,15 +199,10 @@ func (n *Node) connect(addr string) error {
 		return err
 	}
 	logrus.Info("Connected to ", addr)
-	return nil
+	return n.sendNodeUpdate()
 }
 
-func (n *Node) Disconnect() {
-	n.stopRetry <- struct{}{}
-	n.Cancel()
-}
-
-func (n *Node) ConnectWithRetry(addr string) error {
+func (n *Node) ConnectWithRetry(ctx context.Context, addr string) error {
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGQUIT, syscall.SIGTERM)
@@ -187,7 +212,8 @@ func (n *Node) ConnectWithRetry(addr string) error {
 		defer n.wg.Done()
 		for {
 			select {
-			case <-n.stopRetry:
+			case <-ctx.Done():
+				logrus.Error("Stopping reconnect because err: ", ctx.Err())
 				signal.Stop(interrupt)
 				close(interrupt)
 				return
@@ -199,20 +225,20 @@ func (n *Node) ConnectWithRetry(addr string) error {
 				logrus.Info("Reconnect because error: ", err)
 				go func() {
 					time.Sleep(5 * time.Second)
-					err := n.connect(addr)
+					err := n.connect(ctx, addr)
 					if err != nil {
 						logrus.Error("Reconnect failed with error: ", err)
 					}
 				}()
 			case <-interrupt:
-				n.Cancel()
+				n.Shutdown()
 				return
 			}
 		}
 
 	}()
 
-	return n.connect(addr)
+	return n.connect(ctx, addr)
 
 }
 
@@ -292,4 +318,89 @@ func (n *Node) GenerateCSR() ([]byte, error) {
 	n.UUID = template.Subject.CommonName
 
 	return d, nil
+}
+
+func (n *Node) on(what string, cb OnFunc) {
+	n.callbacks[what] = append(n.callbacks[what], cb)
+}
+
+//OnConfig is run when node recieves updated configuration from the server
+func (n *Node) OnConfig(cb OnFunc) {
+
+	n.on("setup", func(data json.RawMessage) error {
+		conf := &models.Node{}
+		err := json.Unmarshal(data, conf)
+		if err != nil {
+			return err
+		}
+		return cb(conf.Config)
+	})
+}
+
+func (n *Node) OnRequestStateChange(cb func(state models.DeviceState, device *models.Device) error) {
+	n.on("state-change", func(data json.RawMessage) error {
+		conf := &models.Node{}
+		err := json.Unmarshal(data, conf)
+		if err != nil {
+			return err
+		}
+
+		if conf.Devices == nil {
+			logrus.Error("No devices found in incoming update-node, skipping.")
+			return nil
+		}
+
+		// loop over all devices and compare state
+
+		stateChange := make(models.DeviceState)
+
+		foundAnyChange := false
+		for k, dev := range n.devices {
+			foundChange := false
+			for s, oldState := range dev.State {
+				newState := conf.Devices[k].State[s]
+				if newState != oldState {
+					stateChange[s] = newState
+					foundChange = true
+					foundAnyChange = true
+				}
+			}
+			if foundChange {
+				err := cb(stateChange, dev)
+				if err != nil {
+					// set state back to before. we could not change it as requested
+					// continue to next device
+					logrus.Error(err)
+					continue
+				}
+				// set the new state and send it to the server
+				n.devices[k].State = conf.Devices[k].State
+
+			}
+		}
+		if foundAnyChange {
+			return n.sendNodeUpdate()
+		}
+
+		return nil
+	})
+}
+
+func (n *Node) AddOrUpdate(d *models.Device) error {
+	key := fmt.Sprintf("%s.%s", n.UUID, d.ID)
+	d.Node = n.UUID
+	n.devices[key] = d
+
+	return n.sendNodeUpdate()
+}
+
+func (n *Node) sendNodeUpdate() error {
+	node := models.Node{
+		UUID: n.UUID,
+		//Connected: true,
+		//Type:      n.Type,
+		Devices: n.devices,
+		//Config
+	}
+	return n.WriteMessage("update-node", node)
 }

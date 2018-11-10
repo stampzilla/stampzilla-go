@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
-	"log"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -27,12 +27,17 @@ const (
 	reconnectWait = 2 * time.Second
 )
 
+type writeData struct {
+	data interface{}
+	err  chan error
+}
+
 type WebsocketClient struct {
-	Conn            *websocket.Conn
+	conn            *websocket.Conn
 	TLSClientConfig *tls.Config
 	readDone        chan struct{}
 	//interrupt chan os.Signal
-	write        chan interface{}
+	write        chan writeData
 	read         chan *models.Message
 	wg           *sync.WaitGroup
 	disconnected chan error
@@ -41,7 +46,7 @@ type WebsocketClient struct {
 func NewWebsocketClient() *WebsocketClient {
 	return &WebsocketClient{
 		readDone:     make(chan struct{}),
-		write:        make(chan interface{}),
+		write:        make(chan writeData),
 		read:         make(chan *models.Message, 100),
 		wg:           &sync.WaitGroup{},
 		disconnected: make(chan error),
@@ -68,7 +73,7 @@ func (ws *WebsocketClient) ConnectContext(ctx context.Context, addr string, head
 		}
 		return err
 	}
-	ws.Conn = c
+	ws.conn = c
 	ws.wg.Add(2)
 	go ws.readPump()
 	go ws.writePump(ctx)
@@ -98,10 +103,10 @@ func (ws *WebsocketClient) Disconnected() <-chan error {
 
 func (ws *WebsocketClient) readPump() {
 	defer ws.wg.Done()
-	ws.Conn.SetReadDeadline(time.Now().Add(pongWait))
-	ws.Conn.SetPongHandler(func(string) error { ws.Conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+	ws.conn.SetReadDeadline(time.Now().Add(pongWait))
+	ws.conn.SetPongHandler(func(string) error { ws.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 	for {
-		_, message, err := ws.Conn.ReadMessage()
+		_, message, err := ws.conn.ReadMessage()
 		if err != nil {
 			logrus.Error("read:", err)
 			select {
@@ -124,8 +129,14 @@ func (ws *WebsocketClient) readPump() {
 	}
 
 }
-func (wc *WebsocketClient) WriteJSON(v interface{}) {
-	wc.write <- v
+func (wc *WebsocketClient) WriteJSON(v interface{}) error {
+	errCh := make(chan error, 1)
+	select {
+	case wc.write <- writeData{data: v, err: errCh}:
+	default:
+		errCh <- fmt.Errorf("no one listening on write channel")
+	}
+	return <-errCh
 }
 
 func (ws *WebsocketClient) writePump(ctx context.Context) {
@@ -135,21 +146,18 @@ func (ws *WebsocketClient) writePump(ctx context.Context) {
 	for {
 		select {
 		case t := <-ws.write:
-			err := ws.Conn.WriteJSON(t)
-			if err != nil {
-				log.Println("error WriteJSON:", err)
-				return
-			}
+			err := ws.conn.WriteJSON(t.data)
+			t.err <- err
 		case <-ctx.Done():
-			err := ws.Conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+			err := ws.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 			if err != nil {
 				logrus.Error("write close:", err)
 				return
 			}
 			return
 		case <-ticker.C:
-			if err := ws.Conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(writeWait)); err != nil {
-				log.Println("ping:", err)
+			if err := ws.conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(writeWait)); err != nil {
+				logrus.Error("ping:", err)
 			}
 		}
 	}

@@ -3,11 +3,11 @@ package models
 import "encoding/json"
 
 type Node struct {
-	UUID      string            `json:"uuid"`
-	Connected bool              `json:"connected"`
-	Version   string            `json:"version"`
-	Type      string            `json:"type"`
-	Name      string            `json:"name"`
-	Devices   map[string]Device `json:"devices"`
-	Config    json.RawMessage   `json:"config"`
+	UUID      string          `json:"uuid,omitempty"`
+	Connected bool            `json:"connected,omitempty"`
+	Version   string          `json:"version,omitempty"`
+	Type      string          `json:"type,omitempty"`
+	Name      string          `json:"name,omitempty"`
+	Devices   Devices         `json:"devices,omitempty"`
+	Config    json.RawMessage `json:"config,omitempty"`
 }

@@ -16,6 +16,7 @@ type Connections map[string]*models.Connection
 
 type Store struct {
 	Nodes       Nodes
+	Devices     models.Devices
 	Connections Connections
 	onUpdate    []func(*Store) error
 	sync.RWMutex
@@ -24,16 +25,49 @@ type Store struct {
 func New() *Store {
 	return &Store{
 		Nodes:       make(Nodes),
+		Devices:     make(models.Devices),
 		Connections: make(Connections),
 		onUpdate:    make([]func(*Store) error, 0),
 	}
 }
 
+func (store *Store) AddOrUpdateDevice(dev *models.Device) {
+	store.Lock()
+	store.Devices[dev.Node+"."+dev.ID] = dev
+	store.Unlock()
+}
 func (store *Store) AddOrUpdateNode(node *models.Node) {
 	store.Lock()
-	store.Nodes[node.UUID] = node
+
+	if _, ok := store.Nodes[node.UUID]; !ok {
+		store.Nodes[node.UUID] = node
+	} else {
+
+		if node.Version != "" {
+			store.Nodes[node.UUID].Version = node.Version
+		}
+		if node.Type != "" {
+			store.Nodes[node.UUID].Type = node.Type
+		}
+		if node.Name != "" {
+			store.Nodes[node.UUID].Name = node.Name
+		}
+		if node.Devices != nil {
+			store.Nodes[node.UUID].Devices = node.Devices
+		}
+		if node.Config != nil {
+			logrus.Info("Setting config to: ", string(node.Config))
+			store.Nodes[node.UUID].Config = node.Config
+		}
+
+	}
+
 	store.Unlock()
 
+	store.runCallbacks()
+}
+
+func (store *Store) runCallbacks() {
 	for _, callback := range store.onUpdate {
 		if err := callback(store); err != nil {
 			logrus.Error("store: ", err)
@@ -55,11 +89,7 @@ func (store *Store) AddOrUpdateConnection(id string, c *models.Connection) {
 	store.Connections[id] = c
 	store.Unlock()
 
-	for _, callback := range store.onUpdate {
-		if err := callback(store); err != nil {
-			logrus.Error("store: ", err)
-		}
-	}
+	store.runCallbacks()
 }
 
 func (store *Store) RemoveConnection(id string) {
@@ -67,11 +97,7 @@ func (store *Store) RemoveConnection(id string) {
 	delete(store.Connections, id)
 	store.Unlock()
 
-	for _, callback := range store.onUpdate {
-		if err := callback(store); err != nil {
-			logrus.Error("store: ", err)
-		}
-	}
+	store.runCallbacks()
 }
 
 func (store *Store) GetNodes() Nodes {
@@ -101,6 +127,10 @@ func (store *Store) OnUpdate(callback func(*Store) error) {
 
 func (store *Store) LoadFromDisk() error {
 	path := "configs/"
+
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return nil
+	}
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
 		return err
@@ -163,8 +193,9 @@ func loadConfigFromFile(file string) (*models.Node, error) {
 	defer f.Close()
 
 	var node *models.Node
-	b, _ := ioutil.ReadAll(f)
-	json.Unmarshal([]byte(b), &node)
 
-	return node, nil
+	decoder := json.NewDecoder(f)
+	err = decoder.Decode(&node)
+
+	return node, err
 }
