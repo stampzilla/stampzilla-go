@@ -9,6 +9,7 @@ import {
   received,
 } from '../ducks/connection';
 import { update as updateConnections } from '../ducks/connections';
+import { update as updateDevices } from '../ducks/devices';
 import { update as updateNodes } from '../ducks/nodes';
 import { update as updateServer } from '../ducks/server';
 
@@ -59,6 +60,12 @@ class Websocket extends Component {
       }
       case 'nodes': {
         dispatch(updateNodes(parsed.body));
+
+        const devices = Object.values(parsed.body).reduce((acc,node) => ({
+          ...acc,
+          ...node.devices,
+        }), {});
+        dispatch(updateDevices(devices));
         break;
       }
       default: {
