@@ -61,7 +61,7 @@ class Websocket extends Component {
       case 'nodes': {
         dispatch(updateNodes(parsed.body));
 
-        const devices = Object.values(parsed.body).reduce((acc,node) => ({
+        const devices = Object.values(parsed.body).reduce((acc, node) => ({
           ...acc,
           ...node.devices,
         }), {});

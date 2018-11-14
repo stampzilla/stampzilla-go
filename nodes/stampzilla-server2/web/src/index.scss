@@ -68,6 +68,8 @@ $fa-font-path: "~font-awesome/fonts";
 $ionicons-font-path: "~ionicons/dist/fonts";
 @import "~ionicons/dist/scss/ionicons";
 
+@import "~octicons/build/build";
+
 $custom-control-description-disabled-color: #868e96;
 
 $switch-height: calc(#{$input-height} * .8) !default;
