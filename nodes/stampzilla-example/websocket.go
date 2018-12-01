@@ -50,6 +50,7 @@ type websocketClient struct {
 	read         chan *models.Message
 	wg           *sync.WaitGroup
 	disconnected chan error
+	connected    chan struct{}
 	onConnect    func()
 }
 
@@ -61,6 +62,7 @@ func NewWebsocketClient() Websocket {
 		read:         make(chan *models.Message, 100),
 		wg:           &sync.WaitGroup{},
 		disconnected: make(chan error),
+		connected:    make(chan struct{}),
 	}
 }
 
@@ -75,6 +77,7 @@ func (ws *websocketClient) OnConnect(cb func()) {
 func (ws *websocketClient) ConnectContext(ctx context.Context, addr string, headers http.Header) error {
 	var err error
 	var c *websocket.Conn
+	logrus.Info("websocket: connecting to ", addr)
 	if ws.tlsClientConfig != nil {
 		dialer := &websocket.Dialer{
 			Proxy:            http.ProxyFromEnvironment,
@@ -89,6 +92,8 @@ func (ws *websocketClient) ConnectContext(ctx context.Context, addr string, head
 		ws.wasDisconnected(err)
 		return err
 	}
+	logrus.Infof("websocket: connected to %s", addr)
+	ws.wasConnected()
 	ws.conn = c
 	ws.wg.Add(2)
 	go ws.readPump()
@@ -99,7 +104,8 @@ func (ws *websocketClient) ConnectContext(ctx context.Context, addr string, head
 	return nil
 }
 
-// ConnectWithRetry connects and if disconnected because an error tries to reconnect again every 5th second
+// ConnectWithRetry tries to connect and blocks until connected.
+// if disconnected because an error tries to reconnect again every 5th second
 func (ws *websocketClient) ConnectWithRetry(parentCtx context.Context, addr string, headers http.Header) {
 
 	ctx, cancel := context.WithCancel(parentCtx)
@@ -132,7 +138,9 @@ func (ws *websocketClient) ConnectWithRetry(parentCtx context.Context, addr stri
 		}
 
 	}()
-	ws.ConnectContext(ctx, addr, headers)
+	go ws.ConnectContext(ctx, addr, headers)
+	<-ws.connected
+	return
 }
 
 func (ws *websocketClient) Wait() {
@@ -220,6 +228,12 @@ func (ws *websocketClient) writePump(ctx context.Context) {
 func (ws *websocketClient) wasDisconnected(err error) {
 	select {
 	case ws.disconnected <- err:
+	default:
+	}
+}
+func (ws *websocketClient) wasConnected() {
+	select {
+	case ws.connected <- struct{}{}:
 	default:
 	}
 }

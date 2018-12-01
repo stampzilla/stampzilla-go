@@ -30,15 +30,15 @@ type Node struct {
 	UUID string
 	Type string
 
-	Client           Websocket
-	DisconnectClient context.CancelFunc
-	wg               *sync.WaitGroup
-	Config           *models.Config
-	X509             *x509.Certificate
-	TLS              *tls.Certificate
-	CA               *x509.CertPool
-	callbacks        map[string][]OnFunc
-	devices          models.Devices
+	Client Websocket
+	//DisconnectClient context.CancelFunc
+	wg        *sync.WaitGroup
+	Config    *models.Config
+	X509      *x509.Certificate
+	TLS       *tls.Certificate
+	CA        *x509.CertPool
+	callbacks map[string][]OnFunc
+	devices   models.Devices
 }
 
 func NewNode(client Websocket) *Node {
@@ -131,7 +131,6 @@ func (n *Node) Connect() error {
 		logrus.Info("Disconnect inseure connection")
 		cancel()
 		n.Wait()
-		n.Client.Wait()
 
 		// We should have a certificate now. Try to load it
 		err = n.LoadCertificateKeyPair("crt")
@@ -159,6 +158,9 @@ func (n *Node) Connect() error {
 		cancel()
 	}()
 
+	n.Client.OnConnect(func() {
+		n.sendNodeUpdate()
+	})
 	err = n.connect(ctx, u)
 	if err != nil {
 		logrus.Error(err)
@@ -188,21 +190,15 @@ func (n *Node) reader(ctx context.Context) {
 }
 
 func (n *Node) connect(ctx context.Context, addr string) error {
-	ctx, cancel := context.WithCancel(ctx)
-	if n.DisconnectClient != nil {
-		n.DisconnectClient()
-	}
-	n.DisconnectClient = cancel
-	logrus.Info("Connecting to ", addr)
+	//ctx, cancel := context.WithCancel(ctx)
+	//if n.DisconnectClient != nil {
+	//n.DisconnectClient()
+	//}
+	//n.DisconnectClient = cancel
 	headers := http.Header{}
 	headers.Add("X-UUID", n.UUID)
 	headers.Add("X-TYPE", n.Type)
 	headers.Add("Sec-WebSocket-Protocol", "node")
-
-	n.Client.OnConnect(func() {
-		n.sendNodeUpdate()
-		logrus.Info("Connected to ", addr)
-	})
 
 	n.Client.ConnectWithRetry(ctx, addr, headers)
 
