@@ -33,6 +33,7 @@ type Websocket interface {
 	ConnectContext(ctx context.Context, addr string, headers http.Header) error
 	ConnectWithRetry(parentCtx context.Context, addr string, headers http.Header)
 	Wait()
+	//TODO move models.Message logic to node so websocket can be used for other stuff for example talking to deconz-REST
 	Message() <-chan *models.Message
 	// WaitForMessage is a helper method to wait for a specific message type
 	WaitForMessage(msgType string, dst interface{}) error
