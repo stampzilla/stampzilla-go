@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
 )
@@ -31,9 +30,8 @@ type Node struct {
 	UUID string
 	Type string
 
-	Client           *WebsocketClient
+	Client           Websocket
 	DisconnectClient context.CancelFunc
-	Shutdown         context.CancelFunc
 	wg               *sync.WaitGroup
 	Config           *models.Config
 	X509             *x509.Certificate
@@ -43,7 +41,7 @@ type Node struct {
 	devices          models.Devices
 }
 
-func NewNode(client *WebsocketClient) *Node {
+func NewNode(client Websocket) *Node {
 	return &Node{
 		Client:    client,
 		wg:        &sync.WaitGroup{},
@@ -52,6 +50,7 @@ func NewNode(client *WebsocketClient) *Node {
 	}
 }
 func (n *Node) Wait() {
+	n.Client.Wait()
 	n.wg.Wait()
 }
 
@@ -91,7 +90,7 @@ func (n *Node) Connect() error {
 		u := fmt.Sprintf("ws://%s:%s/ws", n.Config.Host, n.Config.Port)
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		err = n.ConnectWithRetry(ctx, u)
+		err = n.connect(ctx, u)
 		if err != nil {
 			return err
 		}
@@ -148,12 +147,19 @@ func (n *Node) Connect() error {
 		ServerName:   "localhost",
 	}
 
-	n.Client.TLSClientConfig = tlsConfig
+	n.Client.SetTLSConfig(tlsConfig)
 
 	u := fmt.Sprintf("wss://%s:%s/ws", n.Config.Host, n.Config.TLSPort)
 	ctx, cancel := context.WithCancel(context.Background())
-	n.Shutdown = cancel
-	err = n.ConnectWithRetry(ctx, u)
+
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt, syscall.SIGQUIT, syscall.SIGTERM)
+	go func() {
+		<-interrupt
+		cancel()
+	}()
+
+	err = n.connect(ctx, u)
 	if err != nil {
 		logrus.Error(err)
 	}
@@ -167,7 +173,7 @@ func (n *Node) reader(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			logrus.Info("Stopping node reader", ctx.Err())
+			logrus.Info("Stopping node reader because:", ctx.Err())
 			return
 		case msg := <-n.Client.Message():
 			for _, cb := range n.callbacks[msg.Type] {
@@ -192,54 +198,15 @@ func (n *Node) connect(ctx context.Context, addr string) error {
 	headers.Add("X-UUID", n.UUID)
 	headers.Add("X-TYPE", n.Type)
 	headers.Add("Sec-WebSocket-Protocol", "node")
-	err := n.Client.ConnectContext(ctx, addr, headers)
 
-	if err != nil {
-		cancel()
-		return err
-	}
-	logrus.Info("Connected to ", addr)
-	return n.sendNodeUpdate()
-}
+	n.Client.OnConnect(func() {
+		n.sendNodeUpdate()
+		logrus.Info("Connected to ", addr)
+	})
 
-func (n *Node) ConnectWithRetry(ctx context.Context, addr string) error {
+	n.Client.ConnectWithRetry(ctx, addr, headers)
 
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt, syscall.SIGQUIT, syscall.SIGTERM)
-
-	n.wg.Add(1)
-	go func() {
-		defer n.wg.Done()
-		for {
-			select {
-			case <-ctx.Done():
-				logrus.Error("Stopping reconnect because err: ", ctx.Err())
-				signal.Stop(interrupt)
-				close(interrupt)
-				return
-			case err := <-n.Client.Disconnected():
-				logrus.Error("disconnected")
-				if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-					return
-				}
-				logrus.Info("Reconnect because error: ", err)
-				go func() {
-					time.Sleep(5 * time.Second)
-					err := n.connect(ctx, addr)
-					if err != nil {
-						logrus.Error("Reconnect failed with error: ", err)
-					}
-				}()
-			case <-interrupt:
-				n.Shutdown()
-				return
-			}
-		}
-
-	}()
-
-	return n.connect(ctx, addr)
-
+	return nil
 }
 
 func (n *Node) LoadCertificateKeyPair(name string) error {

@@ -1,6 +1,8 @@
 package models
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 type Node struct {
 	UUID      string          `json:"uuid,omitempty"`

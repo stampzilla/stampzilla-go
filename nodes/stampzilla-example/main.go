@@ -68,7 +68,6 @@ func main() {
 	}
 
 	node.Wait()
-	node.Client.Wait()
 }
 
 func updatedConfig(data json.RawMessage) error {
