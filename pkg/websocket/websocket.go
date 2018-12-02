@@ -1,9 +1,8 @@
-package main
+package websocket
 
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
@@ -11,7 +10,6 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
 )
 
 const (
@@ -33,10 +31,7 @@ type Websocket interface {
 	ConnectContext(ctx context.Context, addr string, headers http.Header) error
 	ConnectWithRetry(parentCtx context.Context, addr string, headers http.Header)
 	Wait()
-	//TODO move models.Message logic to node so websocket can be used for other stuff for example talking to deconz-REST
-	Message() <-chan *models.Message
-	// WaitForMessage is a helper method to wait for a specific message type
-	WaitForMessage(msgType string, dst interface{}) error
+	Read() <-chan []byte
 	// WriteJSON writes interface{} encoded as JSON to our connection
 	WriteJSON(v interface{}) error
 	SetTLSConfig(c *tls.Config)
@@ -45,22 +40,19 @@ type Websocket interface {
 type websocketClient struct {
 	conn            *websocket.Conn
 	tlsClientConfig *tls.Config
-	readDone        chan struct{}
-	//interrupt chan os.Signal
-	write        chan func()
-	read         chan *models.Message
-	wg           *sync.WaitGroup
-	disconnected chan error
-	connected    chan struct{}
-	onConnect    func()
+	write           chan func()
+	read            chan []byte
+	wg              *sync.WaitGroup
+	disconnected    chan error
+	connected       chan struct{}
+	onConnect       func()
 }
 
-// NewWebsocketClient creates a new Websocket
-func NewWebsocketClient() Websocket {
+// New creates a new Websocket
+func New() Websocket {
 	return &websocketClient{
-		readDone:     make(chan struct{}),
 		write:        make(chan func()),
-		read:         make(chan *models.Message, 100),
+		read:         make(chan []byte, 100),
 		wg:           &sync.WaitGroup{},
 		disconnected: make(chan error),
 		connected:    make(chan struct{}),
@@ -116,7 +108,7 @@ func (ws *websocketClient) ConnectWithRetry(parentCtx context.Context, addr stri
 		for {
 			select {
 			case <-parentCtx.Done():
-				logrus.Info("Stopping reconnect because err: ", parentCtx.Err())
+				logrus.Info("websocket: stopping reconnect because err: ", parentCtx.Err())
 				return
 			case err := <-ws.disconnected:
 				cancel() // Stop any write/read pumps so we dont get duplicate write panic
@@ -135,9 +127,7 @@ func (ws *websocketClient) ConnectWithRetry(parentCtx context.Context, addr stri
 					}
 				}()
 			}
-
 		}
-
 	}()
 	go ws.ConnectContext(ctx, addr, headers)
 	<-ws.connected
@@ -148,19 +138,8 @@ func (ws *websocketClient) Wait() {
 	ws.wg.Wait()
 }
 
-func (ws *websocketClient) Message() <-chan *models.Message {
+func (ws *websocketClient) Read() <-chan []byte {
 	return ws.read
-}
-
-// WaitForMessage is a helper method to wait for a specific message type
-func (ws *websocketClient) WaitForMessage(msgType string, dst interface{}) error {
-
-	for msg := range ws.Message() {
-		if msg.Type == msgType {
-			return json.Unmarshal(msg.Body, dst)
-		}
-	}
-	return nil
 }
 
 // WriteJSON writes interface{} encoded as JSON to our connection
@@ -188,18 +167,12 @@ func (ws *websocketClient) readPump() {
 			ws.wasDisconnected(err)
 			return
 		}
-		logrus.Infof("recv: %s", message)
-		msg, err := models.ParseMessage(message)
-		if err != nil {
-			logrus.Error("websocket: ParseMessage error: ", err)
-			continue
-		}
+		logrus.Debugf("websocket: readPump got msg: %s", message)
 		select {
-		case ws.read <- msg:
+		case ws.read <- message:
 		default:
 		}
 	}
-
 }
 
 func (ws *websocketClient) writePump(ctx context.Context) {
@@ -232,6 +205,7 @@ func (ws *websocketClient) wasDisconnected(err error) {
 	default:
 	}
 }
+
 func (ws *websocketClient) wasConnected() {
 	select {
 	case ws.connected <- struct{}{}:

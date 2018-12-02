@@ -1,4 +1,4 @@
-package main
+package node
 
 import (
 	"context"
@@ -22,6 +22,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
+	"github.com/stampzilla/stampzilla-go/pkg/websocket"
 )
 
 type OnFunc func(json.RawMessage) error
@@ -30,7 +31,7 @@ type Node struct {
 	UUID string
 	Type string
 
-	Client Websocket
+	Client websocket.Websocket
 	//DisconnectClient context.CancelFunc
 	wg        *sync.WaitGroup
 	Config    *models.Config
@@ -41,7 +42,8 @@ type Node struct {
 	devices   models.Devices
 }
 
-func NewNode(client Websocket) *Node {
+// New returns a new Node
+func New(client websocket.Websocket) *Node {
 	return &Node{
 		Client:    client,
 		wg:        &sync.WaitGroup{},
@@ -72,6 +74,74 @@ func (n *Node) WriteMessage(msgType string, data interface{}) error {
 	return n.Client.WriteJSON(msg)
 }
 
+// WaitForMessage is a helper method to wait for a specific message type
+func (n *Node) WaitForMessage(msgType string, dst interface{}) error {
+
+	for data := range n.Client.Read() {
+		msg, err := models.ParseMessage(data)
+		if err != nil {
+			return err
+		}
+		if msg.Type == msgType {
+			return json.Unmarshal(msg.Body, dst)
+		}
+	}
+	return nil
+}
+
+func (n *Node) fetchCertificate() error {
+	// Start with creating a CSR and assign a UUID
+	csr, err := n.GenerateCSR()
+	if err != nil {
+		return err
+	}
+
+	u := fmt.Sprintf("ws://%s:%s/ws", n.Config.Host, n.Config.Port)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	n.connect(ctx, u)
+
+	// wait for server info so we can update our config
+	serverInfo := &models.ServerInfo{}
+	err = n.WaitForMessage("server-info", serverInfo)
+	if err != nil {
+		return err
+	}
+	n.Config.Port = serverInfo.Port
+	n.Config.TLSPort = serverInfo.TLSPort
+	n.Config.Save("config.json")
+
+	n.WriteMessage("certificate-signing-request", string(csr))
+	if err != nil {
+		return err
+	}
+
+	// wait for our new certificate
+
+	var rawCert string
+	err = n.WaitForMessage("approved-certificate-signing-request", &rawCert)
+
+	err = ioutil.WriteFile("crt.crt", []byte(rawCert), 0644)
+	if err != nil {
+		return err
+	}
+
+	var caCert string
+	err = n.WaitForMessage("certificate-authority", &caCert)
+
+	err = ioutil.WriteFile("ca.crt", []byte(caCert), 0644)
+	if err != nil {
+		return err
+	}
+
+	logrus.Info("Disconnect inseure connection")
+	cancel()
+	n.Wait()
+
+	// We should have a certificate now. Try to load it
+	return n.LoadCertificateKeyPair("crt")
+}
+
 func (n *Node) Connect() error {
 	n.setup()
 
@@ -80,60 +150,7 @@ func (n *Node) Connect() error {
 
 	if err != nil {
 		logrus.Error("Error trying to load certificate: ", err)
-
-		// Start with creating a CSR and assign a UUID
-		csr, err := n.GenerateCSR()
-		if err != nil {
-			return err
-		}
-
-		u := fmt.Sprintf("ws://%s:%s/ws", n.Config.Host, n.Config.Port)
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-		err = n.connect(ctx, u)
-		if err != nil {
-			return err
-		}
-
-		// wait for server info so we can update our config
-		serverInfo := &models.ServerInfo{}
-		err = n.Client.WaitForMessage("server-info", serverInfo)
-		if err != nil {
-			return err
-		}
-		n.Config.Port = serverInfo.Port
-		n.Config.TLSPort = serverInfo.TLSPort
-		n.Config.Save("config.json")
-
-		n.WriteMessage("certificate-signing-request", string(csr))
-		if err != nil {
-			return err
-		}
-
-		// wait for our new certificate
-
-		var rawCert string
-		err = n.Client.WaitForMessage("approved-certificate-signing-request", &rawCert)
-
-		err = ioutil.WriteFile("crt.crt", []byte(rawCert), 0644)
-		if err != nil {
-			return err
-		}
-
-		var caCert string
-		err = n.Client.WaitForMessage("certificate-authority", &caCert)
-
-		err = ioutil.WriteFile("ca.crt", []byte(caCert), 0644)
-		if err != nil {
-			return err
-		}
-
-		logrus.Info("Disconnect inseure connection")
-		cancel()
-		n.Wait()
-
-		// We should have a certificate now. Try to load it
-		err = n.LoadCertificateKeyPair("crt")
+		err = n.fetchCertificate()
 		if err != nil {
 			return err
 		}
@@ -159,12 +176,9 @@ func (n *Node) Connect() error {
 	}()
 
 	n.Client.OnConnect(func() {
-		n.sendNodeUpdate()
+		n.syncDevices()
 	})
-	err = n.connect(ctx, u)
-	if err != nil {
-		logrus.Error(err)
-	}
+	n.connect(ctx, u)
 	n.wg.Add(1)
 	go n.reader(ctx)
 	return nil
@@ -177,7 +191,12 @@ func (n *Node) reader(ctx context.Context) {
 		case <-ctx.Done():
 			logrus.Info("Stopping node reader because:", ctx.Err())
 			return
-		case msg := <-n.Client.Message():
+		case data := <-n.Client.Read():
+			msg, err := models.ParseMessage(data)
+			if err != nil {
+				logrus.Error("node:", err)
+				continue
+			}
 			for _, cb := range n.callbacks[msg.Type] {
 				err := cb(msg.Body)
 				if err != nil {
@@ -189,20 +208,12 @@ func (n *Node) reader(ctx context.Context) {
 	}
 }
 
-func (n *Node) connect(ctx context.Context, addr string) error {
-	//ctx, cancel := context.WithCancel(ctx)
-	//if n.DisconnectClient != nil {
-	//n.DisconnectClient()
-	//}
-	//n.DisconnectClient = cancel
+func (n *Node) connect(ctx context.Context, addr string) {
 	headers := http.Header{}
 	headers.Add("X-UUID", n.UUID)
 	headers.Add("X-TYPE", n.Type)
 	headers.Add("Sec-WebSocket-Protocol", "node")
-
 	n.Client.ConnectWithRetry(ctx, addr, headers)
-
-	return nil
 }
 
 func (n *Node) LoadCertificateKeyPair(name string) error {
@@ -296,6 +307,7 @@ func (n *Node) OnConfig(cb OnFunc) {
 		if err != nil {
 			return err
 		}
+		//TODO do we want to persist the config to disk here or leve it to each node? Could possibly put it in config.json or new custom file
 		return cb(conf.Config)
 	})
 }
@@ -342,7 +354,7 @@ func (n *Node) OnRequestStateChange(cb func(state models.DeviceState, device *mo
 			}
 		}
 		if foundAnyChange {
-			return n.sendNodeUpdate()
+			return n.syncDevices()
 		}
 
 		return nil
@@ -354,10 +366,10 @@ func (n *Node) AddOrUpdate(d *models.Device) error {
 	d.Node = n.UUID
 	n.devices[key] = d
 
-	return n.sendNodeUpdate()
+	return n.syncDevices()
 }
 
-func (n *Node) sendNodeUpdate() error {
+func (n *Node) syncDevices() error {
 	node := models.Node{
 		UUID: n.UUID,
 		//Connected: true,

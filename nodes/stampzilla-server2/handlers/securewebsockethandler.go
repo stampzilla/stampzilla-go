@@ -27,21 +27,15 @@ func NewSecureWebsockerHandler(store *store.Store, config *models.Config, ws web
 
 func (wsh *secureWebsocketHandler) Message(msg *models.Message) error {
 	switch msg.Type {
-	case "update-node":
-		node := &models.Node{
-			UUID: msg.FromUUID,
-		}
-		err := json.Unmarshal(msg.Body, node)
+	case "update-devices":
+		devices := make(models.Devices)
+		err := json.Unmarshal(msg.Body, devices)
 		if err != nil {
 			return err
 		}
-
-		wsh.Store.AddOrUpdateNode(node)
-
-		for _, dev := range node.Devices {
+		for _, dev := range devices {
 			wsh.Store.AddOrUpdateDevice(dev)
 		}
-
 	case "setup-node":
 		node := &models.Node{}
 		err := json.Unmarshal(msg.Body, node)

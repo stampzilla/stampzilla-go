@@ -5,12 +5,14 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
+	"github.com/stampzilla/stampzilla-go/pkg/node"
+	"github.com/stampzilla/stampzilla-go/pkg/websocket"
 )
 
 func main() {
 
-	client := NewWebsocketClient()
-	node := NewNode(client)
+	client := websocket.New()
+	node := node.New(client)
 	node.Type = "example"
 
 	node.OnConfig(updatedConfig)
