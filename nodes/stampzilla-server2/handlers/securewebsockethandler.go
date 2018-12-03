@@ -48,7 +48,7 @@ func (wsh *secureWebsocketHandler) Message(msg *models.Message) error {
 		if err != nil {
 			return err
 		}
-		wsh.WebsocketSender.SendTo(node.UUID, "setup", node)
+		wsh.WebsocketSender.SendToID(node.UUID, "setup", node)
 	}
 	return nil
 }
@@ -65,7 +65,7 @@ func (wsh *secureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.R
 		if err != nil {
 			return err
 		}
-		msg.Write(s)
+		msg.WriteTo(s)
 	}
 
 	// Send node setup if its a node
@@ -84,7 +84,7 @@ func (wsh *secureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.R
 		if err != nil {
 			return err
 		}
-		msg.Write(s)
+		msg.WriteTo(s)
 	}
 
 	return nil

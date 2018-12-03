@@ -32,7 +32,7 @@ func ParseMessage(msg []byte) (*Message, error) {
 	return data, err
 }
 
-func (m *Message) Write(s interfaces.MelodyWriter) error {
+func (m *Message) WriteTo(s interfaces.MelodyWriter) error {
 	msg, err := m.Encode()
 	if err != nil {
 		return err

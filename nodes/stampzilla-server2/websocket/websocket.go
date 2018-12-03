@@ -5,8 +5,20 @@ import (
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
 )
 
+type SessionKey string
+
+const (
+	KeyProtocol SessionKey = "protocol"
+	KeyID       SessionKey = "ID"
+)
+
+func (sk SessionKey) String() string {
+	return string(sk)
+}
+
 type Sender interface {
-	SendTo(to string, msgType string, data interface{}) error
+	SendToID(to string, msgType string, data interface{}) error
+	SendToProtocol(to string, msgType string, data interface{}) error
 }
 
 type sender struct {
@@ -19,16 +31,24 @@ func NewWebsocketSender(m *melody.Melody) Sender {
 	}
 }
 
-func (ws *sender) sendMessageTo(to string, msg *models.Message) error {
+func (ws *sender) sendMessageTo(key SessionKey, to string, msg *models.Message) error {
 	return msg.WriteWithFilter(ws.Melody, func(s *melody.Session) bool {
-		v, exists := s.Get("ID")
+		v, exists := s.Get(key.String())
 		return exists && v == to
 	})
 }
-func (ws *sender) SendTo(to string, msgType string, data interface{}) error {
+func (ws *sender) SendToID(to string, msgType string, data interface{}) error {
 	message, err := models.NewMessage(msgType, data)
 	if err != nil {
 		return err
 	}
-	return ws.sendMessageTo(to, message)
+	return ws.sendMessageTo(KeyID, to, message)
+}
+
+func (ws *sender) SendToProtocol(to string, msgType string, data interface{}) error {
+	message, err := models.NewMessage(msgType, data)
+	if err != nil {
+		return err
+	}
+	return ws.sendMessageTo(KeyProtocol, to, message)
 }

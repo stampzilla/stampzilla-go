@@ -75,39 +75,21 @@ func main() {
 	})
 
 	//store.OnUpdate(broadcastNodeUpdate(httpServer.Melody))
-	store.OnUpdate(broadcastNodeUpdate(tlsServer.Melody))
+	store.OnUpdate(broadcastNodeUpdate(secureSender))
 
 	<-done
 	<-tlsDone
 	config.Save("config.json")
 }
 
-func broadcastNodeUpdate(m *melody.Melody) func(*store.Store) error {
+func broadcastNodeUpdate(sender websocket.Sender) func(*store.Store) error {
 	return func(store *store.Store) error {
 
-		msg, err := models.NewMessage("nodes", store.GetNodes())
+		err := sender.SendToProtocol("gui", "nodes", store.GetNodes())
 		if err != nil {
 			return err
 		}
 
-		// TODO move this to websocket.Sender and depend on it here. Does not belong on *Message
-		err = msg.WriteWithFilter(m, func(s *melody.Session) bool {
-			v, exists := s.Get("protocol")
-			return exists && v == "gui"
-		})
-		if err != nil {
-			return err
-		}
-
-		msg, err = models.NewMessage("connections", store.GetConnections())
-		if err != nil {
-			return err
-		}
-
-		// TODO move this to websocket.Sender and depend on it here. Does not belong on *Message
-		return msg.WriteWithFilter(m, func(s *melody.Session) bool {
-			v, exists := s.Get("protocol")
-			return exists && v == "gui"
-		})
+		return sender.SendToProtocol("gui", "connections", store.GetConnections())
 	}
 }

@@ -49,7 +49,7 @@ func (wsh *insecureWebsocketHandler) Message(msg *models.Message) error {
 		}
 
 		// send certificate to node
-		err = wsh.WebsocketSender.SendTo(msg.FromUUID, "approved-certificate-signing-request", cert.String())
+		err = wsh.WebsocketSender.SendToID(msg.FromUUID, "approved-certificate-signing-request", cert.String())
 		if err != nil {
 			return err
 		}
@@ -57,7 +57,7 @@ func (wsh *insecureWebsocketHandler) Message(msg *models.Message) error {
 		// send ca to node
 		ca := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: wsh.ca.CAX509.Raw})
 
-		err = wsh.WebsocketSender.SendTo(msg.FromUUID, "certificate-authority", string(ca))
+		err = wsh.WebsocketSender.SendToID(msg.FromUUID, "certificate-authority", string(ca))
 		if err != nil {
 			return err
 		}
@@ -79,7 +79,7 @@ func (wsh *insecureWebsocketHandler) Connect(s interfaces.MelodySession, r *http
 	if err != nil {
 		return err
 	}
-	msg.Write(s)
+	msg.WriteTo(s)
 
 	return nil
 }
