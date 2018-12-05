@@ -28,7 +28,7 @@ func NewSecureWebsockerHandler(store *store.Store, config *models.Config, ws web
 func (wsh *secureWebsocketHandler) Message(msg *models.Message) error {
 	switch msg.Type {
 	case "update-devices":
-		devices := make(models.Devices)
+		devices := make(models.DeviceMap)
 		err := json.Unmarshal(msg.Body, devices)
 		if err != nil {
 			return err

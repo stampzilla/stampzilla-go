@@ -16,7 +16,7 @@ type Connections map[string]*models.Connection
 
 type Store struct {
 	Nodes       Nodes
-	Devices     models.Devices
+	Devices     *models.Devices
 	Connections Connections
 	onUpdate    []func(*Store) error
 	sync.RWMutex
@@ -25,16 +25,14 @@ type Store struct {
 func New() *Store {
 	return &Store{
 		Nodes:       make(Nodes),
-		Devices:     make(models.Devices),
+		Devices:     models.NewDevices(),
 		Connections: make(Connections),
 		onUpdate:    make([]func(*Store) error, 0),
 	}
 }
 
 func (store *Store) AddOrUpdateDevice(dev *models.Device) {
-	store.Lock()
-	store.Devices[dev.Node+"."+dev.ID] = dev
-	store.Unlock()
+	store.Devices.Add(dev)
 }
 func (store *Store) AddOrUpdateNode(node *models.Node) {
 	store.Lock()
@@ -52,9 +50,9 @@ func (store *Store) AddOrUpdateNode(node *models.Node) {
 		if node.Name != "" {
 			store.Nodes[node.UUID].Name = node.Name
 		}
-		if node.Devices != nil {
-			store.Nodes[node.UUID].Devices = node.Devices
-		}
+		//if node.Devices != nil {
+		//store.Nodes[node.UUID].Devices = node.Devices
+		//}
 		if node.Config != nil {
 			logrus.Info("Setting config to: ", string(node.Config))
 			store.Nodes[node.UUID].Config = node.Config
