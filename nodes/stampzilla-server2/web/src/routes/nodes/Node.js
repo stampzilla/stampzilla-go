@@ -57,12 +57,14 @@ const JsonWidget = (props) => {
 
   return (
     <JSONInput
-      placeholder={parsedValue || {}}
+      placeholder={parsedValue}
       onChange={({ jsObject }) => onChange(jsObject && JSON.stringify(jsObject))}
       theme="dark_vscode_tribute"
       locale={locale}
       height="550px"
       width="100%"
+      reset={false}
+      waitAfterKeyPress={60000}
     />
   );
 };

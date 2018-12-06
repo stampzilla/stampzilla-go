@@ -13,12 +13,13 @@ import (
 
 type Nodes map[string]*models.Node
 type Connections map[string]*models.Connection
+type UpdateCallback func(*Store) error
 
 type Store struct {
 	Nodes       Nodes
 	Devices     *models.Devices
 	Connections Connections
-	onUpdate    []func(*Store) error
+	onUpdate    map[string][]UpdateCallback
 	sync.RWMutex
 }
 
@@ -27,7 +28,7 @@ func New() *Store {
 		Nodes:       make(Nodes),
 		Devices:     models.NewDevices(),
 		Connections: make(Connections),
-		onUpdate:    make([]func(*Store) error, 0),
+		onUpdate:    make(map[string][]UpdateCallback, 0),
 	}
 }
 
@@ -62,11 +63,11 @@ func (store *Store) AddOrUpdateNode(node *models.Node) {
 
 	store.Unlock()
 
-	store.runCallbacks()
+	store.runCallbacks("nodes")
 }
 
-func (store *Store) runCallbacks() {
-	for _, callback := range store.onUpdate {
+func (store *Store) runCallbacks(area string) {
+	for _, callback := range store.onUpdate[area] {
 		if err := callback(store); err != nil {
 			logrus.Error("store: ", err)
 		}
@@ -87,7 +88,7 @@ func (store *Store) AddOrUpdateConnection(id string, c *models.Connection) {
 	store.Connections[id] = c
 	store.Unlock()
 
-	store.runCallbacks()
+	store.runCallbacks("connections")
 }
 
 func (store *Store) RemoveConnection(id string) {
@@ -95,7 +96,7 @@ func (store *Store) RemoveConnection(id string) {
 	delete(store.Connections, id)
 	store.Unlock()
 
-	store.runCallbacks()
+	store.runCallbacks("connections")
 }
 
 func (store *Store) GetNodes() Nodes {
@@ -117,9 +118,12 @@ func (store *Store) GetConnections() Connections {
 	return store.Connections
 }
 
-func (store *Store) OnUpdate(callback func(*Store) error) {
+func (store *Store) OnUpdate(area string, callback UpdateCallback) {
+	if _, ok := store.onUpdate[area]; !ok {
+		store.onUpdate[area] = make([]UpdateCallback, 0)
+	}
 	store.Lock()
-	store.onUpdate = append(store.onUpdate, callback)
+	store.onUpdate[area] = append(store.onUpdate[area], callback)
 	store.Unlock()
 }
 

@@ -58,11 +58,27 @@ func (d *Devices) Add(dev *Device) {
 	d.Unlock()
 }
 
+// Update the state of a device
+func (d *Devices) SetState(node, id string, state DeviceState) {
+	d.Lock()
+	if dev, ok := d.devices[node+"."+id]; ok {
+		dev.State = state
+	}
+	d.Unlock()
+}
+
 // Add adds a device to the list
 func (d *Devices) Get(id string) *Device {
 	d.RLock()
 	defer d.RUnlock()
 	return d.devices[id]
+}
+
+// Get all devices
+func (d *Devices) All() DeviceMap {
+	d.RLock()
+	defer d.RUnlock()
+	return d.devices
 }
 
 // Copy copies a list of devices

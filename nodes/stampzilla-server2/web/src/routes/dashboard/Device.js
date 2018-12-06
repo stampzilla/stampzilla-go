@@ -54,7 +54,7 @@ const guessType = (device) => {
 
 class Device extends Component {
   render() {
-    const { device, state } = this.props;
+    const { device } = this.props;
 
     const sortedTraits = device.get('traits') && device.get('traits').sort((a, b) => {
       const prioA = traitPriority.findIndex(trait => trait === a);
@@ -86,7 +86,7 @@ class Device extends Component {
           <Trait trait={primaryTrait} device={device} state={traitStates[primaryTrait] && device.getIn(['state', traitStates[primaryTrait]])} />
           }
           {!primaryTrait &&
-            <span>{JSON.stringify(state)}</span>
+            <span>{JSON.stringify(device.get('state'))}</span>
           }
         </div>
         <div className="d-flex flex-column ml-4">

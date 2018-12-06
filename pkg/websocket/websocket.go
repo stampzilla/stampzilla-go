@@ -88,9 +88,9 @@ func (ws *websocketClient) ConnectContext(ctx context.Context, addr string, head
 	logrus.Infof("websocket: connected to %s", addr)
 	ws.wasConnected()
 	ws.conn = c
-	ws.wg.Add(2)
-	go ws.readPump()
-	go ws.writePump(ctx)
+	ws.readPump()
+	ws.writePump(ctx) <- struct{}{}
+
 	if ws.onConnect != nil {
 		ws.onConnect()
 	}
@@ -157,46 +157,55 @@ func (ws *websocketClient) WriteJSON(v interface{}) error {
 }
 
 func (ws *websocketClient) readPump() {
-	defer ws.wg.Done()
-	ws.conn.SetReadDeadline(time.Now().Add(pongWait))
-	ws.conn.SetPongHandler(func(string) error { ws.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
-	for {
-		_, message, err := ws.conn.ReadMessage()
-		if err != nil {
-			logrus.Error("websocket: readPump error:", err)
-			ws.wasDisconnected(err)
-			return
-		}
-		logrus.Debugf("websocket: readPump got msg: %s", message)
-		select {
-		case ws.read <- message:
-		default:
-		}
-	}
-}
-
-func (ws *websocketClient) writePump(ctx context.Context) {
-	defer ws.wg.Done()
-	ticker := time.NewTicker(pingPeriod)
-	defer ticker.Stop()
-	for {
-		select {
-		case t := <-ws.write:
-			t()
-		case <-ctx.Done():
-			logrus.Error("websocket: Stopping writePump because err: ", ctx.Err())
-			err := ws.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+	go func() {
+		ws.wg.Add(1)
+		defer ws.wg.Done()
+		ws.conn.SetReadDeadline(time.Now().Add(pongWait))
+		ws.conn.SetPongHandler(func(string) error { ws.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+		for {
+			_, message, err := ws.conn.ReadMessage()
 			if err != nil {
-				logrus.Error("websocket: write close:", err)
+				logrus.Error("websocket: readPump error:", err)
+				ws.wasDisconnected(err)
 				return
 			}
-			return
-		case <-ticker.C:
-			if err := ws.conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(writeWait)); err != nil {
-				logrus.Error("websocket: ping:", err)
+			logrus.Debugf("websocket: readPump got msg: %s", message)
+			select {
+			case ws.read <- message:
+			default:
 			}
 		}
-	}
+	}()
+}
+
+func (ws *websocketClient) writePump(ctx context.Context) chan struct{} {
+	ready := make(chan struct{})
+	go func() {
+		ws.wg.Add(1)
+		defer ws.wg.Done()
+		ticker := time.NewTicker(pingPeriod)
+		defer ticker.Stop()
+		for {
+			select {
+			case t := <-ws.write:
+				t()
+			case <-ctx.Done():
+				logrus.Error("websocket: Stopping writePump because err: ", ctx.Err())
+				err := ws.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+				if err != nil {
+					logrus.Error("websocket: write close:", err)
+					return
+				}
+				return
+			case <-ticker.C:
+				if err := ws.conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(writeWait)); err != nil {
+					logrus.Error("websocket: ping:", err)
+				}
+			case <-ready:
+			}
+		}
+	}()
+	return ready
 }
 
 func (ws *websocketClient) wasDisconnected(err error) {

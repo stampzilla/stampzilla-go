@@ -29,7 +29,7 @@ func (wsh *secureWebsocketHandler) Message(msg *models.Message) error {
 	switch msg.Type {
 	case "update-devices":
 		devices := make(models.DeviceMap)
-		err := json.Unmarshal(msg.Body, devices)
+		err := json.Unmarshal(msg.Body, &devices)
 		if err != nil {
 			return err
 		}

@@ -75,7 +75,9 @@ func main() {
 	})
 
 	//store.OnUpdate(broadcastNodeUpdate(httpServer.Melody))
-	store.OnUpdate(broadcastNodeUpdate(secureSender))
+	store.OnUpdate("nodes", broadcastNodeUpdate(secureSender))
+	store.OnUpdate("connections", broadcastConnectionsUpdate(secureSender))
+	store.OnUpdate("devices", broadcastDevicesUpdate(secureSender))
 
 	<-done
 	<-tlsDone
@@ -84,12 +86,18 @@ func main() {
 
 func broadcastNodeUpdate(sender websocket.Sender) func(*store.Store) error {
 	return func(store *store.Store) error {
+		return sender.SendToProtocol("gui", "nodes", store.GetNodes())
+	}
+}
 
-		err := sender.SendToProtocol("gui", "nodes", store.GetNodes())
-		if err != nil {
-			return err
-		}
+func broadcastConnectionsUpdate(sender websocket.Sender) func(*store.Store) error {
+	return func(store *store.Store) error {
+		return sender.SendToProtocol("gui", "connections", store.GetConnections())
+	}
+}
 
+func broadcastDevicesUpdate(sender websocket.Sender) func(*store.Store) error {
+	return func(store *store.Store) error {
 		return sender.SendToProtocol("gui", "connections", store.GetConnections())
 	}
 }

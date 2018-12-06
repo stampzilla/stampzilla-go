@@ -39,7 +39,7 @@ type Node struct {
 	TLS       *tls.Certificate
 	CA        *x509.CertPool
 	callbacks map[string][]OnFunc
-	devices   models.Devices
+	devices   *models.Devices
 }
 
 // New returns a new Node
@@ -48,7 +48,7 @@ func New(client websocket.Websocket) *Node {
 		Client:    client,
 		wg:        &sync.WaitGroup{},
 		callbacks: make(map[string][]OnFunc),
-		devices:   make(models.Devices),
+		devices:   models.NewDevices(),
 	}
 }
 func (n *Node) Wait() {
@@ -314,26 +314,20 @@ func (n *Node) OnConfig(cb OnFunc) {
 
 func (n *Node) OnRequestStateChange(cb func(state models.DeviceState, device *models.Device) error) {
 	n.on("state-change", func(data json.RawMessage) error {
-		conf := &models.Node{}
-		err := json.Unmarshal(data, conf)
+		conf := models.NewDevices()
+		err := json.Unmarshal(data, &conf)
 		if err != nil {
 			return err
 		}
 
-		if conf.Devices == nil {
-			logrus.Error("No devices found in incoming update-node, skipping.")
-			return nil
-		}
-
 		// loop over all devices and compare state
-
 		stateChange := make(models.DeviceState)
 
 		foundAnyChange := false
-		for k, dev := range n.devices {
+		for k, dev := range n.devices.All() {
 			foundChange := false
 			for s, oldState := range dev.State {
-				newState := conf.Devices[k].State[s]
+				newState := conf.Get(k).State[s]
 				if newState != oldState {
 					stateChange[s] = newState
 					foundChange = true
@@ -349,8 +343,7 @@ func (n *Node) OnRequestStateChange(cb func(state models.DeviceState, device *mo
 					continue
 				}
 				// set the new state and send it to the server
-				n.devices[k].State = conf.Devices[k].State
-
+				n.devices.SetState("", k, conf.Get(k).State)
 			}
 		}
 		if foundAnyChange {
@@ -362,20 +355,10 @@ func (n *Node) OnRequestStateChange(cb func(state models.DeviceState, device *mo
 }
 
 func (n *Node) AddOrUpdate(d *models.Device) error {
-	key := fmt.Sprintf("%s.%s", n.UUID, d.ID)
-	d.Node = n.UUID
-	n.devices[key] = d
-
+	n.devices.Add(d)
 	return n.syncDevices()
 }
 
 func (n *Node) syncDevices() error {
-	node := models.Node{
-		UUID: n.UUID,
-		//Connected: true,
-		//Type:      n.Type,
-		Devices: n.devices,
-		//Config
-	}
-	return n.WriteMessage("update-node", node)
+	return n.WriteMessage("update-devices", n.devices)
 }
