@@ -157,8 +157,8 @@ func (ws *websocketClient) WriteJSON(v interface{}) error {
 }
 
 func (ws *websocketClient) readPump() {
+	ws.wg.Add(1)
 	go func() {
-		ws.wg.Add(1)
 		defer ws.wg.Done()
 		ws.conn.SetReadDeadline(time.Now().Add(pongWait))
 		ws.conn.SetPongHandler(func(string) error { ws.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
@@ -180,8 +180,8 @@ func (ws *websocketClient) readPump() {
 
 func (ws *websocketClient) writePump(ctx context.Context) chan struct{} {
 	ready := make(chan struct{})
+	ws.wg.Add(1)
 	go func() {
-		ws.wg.Add(1)
 		defer ws.wg.Done()
 		ticker := time.NewTicker(pingPeriod)
 		defer ticker.Stop()
