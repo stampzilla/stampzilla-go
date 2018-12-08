@@ -51,7 +51,7 @@ export default function reducer(state = defaultState, action) {
     }
     case c.RECEIVED: {
       return state
-        .set('messages', state.get('messages').push(action.message));
+        .set('messages', state.get('messages').push(action.message).slice(-10));
     }
     default: return state;
   }

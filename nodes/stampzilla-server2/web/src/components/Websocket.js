@@ -60,12 +60,10 @@ class Websocket extends Component {
       }
       case 'nodes': {
         dispatch(updateNodes(parsed.body));
-
-        const devices = Object.values(parsed.body).reduce((acc, node) => ({
-          ...acc,
-          ...node.devices,
-        }), {});
-        dispatch(updateDevices(devices));
+        break;
+      }
+      case 'devices': {
+        dispatch(updateDevices(parsed.body));
         break;
       }
       default: {

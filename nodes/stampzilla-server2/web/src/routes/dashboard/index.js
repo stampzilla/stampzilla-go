@@ -25,8 +25,10 @@ class Nodes extends Component {
                 title={nodes.getIn([nodeId, 'name'])}
                 bodyClassName="p-3"
               >
-                {devicesByNode[nodeId].map(device => (
-                  <Device device={device} />
+                {devicesByNode[nodeId]
+                  .sort((a, b) => a.get('name').localeCompare(b.get('name')))
+                  .map(device => (
+                    <Device device={device} />
                 ))}
               </Card>
               ))}
