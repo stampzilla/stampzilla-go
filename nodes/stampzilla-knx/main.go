@@ -35,6 +35,9 @@ type sensor struct {
 }
 
 func main() {
+	logrus.SetFormatter(&logrus.TextFormatter{
+		ForceColors: true,
+	})
 
 	client := websocket.New()
 	node := node.New(client)
@@ -54,6 +57,10 @@ func main() {
 		logrus.Error(err)
 		return
 	}
+
+	node.OnShutdown(func() {
+		tunnel.Close()
+	})
 
 	node.Wait()
 	node.Client.Wait()
@@ -106,6 +113,15 @@ func setupLight(node *node.Node, tunnel *tunnel, light light) {
 			"on": false,
 		},
 	}
+
+	if light.StateSwitch != "" {
+		tunnel.AddLink(light.StateSwitch, "on", "bool", dev)
+	}
+
+	if light.StateBrightness != "" {
+		tunnel.AddLink(light.StateBrightness, "brightness", "level", dev)
+	}
+
 	err := node.AddOrUpdate(dev)
 	if err != nil {
 		logrus.Error(err)

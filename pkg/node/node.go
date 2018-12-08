@@ -40,6 +40,7 @@ type Node struct {
 	CA        *x509.CertPool
 	callbacks map[string][]OnFunc
 	devices   *models.Devices
+	shutdown  []func()
 }
 
 // New returns a new Node
@@ -68,6 +69,10 @@ func (n *Node) setup() {
 
 func (n *Node) WriteMessage(msgType string, data interface{}) error {
 	msg, err := models.NewMessage(msgType, data)
+	logrus.WithFields(logrus.Fields{
+		"type": msgType,
+		"body": data,
+	}).Infof("Send to server")
 	if err != nil {
 		return err
 	}
@@ -169,10 +174,13 @@ func (n *Node) Connect() error {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt, syscall.SIGQUIT, syscall.SIGTERM)
+	signal.Notify(interrupt, os.Interrupt, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
 	go func() {
 		<-interrupt
 		cancel()
+		for _, f := range n.shutdown {
+			f()
+		}
 	}()
 
 	n.Client.OnConnect(func() {
@@ -300,7 +308,6 @@ func (n *Node) on(what string, cb OnFunc) {
 
 //OnConfig is run when node recieves updated configuration from the server
 func (n *Node) OnConfig(cb OnFunc) {
-
 	n.on("setup", func(data json.RawMessage) error {
 		conf := &models.Node{}
 		err := json.Unmarshal(data, conf)
@@ -310,6 +317,10 @@ func (n *Node) OnConfig(cb OnFunc) {
 		//TODO do we want to persist the config to disk here or leve it to each node? Could possibly put it in config.json or new custom file
 		return cb(conf.Config)
 	})
+}
+
+func (n *Node) OnShutdown(cb func()) {
+	n.shutdown = append(n.shutdown, cb)
 }
 
 func (n *Node) OnRequestStateChange(cb func(state models.DeviceState, device *models.Device) error) {
@@ -356,7 +367,7 @@ func (n *Node) OnRequestStateChange(cb func(state models.DeviceState, device *mo
 
 func (n *Node) AddOrUpdate(d *models.Device) error {
 	n.devices.Add(d)
-	return n.syncDevices()
+	return n.WriteMessage("update-device", d)
 }
 
 func (n *Node) syncDevices() error {

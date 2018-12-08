@@ -98,6 +98,6 @@ func broadcastConnectionsUpdate(sender websocket.Sender) func(*store.Store) erro
 
 func broadcastDevicesUpdate(sender websocket.Sender) func(*store.Store) error {
 	return func(store *store.Store) error {
-		return sender.SendToProtocol("gui", "connections", store.GetConnections())
+		return sender.SendToProtocol("gui", "devices", store.GetDevices())
 	}
 }

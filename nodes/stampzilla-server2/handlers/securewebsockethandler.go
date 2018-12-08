@@ -27,13 +27,34 @@ func NewSecureWebsockerHandler(store *store.Store, config *models.Config, ws web
 
 func (wsh *secureWebsocketHandler) Message(msg *models.Message) error {
 	switch msg.Type {
+	case "update-device":
+		device := &models.Device{}
+		err := json.Unmarshal(msg.Body, device)
+		if err != nil {
+			return err
+		}
+
+		logrus.WithFields(logrus.Fields{
+			"from":   msg.FromUUID,
+			"device": device,
+		}).Info("Received device")
+		if device != nil {
+			device.Node = msg.FromUUID
+			wsh.Store.AddOrUpdateDevice(device)
+		}
 	case "update-devices":
 		devices := make(models.DeviceMap)
 		err := json.Unmarshal(msg.Body, &devices)
 		if err != nil {
 			return err
 		}
+
+		logrus.WithFields(logrus.Fields{
+			"from":    msg.FromUUID,
+			"devices": devices,
+		}).Info("Received devices")
 		for _, dev := range devices {
+			dev.Node = msg.FromUUID
 			wsh.Store.AddOrUpdateDevice(dev)
 		}
 	case "setup-node":
@@ -49,6 +70,8 @@ func (wsh *secureWebsocketHandler) Message(msg *models.Message) error {
 			return err
 		}
 		wsh.WebsocketSender.SendToID(node.UUID, "setup", node)
+	default:
+		logrus.Warnf("Received unknown message type \"%s\"", msg.Type)
 	}
 	return nil
 }
@@ -62,6 +85,12 @@ func (wsh *secureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.R
 	// Send a list of all nodes if its a webgui
 	if exists && proto == "gui" {
 		msg, err := models.NewMessage("nodes", wsh.Store.GetNodes())
+		if err != nil {
+			return err
+		}
+		msg.WriteTo(s)
+
+		msg, err = models.NewMessage("devices", wsh.Store.GetDevices())
 		if err != nil {
 			return err
 		}

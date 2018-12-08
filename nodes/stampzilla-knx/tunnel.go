@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"sync"
 
@@ -53,38 +54,12 @@ func (tunnel *tunnel) SetAddress(address string) {
 		defer client.Close()
 
 		for msg := range client.Inbound() {
-			logrus.Warnf("Got message %+v", msg)
-			tunnel.RLock()
-			if links, ok := tunnel.Groups[msg.Destination.String()]; ok {
-				for _, gl := range links {
-					logrus.Info("Found link", gl.Name, gl.Device.ID)
-
-					var value interface{}
-					var err error
-					switch gl.Type {
-					case "bool":
-						value = new(dpt.Switch)
-					case "temperature":
-						value = new(dpt.ValueTemp) //2 bytes floating point
-					case "lux":
-						value = new(dpt.ValueTemp) //2 bytes floating point
-					}
-
-					if dptv, ok := value.(dpt.DatapointValue); ok {
-						err = dptv.Unpack(msg.Data)
-						if err != nil {
-							logrus.Error("Failed to unpack", err)
-							continue
-						}
-
-						gl.Device.State[gl.Name] = dptv
-						tunnel.Node.AddOrUpdate(gl.Device)
-					} else {
-						logrus.Warn("Unsupported type %s", gl.Type)
-					}
-				}
+			err := tunnel.DecodeKNX(msg)
+			if err != nil {
+				logrus.WithFields(logrus.Fields{
+					"dest": msg.Destination.String(),
+				}).Warnf("Failed to handle message: %+v:", msg)
 			}
-			tunnel.RUnlock()
 
 			//var temp dpt.ValueTemp
 
@@ -99,8 +74,55 @@ func (tunnel *tunnel) SetAddress(address string) {
 	}()
 }
 
+func (tunnel *tunnel) DecodeKNX(msg knx.GroupEvent) error {
+	tunnel.RLock()
+	defer tunnel.RUnlock()
+
+	links, ok := tunnel.Groups[msg.Destination.String()]
+	if !ok {
+		return fmt.Errorf("No link was found for: %s", msg.Destination.String())
+	}
+
+	for _, gl := range links {
+		logrus.WithFields(logrus.Fields{
+			"dest":     msg.Destination.String(),
+			"name":     gl.Name,
+			"deviceId": gl.Device.ID,
+		}).Trace("Found link")
+
+		var value interface{}
+		var err error
+		switch gl.Type {
+		case "bool":
+			value = new(dpt.Switch)
+		case "temperature":
+			value = new(dpt.ValueTemp) //2 bytes floating point
+		case "lux":
+			value = new(dpt.ValueTemp) //2 bytes floating point
+		}
+
+		if dptv, ok := value.(dpt.DatapointValue); ok {
+			err = dptv.Unpack(msg.Data)
+			if err != nil {
+				return fmt.Errorf("Failed to unpack: %s", err.Error())
+			}
+
+			gl.Device.State[gl.Name] = dptv
+			tunnel.Node.AddOrUpdate(gl.Device)
+		} else {
+			return fmt.Errorf("Unsupported type: %s", gl.Type)
+		}
+	}
+	return nil
+}
+
 func (tunnel *tunnel) AddLink(ga string, n string, t string, d *models.Device) {
-	logrus.Warnf("Add link for %s to %s", ga, d.ID)
+	logrus.WithFields(logrus.Fields{
+		"dest": ga,
+		"name": n,
+		"to":   d.ID,
+	}).Tracef("Add link")
+
 	tunnel.Lock()
 	if _, ok := tunnel.Groups[ga]; !ok {
 		tunnel.Groups[ga] = []groupLink{}
@@ -114,4 +136,8 @@ func (tunnel *tunnel) AddLink(ga string, n string, t string, d *models.Device) {
 	tunnel.Unlock()
 
 	d.State[n] = "-"
+}
+
+func (tunnel *tunnel) Close() {
+	tunnel.Client.Close()
 }

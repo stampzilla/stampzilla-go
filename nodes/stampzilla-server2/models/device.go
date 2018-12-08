@@ -1,6 +1,9 @@
 package models
 
-import "sync"
+import (
+	"encoding/json"
+	"sync"
+)
 
 type DeviceState map[string]interface{}
 type Device struct {
@@ -94,4 +97,22 @@ func (d *Devices) Copy() *Devices {
 	d.RUnlock()
 
 	return newD
+}
+
+func (d *Devices) MarshalJSON() ([]byte, error) {
+	d.RLock()
+	defer d.RUnlock()
+	return json.Marshal(d.devices)
+}
+
+func (d *Devices) UnmarshalJSON(b []byte) error {
+	var devices map[string]*Device
+	if err := json.Unmarshal(b, &devices); err != nil {
+		return err
+	}
+
+	for _, dev := range devices {
+		d.Add(dev)
+	}
+	return nil
 }
