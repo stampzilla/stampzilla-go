@@ -6,6 +6,7 @@ import {
 } from '@mdi/js';
 import Icon from '@mdi/react';
 
+import { write } from '../../components/Websocket';
 import Trait from './Trait';
 
 const traitPriority = [
@@ -53,6 +54,18 @@ const guessType = (device) => {
 };
 
 class Device extends Component {
+  onChange = (device, trait) => (value) => {
+    const clone = device.toJS();
+    clone.state[traitStates[trait]] = value;
+
+    write({
+      type: 'state-change',
+      body: {
+        [clone.id]: clone,
+      },
+    });
+  }
+
   render() {
     const { device } = this.props;
 
@@ -83,7 +96,12 @@ class Device extends Component {
             {device.get('name')}<br />
           </div>
           {primaryTrait &&
-          <Trait trait={primaryTrait} device={device} state={traitStates[primaryTrait] && device.getIn(['state', traitStates[primaryTrait]])} />
+          <Trait
+            trait={primaryTrait}
+            device={device}
+            state={traitStates[primaryTrait] && device.getIn(['state', traitStates[primaryTrait]])}
+            onChange={this.onChange(device, primaryTrait)}
+          />
           }
           {!primaryTrait &&
             <span>{JSON.stringify(device.get('state'))}</span>
@@ -94,7 +112,12 @@ class Device extends Component {
             <div className="d-flex ml-3" key={trait}>
               <div className="mr-2">{traitNames[trait] || trait}</div>
               <div className="flex-grow-1 d-flex align-items-center">
-                <Trait trait={trait} device={device} state={traitStates[trait] && device.getIn(['state', traitStates[trait]])} />
+                <Trait
+                  trait={trait}
+                  device={device}
+                  state={traitStates[trait] && device.getIn(['state', traitStates[trait]])}
+                  onChange={this.onChange(device, trait)}
+                />
               </div>
             </div>
           ))}

@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"fmt"
 	"sync"
 )
 
@@ -62,12 +63,15 @@ func (d *Devices) Add(dev *Device) {
 }
 
 // Update the state of a device
-func (d *Devices) SetState(node, id string, state DeviceState) {
+func (d *Devices) SetState(node, id string, state DeviceState) error {
 	d.Lock()
+	defer d.Unlock()
 	if dev, ok := d.devices[node+"."+id]; ok {
 		dev.State = state
+		return nil
 	}
-	d.Unlock()
+
+	return fmt.Errorf("Node not found (%s)", node+"."+id)
 }
 
 // Add adds a device to the list

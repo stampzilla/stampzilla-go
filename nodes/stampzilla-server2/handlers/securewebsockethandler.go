@@ -38,6 +38,7 @@ func (wsh *secureWebsocketHandler) Message(msg *models.Message) error {
 			"from":   msg.FromUUID,
 			"device": device,
 		}).Info("Received device")
+
 		if device != nil {
 			device.Node = msg.FromUUID
 			wsh.Store.AddOrUpdateDevice(device)
@@ -53,6 +54,7 @@ func (wsh *secureWebsocketHandler) Message(msg *models.Message) error {
 			"from":    msg.FromUUID,
 			"devices": devices,
 		}).Info("Received devices")
+
 		for _, dev := range devices {
 			dev.Node = msg.FromUUID
 			wsh.Store.AddOrUpdateDevice(dev)
@@ -64,14 +66,47 @@ func (wsh *secureWebsocketHandler) Message(msg *models.Message) error {
 			return err
 		}
 
+		logrus.WithFields(logrus.Fields{
+			"from":   msg.FromUUID,
+			"config": node,
+		}).Info("Received new node configuration")
+
 		wsh.Store.AddOrUpdateNode(node)
 		err = wsh.Store.WriteToDisk()
 		if err != nil {
 			return err
 		}
 		wsh.WebsocketSender.SendToID(node.UUID, "setup", node)
+	case "state-change":
+		devices := models.NewDevices()
+		err := json.Unmarshal(msg.Body, devices)
+		if err != nil {
+			return err
+		}
+
+		logrus.WithFields(logrus.Fields{
+			"from":    msg.FromUUID,
+			"devices": devices,
+		}).Info("Received state change request")
+
+		devicesByNode := make(map[string]map[string]models.Device)
+		for _, device := range devices.All() {
+			if devicesByNode[device.Node] == nil {
+				devicesByNode[device.Node] = make(map[string]models.Device)
+			}
+			devicesByNode[device.Node][device.ID] = *device
+		}
+
+		for node, devices := range devicesByNode {
+			logrus.WithFields(logrus.Fields{
+				"to": node,
+			}).Info("Send state change request to node")
+			wsh.WebsocketSender.SendToID(node, "state-change", devices)
+		}
 	default:
-		logrus.Warnf("Received unknown message type \"%s\"", msg.Type)
+		logrus.WithFields(logrus.Fields{
+			"type": msg.Type,
+		}).Warnf("Received unknown message")
 	}
 	return nil
 }

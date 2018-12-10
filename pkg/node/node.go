@@ -72,7 +72,7 @@ func (n *Node) WriteMessage(msgType string, data interface{}) error {
 	logrus.WithFields(logrus.Fields{
 		"type": msgType,
 		"body": data,
-	}).Infof("Send to server")
+	}).Tracef("Send to server")
 	if err != nil {
 		return err
 	}
@@ -209,8 +209,13 @@ func (n *Node) reader(ctx context.Context) {
 				err := cb(msg.Body)
 				if err != nil {
 					logrus.Error(err)
-					return
+					continue
 				}
+			}
+			if n.callbacks[msg.Type] == nil || len(n.callbacks[msg.Type]) == 0 {
+				logrus.WithFields(logrus.Fields{
+					"type": msg.Type,
+				}).Warn("Received message but no one cared")
 			}
 		}
 	}
@@ -334,31 +339,38 @@ func (n *Node) OnRequestStateChange(cb func(state models.DeviceState, device *mo
 		// loop over all devices and compare state
 		stateChange := make(models.DeviceState)
 
-		foundAnyChange := false
-		for k, dev := range n.devices.All() {
+		for _, dev := range conf.All() {
 			foundChange := false
-			for s, oldState := range dev.State {
-				newState := conf.Get(k).State[s]
+			oldDev := n.devices.Get("." + dev.ID)
+			for s, newState := range dev.State {
+				oldState := oldDev.State[s]
 				if newState != oldState {
 					stateChange[s] = newState
 					foundChange = true
-					foundAnyChange = true
 				}
 			}
 			if foundChange {
-				err := cb(stateChange, dev)
+				err := cb(stateChange, oldDev)
 				if err != nil {
 					// set state back to before. we could not change it as requested
 					// continue to next device
 					logrus.Error(err)
 					continue
 				}
+
 				// set the new state and send it to the server
-				n.devices.SetState("", k, conf.Get(k).State)
+				err = n.devices.SetState("", dev.ID, dev.State)
+				if err != nil {
+					logrus.Error(err)
+					continue
+				}
+
+				err = n.WriteMessage("update-device", n.devices.Get("."+dev.ID))
+				if err != nil {
+					logrus.Error(err)
+					continue
+				}
 			}
-		}
-		if foundAnyChange {
-			return n.syncDevices()
 		}
 
 		return nil

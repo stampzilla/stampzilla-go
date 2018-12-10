@@ -2,37 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
 	"github.com/stampzilla/stampzilla-go/pkg/node"
 	"github.com/stampzilla/stampzilla-go/pkg/websocket"
 )
-
-type config struct {
-	Gateway gateway  `json:"gateway"`
-	Lights  []light  `json:"lights"`
-	Sensors []sensor `json:"sensors"`
-}
-
-type gateway struct {
-	Address string `json:"address"`
-}
-
-type light struct {
-	ID                string `json:"id"`
-	ControlSwitch     string `json:"control_switch"`
-	ControlBrightness string `json:"control_brightness"`
-	StateSwitch       string `json:"state_switch"`
-	StateBrightness   string `json:"state_brightness"`
-}
-
-type sensor struct {
-	ID          string `json:"id"`
-	Motion      string `json:"motion"`
-	Lux         string `json:"lux"`
-	Temperature string `json:"temperature"`
-}
 
 func main() {
 	logrus.SetFormatter(&logrus.TextFormatter{
@@ -45,10 +22,55 @@ func main() {
 
 	tunnel := newTunnel(node)
 
-	node.OnConfig(updatedConfig(node, tunnel))
+	config := &config{}
 
+	node.OnConfig(updatedConfig(node, tunnel, config))
 	node.OnRequestStateChange(func(state models.DeviceState, device *models.Device) error {
-		logrus.Info("OnRequestStateChange:", state, device.ID)
+		id := strings.SplitN(device.ID, ".", 2)
+
+		switch id[0] {
+		case "light":
+			config.Lock()
+			defer config.Unlock()
+
+			for _, light := range config.Lights {
+				if light.ID != id[1] {
+					continue
+				}
+
+				for stateKey, newState := range state {
+					switch stateKey {
+					case "on":
+						diff, value, err := boolDiff(newState, device.State[stateKey])
+						if err != nil {
+							return err
+						}
+
+						if diff {
+							err := light.Switch(tunnel, value)
+							if err != nil {
+								return err
+							}
+						}
+					case "brightness":
+						diff, value, err := scalingDiff(newState, device.State[stateKey])
+						if err != nil {
+							return err
+						}
+
+						if diff {
+							err := light.Brightness(tunnel, value)
+							if err != nil {
+								return err
+							}
+						}
+					}
+
+				}
+			}
+		default:
+			return fmt.Errorf("Unknown device type \"%s\"", id[0])
+		}
 		return nil
 	})
 
@@ -66,7 +88,7 @@ func main() {
 	node.Client.Wait()
 }
 
-func updatedConfig(node *node.Node, tunnel *tunnel) func(data json.RawMessage) error {
+func updatedConfig(node *node.Node, tunnel *tunnel, config *config) func(data json.RawMessage) error {
 	return func(data json.RawMessage) error {
 		var configString string
 		err := json.Unmarshal(data, &configString)
@@ -74,8 +96,9 @@ func updatedConfig(node *node.Node, tunnel *tunnel) func(data json.RawMessage) e
 			return err
 		}
 
-		var config config
-		err = json.Unmarshal([]byte(configString), &config)
+		config.Lock()
+		defer config.Unlock()
+		err = json.Unmarshal([]byte(configString), config)
 		if err != nil {
 			return err
 		}
