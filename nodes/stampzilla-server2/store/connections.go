@@ -28,7 +28,13 @@ func (store *Store) AddOrUpdateConnection(id string, c *models.Connection) {
 func (store *Store) RemoveConnection(id string) {
 	store.Lock()
 	delete(store.Connections, id)
+	for _, device := range store.Devices.All() {
+		if device.Node == id {
+			device.Online = false
+		}
+	}
 	store.Unlock()
 
 	store.runCallbacks("connections")
+	store.runCallbacks("devices")
 }

@@ -71,7 +71,7 @@ func (d *Devices) SetState(node, id string, state DeviceState) error {
 		return nil
 	}
 
-	return fmt.Errorf("Node not found (%s)", node+"."+id)
+	return fmt.Errorf("Node not found (%s.%s)", node, id)
 }
 
 // Add adds a device to the list
