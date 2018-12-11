@@ -7,13 +7,22 @@ import HueColorPicker from './HueColorPicker';
 
 class Trait extends Component {
   renderTrait() {
-    const { trait, state, onChange } = this.props;
+    const {
+      trait, state, onChange, device,
+    } = this.props;
     const id = uniqeId();
 
     switch (trait) {
       case 'OnOff': return (
         <span className="switch switch-sm">
-          <input type="checkbox" className="switch" id={`switch-${id}`} checked={!!state} onChange={event => onChange(event.target.checked)} />
+          <input
+            type="checkbox"
+            className="switch"
+            id={`switch-${id}`}
+            checked={!!state}
+            onChange={event => onChange(event.target.checked)}
+            disabled={!device.get('online')}
+          />
           <label htmlFor={`switch-${id}`} className="mb-0" />
         </span>
       );
@@ -34,6 +43,7 @@ class Trait extends Component {
               a: state,
           }}
           onChange={({ rgb }) => onChange(rgb.a)}
+          disabled={!device.get('online')}
         />
       );
       case 'ColorSetting': return (

@@ -5,7 +5,9 @@ import {
   mdiPulse,
 } from '@mdi/js';
 import Icon from '@mdi/react';
+import classnames from 'classnames';
 
+import './device.scss';
 import { write } from '../../components/Websocket';
 import Trait from './Trait';
 
@@ -82,7 +84,11 @@ class Device extends Component {
     const icon = icons[type];
 
     return (
-      <div className="d-flex flex-column">
+      <div className={classnames({
+        'd-flex flex-column': true,
+        offline: !device.get('online'),
+      })}
+      >
         <div className="d-flex align-items-center py-1">
           <div style={{ width: '1.5rem' }}>
             { icon &&
