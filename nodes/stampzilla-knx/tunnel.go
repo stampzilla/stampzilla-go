@@ -2,22 +2,30 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"sync"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
 	"github.com/stampzilla/stampzilla-go/pkg/node"
 	"github.com/vapourismo/knx-go/knx"
+	"github.com/vapourismo/knx-go/knx/cemi"
 	"github.com/vapourismo/knx-go/knx/dpt"
 )
 
 type tunnel struct {
-	Node    *node.Node
-	Address string
-	Client  knx.GroupTunnel
+	Node      *node.Node
+	Address   string
+	Connected bool
+	Client    *knx.GroupTunnel
 
 	Groups map[string][]groupLink
+
+	OnConnect    func()
+	OnDisconnect func()
+
+	reconnect bool
+	wg        sync.WaitGroup
 	sync.RWMutex
 }
 
@@ -29,8 +37,9 @@ type groupLink struct {
 
 func newTunnel(node *node.Node) *tunnel {
 	return &tunnel{
-		Node:   node,
-		Groups: make(map[string][]groupLink),
+		Node:      node,
+		Groups:    make(map[string][]groupLink),
+		reconnect: true,
 	}
 }
 
@@ -39,42 +48,115 @@ func (tunnel *tunnel) SetAddress(address string) {
 		return
 	}
 
-	client, err := knx.NewGroupTunnel(address, knx.DefaultTunnelConfig)
+	err := tunnel.Connect(address)
 	if err != nil {
-		log.Fatal(err)
-	}
+		logrus.WithFields(logrus.Fields{
+			"address": address,
+			"error":   err,
+		}).Error("Failed to open KNX tunnel")
 
-	if tunnel.Client.Tunnel != nil {
-		tunnel.Client.Close()
-	}
-
-	go func() {
-		tunnel.Address = address
-		tunnel.Client = client
-		defer client.Close()
-
-		for msg := range client.Inbound() {
-			err := tunnel.DecodeKNX(msg)
-			if err != nil {
-				logrus.WithFields(logrus.Fields{
-					"dest": msg.Destination.String(),
-				}).Warnf("Failed to handle message: %+v:", msg)
-			}
-
-			//var temp dpt.ValueTemp
-
-			//err := temp.Unpack(msg.Data)
-			//if err != nil {
-			//util.Logger.Printf("%+v", msg)
-			//continue
-			//}
-
-			//util.Logger.Printf("%+v: %v", msg, temp)
+		if tunnel.reconnect {
+			logrus.Warn("Going to try again in 10s")
+			<-time.After(time.Second * 10)
+			go tunnel.Connect(address)
 		}
-	}()
+	}
 }
 
-func (tunnel *tunnel) DecodeKNX(msg knx.GroupEvent) error {
+func (tunnel *tunnel) Connect(address string) error {
+	// Connect to the gateway
+	client, err := knx.NewGroupTunnel(address, knx.DefaultTunnelConfig)
+	if err != nil {
+		return err
+	}
+
+	// Disconnect the previous tunnel
+	if tunnel.Client != nil {
+		tunnel.reconnect = false
+		tunnel.Client.Close()
+		tunnel.wg.Wait()
+		tunnel.reconnect = true
+	}
+
+	// Start using the new one
+	go func() {
+		tunnel.wg.Add(1)
+		tunnel.Address = address
+		tunnel.Client = &client
+		tunnel.onConnect()
+
+		defer func() {
+			tunnel.onDisconnect()
+			tunnel.Client = nil
+			client.Close()
+			tunnel.wg.Done()
+
+			if tunnel.reconnect {
+				go tunnel.Connect(address)
+			}
+		}()
+
+		for msg := range client.Inbound() {
+			err := tunnel.decodeKNX(msg)
+			if err != nil {
+				logrus.WithFields(logrus.Fields{
+					"dest":    msg.Destination.String(),
+					"error":   err,
+					"message": fmt.Sprintf("%+v", msg),
+				}).Warn("Failed to handle message")
+			}
+		}
+	}()
+
+	return nil
+}
+
+func (tunnel *tunnel) onConnect() {
+	logrus.Info("Connected to KNX gateway")
+	tunnel.Connected = true
+	// Trigger a read on each group address that we monitor
+	for ga, _ := range tunnel.Groups {
+		tunnel.triggerRead(ga)
+	}
+	tunnel.OnConnect()
+}
+func (tunnel *tunnel) onDisconnect() {
+	logrus.Warn("Disconnected from KNX gateway")
+	tunnel.Connected = false
+	tunnel.OnDisconnect()
+}
+
+func (tunnel *tunnel) triggerRead(ga string) {
+	if !tunnel.Connected { // Dont try to send if we are not connected
+		return
+	}
+
+	addr, err := cemi.NewGroupAddrString(ga)
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"group_address": ga,
+			"error":         err,
+		}).Error("Failed to read group address")
+	}
+
+	err = tunnel.Client.Send(knx.GroupEvent{
+		Command:     knx.GroupRead,
+		Destination: addr,
+	})
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"group_address": ga,
+			"error":         err,
+		}).Error("Failed to send read request")
+	}
+	logrus.WithFields(logrus.Fields{
+		"group_address": ga,
+	}).Info("Sent read request")
+
+	<-time.After(time.Millisecond * 100)
+}
+
+func (tunnel *tunnel) decodeKNX(msg knx.GroupEvent) error {
 	tunnel.RLock()
 	defer tunnel.RUnlock()
 
@@ -108,12 +190,17 @@ func (tunnel *tunnel) DecodeKNX(msg knx.GroupEvent) error {
 			}
 
 			gl.Device.State[gl.Name] = dptv
+			gl.Device.Online = true
 			tunnel.Node.AddOrUpdate(gl.Device)
 		} else {
 			return fmt.Errorf("Unsupported type: %s", gl.Type)
 		}
 	}
 	return nil
+}
+
+func (tunnel *tunnel) ClearAllLinks() {
+	tunnel.Groups = make(map[string][]groupLink)
 }
 
 func (tunnel *tunnel) AddLink(ga string, n string, t string, d *models.Device) {
@@ -135,9 +222,17 @@ func (tunnel *tunnel) AddLink(ga string, n string, t string, d *models.Device) {
 	})
 	tunnel.Unlock()
 
-	d.State[n] = "-"
+	d.State[n] = nil
+
+	// Trigger a read of the group
+	if tunnel.Connected {
+		tunnel.triggerRead(ga)
+	}
 }
 
 func (tunnel *tunnel) Close() {
-	tunnel.Client.Close()
+	if tunnel.Client != nil {
+		tunnel.Client.Close()
+		tunnel.wg.Wait()
+	}
 }

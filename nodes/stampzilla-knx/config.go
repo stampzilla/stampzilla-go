@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/vapourismo/knx-go/knx"
@@ -35,6 +36,9 @@ type sensor struct {
 }
 
 func (light *light) Switch(tunnel *tunnel, target bool) error {
+	if !tunnel.Connected {
+		return fmt.Errorf("Not connected to KNX gateway")
+	}
 	addr, err := cemi.NewGroupAddrString(light.ControlSwitch)
 	if err != nil {
 		return err
@@ -49,6 +53,9 @@ func (light *light) Switch(tunnel *tunnel, target bool) error {
 }
 
 func (light *light) Brightness(tunnel *tunnel, target float64) error {
+	if !tunnel.Connected {
+		return fmt.Errorf("Not connected to KNX gateway")
+	}
 	addr, err := cemi.NewGroupAddrString(light.ControlBrightness)
 	if err != nil {
 		return err
