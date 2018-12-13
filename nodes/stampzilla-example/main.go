@@ -17,8 +17,40 @@ func main() {
 
 	node.OnConfig(updatedConfig)
 
+	dev1 := &models.Device{
+		Name:   "Device1",
+		ID:     "1",
+		Online: true,
+		Traits: []string{"OnOff"},
+		State: models.DeviceState{
+			"on": false,
+		},
+	}
+	dev2 := &models.Device{
+		Name:   "Device2",
+		ID:     "2",
+		Online: true,
+		Traits: []string{"OnOff", "Brightness", "ColorSetting"},
+		State: models.DeviceState{
+			"on": false,
+		},
+	}
+	dev3 := &models.Device{
+		Name:   "Device3",
+		ID:     "3",
+		Online: true,
+		State: models.DeviceState{
+			"on": false,
+		},
+	}
+
 	node.OnRequestStateChange(func(state models.DeviceState, device *models.Device) error {
 		logrus.Info("OnRequestStateChange:", state, device.ID)
+
+		if device.ID == "1" {
+			dev3.State["on"] = state["on"]
+			node.AddOrUpdate(dev3)
+		}
 		return nil
 	})
 
@@ -29,41 +61,16 @@ func main() {
 		return
 	}
 
-	dev1 := &models.Device{
-		Name:   "Device1",
-		ID:     "1",
-		Online: true,
-		Traits: []string{"OnOff"},
-		State: models.DeviceState{
-			"on": false,
-		},
-	}
 	err = node.AddOrUpdate(dev1)
 	if err != nil {
 		logrus.Error(err)
 	}
 
-	dev2 := &models.Device{
-		Name:   "Device2",
-		ID:     "2",
-		Online: true,
-		Traits: []string{"OnOff", "Brightness", "ColorSetting"},
-		State: models.DeviceState{
-			"on": false,
-		},
-	}
 	err = node.AddOrUpdate(dev2)
 	if err != nil {
 		logrus.Error(err)
 	}
-	dev3 := &models.Device{
-		Name:   "Device3",
-		ID:     "3",
-		Online: true,
-		State: models.DeviceState{
-			"on": false,
-		},
-	}
+
 	err = node.AddOrUpdate(dev3)
 	if err != nil {
 		logrus.Error(err)
