@@ -39,7 +39,7 @@ type Node struct {
 	TLS       *tls.Certificate
 	CA        *x509.CertPool
 	callbacks map[string][]OnFunc
-	devices   *models.Devices
+	Devices   *models.Devices
 	shutdown  []func()
 }
 
@@ -49,7 +49,7 @@ func New(client websocket.Websocket) *Node {
 		Client:    client,
 		wg:        &sync.WaitGroup{},
 		callbacks: make(map[string][]OnFunc),
-		devices:   models.NewDevices(),
+		Devices:   models.NewDevices(),
 	}
 }
 func (n *Node) Wait() {
@@ -184,7 +184,7 @@ func (n *Node) Connect() error {
 	}()
 
 	n.Client.OnConnect(func() {
-		n.syncDevices()
+		n.SyncDevices()
 	})
 	n.connect(ctx, u)
 	n.wg.Add(1)
@@ -341,7 +341,7 @@ func (n *Node) OnRequestStateChange(cb func(state models.DeviceState, device *mo
 
 		for _, dev := range conf.All() {
 			foundChange := false
-			oldDev := n.devices.Get("." + dev.ID)
+			oldDev := n.Devices.Get("." + dev.ID)
 			for s, newState := range dev.State {
 				oldState := oldDev.State[s]
 				if newState != oldState {
@@ -359,13 +359,13 @@ func (n *Node) OnRequestStateChange(cb func(state models.DeviceState, device *mo
 				}
 
 				// set the new state and send it to the server
-				err = n.devices.SetState("", dev.ID, dev.State)
+				err = n.Devices.SetState("", dev.ID, dev.State)
 				if err != nil {
 					logrus.Error(err)
 					continue
 				}
 
-				err = n.WriteMessage("update-device", n.devices.Get("."+dev.ID))
+				err = n.WriteMessage("update-device", n.Devices.Get("."+dev.ID))
 				if err != nil {
 					logrus.Error(err)
 					continue
@@ -378,10 +378,10 @@ func (n *Node) OnRequestStateChange(cb func(state models.DeviceState, device *mo
 }
 
 func (n *Node) AddOrUpdate(d *models.Device) error {
-	n.devices.Add(d)
+	n.Devices.Add(d)
 	return n.WriteMessage("update-device", d)
 }
 
-func (n *Node) syncDevices() error {
-	return n.WriteMessage("update-devices", n.devices)
+func (n *Node) SyncDevices() error {
+	return n.WriteMessage("update-devices", n.Devices)
 }

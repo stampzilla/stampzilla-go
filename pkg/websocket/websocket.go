@@ -150,7 +150,7 @@ func (ws *websocketClient) WriteJSON(v interface{}) error {
 		err := ws.conn.WriteJSON(v)
 		errCh <- err
 	}:
-	default:
+	case <-time.After(time.Millisecond * 10):
 		errCh <- fmt.Errorf("websocket: no one listening on write channel")
 	}
 	return <-errCh
