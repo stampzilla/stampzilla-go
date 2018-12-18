@@ -1,6 +1,7 @@
 package webserver
 
 import (
+	"crypto/tls"
 	"io"
 	"net/http"
 	"os"
@@ -23,6 +24,7 @@ type Webserver struct {
 	Melody           *melody.Melody
 	Config           *models.Config
 	WebsocketHandler handlers.WebsocketHandler
+	router           http.Handler
 }
 
 func New(s *store.Store, conf *models.Config, wsh handlers.WebsocketHandler, m *melody.Melody) *Webserver {
@@ -33,6 +35,10 @@ func New(s *store.Store, conf *models.Config, wsh handlers.WebsocketHandler, m *
 		WebsocketHandler: wsh,
 		Melody:           m,
 	}
+}
+
+func (ws *Webserver) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	ws.router.ServeHTTP(w, req)
 }
 
 func (ws *Webserver) Init() *gin.Engine {
@@ -58,7 +64,7 @@ func (ws *Webserver) Init() *gin.Engine {
 
 	return r
 }
-func (ws *Webserver) Start(addr string) chan struct{} {
+func (ws *Webserver) Start(addr string, tlsConfig *tls.Config) chan struct{} {
 
 	server, done := gograce.NewServerWithTimeout(10 * time.Second)
 
@@ -66,8 +72,14 @@ func (ws *Webserver) Start(addr string) chan struct{} {
 	server.Addr = addr
 
 	go func() {
-		logrus.Infof("Starting webserver at %s", addr)
-		logrus.Error(server.ListenAndServe())
+		if tlsConfig != nil {
+			server.TLSConfig = tlsConfig
+			logrus.Infof("Starting secure webserver at %s", addr)
+			logrus.Error(server.ListenAndServeTLS("", ""))
+		} else {
+			logrus.Infof("Starting webserver at %s", addr)
+			logrus.Error(server.ListenAndServe())
+		}
 	}()
 	return done
 }
