@@ -62,6 +62,7 @@ func (ws *Webserver) Init() *gin.Engine {
 
 	r.GET("/ws", ws.handleWs(ws.Melody))
 
+	ws.router = r
 	return r
 }
 func (ws *Webserver) Start(addr string, tlsConfig *tls.Config) chan struct{} {
