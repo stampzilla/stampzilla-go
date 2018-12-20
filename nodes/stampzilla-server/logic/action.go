@@ -1,11 +1,11 @@
 package logic
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
 	log "github.com/cihub/seelog"
-	"golang.org/x/net/context"
 )
 
 type Action interface {
