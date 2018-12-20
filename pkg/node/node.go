@@ -41,6 +41,7 @@ type Node struct {
 	callbacks map[string][]OnFunc
 	Devices   *models.Devices
 	shutdown  []func()
+	stop      chan struct{}
 }
 
 // New returns a new Node
@@ -50,7 +51,13 @@ func New(client websocket.Websocket) *Node {
 		wg:        &sync.WaitGroup{},
 		callbacks: make(map[string][]OnFunc),
 		Devices:   models.NewDevices(),
+		stop:      make(chan struct{}),
 	}
+}
+
+// Stop will shutdown the node similar to a SIGTERM
+func (n *Node) Stop() {
+	close(n.stop)
 }
 func (n *Node) Wait() {
 	n.Client.Wait()
@@ -175,8 +182,13 @@ func (n *Node) Connect() error {
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
+	n.wg.Add(1)
 	go func() {
-		<-interrupt
+		defer n.wg.Done()
+		select {
+		case <-interrupt:
+		case <-n.stop:
+		}
 		cancel()
 		for _, f := range n.shutdown {
 			f()

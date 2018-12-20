@@ -138,8 +138,9 @@ func (wsh *secureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.R
 		if n == nil {
 			// New node, register the new node
 			n = &models.Node{
-				UUID: id.(string),
-				Type: t.(string),
+				UUID:       id.(string),
+				Type:       t.(string),
+				Connected_: true,
 			}
 			wsh.Store.AddOrUpdateNode(n)
 		}
@@ -157,5 +158,10 @@ func (wsh *secureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.R
 func (wsh *secureWebsocketHandler) Disconnect(s interfaces.MelodySession) error {
 	id, _ := s.Get("ID")
 	wsh.Store.RemoveConnection(id.(string))
+
+	n := wsh.Store.GetNode(id.(string))
+	if n != nil {
+		n.SetConnected(false)
+	}
 	return nil
 }

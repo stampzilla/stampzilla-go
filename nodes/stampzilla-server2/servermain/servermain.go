@@ -35,24 +35,26 @@ func New(config *models.Config, store *store.Store) *Main {
 }
 
 func (c *Main) Run() {
-
 	done := c.HTTPServer.Start(":"+c.Config.Port, nil)
-	// Load CA cert
+	tlsDone := c.TLSServer.Start(":"+c.Config.TLSPort, c.TLSConfig())
+	<-done
+	<-tlsDone
+	c.Config.Save("config.json")
+}
+
+func (c *Main) TLSConfig() *tls.Config {
 	caCert, err := ioutil.ReadFile("ca.crt")
 	if err != nil {
 		log.Fatal(err)
 	}
 	caCertPool := x509.NewCertPool()
 	caCertPool.AppendCertsFromPEM(caCert)
-	tlsDone := c.TLSServer.Start(":"+c.Config.TLSPort, &tls.Config{
+	return &tls.Config{
 		// Needed to verify client certificates
 		ClientCAs:    caCertPool,
 		Certificates: []tls.Certificate{*c.CA.TLS},
 		ClientAuth:   tls.VerifyClientCertIfGiven,
-	})
-	<-done
-	<-tlsDone
-	c.Config.Save("config.json")
+	}
 }
 
 // Init initializes the web handlers. Could be used to start server or to test it

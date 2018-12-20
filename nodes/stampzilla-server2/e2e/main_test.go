@@ -1,14 +1,18 @@
 package main
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/posener/wstest"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
+	"github.com/stampzilla/stampzilla-go/pkg/node"
+	stampzillaws "github.com/stampzilla/stampzilla-go/pkg/websocket"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,10 +20,7 @@ func TestDownloadCA(t *testing.T) {
 
 	main, cleanup := setupServer(t)
 	defer cleanup()
-
-	req := httptest.NewRequest("GET", "http://localhost/ca.crt", nil)
-	w := httptest.NewRecorder()
-	main.HTTPServer.ServeHTTP(w, req)
+	w := makeRequest(t, main.HTTPServer, "GET", "http://localhost/ca.crt", nil)
 
 	resp := w.Result()
 	body, _ := ioutil.ReadAll(resp.Body)
@@ -40,21 +41,84 @@ func TestInsecureWebsocket(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer c.Close()
 
-	msg := models.Message{}
-	err = c.ReadJSON(&msg)
+	msgType, msgByte, err := c.ReadMessage()
 	if err != nil {
 		t.Fatal(err)
 	}
+	msg := string(msgByte)
 
-	serverInfo := &models.ServerInfo{}
-	err = json.Unmarshal(msg.Body, &serverInfo)
-	if err != nil {
-		t.Fatal(err)
+	assert.Equal(t, websocket.TextMessage, msgType)
+	assert.Contains(t, msg, `"type":"server-info"`)
+	assert.Contains(t, msg, `"uuid":"123"`)
+	assert.Contains(t, msg, `"name":"testserver"`)
+
+	// Verify store has saved the connection
+	assert.Len(t, main.Store.GetConnections(), 1)
+	for _, v := range main.Store.GetConnections() {
+		assert.Equal(t, "node", v.Attributes["protocol"])
 	}
+	c.Close()
+	//time.Sleep(200 * time.Millisecond) //TODO better way than sleep?
 
-	assert.Equal(t, "server-info", msg.Type)
-	assert.Equal(t, "123", serverInfo.UUID)
-	assert.Equal(t, "testserver", serverInfo.Name)
+	waitFor(t, 1*time.Second, "connections should be zero after connection close", func() bool {
+		return len(main.Store.GetConnections()) == 0
+	})
+}
+
+// TestInsecureWebsocketRequestCertificate is a full end to end test between a node and the server going through a node initial connection process etc
+func TestInsecureWebsocketRequestCertificate(t *testing.T) {
+	main, cleanup := setupServer(t)
+	defer cleanup()
+	insecure := httptest.NewServer(main.HTTPServer)
+	defer insecure.Close()
+
+	secure := httptest.NewUnstartedServer(main.TLSServer)
+	secure.TLS = main.TLSConfig()
+	secure.StartTLS()
+	defer secure.Close()
+
+	insecureURL := strings.Split(strings.TrimPrefix(insecure.URL, "http://"), ":")
+	secureURL := strings.Split(strings.TrimPrefix(secure.URL, "https://"), ":")
+
+	// Server will tell the node its TLS port after successfull certificate request
+	main.Config.TLSPort = secureURL[1]
+
+	os.Setenv("STAMPZILLA_HOST", insecureURL[0])
+	os.Setenv("STAMPZILLA_PORT", insecureURL[1])
+
+	client := stampzillaws.New()
+	node := node.New(client)
+	node.Type = "example"
+
+	err := node.Connect()
+	assert.NoError(t, err)
+
+	waitFor(t, 1*time.Second, "nodes should be 1", func() bool {
+		return len(main.Store.GetNodes()) == 1
+	})
+
+	assert.Contains(t, main.Store.GetNodes(), node.UUID)
+	assert.Len(t, main.Store.GetConnections(), 1)
+	assert.Equal(t, true, main.Store.GetNode(node.UUID).Connected())
+
+	go func() {
+		<-time.After(50 * time.Millisecond)
+		node.Stop()
+	}()
+	node.Wait()
+
+	waitFor(t, 1*time.Second, "connections should be 0", func() bool {
+		return len(main.Store.GetConnections()) == 0
+	})
+	assert.Len(t, main.Store.GetConnections(), 0)
+	assert.Equal(t, false, main.Store.GetNode(node.UUID).Connected())
+}
+
+func TestTimeout(t *testing.T) {
+
+	//waitFor(t, 1*time.Second, func() bool {
+	//return false
+	//})
+
 }
