@@ -3,23 +3,16 @@ package logic
 type RuleCondition interface {
 	Check(interface{}) bool
 	StatePath() string
-	Uuid() string
 }
 type ruleCondition struct {
 	StatePath_ string      `json:"statePath"`
 	Comparator string      `json:"comparator"`
 	Value      interface{} `json:"value"`
-	Uuid_      string      `json:"uuid"`
 }
 
 //TODO add rlock here
 func (r *ruleCondition) StatePath() string {
 	return r.StatePath_
-}
-
-//TODO add rlock here
-func (r *ruleCondition) Uuid() string {
-	return r.Uuid_
 }
 
 func (r *ruleCondition) Check(value interface{}) bool {

@@ -43,47 +43,47 @@ type Rule struct {
 	sync.RWMutex
 }
 
-func (r *rule) Operator() string {
+func (r *Rule) Operator() string {
 	r.RLock()
 	defer r.RUnlock()
 	return r.Operator_
 }
-func (r *rule) Active() bool {
+func (r *Rule) Active() bool {
 	r.RLock()
 	defer r.RUnlock()
 	return r.Active_
 }
-func (r *rule) Uuid() string {
+func (r *Rule) Uuid() string {
 	r.RLock()
 	defer r.RUnlock()
 	return r.Uuid_
 }
-func (r *rule) Name() string {
+func (r *Rule) Name() string {
 	r.RLock()
 	defer r.RUnlock()
 	return r.Name_
 }
-func (r *rule) SetUuid(uuid string) {
+func (r *Rule) SetUuid(uuid string) {
 	r.Lock()
 	r.Uuid_ = uuid
 	r.Unlock()
 }
-func (r *rule) CondState() bool {
+func (r *Rule) CondState() bool {
 	r.RLock()
 	defer r.RUnlock()
 	return r.condState
 }
-func (r *rule) Conditions() []RuleCondition {
+func (r *Rule) Conditions() []RuleCondition {
 	r.RLock()
 	defer r.RUnlock()
 	return r.Conditions_
 }
-func (r *rule) SetCondState(cond bool) {
+func (r *Rule) SetCondState(cond bool) {
 	r.RLock()
 	r.condState = cond
 	r.RUnlock()
 }
-func (r *rule) RunEnter(progressChan chan ActionProgress) {
+func (r *Rule) RunEnter(progressChan chan ActionProgress) {
 	logrus.Debugf("Rule enter: %s", r.Uuid())
 	for _, a := range r.enterCancelActions_ {
 		a.Cancel()
@@ -95,7 +95,7 @@ func (r *rule) RunEnter(progressChan chan ActionProgress) {
 		a.Run(progressChan)
 	}
 }
-func (r *rule) RunExit(progressChan chan ActionProgress) {
+func (r *Rule) RunExit(progressChan chan ActionProgress) {
 	logrus.Debugf("Rule exit: %s", r.Uuid())
 	for _, a := range r.exitCancelActions_ {
 		a.Cancel()
@@ -107,7 +107,7 @@ func (r *rule) RunExit(progressChan chan ActionProgress) {
 		a.Run(progressChan)
 	}
 }
-func (r *rule) AddExitAction(a Action) {
+func (r *Rule) AddExitAction(a Action) {
 	if a == nil {
 		logrus.Error("Error adding ExitAction. Action is nil")
 		return
@@ -117,7 +117,7 @@ func (r *rule) AddExitAction(a Action) {
 	r.ExitActions_ = append(r.ExitActions_, a.Uuid())
 	r.Unlock()
 }
-func (r *rule) AddEnterAction(a Action) {
+func (r *Rule) AddEnterAction(a Action) {
 	if a == nil {
 		logrus.Error("Error adding EnterAction. Action is nil")
 		return
@@ -127,7 +127,7 @@ func (r *rule) AddEnterAction(a Action) {
 	r.EnterActions_ = append(r.EnterActions_, a.Uuid())
 	r.Unlock()
 }
-func (r *rule) AddExitCancelAction(a Action) {
+func (r *Rule) AddExitCancelAction(a Action) {
 	if a == nil {
 		logrus.Error("Error adding ExitAction. Action is nil")
 		return
@@ -137,7 +137,7 @@ func (r *rule) AddExitCancelAction(a Action) {
 	r.ExitCancelActions_ = append(r.ExitCancelActions_, a.Uuid())
 	r.Unlock()
 }
-func (r *rule) AddEnterCancelAction(a Action) {
+func (r *Rule) AddEnterCancelAction(a Action) {
 	if a == nil {
 		logrus.Error("Error adding EnterAction. Action is nil")
 		return
@@ -147,7 +147,7 @@ func (r *rule) AddEnterCancelAction(a Action) {
 	r.EnterCancelActions_ = append(r.EnterCancelActions_, a.Uuid())
 	r.Unlock()
 }
-func (r *rule) AddCondition(a RuleCondition) {
+func (r *Rule) AddCondition(a RuleCondition) {
 	r.Lock()
 	r.Conditions_ = append(r.Conditions_, a)
 	r.Unlock()

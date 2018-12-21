@@ -1,13 +1,14 @@
 package logic
 
 import (
+	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"regexp"
-	"strconv"
+	"os"
 	"strings"
+	"sync"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -16,19 +17,37 @@ func main() {
 }
 
 type Logic struct {
-	Rules []*Rule
+	Rules              []*Rule
+	state              map[string]interface{}
+	ActionProgressChan chan ActionProgress
+	sync.RWMutex
 }
 
 func NewLogic() *Logic {
-	l := &Logic{states: make(map[string]string)}
-	l.re = regexp.MustCompile(`^([^\s\[][^\s\[]*)?(\[.*?([0-9]+).*?\])?$`)
+	l := &Logic{
+		state:              make(map[string]interface{}),
+		ActionProgressChan: make(chan ActionProgress, 100),
+	}
 	return l
 }
 
+func (l *Logic) AddRule(name string) *Rule {
+	r := &Rule{Name_: name, Uuid_: uuid.New().String()}
+	l.Lock()
+	defer l.Unlock()
+	l.Rules = append(l.Rules, r)
+	return r
+}
+
+func (l *Logic) SetState(s map[string]interface{}) {
+	l.Lock()
+	l.state = s
+	l.Unlock()
+}
+
 func (l *Logic) EvaluateRules() {
-	for _, rule := range l.Rules() {
+	for _, rule := range l.Rules {
 		evaluation := l.evaluateRule(rule)
-		//fmt.Println("ruleEvaluationResult:", evaluation)
 		if evaluation != rule.CondState() {
 			rule.SetCondState(evaluation)
 			if evaluation {
@@ -48,7 +67,7 @@ func (l *Logic) EvaluateRules() {
 		}
 	}
 }
-func (l *Logic) evaluateRule(r Rule) bool {
+func (l *Logic) evaluateRule(r *Rule) bool {
 	//TODO if rule.enabled is false return false here??? default enabled to true in existing rules or do migration?
 	if len(r.Conditions()) == 0 {
 		return false
@@ -64,44 +83,60 @@ func (l *Logic) evaluateRule(r Rule) bool {
 	return false
 }
 
-func (l *Logic) path(state string, jp string) (interface{}, error) {
-	var v interface{}
-	err := json.Unmarshal([]byte(state), &v)
+func (l *Logic) evaluateRuleAnd(r *Rule) bool {
+	for _, cond := range r.Conditions() {
+		value, err := l.getValueToEvaluate(cond)
+		if err != nil {
+			logrus.Error(err)
+			return false
+		}
+
+		if !cond.Check(value) {
+			return false
+		}
+	}
+	return true
+}
+
+func (l *Logic) evaluateRuleOr(r *Rule) bool {
+	for _, cond := range r.Conditions() {
+		value, err := l.getValueToEvaluate(cond)
+		if err != nil {
+			logrus.Error(err)
+			return false
+		}
+
+		if cond.Check(value) {
+			return true
+		}
+	}
+	return false
+}
+
+func (l *Logic) getValueToEvaluate(cond RuleCondition) (interface{}, error) {
+	if val, ok := l.state[cond.StatePath()]; ok {
+		return val, nil
+	}
+	return nil, fmt.Errorf("logic: State \"%s\" not found", cond.StatePath())
+}
+
+func (l *Logic) SaveRulesToFile(path string) {
+	configFile, err := os.Create(path)
 	if err != nil {
-		return nil, err
+		logrus.Error("creating config file", err.Error())
+		return
 	}
-	if jp == "" {
-		return nil, errors.New("invalid path")
+	var out bytes.Buffer
+	b, err := json.Marshal(l.Rules)
+
+	encoder := json.NewEncoder(configFile)
+
+	encoder.SetIndent("", "\t")
+	err = encoder.Encode(l.Rules)
+
+	if err != nil {
+		logrus.Error("error marshal json", err)
 	}
-	for _, token := range strings.Split(jp, ".") {
-		sl := l.re.FindAllStringSubmatch(token, -1)
-		//fmt.Println("REGEXPtoken: ", token)
-		//fmt.Println("REGEXP: ", sl)
-		if len(sl) == 0 {
-			return nil, errors.New("invalid path1")
-		}
-		ss := sl[0]
-		if ss[1] != "" {
-			switch v1 := v.(type) {
-			case map[string]interface{}:
-				v = v1[ss[1]]
-			}
-		}
-		if ss[3] != "" {
-			ii, err := strconv.Atoi(ss[3])
-			is := ss[3]
-			if err != nil {
-				return nil, errors.New("invalid path2")
-			}
-			switch v2 := v.(type) {
-			case []interface{}:
-				v = v2[ii]
-			case map[string]interface{}:
-				v = v2[is]
-			}
-		}
-	}
-	return v, nil
 }
 
 /*
