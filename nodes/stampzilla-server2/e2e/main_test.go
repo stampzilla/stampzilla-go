@@ -3,16 +3,12 @@ package main
 import (
 	"io/ioutil"
 	"net/http"
-	"net/http/httptest"
-	"os"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/posener/wstest"
-	"github.com/stampzilla/stampzilla-go/pkg/node"
-	stampzillaws "github.com/stampzilla/stampzilla-go/pkg/websocket"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -68,28 +64,8 @@ func TestInsecureWebsocket(t *testing.T) {
 
 // TestInsecureWebsocketRequestCertificate is a full end to end test between a node and the server going through a node initial connection process etc
 func TestInsecureWebsocketRequestCertificate(t *testing.T) {
-	main, cleanup := setupServer(t)
+	main, node, cleanup := setupWebsocketTest(t)
 	defer cleanup()
-	insecure := httptest.NewServer(main.HTTPServer)
-	defer insecure.Close()
-
-	secure := httptest.NewUnstartedServer(main.TLSServer)
-	secure.TLS = main.TLSConfig()
-	secure.StartTLS()
-	defer secure.Close()
-
-	insecureURL := strings.Split(strings.TrimPrefix(insecure.URL, "http://"), ":")
-	secureURL := strings.Split(strings.TrimPrefix(secure.URL, "https://"), ":")
-
-	// Server will tell the node its TLS port after successfull certificate request
-	main.Config.TLSPort = secureURL[1]
-
-	os.Setenv("STAMPZILLA_HOST", insecureURL[0])
-	os.Setenv("STAMPZILLA_PORT", insecureURL[1])
-
-	client := stampzillaws.New()
-	node := node.New(client)
-	node.Type = "example"
 
 	err := node.Connect()
 	assert.NoError(t, err)
@@ -115,10 +91,31 @@ func TestInsecureWebsocketRequestCertificate(t *testing.T) {
 	assert.Equal(t, false, main.Store.GetNode(node.UUID).Connected())
 }
 
-func TestTimeout(t *testing.T) {
+func TestNodeToServerDevices(t *testing.T) {
+	main, node, cleanup := setupWebsocketTest(t)
+	defer cleanup()
 
-	//waitFor(t, 1*time.Second, func() bool {
-	//return false
-	//})
+	err := node.Connect()
+	assert.NoError(t, err)
+
+	dev1 := &models.Device{
+		Name:   "Device1",
+		ID:     "1",
+		Online: true,
+		Traits: []string{"OnOff"},
+		State: models.DeviceState{
+			"on": false,
+		},
+	}
+	node.AddOrUpdate(dev1)
+	waitFor(t, 1*time.Second, "should have some devices", func() bool {
+		return len(main.Store.Devices.All()) != 0
+	})
+
+	//log.Println("devs", main.Store.Devices.All())
+
+	//Make sure node and server has the correct device key which is unique with nodeuuid + device id
+	assert.Contains(t, main.Store.Devices.All(), node.UUID+"."+dev1.ID)
+	assert.Contains(t, node.Devices.All(), node.UUID+"."+dev1.ID)
 
 }

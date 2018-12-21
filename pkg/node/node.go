@@ -353,7 +353,7 @@ func (n *Node) OnRequestStateChange(cb func(state models.DeviceState, device *mo
 
 		for _, dev := range conf.All() {
 			foundChange := false
-			oldDev := n.Devices.Get("." + dev.ID)
+			oldDev := n.Devices.Get(dev.Node + "." + dev.ID)
 			for s, newState := range dev.State {
 				oldState := oldDev.State[s]
 				if newState != oldState {
@@ -390,6 +390,7 @@ func (n *Node) OnRequestStateChange(cb func(state models.DeviceState, device *mo
 }
 
 func (n *Node) AddOrUpdate(d *models.Device) error {
+	d.Node = n.UUID
 	n.Devices.Add(d)
 	return n.WriteMessage("update-device", d)
 }

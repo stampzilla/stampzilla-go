@@ -1,6 +1,7 @@
 package models
 
 import (
+	"log"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -62,4 +63,15 @@ func TestCopyDevices(t *testing.T) {
 	assert.Len(t, newD.devices, 1)
 	assert.Len(t, devices.devices, 2)
 
+}
+
+func TestFlatten(t *testing.T) {
+	d := testDevice("id")
+	devices := NewDevices()
+	devices.Add(d)
+	f := devices.Flatten()
+	log.Println(f)
+
+	assert.Contains(t, f, "node.id.on")
+	assert.Equal(t, true, f["node.id.on"])
 }

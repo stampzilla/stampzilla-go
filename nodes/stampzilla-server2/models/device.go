@@ -7,6 +7,15 @@ import (
 )
 
 type DeviceState map[string]interface{}
+
+func (ds DeviceState) Clone() DeviceState {
+	newState := make(DeviceState)
+	for k, v := range ds {
+		newState[k] = v
+	}
+	return newState
+}
+
 type Device struct {
 	Type   string      `json:"type"`
 	Node   string      `json:"node,omitempty"`
@@ -20,12 +29,9 @@ type Device struct {
 
 // Copy copies a device
 func (d *Device) Copy() *Device {
-	newState := make(DeviceState)
 	d.Lock()
 	newTraits := make([]string, len(d.Traits))
-	for k, v := range d.State {
-		newState[k] = v
-	}
+	newState := d.State.Clone()
 
 	copy(newTraits, d.Traits)
 
@@ -110,7 +116,7 @@ func (d *Devices) MarshalJSON() ([]byte, error) {
 }
 
 func (d *Devices) UnmarshalJSON(b []byte) error {
-	var devices map[string]*Device
+	var devices DeviceMap
 	if err := json.Unmarshal(b, &devices); err != nil {
 		return err
 	}
@@ -119,4 +125,19 @@ func (d *Devices) UnmarshalJSON(b []byte) error {
 		d.Add(dev)
 	}
 	return nil
+}
+
+// Flatten can be used for metrics export and logic rules
+func (d *Devices) Flatten() map[string]interface{} {
+
+	devmap := make(map[string]interface{})
+	for k, v := range d.All() {
+		v.Lock()
+		for stateKey, s := range v.State {
+			key := fmt.Sprintf("%s.%s", k, stateKey)
+			devmap[key] = s
+		}
+		v.Unlock()
+	}
+	return devmap
 }

@@ -7,12 +7,15 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/servermain"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/store"
+	"github.com/stampzilla/stampzilla-go/pkg/node"
+	stampzillaws "github.com/stampzilla/stampzilla-go/pkg/websocket"
 )
 
 func makeRequest(t *testing.T, handler http.Handler, method, url string, body io.Reader) *httptest.ResponseRecorder {
@@ -20,6 +23,34 @@ func makeRequest(t *testing.T, handler http.Handler, method, url string, body io
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 	return w
+}
+
+func setupWebsocketTest(t *testing.T) (*servermain.Main, *node.Node, func()) {
+	main, cleanup := setupServer(t)
+	insecure := httptest.NewServer(main.HTTPServer)
+
+	secure := httptest.NewUnstartedServer(main.TLSServer)
+	secure.TLS = main.TLSConfig()
+	secure.StartTLS()
+
+	insecureURL := strings.Split(strings.TrimPrefix(insecure.URL, "http://"), ":")
+	secureURL := strings.Split(strings.TrimPrefix(secure.URL, "https://"), ":")
+
+	// Server will tell the node its TLS port after successfull certificate request
+	main.Config.TLSPort = secureURL[1]
+
+	os.Setenv("STAMPZILLA_HOST", insecureURL[0])
+	os.Setenv("STAMPZILLA_PORT", insecureURL[1])
+
+	client := stampzillaws.New()
+	node := node.New(client)
+	node.Type = "example"
+
+	return main, node, func() {
+		cleanup()
+		insecure.Close()
+		secure.Close()
+	}
 }
 
 func setupServer(t *testing.T) (*servermain.Main, func()) {
