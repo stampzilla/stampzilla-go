@@ -1,7 +1,6 @@
 package logic
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -126,14 +125,9 @@ func (l *Logic) SaveRulesToFile(path string) {
 		logrus.Error("creating config file", err.Error())
 		return
 	}
-	var out bytes.Buffer
-	b, err := json.Marshal(l.Rules)
-
 	encoder := json.NewEncoder(configFile)
-
 	encoder.SetIndent("", "\t")
 	err = encoder.Encode(l.Rules)
-
 	if err != nil {
 		logrus.Error("error marshal json", err)
 	}
