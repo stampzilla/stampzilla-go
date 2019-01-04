@@ -48,18 +48,23 @@ func (tunnel *tunnel) SetAddress(address string) {
 		return
 	}
 
-	err := tunnel.Connect(address)
-	if err != nil {
+	for {
+		err := tunnel.Connect(address)
+
+		if err == nil {
+			return
+		}
+
 		logrus.WithFields(logrus.Fields{
 			"address": address,
 			"error":   err,
 		}).Error("Failed to open KNX tunnel")
 
-		if tunnel.reconnect {
-			logrus.Warn("Going to try again in 10s")
-			<-time.After(time.Second * 10)
-			go tunnel.Connect(address)
+		if !tunnel.reconnect {
+			return
 		}
+		logrus.Warn("Going to try again in 10s")
+		<-time.After(time.Second * 10)
 	}
 }
 
@@ -90,8 +95,11 @@ func (tunnel *tunnel) Connect(address string) error {
 			tunnel.Client = nil
 			client.Close()
 			tunnel.wg.Done()
+			logrus.Warn("Disconnect from KNX gateway done")
 
 			if tunnel.reconnect {
+				logrus.Warn("Going to try again in 10s")
+				<-time.After(time.Second * 10)
 				go tunnel.Connect(address)
 			}
 		}()
