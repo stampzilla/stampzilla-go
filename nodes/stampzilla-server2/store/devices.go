@@ -9,9 +9,6 @@ func (store *Store) GetDevices() *models.Devices {
 }
 
 func (store *Store) AddOrUpdateDevice(dev *models.Device) {
-	store.Lock()
 	store.Devices.Add(dev)
-	store.Unlock()
-
 	store.runCallbacks("devices")
 }

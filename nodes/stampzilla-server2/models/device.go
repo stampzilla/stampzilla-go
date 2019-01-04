@@ -51,7 +51,7 @@ func (d *Device) Copy() *Device {
 type DeviceMap map[string]*Device
 
 type Devices struct {
-	devices map[string]*Device
+	devices DeviceMap
 	sync.RWMutex
 }
 
@@ -80,14 +80,14 @@ func (d *Devices) SetState(node, id string, state DeviceState) error {
 	return fmt.Errorf("Node not found (%s.%s)", node, id)
 }
 
-// Add adds a device to the list
-func (d *Devices) Get(id string) *Device {
+// Get returns a device
+func (d *Devices) Get(node, id string) *Device {
 	d.RLock()
 	defer d.RUnlock()
-	return d.devices[id]
+	return d.devices[node+"."+id]
 }
 
-// Get all devices
+// All get all devices
 func (d *Devices) All() DeviceMap {
 	d.RLock()
 	defer d.RUnlock()

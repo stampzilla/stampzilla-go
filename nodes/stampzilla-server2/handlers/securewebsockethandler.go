@@ -17,6 +17,7 @@ type secureWebsocketHandler struct {
 	WebsocketSender websocket.Sender
 }
 
+// NewSecureWebsockerHandler is the constructor
 func NewSecureWebsockerHandler(store *store.Store, config *models.Config, ws websocket.Sender) WebsocketHandler {
 	return &secureWebsocketHandler{
 		Store:           store,
@@ -25,8 +26,27 @@ func NewSecureWebsockerHandler(store *store.Store, config *models.Config, ws web
 	}
 }
 
-func (wsh *secureWebsocketHandler) Message(msg *models.Message) error {
+func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *models.Message) error {
 	switch msg.Type {
+	case "subscribe":
+		subscribeTo := []string{}
+		err := json.Unmarshal(msg.Body, &subscribeTo)
+		if err != nil {
+			return err
+		}
+
+		v, exists := s.Get("subscriptions")
+		if !exists {
+			s.Set("subscriptions", subscribeTo)
+		} else {
+			if v, ok := v.([]string); ok {
+				s.Set("subscriptions", append(v, subscribeTo...))
+			}
+		}
+		if v, exists := s.Get("subscriptions"); exists {
+			logrus.Info("Active subscriptions: ", v)
+		}
+
 	case "update-device":
 		device := &models.Device{}
 		err := json.Unmarshal(msg.Body, device)
@@ -40,7 +60,6 @@ func (wsh *secureWebsocketHandler) Message(msg *models.Message) error {
 		}).Info("Received device")
 
 		if device != nil {
-			device.Node = msg.FromUUID
 			wsh.Store.AddOrUpdateDevice(device)
 		}
 	case "update-devices":
@@ -56,7 +75,6 @@ func (wsh *secureWebsocketHandler) Message(msg *models.Message) error {
 		}).Info("Received devices")
 
 		for _, dev := range devices {
-			dev.Node = msg.FromUUID
 			wsh.Store.AddOrUpdateDevice(dev)
 		}
 	case "setup-node":
@@ -89,12 +107,12 @@ func (wsh *secureWebsocketHandler) Message(msg *models.Message) error {
 			"devices": devices,
 		}).Info("Received state change request")
 
-		devicesByNode := make(map[string]map[string]models.Device)
+		devicesByNode := make(map[string]map[string]*models.Device)
 		for _, device := range devices.All() {
 			if devicesByNode[device.Node] == nil {
-				devicesByNode[device.Node] = make(map[string]models.Device)
+				devicesByNode[device.Node] = make(map[string]*models.Device)
 			}
-			devicesByNode[device.Node][device.ID] = *device
+			devicesByNode[device.Node][device.ID] = device
 		}
 
 		for node, devices := range devicesByNode {
@@ -112,13 +130,13 @@ func (wsh *secureWebsocketHandler) Message(msg *models.Message) error {
 }
 
 func (wsh *secureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.Request, keys map[string]interface{}) error {
-	proto, exists := s.Get("protocol")
-	id, exists := s.Get("ID")
-	t, _ := s.Get("type")
+	proto, _ := s.Get(websocket.KeyProtocol.String())
+	id, _ := s.Get(websocket.KeyID.String())
 	logrus.Infof("ws handle secure connect with id %s (%s)", id, proto)
 
 	// Send a list of all nodes if its a webgui
-	if exists && proto == "gui" {
+	switch proto {
+	case "gui":
 		msg, err := models.NewMessage("nodes", wsh.Store.GetNodes())
 		if err != nil {
 			return err
@@ -130,13 +148,11 @@ func (wsh *secureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.R
 			return err
 		}
 		msg.WriteTo(s)
-	}
-
-	// Send node setup if its a node
-	if exists && proto == "node" {
+	case "node":
 		n := wsh.Store.GetNode(id.(string))
 		if n == nil {
 			// New node, register the new node
+			t, _ := s.Get("type")
 			n = &models.Node{
 				UUID:       id.(string),
 				Type:       t.(string),
@@ -150,15 +166,19 @@ func (wsh *secureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.R
 			return err
 		}
 		msg.WriteTo(s)
+		//case "metrics":
+		//msg, err := models.NewMessage("devices", wsh.Store.GetDevices())
+		//if err != nil {
+		//return err
+		//}
+		//msg.WriteTo(s)
 	}
 
 	return nil
 }
 
 func (wsh *secureWebsocketHandler) Disconnect(s interfaces.MelodySession) error {
-	id, _ := s.Get("ID")
-	wsh.Store.RemoveConnection(id.(string))
-
+	id, _ := s.Get(websocket.KeyID.String())
 	n := wsh.Store.GetNode(id.(string))
 	if n != nil {
 		n.SetConnected(false)

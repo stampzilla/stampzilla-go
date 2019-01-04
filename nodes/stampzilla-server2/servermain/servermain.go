@@ -111,6 +111,24 @@ func broadcastConnectionsUpdate(sender websocket.Sender) func(*store.Store) erro
 
 func broadcastDevicesUpdate(sender websocket.Sender) func(*store.Store) error {
 	return func(store *store.Store) error {
+		err := sender.BroadcastWithFilter("devices", store.GetDevices(), func(s *melody.Session) bool {
+			v, exists := s.Get("subscriptions")
+			if !exists {
+				return false
+			}
+			if v, ok := v.([]string); ok {
+				for _, topic := range v {
+					if topic == "devices" {
+						return true
+					}
+				}
+			}
+			return false
+		})
+		if err != nil {
+			return err
+		}
+
 		return sender.SendToProtocol("gui", "devices", store.GetDevices())
 	}
 }

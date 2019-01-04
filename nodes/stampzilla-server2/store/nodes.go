@@ -34,9 +34,6 @@ func (store *Store) AddOrUpdateNode(node *models.Node) {
 		if node.Name != "" {
 			store.Nodes[node.UUID].Name = node.Name
 		}
-		//if node.Devices != nil {
-		//store.Nodes[node.UUID].Devices = node.Devices
-		//}
 		if node.Config != nil {
 			logrus.Info("Setting config to: ", string(node.Config))
 			store.Nodes[node.UUID].Config = node.Config

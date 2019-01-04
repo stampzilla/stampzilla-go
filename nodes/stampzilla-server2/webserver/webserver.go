@@ -17,6 +17,7 @@ import (
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/handlers"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/store"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/websocket"
 )
 
 type Webserver struct {
@@ -88,9 +89,9 @@ func (ws *Webserver) Start(addr string, tlsConfig *tls.Config) chan struct{} {
 func (ws *Webserver) initMelody() {
 	// Setup melody
 	ws.Melody.Upgrader.CheckOrigin = func(r *http.Request) bool { return true }
-	ws.Melody.HandleConnect(ws.handleConnect(ws.Store))
-	ws.Melody.HandleMessage(ws.handleMessage(ws.Store))
-	ws.Melody.HandleDisconnect(ws.handleDisconnect(ws.Store))
+	ws.Melody.HandleConnect(ws.handleConnect())
+	ws.Melody.HandleMessage(ws.handleMessage())
+	ws.Melody.HandleDisconnect(ws.handleDisconnect())
 }
 
 func cspMiddleware() gin.HandlerFunc {
@@ -100,18 +101,13 @@ func cspMiddleware() gin.HandlerFunc {
 	}
 }
 
-func (ws *Webserver) handleConnect(store *store.Store) func(s *melody.Session) {
+func (ws *Webserver) handleConnect() func(s *melody.Session) {
 	return func(s *melody.Session) {
-		t, exists := s.Get("protocol")
-		if !exists {
-			logrus.Error("No Sec-WebSocket-Protocol defined. Aborting")
-			return
-		}
+		proto, _ := s.Get(websocket.KeyProtocol.String())
+		id, _ := s.Get(websocket.KeyID.String())
 
-		id, _ := s.Get("ID")
-
-		store.AddOrUpdateConnection(id.(string), &models.Connection{
-			Type:       t.(string),
+		ws.Store.AddOrUpdateConnection(id.(string), &models.Connection{
+			Type:       proto.(string),
 			RemoteAddr: s.Request.RemoteAddr,
 			Attributes: s.Keys,
 		})
@@ -125,7 +121,7 @@ func (ws *Webserver) handleConnect(store *store.Store) func(s *melody.Session) {
 	}
 }
 
-func (ws *Webserver) handleMessage(store *store.Store) func(s *melody.Session, msg []byte) {
+func (ws *Webserver) handleMessage() func(s *melody.Session, msg []byte) {
 	return func(s *melody.Session, msg []byte) {
 		data, err := models.ParseMessage(msg)
 		if err != nil {
@@ -133,9 +129,9 @@ func (ws *Webserver) handleMessage(store *store.Store) func(s *melody.Session, m
 			return
 		}
 
-		id, _ := s.Get("ID")
+		id, _ := s.Get(websocket.KeyID.String())
 		data.FromUUID = id.(string)
-		err = ws.WebsocketHandler.Message(data)
+		err = ws.WebsocketHandler.Message(s, data)
 		if err != nil {
 			logrus.Error(err)
 			return
@@ -144,8 +140,10 @@ func (ws *Webserver) handleMessage(store *store.Store) func(s *melody.Session, m
 	}
 }
 
-func (ws *Webserver) handleDisconnect(store *store.Store) func(s *melody.Session) {
+func (ws *Webserver) handleDisconnect() func(s *melody.Session) {
 	return func(s *melody.Session) {
+		id, _ := s.Get(websocket.KeyID.String())
+		ws.Store.RemoveConnection(id.(string))
 		err := ws.WebsocketHandler.Disconnect(s)
 		if err != nil {
 			logrus.Error(err)
@@ -176,7 +174,7 @@ func (ws *Webserver) handleWs(m *melody.Melody) func(c *gin.Context) {
 		keys := make(map[string]interface{})
 		//TODO check if node sent uuid then use that
 
-		keys["ID"] = uuid.String()
+		keys[websocket.KeyID.String()] = uuid.String()
 
 		if c.Request.TLS != nil {
 			keys["secure"] = true
@@ -187,26 +185,49 @@ func (ws *Webserver) handleWs(m *melody.Melody) func(c *gin.Context) {
 			}
 		}
 
-		// Accept the requested protocol
-		// TODO: only accept known protocols
-		if c.Request.Header.Get("Sec-WebSocket-Protocol") != "" {
-			c.Writer.Header().Set("Sec-WebSocket-Protocol", c.Request.Header.Get("Sec-WebSocket-Protocol"))
-			keys["protocol"] = c.Request.Header.Get("Sec-WebSocket-Protocol")
+		// Accept the requested protocol if known
+		knownProtocols := []string{
+			"node",
+			"gui",
+			"metrics",
+		}
+		proto := c.Request.Header.Get("Sec-WebSocket-Protocol")
+
+		allowed := false
+		for _, v := range knownProtocols {
+			if proto == v {
+				allowed = true
+				break
+			}
+		}
+
+		if !allowed {
+			logrus.Errorf("webserver: protocol \"%s\" not allowed", proto)
+			c.AbortWithStatus(http.StatusForbidden)
+			return
+		}
+
+		if proto != "" {
+			c.Writer.Header().Set("Sec-WebSocket-Protocol", proto)
+			keys[websocket.KeyProtocol.String()] = proto
 		}
 
 		if c.Request.Header.Get("X-UUID") != "" {
-			keys["ID"] = c.Request.Header.Get("X-UUID")
+			keys[websocket.KeyID.String()] = c.Request.Header.Get("X-UUID")
 		}
-		if c.Request.Header.Get("X-TYPE") != "" {
-			keys["type"] = c.Request.Header.Get("X-TYPE")
-		}
+		keys["type"] = c.Request.Header.Get("X-TYPE")
 
-		if ws.Store.Connection(keys["ID"].(string)) != nil {
+		if ws.Store.Connection(keys[websocket.KeyID.String()].(string)) != nil {
 			logrus.Error("Connection with same UUID already exists")
 			c.AbortWithStatus(http.StatusForbidden)
 			return
 		}
 
-		m.HandleRequestWithKeys(c.Writer, c.Request, keys)
+		err := m.HandleRequestWithKeys(c.Writer, c.Request, keys)
+		if err != nil {
+			logrus.Errorf("webserver: %s", err.Error())
+			return
+		}
+
 	}
 }
