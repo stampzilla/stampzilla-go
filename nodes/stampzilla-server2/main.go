@@ -5,7 +5,10 @@ import (
 	"crypto/x509"
 	"io/ioutil"
 	"log"
+	"os"
+	"strconv"
 
+	"github.com/jonaz/mdns"
 	"github.com/olahol/melody"
 	"github.com/onrik/logrus/filename"
 	"github.com/sirupsen/logrus"
@@ -55,6 +58,15 @@ func main() {
 	}
 	httpServer := webserver.New(store, config, handlers.NewInSecureWebsockerHandler(store, config, insecureSender, ca), insecureMelody)
 	tlsServer := webserver.NewSecure(store, config, handlers.NewSecureWebsockerHandler(store, config, secureSender), secureMelody)
+
+	// Setup and start mDNS
+	if port, err := strconv.Atoi(config.Port); err == nil {
+		host, _ := os.Hostname()
+		info := []string{"stampzilla-go"}
+		mdnsService, _ := mdns.NewMDNSService(host, "_stampzilla._tcp", "", "", port, nil, info)
+		mdnsServer, _ := mdns.NewServer(&mdns.Config{Zone: mdnsService})
+		defer mdnsServer.Shutdown()
+	}
 
 	config.Save("config.json")
 

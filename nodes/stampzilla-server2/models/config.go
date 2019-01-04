@@ -46,6 +46,18 @@ func (c *Config) MustLoad() {
 	}
 }
 
+//Load loads the config using multiconfig from json or environment or command line args but does not fatal as MustLoad does
+func (c *Config) Load() error {
+	m := c.createMultiConfig()
+	err := m.Load(c)
+
+	if c.UUID == "" {
+		c.UUID = uuid.New().String()
+	}
+
+	return err
+}
+
 func (c *Config) createMultiConfig() *multiconfig.DefaultLoader {
 	loaders := []multiconfig.Loader{}
 

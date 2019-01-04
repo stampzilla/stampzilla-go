@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -63,8 +64,8 @@ func (n *Node) setup() {
 
 	//Make sure we have a config
 	n.Config = &models.Config{}
-	n.Config.MustLoad()
-	n.Config.Save("config.json")
+	n.Config.Load()
+	//n.Config.Save("config.json")
 }
 
 func (n *Node) WriteMessage(msgType string, data interface{}) error {
@@ -149,6 +150,16 @@ func (n *Node) fetchCertificate() error {
 
 func (n *Node) Connect() error {
 	n.setup()
+
+	if n.Config.Host == "" {
+		ip, port, err := queryMDNS()
+		if err != nil {
+			return err
+		}
+
+		n.Config.Host = ip
+		n.Config.Port = strconv.Itoa(port)
+	}
 
 	// Load our signed certificate and get our UUID
 	err := n.LoadCertificateKeyPair("crt")
