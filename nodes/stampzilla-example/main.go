@@ -19,6 +19,7 @@ func main() {
 
 	dev1 := &models.Device{
 		Name:   "Device1",
+		Type:   "light",
 		ID:     "1",
 		Online: true,
 		Traits: []string{"OnOff"},
@@ -28,6 +29,7 @@ func main() {
 	}
 	dev2 := &models.Device{
 		Name:   "Device2",
+		Type:   "light",
 		ID:     "2",
 		Online: true,
 		Traits: []string{"OnOff", "Brightness", "ColorSetting"},
@@ -37,6 +39,7 @@ func main() {
 	}
 	dev3 := &models.Device{
 		Name:   "Device3",
+		Type:   "light",
 		ID:     "3",
 		Online: true,
 		State: models.DeviceState{

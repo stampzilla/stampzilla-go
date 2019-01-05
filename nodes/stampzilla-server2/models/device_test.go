@@ -79,3 +79,17 @@ func TestFlatten(t *testing.T) {
 		assert.Equal(t, v.expected, f[v.key])
 	}
 }
+
+func TestStateDiff(t *testing.T) {
+	ds1 := DeviceState{
+		"on":          true,
+		"temperature": 10,
+	}
+	ds2 := DeviceState{
+		"on":          false,
+		"temperature": 10,
+	}
+	diff := ds1.Diff(ds2)
+	assert.Equal(t, false, diff["on"])
+	assert.Equal(t, nil, diff["temperature"])
+}

@@ -47,6 +47,14 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 			logrus.Info("Active subscriptions: ", v)
 		}
 
+		subs, _ := s.Get("subscriptions")
+		for _, v := range subs.([]string) {
+			switch v {
+			case "devices":
+				return wsh.WebsocketSender.SendToID(msg.FromUUID, "devices", wsh.Store.GetDevices())
+			}
+		}
+
 	case "update-device":
 		device := &models.Device{}
 		err := json.Unmarshal(msg.Body, device)

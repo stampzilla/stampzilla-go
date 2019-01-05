@@ -16,11 +16,22 @@ func (ds DeviceState) Clone() DeviceState {
 	return newState
 }
 
+func (ds DeviceState) Diff(right DeviceState) DeviceState {
+	diff := make(DeviceState)
+	for k, v := range ds {
+		if v != right[k] {
+			diff[k] = right[k]
+		}
+	}
+	return diff
+}
+
 type Device struct {
 	Type   string      `json:"type"`
 	Node   string      `json:"node,omitempty"`
 	ID     string      `json:"id,omitempty"`
 	Name   string      `json:"name,omitempty"`
+	Alias  string      `json:"alias,omitempty"`
 	Online bool        `json:"online"`
 	State  DeviceState `json:"state,omitempty"`
 	Traits []string    `json:"traits"`

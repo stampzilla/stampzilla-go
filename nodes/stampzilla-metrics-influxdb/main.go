@@ -3,15 +3,16 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/influxdb/influxdb/client/v2"
 	"github.com/sirupsen/logrus"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
 	"github.com/stampzilla/stampzilla-go/pkg/node"
 	"github.com/stampzilla/stampzilla-go/pkg/websocket"
 )
 
+// Config holds the influxdb connection details
 type Config struct {
 	Host     string
 	Port     string
@@ -24,13 +25,17 @@ var config = &Config{}
 
 var influxClient client.Client
 
+var devices = models.NewDevices()
+
 func main() {
 
 	client := websocket.New()
 	node := node.New(client)
 
-	node.OnConfig(updatedConfig)
-	node.On("devices", onDevices)
+	stop := make(chan struct{})
+	device := make(chan func(), 1000)
+	node.OnConfig(updatedConfig(stop, device))
+	node.On("devices", onDevices(device))
 	err := node.Connect()
 
 	if err != nil {
@@ -39,53 +44,109 @@ func main() {
 	}
 	node.Subscribe("devices")
 
-	influxClient, err = InitClient()
-	if err != nil {
-		logrus.Error(err)
-		return
-	}
-
-	defer influxClient.Close()
+	defer func() {
+		if influxClient != nil {
+			influxClient.Close()
+		}
+	}()
 	node.Wait()
 }
-func onDevices(data json.RawMessage) error {
-	logrus.Info("devices incoming:", string(data))
-	return nil
+func onDevices(deviceChan chan func()) func(data json.RawMessage) error {
+	return func(data json.RawMessage) error {
+		devs := models.NewDevices()
+		err := json.Unmarshal(data, devs)
+		if err != nil {
+			return err
+		}
+
+		for _, d := range devs.All() {
+			device := d
+			logrus.Info("got device ", device)
+			deviceChan <- func() {
+				//check if state is different
+				logrus.Info("state", device.State)
+				state := make(models.DeviceState)
+				if prevDev := devices.Get(device.Node, device.ID); prevDev != nil {
+					logrus.Info("prevState", prevDev.State)
+					state = prevDev.State.Diff(device.State)
+				} else {
+					state = device.State
+				}
+
+				if len(state) > 0 {
+					logrus.Infof("We should log value node: %s, %s  %#v", device.Node, device.Name, state)
+					tags := map[string]string{
+						"node-uuid": device.Node,
+						"name":      device.Name,
+						"alias":     device.Alias,
+						"id":        device.ID,
+						"type":      device.Type,
+					}
+					err = write(tags, state)
+					if err != nil {
+						logrus.Error("error writing to influx: ", err)
+					}
+				}
+				devices.Add(device)
+			}
+		}
+		return err
+	}
 }
 
-func updatedConfig(data json.RawMessage) error {
-	logrus.Info("Got new config:", string(data))
+func worker(stop chan struct{}, deviceChan chan func()) {
+	logrus.Info("Starting worker")
+	for {
+		select {
+		case <-stop:
+			logrus.Info("stopping worker")
+			return
+		case fn := <-deviceChan:
+			fn()
+		}
+	}
+}
 
-	if len(data) == 0 {
+func updatedConfig(stop chan struct{}, deviceChan chan func()) func(data json.RawMessage) error {
+	return func(data json.RawMessage) error {
+		logrus.Info("Got new config:", string(data))
+
+		if len(data) == 0 {
+			return nil
+		}
+
+		err := json.Unmarshal(data, config)
+		if err != nil {
+			return err
+		}
+
+		if config.Database == "" {
+			config.Database = "stampzilla"
+		}
+
+		if config.Port == "" {
+			config.Port = "8086"
+		}
+
+		// stop worker if its running
+		select {
+		case stop <- struct{}{}:
+		default:
+		}
+		influxClient, err = InitClient()
+		if err != nil {
+			return err
+		}
+
+		// start worker
+		go worker(stop, deviceChan)
+
+		logrus.Infof("Config is now: %#v", config)
 		return nil
 	}
-
-	err := json.Unmarshal(data, config)
-	if err != nil {
-		return err
-	}
-
-	if config.Database == "" {
-		config.Database = "stampzilla"
-	}
-
-	if config.Port == "" {
-		config.Port = "8086"
-	}
-
-	// stop worker
-
-	influxClient, err = InitClient()
-	if err != nil {
-		return err
-	}
-
-	// start worker
-
-	logrus.Infof("Config is now: %#v", config)
-	return nil
 }
 
+// InitClient makes a new influx db client
 func InitClient() (client.Client, error) {
 	return client.NewHTTPClient(client.HTTPConfig{
 		Addr:     fmt.Sprintf("http://%s:%s", config.Host, config.Port),
@@ -94,33 +155,22 @@ func InitClient() (client.Client, error) {
 	})
 }
 
-func write() {
+func write(tags map[string]string, fields map[string]interface{}) error {
 	// Create a new point batch
 	bp, err := client.NewBatchPoints(client.BatchPointsConfig{
 		Database:  config.Database,
 		Precision: "s",
 	})
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	// Create a point and add to batch
-	tags := map[string]string{"cpu": "cpu-total"}
-	fields := map[string]interface{}{
-		"idle":   10.1,
-		"system": 53.3,
-		"user":   46.6,
-	}
-
-	pt, err := client.NewPoint("cpu_usage", tags, fields, time.Now())
+	pt, err := client.NewPoint("device", tags, fields, time.Now())
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	bp.AddPoint(pt)
 
 	// Write the batch
-	if err := influxClient.Write(bp); err != nil {
-		log.Fatal(err)
-	}
-
+	return influxClient.Write(bp)
 }
