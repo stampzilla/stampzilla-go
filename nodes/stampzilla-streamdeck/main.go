@@ -64,15 +64,10 @@ func main() {
 
 func updatedConfig(node *node.Node, state *state, config *config) func(json.RawMessage) error {
 	return func(data json.RawMessage) error {
-		var configString string
-		err := json.Unmarshal(data, &configString)
-		if err != nil {
-			return err
-		}
-
 		config.Lock()
 		defer config.Unlock()
-		err = json.Unmarshal([]byte(configString), config)
+
+		err := json.Unmarshal(data, config)
 		if err != nil {
 			return err
 		}
@@ -129,6 +124,10 @@ func (state *state) worker() {
 			page := "default"
 			if index < len(state.page) {
 				page = state.page[index]
+			}
+
+			if state.config == nil {
+				continue
 			}
 
 			pageConfig, ok := state.config.Pages[page]

@@ -347,12 +347,7 @@ func (n *Node) OnConfig(cb OnFunc) {
 			return err
 		}
 
-		var configStr string
-		err = json.Unmarshal(conf.Config, &configStr)
-		if err != nil {
-			return err
-		}
-		return cb([]byte(configStr))
+		return cb(conf.Config)
 	})
 }
 
