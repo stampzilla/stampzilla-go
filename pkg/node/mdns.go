@@ -25,7 +25,7 @@ func queryMDNS() (string, int, error) {
 	select {
 	case entry := <-entriesCh:
 		close(entriesCh)
-		return entry.Addr.String(), entry.Port, nil
+		return entry.AddrV4.String(), entry.Port, nil
 	case <-time.After(time.Second * 2):
 	}
 
