@@ -114,7 +114,6 @@ class Node extends Component {
         formData: {
           name: node.get('name'),
           config: JSON.stringify(node.get('config')),
-          //config: node.get('config'),
         },
       });
     }
