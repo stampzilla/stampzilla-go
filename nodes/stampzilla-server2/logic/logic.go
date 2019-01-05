@@ -134,6 +134,39 @@ func (l *Logic) SaveRulesToFile(path string) {
 }
 
 /*
+
+new way:
+{
+	"name": "All off",
+	"enabled": true,
+	"active": true|false,
+	"uuid": "e8092b86-1261-44cd-ab64-38121df58a79",
+	"expression": "devices["asdf.123"].on == true && devices["asdf.123"].temperature > 20.0",
+	"conditions": {
+		"id på annan regel": true,
+	}
+	"for": "5m", // after for we must evaluate expression again
+	"actions": [ // save index on where we are in running actions and send to gui over websocket
+		"1m", //sleep
+		"c7d352bb-23f4-468c-b476-f76599c09a0d"
+	]
+},
+
+savedState{
+	"c7d352bb-23f4-468c-b476-f76599c09a0d": {
+			"name": "tänd allt",
+			"uuid": "c7d352bb-23f4-468c-b476-f76599c09a0d",
+			"state": {
+				"a.1" :{
+					"on":true
+				},
+				"a.2" :{
+					"on":true
+				}
+			}
+		}
+	}
+
 old way:
 
 {
@@ -152,4 +185,5 @@ old way:
 		"c7d352bb-23f4-468c-b476-f76599c09a0d"
 	]
 },
+
 */

@@ -3,3 +3,4 @@ web/dist
 *.key
 vendor
 configs
+statik

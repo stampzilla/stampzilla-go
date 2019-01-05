@@ -3,6 +3,7 @@ package webserver
 import (
 	"crypto/tls"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -13,9 +14,11 @@ import (
 	"github.com/jonaz/ginlogrus"
 	"github.com/jonaz/gograce"
 	"github.com/olahol/melody"
+	"github.com/rakyll/statik/fs"
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/handlers"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
+
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/store"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/websocket"
 )
@@ -52,20 +55,22 @@ func (ws *Webserver) Init() *gin.Engine {
 
 	r.Use(ginlogrus.New(logrus.StandardLogger()))
 
+	statikFS, err := fs.New()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Setup gin
-	csp := r.Group("/")
-	csp.Use(cspMiddleware())
-	csp.StaticFile("/", "./web/dist/index.html")
-	csp.StaticFile("/index.html", "./web/dist/index.html")
-	csp.StaticFile("/service-worker.js", "./web/dist/service-worker.js")
-	r.Static("/assets", "./web/dist/assets")
+	r.GET("/service-worker.js", gin.WrapH(http.FileServer(statikFS)))
+	r.GET("/assets/*all", gin.WrapH(http.FileServer(statikFS)))
 	r.GET("/ca.crt", ws.handleDownloadCA())
 
 	r.GET("/ws", ws.handleWs(ws.Melody))
 
 	r.NoRoute(func(c *gin.Context) {
 		cspMiddleware()(c)
-		c.File("./web/dist/index.html")
+		c.Request.URL.Path = "/" // force us to always return index.html and not the requested page to be compatible with HTML5 routing
+		http.FileServer(statikFS).ServeHTTP(c.Writer, c.Request)
 	})
 
 	ws.router = r
