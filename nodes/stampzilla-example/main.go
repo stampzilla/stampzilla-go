@@ -6,14 +6,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
 	"github.com/stampzilla/stampzilla-go/pkg/node"
-	"github.com/stampzilla/stampzilla-go/pkg/websocket"
 )
 
 func main() {
-
-	client := websocket.New()
-	node := node.New(client)
-	node.Type = "example"
+	node := node.New("example")
 
 	node.OnConfig(updatedConfig)
 
@@ -83,6 +79,6 @@ func main() {
 }
 
 func updatedConfig(data json.RawMessage) error {
-	logrus.Info("DATA:", string(data))
+	logrus.Info("Received config from server:", string(data))
 	return nil
 }

@@ -10,7 +10,6 @@ import (
 	"github.com/llgcode/draw2d"
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/pkg/node"
-	"github.com/stampzilla/stampzilla-go/pkg/websocket"
 )
 
 var ICON_SIZE = 72
@@ -24,9 +23,7 @@ type state struct {
 }
 
 func main() {
-	client := websocket.New()
-	node := node.New(client)
-	node.Type = "streamdeck"
+	node := node.New("streamdeck")
 
 	config := &config{}
 	state := &state{

@@ -15,7 +15,6 @@ import (
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/servermain"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/store"
 	"github.com/stampzilla/stampzilla-go/pkg/node"
-	stampzillaws "github.com/stampzilla/stampzilla-go/pkg/websocket"
 )
 
 func makeRequest(t *testing.T, handler http.Handler, method, url string, body io.Reader) *httptest.ResponseRecorder {
@@ -42,9 +41,7 @@ func setupWebsocketTest(t *testing.T) (*servermain.Main, *node.Node, func()) {
 	os.Setenv("STAMPZILLA_HOST", insecureURL[0])
 	os.Setenv("STAMPZILLA_PORT", insecureURL[1])
 
-	client := stampzillaws.New()
-	node := node.New(client)
-	node.Type = "example"
+	node := node.New("example")
 
 	return main, node, func() {
 		cleanup()

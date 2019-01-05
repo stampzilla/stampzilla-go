@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/influxdb/influxdb/client/v2"
+	"github.com/influxdata/influxdb/client/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
 	"github.com/stampzilla/stampzilla-go/pkg/node"
-	"github.com/stampzilla/stampzilla-go/pkg/websocket"
 )
 
 // Config holds the influxdb connection details
@@ -28,9 +27,7 @@ var influxClient client.Client
 var devices = models.NewDevices()
 
 func main() {
-
-	client := websocket.New()
-	node := node.New(client)
+	node := node.New("metrics-influx")
 
 	stop := make(chan struct{})
 	device := make(chan func(), 1000)

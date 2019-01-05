@@ -10,13 +10,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
 	"github.com/stampzilla/stampzilla-go/pkg/node"
-	"github.com/stampzilla/stampzilla-go/pkg/websocket"
 )
 
 func main() {
-	client := websocket.New()
-	node := node.New(client)
-	node.Type = "linux"
+	node := node.New("linux")
 
 	monitor := &models.Device{
 		Name:   "Monitor",

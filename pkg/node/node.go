@@ -47,7 +47,16 @@ type Node struct {
 }
 
 // New returns a new Node
-func New(client websocket.Websocket) *Node {
+func New(t string) *Node {
+	client := websocket.New()
+	node := NewWithClient(client)
+	node.Type = t
+
+	return node
+}
+
+// NewWithClient returns a new Node with a custom websocket client
+func NewWithClient(client websocket.Websocket) *Node {
 	return &Node{
 		Client:    client,
 		wg:        &sync.WaitGroup{},

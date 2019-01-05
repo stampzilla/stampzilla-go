@@ -8,14 +8,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
 	"github.com/stampzilla/stampzilla-go/pkg/node"
-	"github.com/stampzilla/stampzilla-go/pkg/websocket"
 )
 
 func main() {
-
-	client := websocket.New()
-	node := node.New(client)
-	node.Type = "knx"
+	node := node.New("knx")
 
 	tunnel := newTunnel(node)
 	tunnel.OnConnect = func() {
@@ -104,15 +100,9 @@ func main() {
 
 func updatedConfig(node *node.Node, tunnel *tunnel, config *config) func(data json.RawMessage) error {
 	return func(data json.RawMessage) error {
-		var configString string
-		err := json.Unmarshal(data, &configString)
-		if err != nil {
-			return err
-		}
-
 		config.Lock()
 		defer config.Unlock()
-		err = json.Unmarshal([]byte(configString), config)
+		err := json.Unmarshal(data, config)
 		if err != nil {
 			return err
 		}
