@@ -5,7 +5,10 @@ import (
 	"crypto/x509"
 	"io/ioutil"
 	"log"
+	"os"
+	"strconv"
 
+	"github.com/jonaz/mdns"
 	"github.com/olahol/melody"
 	"github.com/onrik/logrus/filename"
 	"github.com/sirupsen/logrus"
@@ -37,6 +40,16 @@ func New(config *models.Config, store *store.Store) *Main {
 func (c *Main) Run() {
 	done := c.HTTPServer.Start(":"+c.Config.Port, nil)
 	tlsDone := c.TLSServer.Start(":"+c.Config.TLSPort, c.TLSConfig())
+
+	// Setup and start mDNS
+	if port, err := strconv.Atoi(c.Config.Port); err == nil {
+		host, _ := os.Hostname()
+		info := []string{"stampzilla-go"}
+		mdnsService, _ := mdns.NewMDNSService(host, "_stampzilla._tcp", "", "", port, nil, info)
+		mdnsServer, _ := mdns.NewServer(&mdns.Config{Zone: mdnsService})
+		defer mdnsServer.Shutdown()
+	}
+
 	<-done
 	<-tlsDone
 	c.Config.Save("config.json")

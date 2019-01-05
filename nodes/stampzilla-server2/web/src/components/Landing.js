@@ -16,7 +16,7 @@ class Landing extends Component {
     if (props.server.get('tlsPort') !== this.props.server.get('tlsPort')) {
       console.log('got new TLS port', props.server.get('tlsPort'));
 
-      get(`https://localhost:${props.server.get('tlsPort')}/`).then(() => {
+      get(`https://${window.location.host}:${props.server.get('tlsPort')}/`).then(() => {
         console.log('SUCCESS');
       }).catch((err) => {
         console.log('FAIL', err);
@@ -29,7 +29,7 @@ class Landing extends Component {
 
     const url = Url.format({
       protocol: 'wss:',
-      hostname: 'localhost',
+      hostname: window.location.hostname,
       port: server.get('tlsPort'),
       pathname: '/ws',
     });
@@ -66,7 +66,7 @@ class Landing extends Component {
           <h1>stampzilla-go</h1>
           <h2>{server.get('name') || '-'}</h2>
           <a
-            href={`http://localhost:${server.get('port')}/ca.crt`}
+            href={`http://${window.location.host}/ca.crt`}
             className={classnames({
               'btn btn-outline-secondary mt-3': true,
               disabled: !server.get('port'),
