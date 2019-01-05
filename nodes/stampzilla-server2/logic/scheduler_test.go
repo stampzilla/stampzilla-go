@@ -1,11 +1,6 @@
 package logic
 
-import (
-	"os"
-	"testing"
-	"time"
-)
-
+/*
 func TestSchedulerAddTask(t *testing.T) {
 
 	scheduler := NewScheduler()
@@ -137,3 +132,4 @@ func TestSchedulersaveToFile(t *testing.T) {
 
 	os.Remove("tests/schedule.json.tmp")
 }
+*/

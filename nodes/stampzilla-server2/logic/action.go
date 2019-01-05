@@ -8,6 +8,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+//type ActionStore interface {
+//Get(string) Action
+//}
+
 type Action interface {
 	Run(chan ActionProgress)
 	Uuid() string
@@ -128,7 +132,7 @@ func (a *action) unmarshalJSONcommands(b []byte) (cmd Command, err error) {
 	}
 
 	if _, ok := test["pause"]; ok {
-		cmd = &commandPause{}
+		//cmd = &commandPause{}
 		//} else if _, ok := test["notify"]; ok {
 		//cmd = &command_notify{}
 	} else {
