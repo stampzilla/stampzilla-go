@@ -6,7 +6,7 @@ go:
 install:
 - go get -d -t -v ./...
 - go get github.com/rakyll/statik
-- go generate
+- go generate nodes/stampzilla-server2/main.go
 
 script:
 - make test
