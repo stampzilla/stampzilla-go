@@ -65,8 +65,14 @@ class Landing extends Component {
 
           <h1>stampzilla-go</h1>
           <h2>{server.get('name') || '-'}</h2>
+
+          <pre>
+            Port: {server.get('port')}<br />
+            TLS port: {server.get('tlsPort')}
+          </pre>
+
           <a
-            href={`http://${window.location.host}/ca.crt`}
+            href={`http://${window.location.hostname}:${server.get('port')}/ca.crt`}
             className={classnames({
               'btn btn-outline-secondary mt-3': true,
               disabled: !server.get('port'),

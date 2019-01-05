@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/neverpanic/hid"
+	"github.com/stamp/hid"
 )
 
 var NUM_KEYS = 15
