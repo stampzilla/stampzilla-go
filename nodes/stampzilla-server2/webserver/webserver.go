@@ -63,6 +63,11 @@ func (ws *Webserver) Init() *gin.Engine {
 
 	r.GET("/ws", ws.handleWs(ws.Melody))
 
+	r.NoRoute(func(c *gin.Context) {
+		cspMiddleware()(c)
+		c.File("./web/dist/index.html")
+	})
+
 	ws.router = r
 	return r
 }
