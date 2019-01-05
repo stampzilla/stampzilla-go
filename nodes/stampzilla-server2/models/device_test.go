@@ -51,15 +51,31 @@ func TestCopyDevice(t *testing.T) {
 
 func TestCopyDevices(t *testing.T) {
 	d := testDevice("id")
-
 	devices := NewDevices()
 	devices.Add(d)
-
 	newD := devices.Copy()
-
 	devices.Add(testDevice("id2"))
 
 	assert.Len(t, newD.devices, 1)
 	assert.Len(t, devices.devices, 2)
+}
 
+func TestFlatten(t *testing.T) {
+	d := testDevice("id")
+	d.State["temperature"] = 10
+	devices := NewDevices()
+	devices.Add(d)
+	f := devices.Flatten()
+	t.Log(f)
+	tests := []struct {
+		key      string
+		expected interface{}
+	}{
+		{key: "node.id.on", expected: true},
+		{key: "node.id.temperature", expected: 10},
+	}
+	for _, v := range tests {
+		assert.Contains(t, f, v.key)
+		assert.Equal(t, v.expected, f[v.key])
+	}
 }

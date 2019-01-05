@@ -19,6 +19,7 @@ func (sk SessionKey) String() string {
 type Sender interface {
 	SendToID(to string, msgType string, data interface{}) error
 	SendToProtocol(to string, msgType string, data interface{}) error
+	BroadcastWithFilter(msgType string, data interface{}, fn func(*melody.Session) bool) error
 }
 
 type sender struct {
@@ -51,4 +52,11 @@ func (ws *sender) SendToProtocol(to string, msgType string, data interface{}) er
 		return err
 	}
 	return ws.sendMessageTo(KeyProtocol, to, message)
+}
+func (ws *sender) BroadcastWithFilter(msgType string, data interface{}, fn func(*melody.Session) bool) error {
+	message, err := models.NewMessage(msgType, data)
+	if err != nil {
+		return err
+	}
+	return message.WriteWithFilter(ws.Melody, fn)
 }

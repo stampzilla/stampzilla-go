@@ -134,7 +134,7 @@ func processCommand(cmd protocol.Command) {
 
 	device := state.DeviceByString(cmd.Args[0])
 	if device == nil {
-		logrus.Errorf("Device %s does not exist", device)
+		logrus.Errorf("Device %v does not exist", device)
 		return
 	}
 	switch cmd.Cmd {

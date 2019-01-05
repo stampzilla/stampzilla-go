@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	log "github.com/cihub/seelog"
+	"github.com/sirupsen/logrus"
 )
 
 type Action interface {
@@ -35,7 +35,7 @@ func (a *action) Name() string {
 	return a.Name_
 }
 func (a *action) Cancel() {
-	log.Debugf("Cancel action %s", a.Uuid())
+	logrus.Debugf("Cancel action %s", a.Uuid())
 	if a.cancel != nil {
 		a.cancel()
 	}
@@ -45,7 +45,7 @@ func (a *action) Run(c chan ActionProgress) {
 	a.run(c)
 }
 func (a *action) run(progressChan chan ActionProgress) {
-	log.Debugf("Running action %s", a.Uuid())
+	logrus.Debugf("Running action %s", a.Uuid())
 	ctx, cancel := context.WithCancel(context.Background())
 	a.cancel = cancel
 	queue := make(chan Command)
@@ -92,7 +92,7 @@ func (a *action) tryNotifyProgress(addr *int, c chan ActionProgress, step int) {
 	select {
 	case c <- msg:
 	default:
-		log.Warnf("Dropped progress notification for action runner %p", addr)
+		logrus.Warnf("Dropped progress notification for action runner %p", addr)
 	}
 }
 
@@ -128,9 +128,9 @@ func (a *action) unmarshalJSONcommands(b []byte) (cmd Command, err error) {
 	}
 
 	if _, ok := test["pause"]; ok {
-		cmd = &command_pause{}
-	} else if _, ok := test["notify"]; ok {
-		cmd = &command_notify{}
+		cmd = &commandPause{}
+		//} else if _, ok := test["notify"]; ok {
+		//cmd = &command_notify{}
 	} else {
 		cmd = &command{}
 	}

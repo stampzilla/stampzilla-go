@@ -78,7 +78,7 @@ func GoGet(url string, update bool) {
 
 	gobin, err := exec.LookPath("go")
 	if err != nil {
-		logrus.Error("LookPath Error: %s", err)
+		logrus.Errorf("LookPath Error: %s", err.Error())
 	}
 
 	// If we already is stampzilla user no need to sudo!

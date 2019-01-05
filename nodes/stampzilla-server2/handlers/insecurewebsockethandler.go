@@ -30,7 +30,7 @@ func NewInSecureWebsockerHandler(store *store.Store, config *models.Config, ws w
 	}
 }
 
-func (wsh *insecureWebsocketHandler) Message(msg *models.Message) error {
+func (wsh *insecureWebsocketHandler) Message(s interfaces.MelodySession, msg *models.Message) error {
 	logrus.Warn("Unsecure ws sent data: ", msg)
 
 	// client requested certificate. We must approve manually
@@ -85,7 +85,7 @@ func (wsh *insecureWebsocketHandler) Connect(s interfaces.MelodySession, r *http
 }
 
 func (wsh *insecureWebsocketHandler) Disconnect(s interfaces.MelodySession) error {
-	id, _ := s.Get("ID")
+	id, _ := s.Get(websocket.KeyID.String())
 	wsh.Store.RemoveConnection(id.(string))
 	return nil
 }

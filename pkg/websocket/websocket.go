@@ -46,6 +46,7 @@ type websocketClient struct {
 	disconnected    chan error
 	connected       chan struct{}
 	onConnect       func()
+	sync.Mutex
 }
 
 // New creates a new Websocket
@@ -64,7 +65,14 @@ func (ws *websocketClient) SetTLSConfig(c *tls.Config) {
 }
 
 func (ws *websocketClient) OnConnect(cb func()) {
+	ws.Lock()
 	ws.onConnect = cb
+	ws.Unlock()
+}
+func (ws *websocketClient) getOnConnect() func() {
+	ws.Lock()
+	defer ws.Unlock()
+	return ws.onConnect
 }
 
 func (ws *websocketClient) ConnectContext(ctx context.Context, addr string, headers http.Header) error {
@@ -91,8 +99,8 @@ func (ws *websocketClient) ConnectContext(ctx context.Context, addr string, head
 	ws.readPump()
 	ws.writePump(ctx) <- struct{}{}
 
-	if ws.onConnect != nil {
-		ws.onConnect()
+	if oncon := ws.getOnConnect(); oncon != nil {
+		oncon()
 	}
 	return nil
 }
@@ -130,8 +138,12 @@ func (ws *websocketClient) ConnectWithRetry(parentCtx context.Context, addr stri
 		}
 	}()
 	go ws.ConnectContext(ctx, addr, headers)
-	<-ws.connected
-	return
+	select {
+	case <-parentCtx.Done():
+		return
+	case <-ws.connected:
+		return
+	}
 }
 
 func (ws *websocketClient) Wait() {

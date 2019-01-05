@@ -29,8 +29,9 @@ import (
 type OnFunc func(json.RawMessage) error
 
 type Node struct {
-	UUID string
-	Type string
+	UUID     string
+	Type     string
+	Protocol string
 
 	Client websocket.Websocket
 	//DisconnectClient context.CancelFunc
@@ -42,6 +43,7 @@ type Node struct {
 	callbacks map[string][]OnFunc
 	Devices   *models.Devices
 	shutdown  []func()
+	stop      chan struct{}
 }
 
 // New returns a new Node
@@ -51,7 +53,13 @@ func New(client websocket.Websocket) *Node {
 		wg:        &sync.WaitGroup{},
 		callbacks: make(map[string][]OnFunc),
 		Devices:   models.NewDevices(),
+		stop:      make(chan struct{}),
 	}
+}
+
+// Stop will shutdown the node similar to a SIGTERM
+func (n *Node) Stop() {
+	close(n.stop)
 }
 func (n *Node) Wait() {
 	n.Client.Wait()
@@ -186,8 +194,13 @@ func (n *Node) Connect() error {
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
+	n.wg.Add(1)
 	go func() {
-		<-interrupt
+		defer n.wg.Done()
+		select {
+		case <-interrupt:
+		case <-n.stop:
+		}
 		cancel()
 		for _, f := range n.shutdown {
 			f()
@@ -236,7 +249,10 @@ func (n *Node) connect(ctx context.Context, addr string) {
 	headers := http.Header{}
 	headers.Add("X-UUID", n.UUID)
 	headers.Add("X-TYPE", n.Type)
-	headers.Add("Sec-WebSocket-Protocol", "node")
+	headers.Set("Sec-WebSocket-Protocol", n.Protocol)
+	if n.Protocol == "" {
+		headers.Set("Sec-WebSocket-Protocol", "node")
+	}
 	n.Client.ConnectWithRetry(ctx, addr, headers)
 }
 
@@ -318,20 +334,25 @@ func (n *Node) GenerateCSR() ([]byte, error) {
 	return d, nil
 }
 
-func (n *Node) on(what string, cb OnFunc) {
+func (n *Node) On(what string, cb OnFunc) {
 	n.callbacks[what] = append(n.callbacks[what], cb)
 }
 
 //OnConfig is run when node recieves updated configuration from the server
 func (n *Node) OnConfig(cb OnFunc) {
-	n.on("setup", func(data json.RawMessage) error {
+	n.On("setup", func(data json.RawMessage) error {
 		conf := &models.Node{}
 		err := json.Unmarshal(data, conf)
 		if err != nil {
 			return err
 		}
-		//TODO do we want to persist the config to disk here or leve it to each node? Could possibly put it in config.json or new custom file
-		return cb(conf.Config)
+
+		var configStr string
+		err = json.Unmarshal(conf.Config, &configStr)
+		if err != nil {
+			return err
+		}
+		return cb([]byte(configStr))
 	})
 }
 
@@ -340,9 +361,9 @@ func (n *Node) OnShutdown(cb func()) {
 }
 
 func (n *Node) OnRequestStateChange(cb func(state models.DeviceState, device *models.Device) error) {
-	n.on("state-change", func(data json.RawMessage) error {
-		conf := models.NewDevices()
-		err := json.Unmarshal(data, &conf)
+	n.On("state-change", func(data json.RawMessage) error {
+		devices := models.NewDevices()
+		err := json.Unmarshal(data, &devices)
 		if err != nil {
 			return err
 		}
@@ -350,9 +371,9 @@ func (n *Node) OnRequestStateChange(cb func(state models.DeviceState, device *mo
 		// loop over all devices and compare state
 		stateChange := make(models.DeviceState)
 
-		for _, dev := range conf.All() {
+		for _, dev := range devices.All() {
 			foundChange := false
-			oldDev := n.Devices.Get("." + dev.ID)
+			oldDev := n.Devices.Get(dev.Node, dev.ID)
 			for s, newState := range dev.State {
 				oldState := oldDev.State[s]
 				if newState != oldState {
@@ -370,13 +391,13 @@ func (n *Node) OnRequestStateChange(cb func(state models.DeviceState, device *mo
 				}
 
 				// set the new state and send it to the server
-				err = n.Devices.SetState("", dev.ID, dev.State)
+				err = n.Devices.SetState(dev.Node, dev.ID, dev.State)
 				if err != nil {
 					logrus.Error(err)
 					continue
 				}
 
-				err = n.WriteMessage("update-device", n.Devices.Get("."+dev.ID))
+				err = n.WriteMessage("update-device", n.Devices.Get(dev.Node, dev.ID))
 				if err != nil {
 					logrus.Error(err)
 					continue
@@ -389,10 +410,16 @@ func (n *Node) OnRequestStateChange(cb func(state models.DeviceState, device *mo
 }
 
 func (n *Node) AddOrUpdate(d *models.Device) error {
+	d.Node = n.UUID
 	n.Devices.Add(d)
 	return n.WriteMessage("update-device", d)
 }
 
 func (n *Node) SyncDevices() error {
 	return n.WriteMessage("update-devices", n.Devices)
+}
+
+//Subscribe subscribes to a topic in the server
+func (n *Node) Subscribe(what ...string) error {
+	return n.WriteMessage("subscribe", what)
 }

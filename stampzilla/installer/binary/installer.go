@@ -97,7 +97,7 @@ outer:
 			logrus.WithFields(logrus.Fields{
 				"expected": checksums[v.GetName()],
 				"got":      checksum,
-			}).Error("Wrong checksum for %s", v.GetName())
+			}).Errorf("Wrong checksum for %s", v.GetName())
 			os.Remove(tmp.Name())
 		}
 
