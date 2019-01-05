@@ -22,13 +22,14 @@ class Nodes extends Component {
           <div className="col-md-4">
             {Object.keys(devicesByNode).map(nodeId => (
               <Card
-                title={nodes.getIn([nodeId, 'name'])}
+                title={nodes.getIn([nodeId, 'name']) || `New node of type ${nodes.getIn([nodeId, 'type'])}`}
                 bodyClassName="p-3"
+                key={nodeId}
               >
                 {devicesByNode[nodeId]
                   .sort((a, b) => a.get('name').localeCompare(b.get('name')))
                   .map(device => (
-                    <Device device={device} />
+                    <Device device={device} key={`${nodeId}.${device.get('id')}`} />
                 ))}
               </Card>
               ))}

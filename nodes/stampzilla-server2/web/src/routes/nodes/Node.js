@@ -57,7 +57,7 @@ const JsonWidget = (props) => {
 
   return (
     <JSONInput
-      placeholder={parsedValue}
+      placeholder={typeof parsedValue === 'object' ? parsedValue : undefined}
       onChange={({ jsObject }) => onChange(jsObject && JSON.stringify(jsObject))}
       theme="dark_vscode_tribute"
       locale={locale}
@@ -113,7 +113,8 @@ class Node extends Component {
       this.setState({
         formData: {
           name: node.get('name'),
-          config: node.get('config'),
+          config: JSON.stringify(node.get('config')),
+          //config: node.get('config'),
         },
       });
     }
@@ -136,6 +137,7 @@ class Node extends Component {
       body: {
         ...node.toJS(),
         ...formData,
+        config: JSON.parse(formData.config),
       },
     });
   }
