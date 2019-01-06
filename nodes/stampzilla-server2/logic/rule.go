@@ -79,15 +79,19 @@ func (r *Rule) SetActive(a bool) {
 
 func (r *Rule) Cancel() {
 	logrus.Debugf("Cancel actions on rule %s", r.Uuid())
+	r.RLock()
 	if r.cancel != nil {
 		r.cancel()
 	}
+	r.RUnlock()
 }
 
 func (r *Rule) Run(store *store.Store) {
 
 	ctx, cancel := context.WithCancel(context.Background())
+	r.Lock()
 	r.cancel = cancel
+	r.Unlock()
 	defer cancel()
 	for k, v := range r.Actions_ {
 		//TODO notify progress here
