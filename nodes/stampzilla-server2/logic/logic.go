@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/store"
 )
 
 func main() {
@@ -17,16 +18,26 @@ func main() {
 }
 
 type Logic struct {
-	Rules              []*Rule
+	Store *store.Store
+	// TODO MAJOR important! must move rules storage to store.Store and load them from there when we start logic so we dont get circular dependencies! :(
+	Rules              map[string]*Rule
 	devices            *models.Devices
 	ActionProgressChan chan ActionProgress
 	sync.RWMutex
 }
 
-func NewLogic() *Logic {
+type ActionProgress struct {
+	Address string `json:"address"`
+	Uuid    string `json:"uuid"`
+	Step    int    `json:"step"`
+}
+
+func NewLogic(store *store.Store) *Logic {
 	l := &Logic{
 		devices:            models.NewDevices(),
 		ActionProgressChan: make(chan ActionProgress, 100),
+		Rules:              make(map[string]*Rule),
+		Store:              store,
 	}
 	return l
 }
@@ -35,7 +46,7 @@ func (l *Logic) AddRule(name string) *Rule {
 	r := &Rule{Name_: name, Uuid_: uuid.New().String()}
 	l.Lock()
 	defer l.Unlock()
-	l.Rules = append(l.Rules, r)
+	l.Rules[r.Uuid()] = r
 	return r
 }
 
@@ -62,7 +73,7 @@ func (l *Logic) EvaluateRules() {
 			if evaluation {
 				logrus.Info("Rule: ", rule.Name(), " (", rule.Uuid(), ") - running enter actions")
 				//rule.RunEnter(l.ActionProgressChan)
-				rule.SetActive(true)
+				rule.Run(l.Store)
 				continue
 			}
 			rule.SetActive(false)
@@ -72,10 +83,19 @@ func (l *Logic) EvaluateRules() {
 }
 
 func (l *Logic) evaluateRule(r *Rule) bool {
-	return false
+	rules := make(map[string]bool)
+	for _, v := range l.Rules {
+		rules[v.Uuid()] = v.Active()
+	}
+	result, err := r.Eval(l.devices, rules)
+	if err != nil {
+		logrus.Errorf("Error evaluating rule %s: %s", r.Uuid(), err.Error())
+		return false
+	}
+	return result
 }
 
-func (l *Logic) SaveRulesToFile(path string) {
+func (l *Logic) Save(path string) {
 	configFile, err := os.Create(path)
 	if err != nil {
 		logrus.Error("creating config file", err.Error())
@@ -89,7 +109,7 @@ func (l *Logic) SaveRulesToFile(path string) {
 	}
 }
 
-func (l *Logic) LoadRulesFromFile(path string) {
+func (l *Logic) Load(path string) {
 	configFile, err := os.Open(path)
 	if err != nil {
 		logrus.Warn("opening config file", err.Error())

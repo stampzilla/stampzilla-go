@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/sirupsen/logrus"
@@ -17,6 +18,7 @@ type UpdateCallback func(*Store) error
 
 type Store struct {
 	Nodes       Nodes
+	SavedState  *SavedStateStore
 	Devices     *models.Devices
 	Connections Connections
 	onUpdate    map[string][]UpdateCallback
@@ -24,12 +26,15 @@ type Store struct {
 }
 
 func New() *Store {
-	return &Store{
+	s := &Store{
 		Nodes:       make(Nodes),
+		SavedState:  NewSavedStateStore(),
 		Devices:     models.NewDevices(),
 		Connections: make(Connections),
 		onUpdate:    make(map[string][]UpdateCallback, 0),
 	}
+
+	return s
 }
 
 func (store *Store) runCallbacks(area string) {
@@ -50,7 +55,12 @@ func (store *Store) OnUpdate(area string, callback UpdateCallback) {
 }
 
 func (store *Store) LoadFromDisk() error {
-	path := "configs/"
+
+	// Load logic stuff
+	store.SavedState.Load("savedstate.json")
+
+	// load all the nodes
+	path := "configs"
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return nil
@@ -65,7 +75,7 @@ func (store *Store) LoadFromDisk() error {
 			continue
 		}
 
-		node, err := loadConfigFromFile(path + f.Name())
+		node, err := loadConfigFromFile(filepath.Join(path, f.Name()))
 		if err != nil {
 			return err
 		}

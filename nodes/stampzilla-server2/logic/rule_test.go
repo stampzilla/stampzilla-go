@@ -1,54 +1,171 @@
 package logic
 
-/*
-
 import (
+	"fmt"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/sirupsen/logrus"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/store"
 	"github.com/stretchr/testify/assert"
 )
 
-type actionStub struct {
-	enterCallCount  int
-	cancelCallCount int
+func TestEval(t *testing.T) {
+
+	tests := []struct {
+		State       models.DeviceState
+		Expression  string
+		Expected    bool
+		ExpectedErr error
+	}{
+		{
+			State: models.DeviceState{
+				"on":          true,
+				"temperature": 21.0,
+			},
+			Expression: `devices["node.id"].on == true && devices["node.id"].temperature > 20.0 `,
+			Expected:   true,
+		},
+		{
+			State: models.DeviceState{
+				"on": true,
+			},
+			Expression: `devices["node.id"].on == false`,
+			Expected:   false,
+		},
+		{
+			State: models.DeviceState{
+				"on": true,
+			},
+			Expression:  `1+2`,
+			ExpectedErr: ErrExpressionNotBool,
+		},
+		{
+			State: models.DeviceState{
+				"on": true,
+			},
+			Expression: `rules["rule1"] == true `,
+			Expected:   true,
+		},
+		{
+			State: models.DeviceState{
+				"on": true,
+			},
+			Expression:  `rules["rule"] == true `,
+			Expected:    false,
+			ExpectedErr: fmt.Errorf("no such key: 'rule'"),
+		},
+	}
+
+	for _, v := range tests {
+		t.Run(v.Expression, func(t *testing.T) {
+			rules := make(map[string]bool)
+			rules["rule1"] = true
+			devices := models.NewDevices()
+			devices.Add(&models.Device{
+				Node:  "node",
+				ID:    "id",
+				State: v.State,
+			})
+			r := &Rule{
+				Expression_: v.Expression,
+			}
+			result, err := r.Eval(devices, rules)
+			assert.Equal(t, v.ExpectedErr, err)
+			assert.Equal(t, v.Expected, result)
+		})
+
+	}
+
 }
 
-func (a *actionStub) Name() string {
-	return ""
+func TestRunActions(t *testing.T) {
+	s := store.New()
+	s.SavedState.State["uuid"] = &store.SavedState{
+		Name: "testname",
+		UUID: "uuid",
+		State: map[string]models.DeviceState{
+			"node.id": models.DeviceState{
+				"on": false,
+				"a":  true,
+				"b":  true,
+			},
+		},
+	}
+
+	s.Devices.Add(&models.Device{
+		Node: "node",
+		ID:   "id",
+		State: models.DeviceState{
+			"on": true,
+		},
+	})
+
+	r := &Rule{
+		Actions_: []string{
+			"400ms",
+			"uuid",
+		},
+	}
+
+	now := time.Now()
+	r.Run(s)
+	if time.Now().Sub(now) < time.Millisecond*200 {
+		t.Error("Expected to sleep in the action for at least 200ms")
+	}
+
+	//t.Log(store.Devices.Get("node", "id"))
+	assert.Equal(t, false, s.Devices.Get("node", "id").State["on"])
+	assert.Equal(t, true, s.Devices.Get("node", "id").State["a"])
+	assert.Equal(t, true, s.Devices.Get("node", "id").State["b"])
 }
-func (a *actionStub) Uuid() string {
-	return ""
+
+func TestRunActionsCancelSleep(t *testing.T) {
+	var logBuf strings.Builder
+	logrus.SetLevel(logrus.DebugLevel)
+	logrus.SetOutput(&logBuf)
+
+	store := store.New()
+
+	r := &Rule{
+		Actions_: []string{
+			"100ms",
+			"100ms",
+		},
+	}
+
+	go func() {
+		time.Sleep(110 * time.Millisecond)
+		r.Cancel()
+	}()
+
+	now := time.Now()
+	r.Run(store)
+	dur := time.Now().Sub(now)
+	if dur < time.Millisecond*110 {
+		t.Error("Expected to sleep in the action for at least 200ms slept: ", dur)
+	}
+	assert.Contains(t, logBuf.String(), "Stopping action 1 due to cancel")
 }
-func (a *actionStub) Run(c chan ActionProgress) {
-	a.enterCallCount += 1
+func BenchmarkEval(b *testing.B) {
+	devices := models.NewDevices()
+	devices.Add(&models.Device{
+		Node: "node",
+		ID:   "id",
+		State: models.DeviceState{
+			"on": true,
+		},
+	})
+	r := &Rule{
+		Expression_: `devices["node.id"].on == true `,
+	}
+
+	rules := make(map[string]bool)
+	for i := 0; i < b.N; i++ {
+		result, err := r.Eval(devices, rules)
+		assert.NoError(b, err)
+		assert.Equal(b, true, result)
+	}
 }
-func (a *actionStub) Cancel() {
-	a.cancelCallCount += 1
-}
-
-func TestRunCalls(t *testing.T) {
-
-	rule := &rule{}
-
-	enterStub := &actionStub{}
-	exitStub := &actionStub{}
-
-	rule.AddEnterAction(enterStub)
-	rule.AddExitAction(exitStub)
-
-	rule.RunEnter(nil)
-
-	assert.Equal(t, 1, enterStub.enterCallCount)
-	assert.Equal(t, 0, enterStub.cancelCallCount)
-	assert.Equal(t, 0, exitStub.enterCallCount)
-	assert.Equal(t, 1, exitStub.cancelCallCount)
-
-	rule.RunExit(nil)
-
-	assert.Equal(t, 1, enterStub.enterCallCount)
-	assert.Equal(t, 1, enterStub.cancelCallCount)
-	assert.Equal(t, 1, exitStub.enterCallCount)
-	assert.Equal(t, 1, exitStub.cancelCallCount)
-
-}
-*/

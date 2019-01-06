@@ -3,7 +3,6 @@ package webserver
 import (
 	"crypto/tls"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -56,22 +55,19 @@ func (ws *Webserver) Init() *gin.Engine {
 	r.Use(ginlogrus.New(logrus.StandardLogger()))
 
 	statikFS, err := fs.New()
-	if err != nil {
-		log.Fatal(err)
+	if err == nil { // we only service GUI if statik files can be found
+		r.GET("/service-worker.js", gin.WrapH(http.FileServer(statikFS)))
+		r.GET("/assets/*all", gin.WrapH(http.FileServer(statikFS)))
+		r.NoRoute(func(c *gin.Context) {
+			cspMiddleware()(c)
+			c.Request.URL.Path = "/" // force us to always return index.html and not the requested page to be compatible with HTML5 routing
+			http.FileServer(statikFS).ServeHTTP(c.Writer, c.Request)
+		})
 	}
 
 	// Setup gin
-	r.GET("/service-worker.js", gin.WrapH(http.FileServer(statikFS)))
-	r.GET("/assets/*all", gin.WrapH(http.FileServer(statikFS)))
 	r.GET("/ca.crt", ws.handleDownloadCA())
-
 	r.GET("/ws", ws.handleWs(ws.Melody))
-
-	r.NoRoute(func(c *gin.Context) {
-		cspMiddleware()(c)
-		c.Request.URL.Path = "/" // force us to always return index.html and not the requested page to be compatible with HTML5 routing
-		http.FileServer(statikFS).ServeHTTP(c.Writer, c.Request)
-	})
 
 	ws.router = r
 	return r

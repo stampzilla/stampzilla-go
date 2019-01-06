@@ -1,5 +1,5 @@
-[
-    {
+{
+    "e8092b86-1261-44cd-ab64-38121df58a79": {
         "name": "All off",
         "enabled": true,
         "active": false,
@@ -14,7 +14,7 @@
             "c7d352bb-23f4-468c-b476-f76599c09a0d"
         ]
     },
-    {
+    "1fd25327-f43c-4a00-aa67-3969dfed06b5": {
         "name": "chromecast p\u00e5",
         "enabled": true,
         "active": false,
@@ -27,4 +27,4 @@
             "c7d352bb-23f4-468c-b476-f76599c09a0d"
         ]
     }
-]
+}
