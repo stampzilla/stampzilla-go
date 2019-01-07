@@ -47,7 +47,7 @@ func TestEvaluateRules(t *testing.T) {
 	r := l.AddRule("test")
 	r.Expression_ = `devices["node.id"].on == true`
 
-	l.UpdateDevice(&devices.Device{
+	l.updateDevice(&devices.Device{
 		Node: "node",
 		ID:   "id",
 		State: devices.State{
@@ -59,7 +59,7 @@ func TestEvaluateRules(t *testing.T) {
 
 	assert.Equal(t, true, l.Rules[r.Uuid()].Active())
 
-	l.UpdateDevice(&devices.Device{
+	l.updateDevice(&devices.Device{
 		Node: "node",
 		ID:   "id",
 		State: devices.State{

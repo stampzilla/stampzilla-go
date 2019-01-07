@@ -16,6 +16,7 @@ type UpdateCallback func(*Store) error
 type Store struct {
 	Nodes       Nodes
 	SavedState  *logic.SavedStateStore
+	Logic       *logic.Logic
 	Devices     *devices.List
 	Connections Connections
 	onUpdate    map[string][]UpdateCallback
@@ -30,7 +31,8 @@ func New() *Store {
 		Connections: make(Connections),
 		onUpdate:    make(map[string][]UpdateCallback, 0),
 	}
-
+	l := logic.NewLogic(s)
+	s.Logic = l
 	return s
 }
 
@@ -55,6 +57,10 @@ func (store *Store) OnUpdate(area string, callback UpdateCallback) {
 func (store *Store) Load() error {
 	// Load logic stuff
 	err := store.SavedState.Load("savedstate.json")
+	if err != nil {
+		return err
+	}
+	err = store.Logic.Load("rules.json")
 	if err != nil {
 		return err
 	}

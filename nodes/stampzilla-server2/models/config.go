@@ -12,11 +12,12 @@ import (
 
 //Config is the main server configuration
 type Config struct {
-	Port    string `json:"port" default:"8080"`
-	TLSPort string `json:"tlsPort" default:"6443"`
-	UUID    string `json:"uuid,omitempty"`
-	Name    string `json:"name,omitempty"`
-	Host    string `json:"host,omitempty"`
+	Port     string `json:"port" default:"8080"`
+	TLSPort  string `json:"tlsPort" default:"6443"`
+	UUID     string `json:"uuid,omitempty"`
+	Name     string `json:"name,omitempty"`
+	Host     string `json:"host,omitempty"`
+	LogLevel string `json:"logLevel,omitempty"`
 }
 
 //Save writes the config as json to specified filename

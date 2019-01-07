@@ -1,6 +1,7 @@
 package servermain
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"io/ioutil"
@@ -50,8 +51,15 @@ func (c *Main) Run() {
 		defer mdnsServer.Shutdown()
 	}
 
+	// start logic
+
+	ctx, cancel := context.WithCancel(context.Background())
+	c.Store.Logic.Start(ctx)
+
 	<-done
 	<-tlsDone
+	cancel() // stop logic
+	c.Store.Logic.Wait()
 	c.Config.Save("config.json")
 }
 
@@ -76,6 +84,15 @@ func (m *Main) Init() {
 
 	filenameHook := filename.NewHook()
 	logrus.AddHook(filenameHook)
+
+	if m.Config.LogLevel != "" {
+		lvl, err := logrus.ParseLevel(m.Config.LogLevel)
+		if err != nil {
+			logrus.Fatal(err)
+			return
+		}
+		logrus.SetLevel(lvl)
+	}
 
 	m.CA, err = ca.LoadOrCreate()
 	if err != nil {
