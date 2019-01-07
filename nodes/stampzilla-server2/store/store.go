@@ -1,15 +1,12 @@
 package store
 
 import (
-	"bytes"
-	"encoding/json"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 	"sync"
 
 	"github.com/sirupsen/logrus"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/logic"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
 )
 
 type Nodes map[string]*models.Node
@@ -18,8 +15,8 @@ type UpdateCallback func(*Store) error
 
 type Store struct {
 	Nodes       Nodes
-	SavedState  *SavedStateStore
-	Devices     *models.Devices
+	SavedState  *logic.SavedStateStore
+	Devices     *devices.List
 	Connections Connections
 	onUpdate    map[string][]UpdateCallback
 	sync.RWMutex
@@ -28,8 +25,8 @@ type Store struct {
 func New() *Store {
 	s := &Store{
 		Nodes:       make(Nodes),
-		SavedState:  NewSavedStateStore(),
-		Devices:     models.NewDevices(),
+		SavedState:  logic.NewSavedStateStore(),
+		Devices:     devices.NewList(),
 		Connections: make(Connections),
 		onUpdate:    make(map[string][]UpdateCallback, 0),
 	}
@@ -54,82 +51,14 @@ func (store *Store) OnUpdate(area string, callback UpdateCallback) {
 	store.Unlock()
 }
 
-func (store *Store) LoadFromDisk() error {
-
+// Load loads all stuff from disk.
+func (store *Store) Load() error {
 	// Load logic stuff
-	store.SavedState.Load("savedstate.json")
+	err := store.SavedState.Load("savedstate.json")
+	if err != nil {
+		return err
+	}
 
 	// load all the nodes
-	path := "configs"
-
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return nil
-	}
-	files, err := ioutil.ReadDir(path)
-	if err != nil {
-		return err
-	}
-
-	for _, f := range files {
-		if f.Name()[0] == '.' {
-			continue
-		}
-
-		node, err := loadConfigFromFile(filepath.Join(path, f.Name()))
-		if err != nil {
-			return err
-		}
-		store.AddOrUpdateNode(node)
-	}
-
-	return nil
-}
-
-func (store *Store) WriteToDisk() error {
-	nodes := store.GetNodes()
-
-	for _, node := range nodes {
-		err := saveConfigToFile(node)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func saveConfigToFile(node *models.Node) error {
-	path := "configs/"
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		os.MkdirAll(path, 0755)
-	}
-
-	configFile, err := os.Create(path + node.UUID + ".json")
-	if err != nil {
-		return err
-	}
-
-	var out bytes.Buffer
-	b, err := json.MarshalIndent(node, "", "\t")
-	if err != nil {
-		return err
-	}
-	json.Indent(&out, b, "", "\t")
-	_, err = out.WriteTo(configFile)
-	return err
-}
-
-func loadConfigFromFile(file string) (*models.Node, error) {
-	f, err := os.Open(file)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	var node *models.Node
-
-	decoder := json.NewDecoder(f)
-	err = decoder.Decode(&node)
-
-	return node, err
+	return store.LoadNodes()
 }

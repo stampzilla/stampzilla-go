@@ -14,8 +14,8 @@ import (
 	"github.com/google/cel-go/interpreter"
 	"github.com/google/cel-go/parser"
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/store"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/interfaces"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
 	exprpb "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 )
 
@@ -86,7 +86,7 @@ func (r *Rule) Cancel() {
 	r.RUnlock()
 }
 
-func (r *Rule) Run(store *store.Store) {
+func (r *Rule) Run(store *SavedStateStore, stateSync interfaces.StateSyncer) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	r.Lock()
@@ -113,18 +113,18 @@ func (r *Rule) Run(store *store.Store) {
 			return
 		}
 
-		state := store.SavedState.Get(v)
+		state := store.Get(v)
 		if state == nil {
 			logrus.Errorf("SavedState %s does not exist", v)
 			return
 		}
-		store.SyncState(state.State)
+		stateSync.SyncState(state.State)
 	}
 
 }
 
 //Eval evaluates the cel expression
-func (r *Rule) Eval(devices *models.Devices, rules map[string]bool) (bool, error) {
+func (r *Rule) Eval(devices *devices.List, rules map[string]bool) (bool, error) {
 	devicesState := make(map[string]map[string]interface{})
 	for devID, v := range devices.All() {
 		devicesState[devID] = make(map[string]interface{})

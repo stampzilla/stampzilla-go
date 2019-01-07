@@ -23,6 +23,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
 	"github.com/stampzilla/stampzilla-go/pkg/websocket"
 )
 
@@ -41,7 +42,7 @@ type Node struct {
 	TLS       *tls.Certificate
 	CA        *x509.CertPool
 	callbacks map[string][]OnFunc
-	Devices   *models.Devices
+	Devices   *devices.List
 	shutdown  []func()
 	stop      chan struct{}
 }
@@ -61,7 +62,7 @@ func NewWithClient(client websocket.Websocket) *Node {
 		Client:    client,
 		wg:        &sync.WaitGroup{},
 		callbacks: make(map[string][]OnFunc),
-		Devices:   models.NewDevices(),
+		Devices:   devices.NewList(),
 		stop:      make(chan struct{}),
 	}
 }
@@ -364,18 +365,18 @@ func (n *Node) OnShutdown(cb func()) {
 	n.shutdown = append(n.shutdown, cb)
 }
 
-func (n *Node) OnRequestStateChange(cb func(state models.DeviceState, device *models.Device) error) {
+func (n *Node) OnRequestStateChange(cb func(state devices.State, device *devices.Device) error) {
 	n.On("state-change", func(data json.RawMessage) error {
-		devices := models.NewDevices()
-		err := json.Unmarshal(data, &devices)
+		devs := devices.NewList()
+		err := json.Unmarshal(data, &devs)
 		if err != nil {
 			return err
 		}
 
 		// loop over all devices and compare state
-		stateChange := make(models.DeviceState)
+		stateChange := make(devices.State)
 
-		for _, dev := range devices.All() {
+		for _, dev := range devs.All() {
 			foundChange := false
 			oldDev := n.Devices.Get(dev.Node, dev.ID)
 			for s, newState := range dev.State {
@@ -413,7 +414,7 @@ func (n *Node) OnRequestStateChange(cb func(state models.DeviceState, device *mo
 	})
 }
 
-func (n *Node) AddOrUpdate(d *models.Device) error {
+func (n *Node) AddOrUpdate(d *devices.Device) error {
 	d.Node = n.UUID
 	n.Devices.Add(d)
 	return n.WriteMessage("update-device", d)

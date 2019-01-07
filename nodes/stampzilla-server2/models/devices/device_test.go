@@ -1,4 +1,4 @@
-package models
+package devices
 
 import (
 	"testing"
@@ -13,7 +13,7 @@ func testDevice(id string) *Device {
 		ID:     id,
 		Name:   "name",
 		Online: true,
-		State: DeviceState{
+		State: State{
 			"on": true,
 		},
 		Traits: []string{"onoff"},
@@ -51,7 +51,7 @@ func TestCopyDevice(t *testing.T) {
 
 func TestCopyDevices(t *testing.T) {
 	d := testDevice("id")
-	devices := NewDevices()
+	devices := NewList()
 	devices.Add(d)
 	newD := devices.Copy()
 	devices.Add(testDevice("id2"))
@@ -63,7 +63,7 @@ func TestCopyDevices(t *testing.T) {
 func TestFlatten(t *testing.T) {
 	d := testDevice("id")
 	d.State["temperature"] = 10
-	devices := NewDevices()
+	devices := NewList()
 	devices.Add(d)
 	f := devices.Flatten()
 	t.Log(f)
@@ -81,11 +81,11 @@ func TestFlatten(t *testing.T) {
 }
 
 func TestStateDiff(t *testing.T) {
-	ds1 := DeviceState{
+	ds1 := State{
 		"on":          true,
 		"temperature": 10,
 	}
-	ds2 := DeviceState{
+	ds2 := State{
 		"on":          false,
 		"temperature": 10,
 	}

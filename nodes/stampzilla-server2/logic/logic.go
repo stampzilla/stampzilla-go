@@ -9,8 +9,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/store"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/interfaces"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
 )
 
 func main() {
@@ -18,10 +18,11 @@ func main() {
 }
 
 type Logic struct {
-	Store *store.Store
+	StateSyncer interfaces.StateSyncer
+	StateStore  *SavedStateStore
 	// TODO MAJOR important! must move rules storage to store.Store and load them from there when we start logic so we dont get circular dependencies! :(
 	Rules              map[string]*Rule
-	devices            *models.Devices
+	devices            *devices.List
 	ActionProgressChan chan ActionProgress
 	sync.RWMutex
 }
@@ -32,12 +33,13 @@ type ActionProgress struct {
 	Step    int    `json:"step"`
 }
 
-func NewLogic(store *store.Store) *Logic {
+func NewLogic(s interfaces.StateSyncer) *Logic {
 	l := &Logic{
-		devices:            models.NewDevices(),
+		devices:            devices.NewList(),
 		ActionProgressChan: make(chan ActionProgress, 100),
 		Rules:              make(map[string]*Rule),
-		Store:              store,
+		StateSyncer:        s,
+		StateStore:         NewSavedStateStore(),
 	}
 	return l
 }
@@ -50,7 +52,7 @@ func (l *Logic) AddRule(name string) *Rule {
 	return r
 }
 
-func (l *Logic) UpdateDevice(dev *models.Device) {
+func (l *Logic) UpdateDevice(dev *devices.Device) {
 	if oldDev := l.devices.Get(dev.Node, dev.ID); oldDev != nil {
 		diff := oldDev.State.Diff(dev.State)
 		if len(diff) > 0 {
@@ -73,7 +75,7 @@ func (l *Logic) EvaluateRules() {
 			if evaluation {
 				logrus.Info("Rule: ", rule.Name(), " (", rule.Uuid(), ") - running enter actions")
 				//rule.RunEnter(l.ActionProgressChan)
-				rule.Run(l.Store)
+				rule.Run(l.StateStore, l.StateSyncer)
 				continue
 			}
 			rule.SetActive(false)
@@ -120,6 +122,8 @@ func (l *Logic) Load(path string) {
 	if err = jsonParser.Decode(&l.Rules); err != nil {
 		logrus.Error(err)
 	}
+
+	//TODO loop over rules and generate UUIDs if needed. If it was needed save the rules again
 
 }
 

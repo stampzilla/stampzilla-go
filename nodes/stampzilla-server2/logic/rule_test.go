@@ -7,21 +7,20 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/store"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestEval(t *testing.T) {
 
 	tests := []struct {
-		State       models.DeviceState
+		State       devices.State
 		Expression  string
 		Expected    bool
 		ExpectedErr error
 	}{
 		{
-			State: models.DeviceState{
+			State: devices.State{
 				"on":          true,
 				"temperature": 21.0,
 			},
@@ -29,28 +28,28 @@ func TestEval(t *testing.T) {
 			Expected:   true,
 		},
 		{
-			State: models.DeviceState{
+			State: devices.State{
 				"on": true,
 			},
 			Expression: `devices["node.id"].on == false`,
 			Expected:   false,
 		},
 		{
-			State: models.DeviceState{
+			State: devices.State{
 				"on": true,
 			},
 			Expression:  `1+2`,
 			ExpectedErr: ErrExpressionNotBool,
 		},
 		{
-			State: models.DeviceState{
+			State: devices.State{
 				"on": true,
 			},
 			Expression: `rules["rule1"] == true `,
 			Expected:   true,
 		},
 		{
-			State: models.DeviceState{
+			State: devices.State{
 				"on": true,
 			},
 			Expression:  `rules["rule"] == true `,
@@ -63,8 +62,8 @@ func TestEval(t *testing.T) {
 		t.Run(v.Expression, func(t *testing.T) {
 			rules := make(map[string]bool)
 			rules["rule1"] = true
-			devices := models.NewDevices()
-			devices.Add(&models.Device{
+			devs := devices.NewList()
+			devs.Add(&devices.Device{
 				Node:  "node",
 				ID:    "id",
 				State: v.State,
@@ -72,7 +71,7 @@ func TestEval(t *testing.T) {
 			r := &Rule{
 				Expression_: v.Expression,
 			}
-			result, err := r.Eval(devices, rules)
+			result, err := r.Eval(devs, rules)
 			assert.Equal(t, v.ExpectedErr, err)
 			assert.Equal(t, v.Expected, result)
 		})
@@ -82,12 +81,14 @@ func TestEval(t *testing.T) {
 }
 
 func TestRunActions(t *testing.T) {
-	s := store.New()
-	s.SavedState.State["uuid"] = &store.SavedState{
+	syncer := NewStateSyncer()
+
+	savedState := NewSavedStateStore()
+	savedState.State["uuid"] = &SavedState{
 		Name: "testname",
 		UUID: "uuid",
-		State: map[string]models.DeviceState{
-			"node.id": models.DeviceState{
+		State: map[string]devices.State{
+			"node.id": devices.State{
 				"on": false,
 				"a":  true,
 				"b":  true,
@@ -95,10 +96,10 @@ func TestRunActions(t *testing.T) {
 		},
 	}
 
-	s.Devices.Add(&models.Device{
+	syncer.Devices.Add(&devices.Device{
 		Node: "node",
 		ID:   "id",
-		State: models.DeviceState{
+		State: devices.State{
 			"on": true,
 		},
 	})
@@ -111,15 +112,15 @@ func TestRunActions(t *testing.T) {
 	}
 
 	now := time.Now()
-	r.Run(s)
+	r.Run(savedState, syncer)
 	if time.Now().Sub(now) < time.Millisecond*200 {
 		t.Error("Expected to sleep in the action for at least 200ms")
 	}
 
 	//t.Log(store.Devices.Get("node", "id"))
-	assert.Equal(t, false, s.Devices.Get("node", "id").State["on"])
-	assert.Equal(t, true, s.Devices.Get("node", "id").State["a"])
-	assert.Equal(t, true, s.Devices.Get("node", "id").State["b"])
+	assert.Equal(t, false, syncer.Devices.Get("node", "id").State["on"])
+	assert.Equal(t, true, syncer.Devices.Get("node", "id").State["a"])
+	assert.Equal(t, true, syncer.Devices.Get("node", "id").State["b"])
 }
 
 func TestRunActionsCancelSleep(t *testing.T) {
@@ -127,7 +128,8 @@ func TestRunActionsCancelSleep(t *testing.T) {
 	logrus.SetLevel(logrus.DebugLevel)
 	logrus.SetOutput(&logBuf)
 
-	store := store.New()
+	syncer := NewStateSyncer()
+	savedState := NewSavedStateStore()
 
 	r := &Rule{
 		Actions_: []string{
@@ -142,7 +144,7 @@ func TestRunActionsCancelSleep(t *testing.T) {
 	}()
 
 	now := time.Now()
-	r.Run(store)
+	r.Run(savedState, syncer)
 	dur := time.Now().Sub(now)
 	if dur < time.Millisecond*110 {
 		t.Error("Expected to sleep in the action for at least 200ms slept: ", dur)
@@ -150,11 +152,11 @@ func TestRunActionsCancelSleep(t *testing.T) {
 	assert.Contains(t, logBuf.String(), "Stopping action 1 due to cancel")
 }
 func BenchmarkEval(b *testing.B) {
-	devices := models.NewDevices()
-	devices.Add(&models.Device{
+	devs := devices.NewList()
+	devs.Add(&devices.Device{
 		Node: "node",
 		ID:   "id",
-		State: models.DeviceState{
+		State: devices.State{
 			"on": true,
 		},
 	})
@@ -164,7 +166,7 @@ func BenchmarkEval(b *testing.B) {
 
 	rules := make(map[string]bool)
 	for i := 0; i < b.N; i++ {
-		result, err := r.Eval(devices, rules)
+		result, err := r.Eval(devs, rules)
 		assert.NoError(b, err)
 		assert.Equal(b, true, result)
 	}
