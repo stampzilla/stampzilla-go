@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"strconv"
 
 	"github.com/jonaz/mdns"
@@ -64,7 +65,7 @@ func (c *Main) Run() {
 }
 
 func (c *Main) TLSConfig() *tls.Config {
-	caCert, err := ioutil.ReadFile("ca.crt")
+	caCert, err := ioutil.ReadFile(path.Join("certificates", "ca.crt"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -117,7 +118,7 @@ func (m *Main) Init() {
 		log.Fatalf("Failed to load state from disk: %s", err)
 	}
 	m.HTTPServer = webserver.New(m.Store, m.Config, handlers.NewInSecureWebsockerHandler(m.Store, m.Config, insecureSender, m.CA), insecureMelody)
-	m.TLSServer = webserver.New(m.Store, m.Config, handlers.NewSecureWebsockerHandler(m.Store, m.Config, secureSender), secureMelody)
+	m.TLSServer = webserver.New(m.Store, m.Config, handlers.NewSecureWebsockerHandler(m.Store, m.Config, secureSender, m.CA), secureMelody)
 
 	m.Config.Save("config.json")
 

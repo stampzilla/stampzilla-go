@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/sirupsen/logrus"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/ca"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/interfaces"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
@@ -13,14 +14,16 @@ import (
 )
 
 type secureWebsocketHandler struct {
+	CA              *ca.CA
 	Store           *store.Store
 	Config          *models.Config
 	WebsocketSender websocket.Sender
 }
 
 // NewSecureWebsockerHandler is the constructor
-func NewSecureWebsockerHandler(store *store.Store, config *models.Config, ws websocket.Sender) WebsocketHandler {
+func NewSecureWebsockerHandler(store *store.Store, config *models.Config, ws websocket.Sender, ca *ca.CA) WebsocketHandler {
 	return &secureWebsocketHandler{
+		CA:              ca,
 		Store:           store,
 		Config:          config,
 		WebsocketSender: ws,
@@ -153,6 +156,12 @@ func (wsh *secureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.R
 		msg.WriteTo(s)
 
 		msg, err = models.NewMessage("devices", wsh.Store.GetDevices())
+		if err != nil {
+			return err
+		}
+		msg.WriteTo(s)
+
+		msg, err = models.NewMessage("certificates", wsh.CA.GetCertificates())
 		if err != nil {
 			return err
 		}

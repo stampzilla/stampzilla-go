@@ -4,19 +4,39 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/hex"
 	"encoding/pem"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"log"
 	"math/big"
 	mrand "math/rand"
 	"os"
+	"path"
+	"strings"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/sirupsen/logrus"
 )
+
+const storagePath = "certificates"
+
+type Cert struct {
+	CommonName string
+	IsCA       bool
+	Usage      []string
+	Revoked    bool
+	Issued     time.Time
+	Expires    time.Time
+
+	Fingerprints map[string]string
+}
 
 type CA struct {
 	X509   *x509.Certificate
@@ -47,7 +67,11 @@ func (ca *CA) LoadOrCreate(name string) error {
 }
 
 func (ca *CA) Load(name string) error {
-	certTLS, err := tls.LoadX509KeyPair(name+".crt", name+".key")
+	if _, err := os.Stat(storagePath); os.IsNotExist(err) {
+		os.Mkdir(storagePath, 0755)
+	}
+
+	certTLS, err := tls.LoadX509KeyPair(path.Join(storagePath, name+".crt"), path.Join(storagePath, name+".key"))
 	if err != nil {
 		return err
 	}
@@ -175,13 +199,19 @@ func (ca *CA) CreateCertificateFromRequest(wr io.Writer, name string, request []
 	if err != nil {
 		return err
 	}
-	return pem.Encode(wr, &pem.Block{Type: "CERTIFICATE", Bytes: certBytes})
+
+	certEncoded := pem.Encode(wr, &pem.Block{Type: "CERTIFICATE", Bytes: certBytes})
+
+	return certEncoded
 }
 
 func (ca *CA) ExportToDisk(name string, certBytes []byte, privateKey *rsa.PrivateKey) error {
+	if _, err := os.Stat(storagePath); os.IsNotExist(err) {
+		os.Mkdir(storagePath, 0644)
+	}
 
 	// Write public key
-	certOut, err := os.Create(name + ".crt")
+	certOut, err := os.Create(path.Join(storagePath, name+".crt"))
 	if err != nil {
 		return err
 	}
@@ -197,7 +227,7 @@ func (ca *CA) ExportToDisk(name string, certBytes []byte, privateKey *rsa.Privat
 	}
 
 	// Write private key
-	keyOut, err := os.OpenFile(name+".key", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	keyOut, err := os.OpenFile(path.Join(storagePath, name+".key"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
@@ -209,4 +239,59 @@ func (ca *CA) ExportToDisk(name string, certBytes []byte, privateKey *rsa.Privat
 	logrus.Info("Wrote " + name + ".key\n")
 
 	return nil
+}
+
+func (ca *CA) GetCertificates() []Cert {
+
+	files, err := ioutil.ReadDir(storagePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	certs := make([]Cert, 0)
+
+	for _, f := range files {
+		n := strings.Split(f.Name(), ".")
+		if n[len(n)-1] != "crt" {
+			continue
+		}
+
+		cf, err := ioutil.ReadFile(path.Join(storagePath, f.Name()))
+		if err != nil {
+			logrus.Warnf("Failed to read certificate %s: %s", f.Name(), err.Error())
+			continue
+		}
+
+		cpb, _ := pem.Decode(cf)
+
+		crt, err := x509.ParseCertificate(cpb.Bytes)
+		if err != nil {
+			logrus.Warnf("Failed to read certificate %s: %s", f.Name(), err.Error())
+			continue
+		}
+
+		spew.Dump(crt)
+		fmt.Println(f.Name())
+
+		sh1 := sha1.Sum(crt.Raw)
+		sh256 := sha256.Sum256(crt.Raw)
+
+		cert := Cert{
+			CommonName: crt.Subject.CommonName,
+			IsCA:       crt.IsCA,
+			//Usage      []string
+			//Revoked    bool
+			Issued:  crt.NotBefore,
+			Expires: crt.NotAfter,
+
+			Fingerprints: map[string]string{
+				"sha1":   hex.EncodeToString(sh1[:]),
+				"sha256": hex.EncodeToString(sh256[:]),
+			},
+		}
+
+		certs = append(certs, cert)
+	}
+
+	return certs
 }

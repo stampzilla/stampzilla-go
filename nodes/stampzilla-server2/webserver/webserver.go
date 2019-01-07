@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"time"
 
 	"github.com/gin-contrib/gzip"
@@ -163,7 +164,7 @@ func (ws *Webserver) handleDownloadCA() func(c *gin.Context) {
 		header := c.Writer.Header()
 		header["Content-Type"] = []string{"application/x-x509-ca-cert"}
 
-		file, err := os.Open("ca.crt")
+		file, err := os.Open(path.Join("certificates", "ca.crt"))
 		if err != nil {
 			c.String(http.StatusOK, "%v", err)
 			return
