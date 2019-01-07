@@ -3,6 +3,7 @@ package logic
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -14,8 +15,8 @@ import (
 	"github.com/google/cel-go/interpreter"
 	"github.com/google/cel-go/parser"
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/interfaces"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/websocket"
 	exprpb "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 )
 
@@ -86,7 +87,7 @@ func (r *Rule) Cancel() {
 	r.RUnlock()
 }
 
-func (r *Rule) Run(store *SavedStateStore, stateSync interfaces.StateSyncer) {
+func (r *Rule) Run(store *SavedStateStore, sender websocket.Sender) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	r.Lock()
@@ -113,12 +114,24 @@ func (r *Rule) Run(store *SavedStateStore, stateSync interfaces.StateSyncer) {
 			return
 		}
 
-		state := store.Get(v)
-		if state == nil {
+		stateList := store.Get(v)
+		if stateList == nil {
 			logrus.Errorf("SavedState %s does not exist", v)
 			return
 		}
-		stateSync.SyncState(state.State)
+		devicesByNode := make(map[string]map[string]devices.State)
+		for id, state := range stateList.State {
+			tmp := strings.Split(id, ".") // TODO think of a better way that Split?
+			nodeID := tmp[0]
+			if devicesByNode[nodeID] == nil {
+				devicesByNode[nodeID] = make(map[string]devices.State)
+			}
+			devicesByNode[nodeID][id] = state
+		}
+		for nodeID, devs := range devicesByNode {
+			sender.SendToID(nodeID, "state-change", devs)
+		}
+
 	}
 
 }

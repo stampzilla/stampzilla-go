@@ -81,7 +81,7 @@ func TestEval(t *testing.T) {
 }
 
 func TestRunActions(t *testing.T) {
-	syncer := NewStateSyncer()
+	syncer := NewMockSender()
 
 	savedState := NewSavedStateStore()
 	savedState.State["uuid"] = &SavedState{
@@ -128,7 +128,7 @@ func TestRunActionsCancelSleep(t *testing.T) {
 	logrus.SetLevel(logrus.DebugLevel)
 	logrus.SetOutput(&logBuf)
 
-	syncer := NewStateSyncer()
+	syncer := NewMockSender()
 	savedState := NewSavedStateStore()
 
 	r := &Rule{

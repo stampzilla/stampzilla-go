@@ -12,6 +12,7 @@ import (
 
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/interfaces"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/websocket"
 )
 
 func main() {
@@ -28,7 +29,8 @@ type Logic struct {
 	//ActionProgressChan chan ActionProgress
 	sync.RWMutex
 	sync.WaitGroup
-	c chan func()
+	c               chan func()
+	WebsocketSender websocket.Sender
 }
 
 /*
@@ -40,14 +42,14 @@ type ActionProgress struct {
 */
 
 // NewLogic returns a new logic that is ready to use
-func NewLogic(s interfaces.StateSyncer) *Logic {
+func New(websocketSender websocket.Sender) *Logic {
 	l := &Logic{
 		devices: devices.NewList(),
 		//ActionProgressChan: make(chan ActionProgress, 100),
-		Rules:       make(map[string]*Rule),
-		StateSyncer: s,
-		StateStore:  NewSavedStateStore(),
-		c:           make(chan func()),
+		Rules:           make(map[string]*Rule),
+		StateStore:      NewSavedStateStore(),
+		c:               make(chan func()),
+		WebsocketSender: websocketSender,
 	}
 	return l
 }
@@ -110,7 +112,7 @@ func (l *Logic) EvaluateRules() {
 			rule.SetActive(evaluation)
 			if evaluation {
 				logrus.Info("Rule: ", rule.Name(), " (", rule.Uuid(), ") - running actions")
-				go rule.Run(l.StateStore, l.StateSyncer)
+				go rule.Run(l.StateStore, l.WebsocketSender)
 			}
 		}
 	}

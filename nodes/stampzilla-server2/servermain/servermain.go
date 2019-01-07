@@ -16,6 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/ca"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/handlers"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/logic"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/store"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/webserver"
@@ -32,10 +33,9 @@ type Main struct {
 }
 
 // New creates a new main
-func New(config *models.Config, store *store.Store) *Main {
+func New(config *models.Config) *Main {
 	return &Main{
 		Config: config,
-		Store:  store,
 	}
 }
 
@@ -113,6 +113,9 @@ func (m *Main) Init() {
 
 	insecureSender := websocket.NewWebsocketSender(insecureMelody)
 	secureSender := websocket.NewWebsocketSender(secureMelody)
+
+	l := logic.New(secureSender)
+	m.Store = store.New(l)
 
 	if err = m.Store.Load(); err != nil {
 		log.Fatalf("Failed to load state from disk: %s", err)

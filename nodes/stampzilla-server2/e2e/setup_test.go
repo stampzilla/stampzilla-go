@@ -13,7 +13,6 @@ import (
 
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/servermain"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/store"
 	"github.com/stampzilla/stampzilla-go/pkg/node"
 )
 
@@ -55,8 +54,7 @@ func setupServer(t *testing.T) (*servermain.Main, func()) {
 		UUID: "123",
 		Name: "testserver",
 	}
-	store := store.New()
-	server := servermain.New(config, store)
+	server := servermain.New(config)
 
 	prevDir, err := os.Getwd()
 	if err != nil {

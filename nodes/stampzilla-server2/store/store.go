@@ -23,17 +23,15 @@ type Store struct {
 	sync.RWMutex
 }
 
-func New() *Store {
-	s := &Store{
+func New(l *logic.Logic) *Store {
+	return &Store{
 		Nodes:       make(Nodes),
 		SavedState:  logic.NewSavedStateStore(),
 		Devices:     devices.NewList(),
 		Connections: make(Connections),
 		onUpdate:    make(map[string][]UpdateCallback, 0),
+		Logic:       l,
 	}
-	l := logic.NewLogic(s)
-	s.Logic = l
-	return s
 }
 
 func (store *Store) runCallbacks(area string) {

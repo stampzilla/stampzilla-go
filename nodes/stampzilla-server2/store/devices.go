@@ -9,6 +9,8 @@ func (store *Store) GetDevices() *devices.List {
 }
 
 func (store *Store) SyncState(list map[string]devices.State) {
+	//TODO we should not set the state on the devices.
+	//The node should get a state-change request and server will update devices state when node has done its job
 	for id, state := range list {
 		dev := store.Devices.GetUnique(id)
 		if dev == nil {
@@ -16,7 +18,6 @@ func (store *Store) SyncState(list map[string]devices.State) {
 		}
 		dev.SyncState(state)
 	}
-	store.runCallbacks("devices")
 }
 func (store *Store) AddOrUpdateDevice(dev *devices.Device) {
 	store.Devices.Add(dev)

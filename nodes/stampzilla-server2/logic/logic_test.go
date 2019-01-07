@@ -2,36 +2,47 @@ package logic
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
+	"github.com/olahol/melody"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
 	"github.com/stretchr/testify/assert"
 )
 
-type mockStateSyncer struct {
+type mockSender struct {
 	Devices *devices.List
 }
 
-func NewStateSyncer() *mockStateSyncer {
-	return &mockStateSyncer{
+func NewMockSender() *mockSender {
+	return &mockSender{
 		Devices: devices.NewList(),
 	}
 }
 
-func (mss mockStateSyncer) SyncState(list map[string]devices.State) {
-	for id, state := range list {
-		dev := mss.Devices.GetUnique(id)
-		if dev == nil {
-			return
-		}
-		dev.SyncState(state)
+func (mss *mockSender) SendToID(to string, msgType string, data interface{}) error {
+	for k, v := range data.(map[string]devices.State) {
+		id := strings.Split(k, ".")
+		mss.Devices.Add(&devices.Device{
+			Node:  to,
+			ID:    id[1],
+			State: v,
+		})
 	}
+	return nil
+}
+func (mss *mockSender) SendToProtocol(to string, msgType string, data interface{}) error {
+
+	return nil
+}
+func (mss *mockSender) BroadcastWithFilter(msgType string, data interface{}, fn func(*melody.Session) bool) error {
+	return nil
 }
 
 func TestLoadRulesFromFile(t *testing.T) {
 
-	syncer := NewStateSyncer()
-	l := NewLogic(syncer)
+	syncer := NewMockSender()
+	l := New(syncer)
 	l.Load("rules.json")
 	//spew.Dump(l.Rules)
 	jsonData, err := json.MarshalIndent(l.Rules, "", "\t")
@@ -41,9 +52,9 @@ func TestLoadRulesFromFile(t *testing.T) {
 
 func TestEvaluateRules(t *testing.T) {
 
-	syncer := NewStateSyncer()
+	syncer := NewMockSender()
 
-	l := NewLogic(syncer)
+	l := New(syncer)
 	r := l.AddRule("test")
 	r.Expression_ = `devices["node.id"].on == true`
 
