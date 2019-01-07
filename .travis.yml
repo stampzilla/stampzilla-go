@@ -4,9 +4,9 @@ sudo: false
 go:
 - 1.11
 install:
-- go get -d -t -v ./...
 - go get github.com/rakyll/statik
 - go generate nodes/stampzilla-server2/main.go
+- go get -d -t -v ./...
 
 script:
 - make test

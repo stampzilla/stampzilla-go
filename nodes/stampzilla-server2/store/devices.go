@@ -8,6 +8,16 @@ func (store *Store) GetDevices() *models.Devices {
 	return store.Devices
 }
 
+func (store *Store) SyncState(list map[string]models.DeviceState) {
+	for id, state := range list {
+		dev := store.Devices.GetUnique(id)
+		if dev == nil {
+			return
+		}
+		dev.SyncState(state)
+	}
+	store.runCallbacks("devices")
+}
 func (store *Store) AddOrUpdateDevice(dev *models.Device) {
 	store.Devices.Add(dev)
 	store.runCallbacks("devices")

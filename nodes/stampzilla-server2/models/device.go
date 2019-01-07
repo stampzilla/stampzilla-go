@@ -38,6 +38,14 @@ type Device struct {
 	sync.RWMutex
 }
 
+func (d *Device) SyncState(state DeviceState) {
+	for k, v := range state {
+		//d.Lock() TODO check if locking is needed
+		d.State[k] = v
+		//d.Unlock()
+	}
+}
+
 // Copy copies a device
 func (d *Device) Copy() *Device {
 	d.Lock()
@@ -96,6 +104,11 @@ func (d *Devices) Get(node, id string) *Device {
 	d.RLock()
 	defer d.RUnlock()
 	return d.devices[node+"."+id]
+}
+func (d *Devices) GetUnique(id string) *Device {
+	d.RLock()
+	defer d.RUnlock()
+	return d.devices[id]
 }
 
 // All get all devices

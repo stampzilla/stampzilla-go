@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 	"sync"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/store"
 )
 
 func main() {
@@ -16,16 +18,26 @@ func main() {
 }
 
 type Logic struct {
-	Rules              []*Rule
-	state              map[string]interface{}
+	Store *store.Store
+	// TODO MAJOR important! must move rules storage to store.Store and load them from there when we start logic so we dont get circular dependencies! :(
+	Rules              map[string]*Rule
+	devices            *models.Devices
 	ActionProgressChan chan ActionProgress
 	sync.RWMutex
 }
 
-func NewLogic() *Logic {
+type ActionProgress struct {
+	Address string `json:"address"`
+	Uuid    string `json:"uuid"`
+	Step    int    `json:"step"`
+}
+
+func NewLogic(store *store.Store) *Logic {
 	l := &Logic{
-		state:              make(map[string]interface{}),
+		devices:            models.NewDevices(),
 		ActionProgressChan: make(chan ActionProgress, 100),
+		Rules:              make(map[string]*Rule),
+		Store:              store,
 	}
 	return l
 }
@@ -34,92 +46,56 @@ func (l *Logic) AddRule(name string) *Rule {
 	r := &Rule{Name_: name, Uuid_: uuid.New().String()}
 	l.Lock()
 	defer l.Unlock()
-	l.Rules = append(l.Rules, r)
+	l.Rules[r.Uuid()] = r
 	return r
 }
 
-func (l *Logic) SetState(s map[string]interface{}) {
-	l.Lock()
-	l.state = s
-	l.Unlock()
+func (l *Logic) UpdateDevice(dev *models.Device) {
+	if oldDev := l.devices.Get(dev.Node, dev.ID); oldDev != nil {
+		diff := oldDev.State.Diff(dev.State)
+		if len(diff) > 0 {
+			//oldDev.Lock() // TODO check if needed with -race
+			for k, v := range diff {
+				oldDev.State[k] = v
+			}
+			//oldDev.Unlock()
+		}
+		return
+	}
+	l.devices.Add(dev)
 }
 
 func (l *Logic) EvaluateRules() {
 	for _, rule := range l.Rules {
 		evaluation := l.evaluateRule(rule)
-		if evaluation != rule.CondState() {
-			rule.SetCondState(evaluation)
+		if evaluation != rule.Active() {
+			rule.SetActive(evaluation)
 			if evaluation {
 				logrus.Info("Rule: ", rule.Name(), " (", rule.Uuid(), ") - running enter actions")
-				rule.RunEnter(l.ActionProgressChan)
-				rule.Lock()
-				rule.Active_ = true
-				rule.Unlock()
+				//rule.RunEnter(l.ActionProgressChan)
+				rule.Run(l.Store)
 				continue
 			}
+			rule.SetActive(false)
 
-			logrus.Info("Rule: ", rule.Name(), " (", rule.Uuid(), ") - running exit actions")
-			rule.RunExit(l.ActionProgressChan)
-			rule.Lock()
-			rule.Active_ = false
-			rule.Unlock()
 		}
 	}
 }
+
 func (l *Logic) evaluateRule(r *Rule) bool {
-	//TODO if rule.enabled is false return false here??? default enabled to true in existing rules or do migration?
-	if len(r.Conditions()) == 0 {
+	rules := make(map[string]bool)
+	for _, v := range l.Rules {
+		rules[v.Uuid()] = v.Active()
+	}
+	result, err := r.Eval(l.devices, rules)
+	if err != nil {
+		logrus.Errorf("Error evaluating rule %s: %s", r.Uuid(), err.Error())
 		return false
 	}
-
-	if strings.ToLower(r.Operator()) == "and" || r.Operator() == "" {
-		return l.evaluateRuleAnd(r)
-	}
-	if strings.ToLower(r.Operator()) == "or" {
-		return l.evaluateRuleOr(r)
-	}
-
-	return false
+	return result
 }
 
-func (l *Logic) evaluateRuleAnd(r *Rule) bool {
-	for _, cond := range r.Conditions() {
-		value, err := l.getValueToEvaluate(cond)
-		if err != nil {
-			logrus.Error(err)
-			return false
-		}
-
-		if !cond.Check(value) {
-			return false
-		}
-	}
-	return true
-}
-
-func (l *Logic) evaluateRuleOr(r *Rule) bool {
-	for _, cond := range r.Conditions() {
-		value, err := l.getValueToEvaluate(cond)
-		if err != nil {
-			logrus.Error(err)
-			return false
-		}
-
-		if cond.Check(value) {
-			return true
-		}
-	}
-	return false
-}
-
-func (l *Logic) getValueToEvaluate(cond RuleCondition) (interface{}, error) {
-	if val, ok := l.state[cond.StatePath()]; ok {
-		return val, nil
-	}
-	return nil, fmt.Errorf("logic: State \"%s\" not found", cond.StatePath())
-}
-
-func (l *Logic) SaveRulesToFile(path string) {
+func (l *Logic) Save(path string) {
 	configFile, err := os.Create(path)
 	if err != nil {
 		logrus.Error("creating config file", err.Error())
@@ -131,6 +107,20 @@ func (l *Logic) SaveRulesToFile(path string) {
 	if err != nil {
 		logrus.Error("error marshal json", err)
 	}
+}
+
+func (l *Logic) Load(path string) {
+	configFile, err := os.Open(path)
+	if err != nil {
+		logrus.Warn("opening config file", err.Error())
+		return
+	}
+
+	jsonParser := json.NewDecoder(configFile)
+	if err = jsonParser.Decode(&l.Rules); err != nil {
+		logrus.Error(err)
+	}
+
 }
 
 /*
@@ -147,7 +137,7 @@ new way:
 	}
 	"for": "5m", // after for we must evaluate expression again
 	"actions": [ // save index on where we are in running actions and send to gui over websocket
-		"1m", //sleep
+		"1m", //sleep , if rule stops being active during actions run. Stopp running!
 		"c7d352bb-23f4-468c-b476-f76599c09a0d"
 	]
 },
