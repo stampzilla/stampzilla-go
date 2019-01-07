@@ -20,5 +20,6 @@ func (store *Store) SyncState(list map[string]devices.State) {
 }
 func (store *Store) AddOrUpdateDevice(dev *devices.Device) {
 	store.Devices.Add(dev)
+	store.Logic.UpdateDevice(dev)
 	store.runCallbacks("devices")
 }

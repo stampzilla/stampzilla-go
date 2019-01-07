@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -17,33 +18,41 @@ func main() {
 	fmt.Println("vim-go")
 }
 
+// Logic is the main struct
 type Logic struct {
 	StateSyncer interfaces.StateSyncer
 	StateStore  *SavedStateStore
 	// TODO MAJOR important! must move rules storage to store.Store and load them from there when we start logic so we dont get circular dependencies! :(
-	Rules              map[string]*Rule
-	devices            *devices.List
-	ActionProgressChan chan ActionProgress
+	Rules   map[string]*Rule
+	devices *devices.List
+	//ActionProgressChan chan ActionProgress
 	sync.RWMutex
+	sync.WaitGroup
+	c chan func()
 }
 
+/*
 type ActionProgress struct {
 	Address string `json:"address"`
 	Uuid    string `json:"uuid"`
 	Step    int    `json:"step"`
 }
+*/
 
+// NewLogic returns a new logic that is ready to use
 func NewLogic(s interfaces.StateSyncer) *Logic {
 	l := &Logic{
-		devices:            devices.NewList(),
-		ActionProgressChan: make(chan ActionProgress, 100),
-		Rules:              make(map[string]*Rule),
-		StateSyncer:        s,
-		StateStore:         NewSavedStateStore(),
+		devices: devices.NewList(),
+		//ActionProgressChan: make(chan ActionProgress, 100),
+		Rules:       make(map[string]*Rule),
+		StateSyncer: s,
+		StateStore:  NewSavedStateStore(),
+		c:           make(chan func()),
 	}
 	return l
 }
 
+// AddRule adds a new logic rule. Mainly used in tests
 func (l *Logic) AddRule(name string) *Rule {
 	r := &Rule{Name_: name, Uuid_: uuid.New().String()}
 	l.Lock()
@@ -52,7 +61,34 @@ func (l *Logic) AddRule(name string) *Rule {
 	return r
 }
 
+// Start starts the logic worker
+func (l *Logic) Start(ctx context.Context) {
+	l.Add(1)
+	logrus.Info("logic: starting worker")
+	go l.worker(ctx)
+}
+
+func (l *Logic) worker(ctx context.Context) {
+	defer l.Done()
+	for {
+		select {
+		case f := <-l.c:
+			f()
+			l.EvaluateRules()
+		case <-ctx.Done():
+			logrus.Info("logic: stopping worker")
+			return
+		}
+	}
+}
+
+// UpdateDevice update the state in the logic store with the new state from the device
 func (l *Logic) UpdateDevice(dev *devices.Device) {
+	l.c <- func() {
+		l.updateDevice(dev)
+	}
+}
+func (l *Logic) updateDevice(dev *devices.Device) {
 	if oldDev := l.devices.Get(dev.Node, dev.ID); oldDev != nil {
 		diff := oldDev.State.Diff(dev.State)
 		if len(diff) > 0 {
@@ -73,13 +109,9 @@ func (l *Logic) EvaluateRules() {
 		if evaluation != rule.Active() {
 			rule.SetActive(evaluation)
 			if evaluation {
-				logrus.Info("Rule: ", rule.Name(), " (", rule.Uuid(), ") - running enter actions")
-				//rule.RunEnter(l.ActionProgressChan)
-				rule.Run(l.StateStore, l.StateSyncer)
-				continue
+				logrus.Info("Rule: ", rule.Name(), " (", rule.Uuid(), ") - running actions")
+				go rule.Run(l.StateStore, l.StateSyncer)
 			}
-			rule.SetActive(false)
-
 		}
 	}
 }
@@ -97,34 +129,39 @@ func (l *Logic) evaluateRule(r *Rule) bool {
 	return result
 }
 
-func (l *Logic) Save(path string) {
+func (l *Logic) Save(path string) error {
 	configFile, err := os.Create(path)
 	if err != nil {
-		logrus.Error("creating config file", err.Error())
-		return
+		return fmt.Errorf("logic: error saving rules: %s", err.Error())
 	}
 	encoder := json.NewEncoder(configFile)
 	encoder.SetIndent("", "\t")
 	err = encoder.Encode(l.Rules)
 	if err != nil {
-		logrus.Error("error marshal json", err)
+		return fmt.Errorf("logic: error saving rules: %s", err.Error())
 	}
+	return nil
 }
 
-func (l *Logic) Load(path string) {
+func (l *Logic) Load(path string) error {
+	logrus.Debug("logic: loading rules from ", path)
 	configFile, err := os.Open(path)
 	if err != nil {
-		logrus.Warn("opening config file", err.Error())
-		return
+		if os.IsNotExist(err) {
+			logrus.Warn(err)
+			return nil // We dont want to error our if the file does not exist when we start the server
+		}
+		return fmt.Errorf("logic: error loading rules: %s", err.Error())
 	}
 
 	jsonParser := json.NewDecoder(configFile)
 	if err = jsonParser.Decode(&l.Rules); err != nil {
-		logrus.Error(err)
+		return fmt.Errorf("logic: error loading rules: %s", err.Error())
 	}
 
 	//TODO loop over rules and generate UUIDs if needed. If it was needed save the rules again
 
+	return nil
 }
 
 /*

@@ -33,6 +33,8 @@ func NewSavedStateStore() *SavedStateStore {
 }
 
 func (sss *SavedStateStore) Save(path string) error {
+	sss.Lock()
+	defer sss.Unlock()
 	configFile, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("savedstate: error saving state: %s", err.Error())
@@ -41,7 +43,7 @@ func (sss *SavedStateStore) Save(path string) error {
 	encoder.SetIndent("", "\t")
 	err = encoder.Encode(sss.State)
 	if err != nil {
-		return fmt.Errorf("savedstate: error loading state: %s", err.Error())
+		return fmt.Errorf("savedstate: error saving state: %s", err.Error())
 	}
 	return nil
 }
@@ -56,10 +58,10 @@ func (sss *SavedStateStore) Load(path string) error {
 	}
 
 	sss.Lock()
+	defer sss.Unlock()
 	jsonParser := json.NewDecoder(configFile)
 	if err = jsonParser.Decode(&sss.State); err != nil {
 		return fmt.Errorf("savedstate: error loading state: %s", err.Error())
 	}
-	sss.Unlock()
 	return nil
 }

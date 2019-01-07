@@ -60,7 +60,6 @@ func (store *Store) SaveNodes() error {
 			return err
 		}
 	}
-
 	return nil
 }
 
