@@ -9,28 +9,34 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/llgcode/draw2d"
 	"github.com/sirupsen/logrus"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
 	"github.com/stampzilla/stampzilla-go/pkg/node"
 )
 
 var ICON_SIZE = 72
 
-type state struct {
+type appState struct {
 	decks  []*streamdeck.StreamDeck
 	page   []string
 	render chan struct{}
+	node   *node.Node
 	config *config
 	sync.Mutex
 }
 
+var devices = models.NewDevices()
+var app = &appState{
+	render: make(chan struct{}),
+}
+
 func main() {
 	node := node.New("streamdeck")
+	app.node = node
 
 	config := &config{}
-	state := &state{
-		render: make(chan struct{}),
-	}
 
-	node.OnConfig(updatedConfig(node, state, config))
+	node.OnConfig(updatedConfig(node, config))
+	node.On("devices", onDevices)
 	//node.OnRequestStateChange(func(state models.DeviceState, device *models.Device) error {
 	//spew.Dump(config)
 	//return nil
@@ -47,19 +53,21 @@ func main() {
 	})
 	logrus.SetReportCaller(false)
 
+	node.Subscribe("devices")
+
 	//node.OnShutdown(func() {
 	//})
 
 	// ---------------------------
 
 	draw2d.SetFontFolder("./fonts")
-	go state.worker()
+	go app.worker()
 
 	node.Wait()
 	node.Client.Wait()
 }
 
-func updatedConfig(node *node.Node, state *state, config *config) func(json.RawMessage) error {
+func updatedConfig(node *node.Node, config *config) func(json.RawMessage) error {
 	return func(data json.RawMessage) error {
 		config.Lock()
 		defer config.Unlock()
@@ -69,13 +77,13 @@ func updatedConfig(node *node.Node, state *state, config *config) func(json.RawM
 			return err
 		}
 
-		state.Lock()
-		state.config = config
-		state.Unlock()
+		app.Lock()
+		app.config = config
+		app.Unlock()
 
 		logrus.Warn("Received new config")
 		select {
-		case state.render <- struct{}{}:
+		case app.render <- struct{}{}:
 		default:
 		}
 
@@ -83,10 +91,60 @@ func updatedConfig(node *node.Node, state *state, config *config) func(json.RawM
 	}
 }
 
-func (state *state) worker() {
-	state.decks = streamdeck.FindDecks()
+func onDevices(data json.RawMessage) error {
+	devs := models.NewDevices()
+	err := json.Unmarshal(data, devs)
+	if err != nil {
+		return err
+	}
 
-	for index, deck := range state.decks {
+	triggerRender := false
+
+	for _, device := range devs.All() {
+		//check if state is different
+		//logrus.Info("state", device.State)
+		state := make(models.DeviceState)
+		if prevDev := devices.Get(device.Node, device.ID); prevDev != nil {
+			//logrus.Info("prevState", prevDev.State)
+			state = prevDev.State.Diff(device.State)
+		} else {
+			state = device.State
+		}
+
+		devices.Add(device)
+
+		if len(state) > 0 {
+			// Check if we should re-render
+			for index, _ := range app.decks {
+				_, pageConfig, ok := getPageConfig(index)
+
+				if !ok {
+					continue
+				}
+
+				for _, keyConfig := range pageConfig.Keys {
+					if keyConfig.Node == device.Node && keyConfig.Device == device.ID {
+						triggerRender = true
+					}
+				}
+			}
+		}
+	}
+
+	if triggerRender {
+		select {
+		case app.render <- struct{}{}:
+		default:
+		}
+	}
+
+	return nil
+}
+
+func (app *appState) worker() {
+	app.decks = streamdeck.FindDecks()
+
+	for index, deck := range app.decks {
 		err := deck.Open()
 		if err != nil {
 			logrus.Error(err)
@@ -98,44 +156,49 @@ func (state *state) worker() {
 		deck.OnKeyDown(func(key int, s bool) {
 			fmt.Printf("Key %d pressed\n", key)
 
-			state.Lock()
-			page := "default"
-			if index < len(state.page) {
-				page = state.page[index]
-			}
-
-			pageConfig, ok := state.config.Pages[page]
-			state.Unlock()
-
-			if ok && key >= len(pageConfig.Keys) {
+			_, pageConfig, ok := getPageConfig(index)
+			if !ok {
 				return
 			}
 
-			spew.Dump(pageConfig.Keys[key])
+			keyConfig := pageConfig.Keys[key]
+
+			// Find the linked device
+			d := devices.Get(keyConfig.Node, keyConfig.Device)
+			if d != nil {
+				current, ok := d.State[keyConfig.Field]
+				if ok {
+					if c := current.(bool); ok {
+						devs := models.NewDevices()
+						newState := make(models.DeviceState)
+						newState[keyConfig.Field] = !c
+						devs.Add(d.Copy())
+						devs.SetState(keyConfig.Node, keyConfig.Device, newState)
+						app.node.WriteMessage("state-change", devs)
+					}
+				}
+			}
+
+			spew.Dump(keyConfig)
 		})
 	}
 
 	for {
-		for index, deck := range state.decks {
-			state.Lock()
-			page := "default"
-			if index < len(state.page) {
-				page = state.page[index]
-			}
+		for index, deck := range app.decks {
+			page, pageConfig, ok := getPageConfig(index)
 
-			if state.config == nil {
-				continue
-			}
-
-			pageConfig, ok := state.config.Pages[page]
-			state.Unlock()
 			if !ok {
 				continue
 			}
 
 			logrus.Infof("Draw page %s to deck %d", page, index)
 			for key, keyConfig := range pageConfig.Keys {
-				logrus.Infof("Draw key %d to deck %d (%s)", key, index, keyConfig.Name)
+				// Try to find out if we have a state
+				d := devices.Get(keyConfig.Node, keyConfig.Device)
+				if d != nil {
+					drawStateToKey(deck, keyConfig.Name, d.State[keyConfig.Field], key)
+					continue
+				}
 				drawTempToKey(deck, keyConfig.Name, float32(key), key)
 			}
 		}
@@ -156,6 +219,26 @@ func (state *state) worker() {
 		//drawTempToKey(decks[0], "Key "+strconv.Itoa(i), float32(i), i)
 		//}
 
-		<-state.render
+		<-app.render
 	}
+}
+
+func getPageConfig(index int) (string, *page, bool) {
+	app.Lock()
+	page := "default"
+	if index < len(app.page) {
+		page = app.page[index]
+	}
+
+	if app.config == nil {
+		return "", nil, false
+	}
+
+	pageConfig, ok := app.config.Pages[page]
+	app.Unlock()
+	if !ok {
+		return "", nil, false
+	}
+
+	return page, &pageConfig, true
 }

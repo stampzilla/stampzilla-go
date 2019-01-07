@@ -13,6 +13,8 @@ type page struct {
 
 type key struct {
 	Name   string `json:"name"`
+	Node   string `json:"node"`
 	Device string `json:"device"`
 	Action string `json:"action"`
+	Field  string `json:"field"`
 }
