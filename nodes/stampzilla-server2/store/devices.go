@@ -1,14 +1,14 @@
 package store
 
-import "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
+import "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
 
-func (store *Store) GetDevices() *models.Devices {
+func (store *Store) GetDevices() *devices.List {
 	store.RLock()
 	defer store.RUnlock()
 	return store.Devices
 }
 
-func (store *Store) SyncState(list map[string]models.DeviceState) {
+func (store *Store) SyncState(list map[string]devices.State) {
 	for id, state := range list {
 		dev := store.Devices.GetUnique(id)
 		if dev == nil {
@@ -18,7 +18,7 @@ func (store *Store) SyncState(list map[string]models.DeviceState) {
 	}
 	store.runCallbacks("devices")
 }
-func (store *Store) AddOrUpdateDevice(dev *models.Device) {
+func (store *Store) AddOrUpdateDevice(dev *devices.Device) {
 	store.Devices.Add(dev)
 	store.runCallbacks("devices")
 }

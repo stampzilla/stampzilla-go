@@ -4,15 +4,34 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/store"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
 	"github.com/stretchr/testify/assert"
 )
 
+type mockStateSyncer struct {
+	Devices *devices.List
+}
+
+func NewStateSyncer() *mockStateSyncer {
+	return &mockStateSyncer{
+		Devices: devices.NewList(),
+	}
+}
+
+func (mss mockStateSyncer) SyncState(list map[string]devices.State) {
+	for id, state := range list {
+		dev := mss.Devices.GetUnique(id)
+		if dev == nil {
+			return
+		}
+		dev.SyncState(state)
+	}
+}
+
 func TestLoadRulesFromFile(t *testing.T) {
 
-	store := store.New()
-	l := NewLogic(store)
+	syncer := NewStateSyncer()
+	l := NewLogic(syncer)
 	l.Load("rules.json")
 	//spew.Dump(l.Rules)
 	jsonData, err := json.MarshalIndent(l.Rules, "", "\t")
@@ -22,16 +41,16 @@ func TestLoadRulesFromFile(t *testing.T) {
 
 func TestEvaluateRules(t *testing.T) {
 
-	store := store.New()
+	syncer := NewStateSyncer()
 
-	l := NewLogic(store)
+	l := NewLogic(syncer)
 	r := l.AddRule("test")
 	r.Expression_ = `devices["node.id"].on == true`
 
-	l.UpdateDevice(&models.Device{
+	l.UpdateDevice(&devices.Device{
 		Node: "node",
 		ID:   "id",
-		State: models.DeviceState{
+		State: devices.State{
 			"on": true,
 		},
 	})
@@ -40,10 +59,10 @@ func TestEvaluateRules(t *testing.T) {
 
 	assert.Equal(t, true, l.Rules[r.Uuid()].Active())
 
-	l.UpdateDevice(&models.Device{
+	l.UpdateDevice(&devices.Device{
 		Node: "node",
 		ID:   "id",
-		State: models.DeviceState{
+		State: devices.State{
 			"on": false,
 		},
 	})

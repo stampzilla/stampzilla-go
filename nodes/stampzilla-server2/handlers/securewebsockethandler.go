@@ -7,6 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/interfaces"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/store"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/websocket"
 )
@@ -56,7 +57,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		}
 
 	case "update-device":
-		device := &models.Device{}
+		device := &devices.Device{}
 		err := json.Unmarshal(msg.Body, device)
 		if err != nil {
 			return err
@@ -71,7 +72,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 			wsh.Store.AddOrUpdateDevice(device)
 		}
 	case "update-devices":
-		devices := make(models.DeviceMap)
+		devices := make(devices.DeviceMap)
 		err := json.Unmarshal(msg.Body, &devices)
 		if err != nil {
 			return err
@@ -98,27 +99,27 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		}).Info("Received new node configuration")
 
 		wsh.Store.AddOrUpdateNode(node)
-		err = wsh.Store.WriteToDisk()
+		err = wsh.Store.SaveNodes()
 		if err != nil {
 			return err
 		}
 		wsh.WebsocketSender.SendToID(node.UUID, "setup", node)
 	case "state-change":
-		devices := models.NewDevices()
-		err := json.Unmarshal(msg.Body, devices)
+		devs := devices.NewList()
+		err := json.Unmarshal(msg.Body, devs)
 		if err != nil {
 			return err
 		}
 
 		logrus.WithFields(logrus.Fields{
 			"from":    msg.FromUUID,
-			"devices": devices,
+			"devices": devs,
 		}).Info("Received state change request")
 
-		devicesByNode := make(map[string]map[string]*models.Device)
-		for _, device := range devices.All() {
+		devicesByNode := make(map[string]map[string]*devices.Device)
+		for _, device := range devs.All() {
 			if devicesByNode[device.Node] == nil {
-				devicesByNode[device.Node] = make(map[string]*models.Device)
+				devicesByNode[device.Node] = make(map[string]*devices.Device)
 			}
 			devicesByNode[device.Node][device.ID] = device
 		}

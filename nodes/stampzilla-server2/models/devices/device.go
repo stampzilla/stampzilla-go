@@ -1,4 +1,4 @@
-package models
+package devices
 
 import (
 	"encoding/json"
@@ -6,18 +6,18 @@ import (
 	"sync"
 )
 
-type DeviceState map[string]interface{}
+type State map[string]interface{}
 
-func (ds DeviceState) Clone() DeviceState {
-	newState := make(DeviceState)
+func (ds State) Clone() State {
+	newState := make(State)
 	for k, v := range ds {
 		newState[k] = v
 	}
 	return newState
 }
 
-func (ds DeviceState) Diff(right DeviceState) DeviceState {
-	diff := make(DeviceState)
+func (ds State) Diff(right State) State {
+	diff := make(State)
 	for k, v := range ds {
 		if v != right[k] {
 			diff[k] = right[k]
@@ -27,18 +27,18 @@ func (ds DeviceState) Diff(right DeviceState) DeviceState {
 }
 
 type Device struct {
-	Type   string      `json:"type"`
-	Node   string      `json:"node,omitempty"`
-	ID     string      `json:"id,omitempty"`
-	Name   string      `json:"name,omitempty"`
-	Alias  string      `json:"alias,omitempty"`
-	Online bool        `json:"online"`
-	State  DeviceState `json:"state,omitempty"`
-	Traits []string    `json:"traits"`
+	Type   string   `json:"type"`
+	Node   string   `json:"node,omitempty"`
+	ID     string   `json:"id,omitempty"`
+	Name   string   `json:"name,omitempty"`
+	Alias  string   `json:"alias,omitempty"`
+	Online bool     `json:"online"`
+	State  State    `json:"state,omitempty"`
+	Traits []string `json:"traits"`
 	sync.RWMutex
 }
 
-func (d *Device) SyncState(state DeviceState) {
+func (d *Device) SyncState(state State) {
 	for k, v := range state {
 		//d.Lock() TODO check if locking is needed
 		d.State[k] = v
@@ -69,26 +69,26 @@ func (d *Device) Copy() *Device {
 
 type DeviceMap map[string]*Device
 
-type Devices struct {
+type List struct {
 	devices DeviceMap
 	sync.RWMutex
 }
 
-func NewDevices() *Devices {
-	return &Devices{
+func NewList() *List {
+	return &List{
 		devices: make(DeviceMap),
 	}
 }
 
 // Add adds a device to the list
-func (d *Devices) Add(dev *Device) {
+func (d *List) Add(dev *Device) {
 	d.Lock()
 	d.devices[dev.Node+"."+dev.ID] = dev
 	d.Unlock()
 }
 
 // Update the state of a device
-func (d *Devices) SetState(node, id string, state DeviceState) error {
+func (d *List) SetState(node, id string, state State) error {
 	d.Lock()
 	defer d.Unlock()
 	if dev, ok := d.devices[node+"."+id]; ok {
@@ -100,28 +100,28 @@ func (d *Devices) SetState(node, id string, state DeviceState) error {
 }
 
 // Get returns a device
-func (d *Devices) Get(node, id string) *Device {
+func (d *List) Get(node, id string) *Device {
 	d.RLock()
 	defer d.RUnlock()
 	return d.devices[node+"."+id]
 }
-func (d *Devices) GetUnique(id string) *Device {
+func (d *List) GetUnique(id string) *Device {
 	d.RLock()
 	defer d.RUnlock()
 	return d.devices[id]
 }
 
 // All get all devices
-func (d *Devices) All() DeviceMap {
+func (d *List) All() DeviceMap {
 	d.RLock()
 	defer d.RUnlock()
 	return d.devices
 }
 
 // Copy copies a list of devices
-func (d *Devices) Copy() *Devices {
+func (d *List) Copy() *List {
 
-	newD := &Devices{
+	newD := &List{
 		devices: make(map[string]*Device),
 	}
 	d.RLock()
@@ -133,13 +133,13 @@ func (d *Devices) Copy() *Devices {
 	return newD
 }
 
-func (d *Devices) MarshalJSON() ([]byte, error) {
+func (d *List) MarshalJSON() ([]byte, error) {
 	d.RLock()
 	defer d.RUnlock()
 	return json.Marshal(d.devices)
 }
 
-func (d *Devices) UnmarshalJSON(b []byte) error {
+func (d *List) UnmarshalJSON(b []byte) error {
 	var devices DeviceMap
 	if err := json.Unmarshal(b, &devices); err != nil {
 		return err
@@ -152,7 +152,7 @@ func (d *Devices) UnmarshalJSON(b []byte) error {
 }
 
 // Flatten can be used for metrics export and logic rules
-func (d *Devices) Flatten() map[string]interface{} {
+func (d *List) Flatten() map[string]interface{} {
 
 	devmap := make(map[string]interface{})
 	for k, v := range d.All() {

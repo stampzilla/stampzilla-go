@@ -8,7 +8,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/posener/wstest"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -98,12 +98,12 @@ func TestNodeToServerDevices(t *testing.T) {
 	err := node.Connect()
 	assert.NoError(t, err)
 
-	dev1 := &models.Device{
+	dev1 := &devices.Device{
 		Name:   "Device1",
 		ID:     "1",
 		Online: true,
 		Traits: []string{"OnOff"},
-		State: models.DeviceState{
+		State: devices.State{
 			"on": false,
 		},
 	}

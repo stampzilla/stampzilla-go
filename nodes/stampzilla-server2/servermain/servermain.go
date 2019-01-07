@@ -96,7 +96,7 @@ func (m *Main) Init() {
 	insecureSender := websocket.NewWebsocketSender(insecureMelody)
 	secureSender := websocket.NewWebsocketSender(secureMelody)
 
-	if err = m.Store.LoadFromDisk(); err != nil {
+	if err = m.Store.Load(); err != nil {
 		log.Fatalf("Failed to load state from disk: %s", err)
 	}
 	m.HTTPServer = webserver.New(m.Store, m.Config, handlers.NewInSecureWebsockerHandler(m.Store, m.Config, insecureSender, m.CA), insecureMelody)
