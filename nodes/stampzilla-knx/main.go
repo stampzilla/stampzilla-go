@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
 	"github.com/stampzilla/stampzilla-go/pkg/node"
 	"github.com/stampzilla/stampzilla-go/pkg/websocket"
 )
@@ -34,7 +34,7 @@ func main() {
 	config := &config{}
 
 	node.OnConfig(updatedConfig(node, tunnel, config))
-	node.OnRequestStateChange(func(state models.DeviceState, device *models.Device) error {
+	node.OnRequestStateChange(func(state devices.State, device *devices.Device) error {
 		id := strings.SplitN(device.ID, ".", 2)
 
 		switch id[0] {

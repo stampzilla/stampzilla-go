@@ -7,7 +7,7 @@ import (
 
 	"github.com/influxdb/influxdb/client/v2"
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
 	"github.com/stampzilla/stampzilla-go/pkg/node"
 	"github.com/stampzilla/stampzilla-go/pkg/websocket"
 )
@@ -25,7 +25,7 @@ var config = &Config{}
 
 var influxClient client.Client
 
-var devices = models.NewDevices()
+var deviceList = devices.NewList()
 
 func main() {
 
@@ -53,7 +53,7 @@ func main() {
 }
 func onDevices(deviceChan chan func()) func(data json.RawMessage) error {
 	return func(data json.RawMessage) error {
-		devs := models.NewDevices()
+		devs := devices.NewList()
 		err := json.Unmarshal(data, devs)
 		if err != nil {
 			return err
@@ -65,8 +65,8 @@ func onDevices(deviceChan chan func()) func(data json.RawMessage) error {
 			deviceChan <- func() {
 				//check if state is different
 				logrus.Info("state", device.State)
-				state := make(models.DeviceState)
-				if prevDev := devices.Get(device.Node, device.ID); prevDev != nil {
+				state := make(devices.State)
+				if prevDev := deviceList.Get(device.Node, device.ID); prevDev != nil {
 					logrus.Info("prevState", prevDev.State)
 					state = prevDev.State.Diff(device.State)
 				} else {
@@ -87,7 +87,7 @@ func onDevices(deviceChan chan func()) func(data json.RawMessage) error {
 						logrus.Error("error writing to influx: ", err)
 					}
 				}
-				devices.Add(device)
+				deviceList.Add(device)
 			}
 		}
 		return err
