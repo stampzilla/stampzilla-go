@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
 	"github.com/stampzilla/stampzilla-go/pkg/node"
 )
 
@@ -16,11 +16,11 @@ func setupLight(node *node.Node, tunnel *tunnel, light light) {
 		traits = append(traits, "Brightness")
 	}
 
-	dev := &models.Device{
+	dev := &devices.Device{
 		Name:   light.ID,
 		ID:     "light." + light.ID,
 		Traits: traits,
-		State: models.DeviceState{
+		State: devices.State{
 			"on": false,
 		},
 	}
@@ -39,10 +39,10 @@ func setupLight(node *node.Node, tunnel *tunnel, light light) {
 	}
 }
 func setupSensor(node *node.Node, tunnel *tunnel, sensor sensor) {
-	dev := &models.Device{
+	dev := &devices.Device{
 		Name:  sensor.ID,
 		ID:    "sensor." + sensor.ID,
-		State: make(models.DeviceState),
+		State: make(devices.State),
 	}
 
 	if sensor.Temperature != "" {

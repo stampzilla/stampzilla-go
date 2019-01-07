@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
 	"github.com/stampzilla/stampzilla-go/pkg/node"
 	"github.com/vapourismo/knx-go/knx"
 	"github.com/vapourismo/knx-go/knx/cemi"
@@ -32,7 +32,7 @@ type tunnel struct {
 type groupLink struct {
 	Name   string
 	Type   string
-	Device *models.Device
+	Device *devices.Device
 }
 
 func newTunnel(node *node.Node) *tunnel {
@@ -211,7 +211,7 @@ func (tunnel *tunnel) ClearAllLinks() {
 	tunnel.Groups = make(map[string][]groupLink)
 }
 
-func (tunnel *tunnel) AddLink(ga string, n string, t string, d *models.Device) {
+func (tunnel *tunnel) AddLink(ga string, n string, t string, d *devices.Device) {
 	logrus.WithFields(logrus.Fields{
 		"dest": ga,
 		"name": n,

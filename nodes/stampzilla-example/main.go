@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
 	"github.com/stampzilla/stampzilla-go/pkg/node"
 )
 
@@ -13,37 +13,37 @@ func main() {
 
 	node.OnConfig(updatedConfig)
 
-	dev1 := &models.Device{
+	dev1 := &devices.Device{
 		Name:   "Device1",
 		Type:   "light",
 		ID:     "1",
 		Online: true,
 		Traits: []string{"OnOff"},
-		State: models.DeviceState{
+		State: devices.State{
 			"on": false,
 		},
 	}
-	dev2 := &models.Device{
+	dev2 := &devices.Device{
 		Name:   "Device2",
 		Type:   "light",
 		ID:     "2",
 		Online: true,
 		Traits: []string{"OnOff", "Brightness", "ColorSetting"},
-		State: models.DeviceState{
+		State: devices.State{
 			"on": false,
 		},
 	}
-	dev3 := &models.Device{
+	dev3 := &devices.Device{
 		Name:   "Device3",
 		Type:   "light",
 		ID:     "3",
 		Online: true,
-		State: models.DeviceState{
+		State: devices.State{
 			"on": false,
 		},
 	}
 
-	node.OnRequestStateChange(func(state models.DeviceState, device *models.Device) error {
+	node.OnRequestStateChange(func(state devices.State, device *devices.Device) error {
 		logrus.Info("OnRequestStateChange:", state, device.ID)
 
 		if device.ID == "1" {
