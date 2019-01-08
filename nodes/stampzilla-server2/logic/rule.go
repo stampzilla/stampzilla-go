@@ -129,7 +129,14 @@ func (r *Rule) Run(store *SavedStateStore, sender websocket.Sender) {
 			devicesByNode[nodeID][id] = state
 		}
 		for nodeID, devs := range devicesByNode {
-			sender.SendToID(nodeID, "state-change", devs)
+			logrus.WithFields(logrus.Fields{
+				"to": nodeID,
+			}).Debug("Send state change request to node")
+			err := sender.SendToID(nodeID, "state-change", devs)
+			if err != nil {
+				logrus.Error("logic: error sending state-change to node: ", err)
+				continue
+			}
 		}
 
 	}
