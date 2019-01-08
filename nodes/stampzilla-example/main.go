@@ -16,7 +16,7 @@ func main() {
 	dev1 := &devices.Device{
 		Name:   "Device1",
 		Type:   "light",
-		ID:     "1",
+		ID:     devices.ID{ID: "1"},
 		Online: true,
 		Traits: []string{"OnOff"},
 		State: devices.State{
@@ -26,7 +26,7 @@ func main() {
 	dev2 := &devices.Device{
 		Name:   "Device2",
 		Type:   "light",
-		ID:     "2",
+		ID:     devices.ID{ID: "2"},
 		Online: true,
 		Traits: []string{"OnOff", "Brightness", "ColorSetting"},
 		State: devices.State{
@@ -36,7 +36,7 @@ func main() {
 	dev3 := &devices.Device{
 		Name:   "Device3",
 		Type:   "light",
-		ID:     "3",
+		ID:     devices.ID{ID: "3"},
 		Online: true,
 		State: devices.State{
 			"on": false,
@@ -46,7 +46,7 @@ func main() {
 	node.OnRequestStateChange(func(state devices.State, device *devices.Device) error {
 		logrus.Info("OnRequestStateChange:", state, device.ID)
 
-		if device.ID == "1" {
+		if device.ID.ID == "1" {
 			dev3.State["on"] = state["on"]
 			node.AddOrUpdate(dev3)
 		}

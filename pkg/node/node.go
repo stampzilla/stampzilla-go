@@ -16,7 +16,6 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -369,7 +368,7 @@ func (n *Node) OnShutdown(cb func()) {
 func (n *Node) OnRequestStateChange(cb func(state devices.State, device *devices.Device) error) {
 	n.On("state-change", func(data json.RawMessage) error {
 		//devs := devices.NewList()
-		devs := make(map[string]devices.State)
+		devs := make(map[devices.ID]devices.State)
 		err := json.Unmarshal(data, &devs)
 		if err != nil {
 			return err
@@ -380,7 +379,7 @@ func (n *Node) OnRequestStateChange(cb func(state devices.State, device *devices
 
 		for devID, state := range devs {
 			foundChange := false
-			oldDev := n.Devices.GetUnique(devID)
+			oldDev := n.Devices.Get(devID)
 			for s, newState := range state {
 				oldState := oldDev.State[s]
 				if newState != oldState {
@@ -399,14 +398,13 @@ func (n *Node) OnRequestStateChange(cb func(state devices.State, device *devices
 
 				// set the new state and send it to the server
 				//TODO create new type for device.ID that contains both node uuid and device id and remove all splits currently used
-				tmp := strings.Split(devID, ".")
-				err = n.Devices.SetState(tmp[0], tmp[1], state)
+				err = n.Devices.SetState(devID, state)
 				if err != nil {
 					logrus.Error(err)
 					continue
 				}
 
-				err = n.WriteMessage("update-device", n.Devices.GetUnique(devID))
+				err = n.WriteMessage("update-device", n.Devices.Get(devID))
 				if err != nil {
 					logrus.Error(err)
 					continue
@@ -419,7 +417,7 @@ func (n *Node) OnRequestStateChange(cb func(state devices.State, device *devices
 }
 
 func (n *Node) AddOrUpdate(d *devices.Device) error {
-	d.Node = n.UUID
+	d.ID.Node = n.UUID
 	n.Devices.Add(d)
 	return n.WriteMessage("update-device", d)
 }

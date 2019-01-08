@@ -2,7 +2,6 @@ package logic
 
 import (
 	"encoding/json"
-	"strings"
 	"testing"
 
 	"github.com/olahol/melody"
@@ -21,11 +20,9 @@ func NewMockSender() *mockSender {
 }
 
 func (mss *mockSender) SendToID(to string, msgType string, data interface{}) error {
-	for k, v := range data.(map[string]devices.State) {
-		id := strings.Split(k, ".")
+	for k, v := range data.(map[devices.ID]devices.State) {
 		mss.Devices.Add(&devices.Device{
-			Node:  to,
-			ID:    id[1],
+			ID:    k,
 			State: v,
 		})
 	}
@@ -59,8 +56,10 @@ func TestEvaluateRules(t *testing.T) {
 	r.Expression_ = `devices["node.id"].on == true`
 
 	l.updateDevice(&devices.Device{
-		Node: "node",
-		ID:   "id",
+		ID: devices.ID{
+			Node: "node",
+			ID:   "id",
+		},
 		State: devices.State{
 			"on": true,
 		},
@@ -71,8 +70,10 @@ func TestEvaluateRules(t *testing.T) {
 	assert.Equal(t, true, l.Rules[r.Uuid()].Active())
 
 	l.updateDevice(&devices.Device{
-		Node: "node",
-		ID:   "id",
+		ID: devices.ID{
+			Node: "node",
+			ID:   "id",
+		},
 		State: devices.State{
 			"on": false,
 		},

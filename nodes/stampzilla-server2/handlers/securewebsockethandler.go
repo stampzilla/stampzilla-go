@@ -119,12 +119,12 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 			"devices": devs,
 		}).Info("Received state change request")
 
-		devicesByNode := make(map[string]map[string]devices.State)
+		devicesByNode := make(map[string]map[devices.ID]devices.State)
 		for devID, device := range devs.All() {
-			if devicesByNode[device.Node] == nil {
-				devicesByNode[device.Node] = make(map[string]devices.State)
+			if devicesByNode[device.ID.Node] == nil {
+				devicesByNode[device.ID.Node] = make(map[devices.ID]devices.State)
 			}
-			devicesByNode[device.Node][devID] = device.State
+			devicesByNode[device.ID.Node][devID] = device.State
 		}
 
 		for node, devices := range devicesByNode {

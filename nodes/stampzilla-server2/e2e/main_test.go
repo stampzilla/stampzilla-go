@@ -99,8 +99,10 @@ func TestNodeToServerDevices(t *testing.T) {
 	assert.NoError(t, err)
 
 	dev1 := &devices.Device{
-		Name:   "Device1",
-		ID:     "1",
+		Name: "Device1",
+		ID: devices.ID{
+			ID: "1",
+		},
 		Online: true,
 		Traits: []string{"OnOff"},
 		State: devices.State{
@@ -115,7 +117,7 @@ func TestNodeToServerDevices(t *testing.T) {
 	//log.Println("devs", main.Store.Devices.All())
 
 	//Make sure node and server has the correct device key which is unique with nodeuuid + device id
-	assert.Contains(t, main.Store.Devices.All(), node.UUID+"."+dev1.ID)
-	assert.Contains(t, node.Devices.All(), node.UUID+"."+dev1.ID)
+	assert.Contains(t, main.Store.Devices.All(), devices.ID{Node: node.UUID, ID: "1"})
+	assert.Contains(t, node.Devices.All(), devices.ID{Node: node.UUID, ID: "1"})
 
 }

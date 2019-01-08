@@ -3,7 +3,6 @@ package logic
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -119,14 +118,12 @@ func (r *Rule) Run(store *SavedStateStore, sender websocket.Sender) {
 			logrus.Errorf("SavedState %s does not exist", v)
 			return
 		}
-		devicesByNode := make(map[string]map[string]devices.State)
+		devicesByNode := make(map[string]map[devices.ID]devices.State)
 		for id, state := range stateList.State {
-			tmp := strings.Split(id, ".") // TODO think of a better way that Split?
-			nodeID := tmp[0]
-			if devicesByNode[nodeID] == nil {
-				devicesByNode[nodeID] = make(map[string]devices.State)
+			if devicesByNode[id.Node] == nil {
+				devicesByNode[id.Node] = make(map[devices.ID]devices.State)
 			}
-			devicesByNode[nodeID][id] = state
+			devicesByNode[id.Node][id] = state
 		}
 		for nodeID, devs := range devicesByNode {
 			logrus.WithFields(logrus.Fields{
@@ -147,9 +144,9 @@ func (r *Rule) Run(store *SavedStateStore, sender websocket.Sender) {
 func (r *Rule) Eval(devices *devices.List, rules map[string]bool) (bool, error) {
 	devicesState := make(map[string]map[string]interface{})
 	for devID, v := range devices.All() {
-		devicesState[devID] = make(map[string]interface{})
+		devicesState[devID.String()] = make(map[string]interface{})
 		for k, v := range v.State {
-			devicesState[devID][k] = v
+			devicesState[devID.String()][k] = v
 		}
 	}
 

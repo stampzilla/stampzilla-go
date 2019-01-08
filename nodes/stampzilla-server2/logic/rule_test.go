@@ -64,8 +64,10 @@ func TestEval(t *testing.T) {
 			rules["rule1"] = true
 			devs := devices.NewList()
 			devs.Add(&devices.Device{
-				Node:  "node",
-				ID:    "id",
+				ID: devices.ID{
+					Node: "node",
+					ID:   "id",
+				},
 				State: v.State,
 			})
 			r := &Rule{
@@ -87,8 +89,8 @@ func TestRunActions(t *testing.T) {
 	savedState.State["uuid"] = &SavedState{
 		Name: "testname",
 		UUID: "uuid",
-		State: map[string]devices.State{
-			"node.id": devices.State{
+		State: map[devices.ID]devices.State{
+			devices.ID{"node", "id"}: devices.State{
 				"on": false,
 				"a":  true,
 				"b":  true,
@@ -97,8 +99,10 @@ func TestRunActions(t *testing.T) {
 	}
 
 	syncer.Devices.Add(&devices.Device{
-		Node: "node",
-		ID:   "id",
+		ID: devices.ID{
+			Node: "node",
+			ID:   "id",
+		},
 		State: devices.State{
 			"on": true,
 		},
@@ -118,9 +122,9 @@ func TestRunActions(t *testing.T) {
 	}
 
 	//t.Log(store.Devices.Get("node", "id"))
-	assert.Equal(t, false, syncer.Devices.Get("node", "id").State["on"])
-	assert.Equal(t, true, syncer.Devices.Get("node", "id").State["a"])
-	assert.Equal(t, true, syncer.Devices.Get("node", "id").State["b"])
+	assert.Equal(t, false, syncer.Devices.Get(devices.ID{"node", "id"}).State["on"])
+	assert.Equal(t, true, syncer.Devices.Get(devices.ID{"node", "id"}).State["a"])
+	assert.Equal(t, true, syncer.Devices.Get(devices.ID{"node", "id"}).State["b"])
 }
 
 func TestRunActionsCancelSleep(t *testing.T) {
@@ -154,8 +158,10 @@ func TestRunActionsCancelSleep(t *testing.T) {
 func BenchmarkEval(b *testing.B) {
 	devs := devices.NewList()
 	devs.Add(&devices.Device{
-		Node: "node",
-		ID:   "id",
+		ID: devices.ID{
+			Node: "node",
+			ID:   "id",
+		},
 		State: devices.State{
 			"on": true,
 		},

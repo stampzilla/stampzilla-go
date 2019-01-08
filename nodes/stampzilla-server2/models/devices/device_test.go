@@ -1,16 +1,21 @@
 package devices
 
 import (
+	"encoding/json"
 	"testing"
 
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
 func testDevice(id string) *Device {
 	return &Device{
-		Type:   "type",
-		Node:   "node",
-		ID:     id,
+		Type: "type",
+		//Node:   "node",
+		ID: ID{
+			ID:   id,
+			Node: "node",
+		},
 		Name:   "name",
 		Online: true,
 		State: State{
@@ -26,8 +31,11 @@ func TestCopyDevice(t *testing.T) {
 	newD := d.Copy()
 
 	d.Type = "0"
-	d.Node = "0"
-	d.ID = "0"
+	//d.Node = "0"
+	d.ID = ID{
+		ID:   "0",
+		Node: "0",
+	}
 	d.Name = "0"
 	d.Online = false
 	d.State["on"] = false
@@ -36,8 +44,8 @@ func TestCopyDevice(t *testing.T) {
 
 	assert.Equal(t, "type", newD.Type)
 	assert.Equal(t, "0", d.Type)
-	assert.Equal(t, "node", newD.Node)
-	assert.Equal(t, "id", newD.ID)
+	assert.Equal(t, "node", newD.ID.Node)
+	assert.Equal(t, "id", newD.ID.ID)
 	assert.Equal(t, "name", newD.Name)
 	assert.Equal(t, true, newD.Online)
 	assert.Equal(t, true, newD.State["on"])
@@ -92,4 +100,44 @@ func TestStateDiff(t *testing.T) {
 	diff := ds1.Diff(ds2)
 	assert.Equal(t, false, diff["on"])
 	assert.Equal(t, nil, diff["temperature"])
+}
+
+func TestJSONMarshalDevices(t *testing.T) {
+	d := NewList()
+
+	d.Add(testDevice("devid"))
+
+	b, err := json.MarshalIndent(d, "", "\t")
+	if err != nil {
+		logrus.Error("error marshal json", err)
+	}
+
+	assert.Contains(t, string(b), `"node.devid": {`)
+	assert.NoError(t, err)
+
+}
+func TestJSONUnMarshalDevices(t *testing.T) {
+
+	j := `{
+	"node.devid": {
+		"type": "type",
+		"id": "node.devid",
+		"name": "name",
+		"online": true,
+		"state": {
+			"on": true
+		},
+		"traits": [
+			"onoff"
+		]
+	}}`
+	d := NewList()
+
+	err := json.Unmarshal([]byte(j), d)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "devid", d.Get(ID{ID: "devid", Node: "node"}).ID.ID)
+	assert.Equal(t, "node", d.Get(ID{ID: "devid", Node: "node"}).ID.Node)
+	assert.Len(t, d.All(), 1)
+
 }

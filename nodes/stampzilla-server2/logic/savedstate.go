@@ -12,7 +12,7 @@ import (
 type SavedState struct {
 	Name  string
 	UUID  string
-	State map[string]devices.State
+	State map[devices.ID]devices.State
 }
 type SavedStateStore struct {
 	State map[string]*SavedState

@@ -3,6 +3,7 @@ package devices
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 )
 
@@ -26,24 +27,44 @@ func (ds State) Diff(right State) State {
 	return diff
 }
 
+type ID struct {
+	Node string
+	ID   string
+}
+
+func (id ID) String() string {
+	return id.Node + "." + id.ID
+}
+
+func (id ID) Bytes() []byte {
+	return []byte(id.Node + "." + id.ID)
+}
+func (id ID) MarshalText() (text []byte, err error) {
+	text = id.Bytes()
+	return
+}
+
+func (id *ID) UnmarshalText(text []byte) error {
+	tmp := strings.Split(string(text), ".")
+	if len(tmp) != 2 {
+		return fmt.Errorf("wrong ID format. Expected nodeuuid.deviceid")
+	}
+	id.Node = tmp[0]
+	id.ID = tmp[1]
+	return nil
+
+}
+
 type Device struct {
-	Type   string   `json:"type"`
-	Node   string   `json:"node,omitempty"`
-	ID     string   `json:"id,omitempty"`
+	Type string `json:"type"`
+	//Node   string   `json:"node,omitempty"`
+	ID     ID       `json:"id,omitempty"`
 	Name   string   `json:"name,omitempty"`
 	Alias  string   `json:"alias,omitempty"`
 	Online bool     `json:"online"`
 	State  State    `json:"state,omitempty"`
 	Traits []string `json:"traits"`
 	sync.RWMutex
-}
-
-func (d *Device) SyncState(state State) {
-	for k, v := range state {
-		//d.Lock() TODO check if locking is needed
-		d.State[k] = v
-		//d.Unlock()
-	}
 }
 
 // Copy copies a device
@@ -55,9 +76,12 @@ func (d *Device) Copy() *Device {
 	copy(newTraits, d.Traits)
 
 	newD := &Device{
-		Type:   d.Type,
-		Node:   d.Node,
-		ID:     d.ID,
+		Type: d.Type,
+		//Node: d.Node,
+		ID: ID{
+			ID:   d.ID.ID,
+			Node: d.ID.Node,
+		},
 		Name:   d.Name,
 		Online: d.Online,
 		State:  newState,
@@ -67,7 +91,7 @@ func (d *Device) Copy() *Device {
 	return newD
 }
 
-type DeviceMap map[string]*Device
+type DeviceMap map[ID]*Device
 
 type List struct {
 	devices DeviceMap
@@ -83,33 +107,34 @@ func NewList() *List {
 // Add adds a device to the list
 func (d *List) Add(dev *Device) {
 	d.Lock()
-	d.devices[dev.Node+"."+dev.ID] = dev
+	d.devices[dev.ID] = dev
 	d.Unlock()
 }
 
 // Update the state of a device
-func (d *List) SetState(node, id string, state State) error {
+func (d *List) SetState(id ID, state State) error {
 	d.Lock()
 	defer d.Unlock()
-	if dev, ok := d.devices[node+"."+id]; ok {
+	if dev, ok := d.devices[id]; ok {
 		dev.State = state
 		return nil
 	}
 
-	return fmt.Errorf("Node not found (%s.%s)", node, id)
+	return fmt.Errorf("Node not found (%s)", id.String())
 }
 
 // Get returns a device
-func (d *List) Get(node, id string) *Device {
-	d.RLock()
-	defer d.RUnlock()
-	return d.devices[node+"."+id]
-}
-func (d *List) GetUnique(id string) *Device {
+func (d *List) Get(id ID) *Device {
 	d.RLock()
 	defer d.RUnlock()
 	return d.devices[id]
 }
+
+//func (d *List) GetUnique(id string) *Device {
+//d.RLock()
+//defer d.RUnlock()
+//return d.devices[id]
+//}
 
 // All get all devices
 func (d *List) All() DeviceMap {
@@ -122,7 +147,7 @@ func (d *List) All() DeviceMap {
 func (d *List) Copy() *List {
 
 	newD := &List{
-		devices: make(map[string]*Device),
+		devices: make(DeviceMap),
 	}
 	d.RLock()
 	for _, v := range d.devices {

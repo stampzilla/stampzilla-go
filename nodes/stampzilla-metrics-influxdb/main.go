@@ -63,7 +63,7 @@ func onDevices(deviceChan chan func()) func(data json.RawMessage) error {
 				//check if state is different
 				logrus.Info("state", device.State)
 				state := make(devices.State)
-				if prevDev := deviceList.Get(device.Node, device.ID); prevDev != nil {
+				if prevDev := deviceList.Get(device.ID); prevDev != nil {
 					logrus.Info("prevState", prevDev.State)
 					state = prevDev.State.Diff(device.State)
 				} else {
@@ -71,12 +71,12 @@ func onDevices(deviceChan chan func()) func(data json.RawMessage) error {
 				}
 
 				if len(state) > 0 {
-					logrus.Infof("We should log value node: %s, %s  %#v", device.Node, device.Name, state)
+					logrus.Infof("We should log value node: %s, %s  %#v", device.ID.Node, device.Name, state)
 					tags := map[string]string{
-						"node-uuid": device.Node,
+						"node-uuid": device.ID.Node,
 						"name":      device.Name,
 						"alias":     device.Alias,
-						"id":        device.ID,
+						"id":        device.ID.ID,
 						"type":      device.Type,
 					}
 					err = write(tags, state)

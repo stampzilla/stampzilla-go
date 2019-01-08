@@ -10,7 +10,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/interfaces"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/websocket"
 )
@@ -21,8 +20,7 @@ func main() {
 
 // Logic is the main struct
 type Logic struct {
-	StateSyncer interfaces.StateSyncer
-	StateStore  *SavedStateStore
+	StateStore *SavedStateStore
 	// TODO MAJOR important! must move rules storage to store.Store and load them from there when we start logic so we dont get circular dependencies! :(
 	Rules   map[string]*Rule
 	devices *devices.List
@@ -91,7 +89,7 @@ func (l *Logic) UpdateDevice(dev *devices.Device) {
 	}
 }
 func (l *Logic) updateDevice(dev *devices.Device) {
-	if oldDev := l.devices.Get(dev.Node, dev.ID); oldDev != nil {
+	if oldDev := l.devices.Get(dev.ID); oldDev != nil {
 		diff := oldDev.State.Diff(dev.State)
 		if len(diff) > 0 {
 			//oldDev.Lock() // TODO check if needed with -race
