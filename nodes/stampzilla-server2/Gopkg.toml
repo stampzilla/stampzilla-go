@@ -53,3 +53,11 @@
 [[constraint]]
   branch = "master"
   name = "github.com/gin-contrib/gzip"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/google/cel-go"
+
+[[override]]
+  branch = "master"
+  name = "github.com/golang/protobuf"
