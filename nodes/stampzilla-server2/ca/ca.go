@@ -19,23 +19,35 @@ import (
 	"os"
 	"path"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/sirupsen/logrus"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/websocket"
 )
 
 const storagePath = "certificates"
 
 type Cert struct {
-	CommonName string
-	IsCA       bool
-	Usage      []string
-	Revoked    bool
-	Issued     time.Time
-	Expires    time.Time
+	Serial     string    `json:"serial"`
+	CommonName string    `json:"commonName"`
+	IsCA       bool      `json:"isCA"`
+	Usage      []string  `json:"usage"`
+	Revoked    bool      `json:"revoked"`
+	Issued     time.Time `json:"issued"`
+	Expires    time.Time `json:"expires"`
 
-	Fingerprints map[string]string
+	Fingerprints map[string]string `json:"fingerprints"`
+}
+
+type Request struct {
+	Identity   string `json:"identity"`
+	Connection string `json:"connection"`
+	Type       string `json:"type"`
+	Version    string `json:"version"`
+
+	approved chan bool `json:"approved"`
 }
 
 type CA struct {
@@ -43,6 +55,11 @@ type CA struct {
 	TLS    *tls.Certificate
 	CAX509 *x509.Certificate
 	CATLS  *tls.Certificate
+
+	WebsocketSender websocket.Sender
+
+	Requests []Request
+	sync.Mutex
 }
 
 func LoadOrCreate(names ...string) (*CA, error) {
@@ -164,8 +181,8 @@ func (ca *CA) CreateCertificate(name string) error {
 	return ca.Load(name)
 }
 
-func (ca *CA) CreateCertificateFromRequest(wr io.Writer, name string, request []byte) error {
-	pemBlock, _ := pem.Decode(request)
+func (ca *CA) CreateCertificateFromRequest(wr io.Writer, c string, r models.Request) error {
+	pemBlock, _ := pem.Decode([]byte(r.CSR))
 	if pemBlock == nil {
 		return fmt.Errorf("pem.Decode failed?")
 	}
@@ -175,6 +192,11 @@ func (ca *CA) CreateCertificateFromRequest(wr io.Writer, name string, request []
 	}
 	if err = clientCSR.CheckSignature(); err != nil {
 		return err
+	}
+
+	approved := <-ca.WaitForApproval(clientCSR.Subject.CommonName, c, r)
+	if approved != true {
+		return fmt.Errorf("Request was not approved")
 	}
 
 	// create client certificate template
@@ -200,9 +222,21 @@ func (ca *CA) CreateCertificateFromRequest(wr io.Writer, name string, request []
 		return err
 	}
 
-	certEncoded := pem.Encode(wr, &pem.Block{Type: "CERTIFICATE", Bytes: certBytes})
+	// Save the issued certificate to file
+	certOut, err := os.Create(path.Join(storagePath, clientCSR.Subject.CommonName+".crt"))
+	if err != nil {
+		return err
+	}
+	err = pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: certBytes})
+	if err != nil {
+		return err
+	}
+	certOut.Close()
+	logrus.Info("Wrote " + clientCSR.Subject.CommonName + ".crt\n")
 
-	return certEncoded
+	ca.WebsocketSender.SendToProtocol("gui", "certificates", ca.GetCertificates())
+
+	return pem.Encode(wr, &pem.Block{Type: "CERTIFICATE", Bytes: certBytes})
 }
 
 func (ca *CA) ExportToDisk(name string, certBytes []byte, privateKey *rsa.PrivateKey) error {
@@ -270,13 +304,11 @@ func (ca *CA) GetCertificates() []Cert {
 			continue
 		}
 
-		spew.Dump(crt)
-		fmt.Println(f.Name())
-
 		sh1 := sha1.Sum(crt.Raw)
 		sh256 := sha256.Sum256(crt.Raw)
 
 		cert := Cert{
+			Serial:     crt.SerialNumber.String(),
 			CommonName: crt.Subject.CommonName,
 			IsCA:       crt.IsCA,
 			//Usage      []string
@@ -290,8 +322,80 @@ func (ca *CA) GetCertificates() []Cert {
 			},
 		}
 
+		if crt.IsCA {
+			cert.Usage = append(cert.Usage, "ca")
+		}
+
+		for _, usage := range crt.ExtKeyUsage {
+			switch usage {
+			case x509.ExtKeyUsageServerAuth:
+				cert.Usage = append(cert.Usage, "server")
+			case x509.ExtKeyUsageClientAuth:
+				cert.Usage = append(cert.Usage, "client")
+			}
+		}
+
 		certs = append(certs, cert)
 	}
 
 	return certs
+}
+
+func (ca *CA) GetRequests() []Request {
+	if ca.Requests == nil {
+		ca.Requests = make([]Request, 0)
+	}
+
+	ca.Lock()
+	defer ca.Unlock()
+	return ca.Requests
+}
+
+func (ca *CA) WaitForApproval(i, c string, r models.Request) chan bool {
+	req := Request{
+		Identity:   i,
+		Connection: c,
+
+		Type:    r.Type,
+		Version: r.Version,
+
+		approved: make(chan bool),
+	}
+
+	ca.Lock()
+	ca.Requests = append(ca.Requests, req)
+	ca.Unlock()
+
+	ca.WebsocketSender.SendToProtocol("gui", "requests", ca.Requests)
+
+	return req.approved
+}
+
+func (ca *CA) AbortRequest(c string) {
+	ca.Lock()
+	defer ca.Unlock()
+
+	for i, r := range ca.Requests {
+		if r.Connection == c {
+			close(r.approved)
+			ca.Requests = append(ca.Requests[:i], ca.Requests[i+1:]...)
+		}
+	}
+
+	ca.WebsocketSender.SendToProtocol("gui", "requests", ca.Requests)
+}
+
+func (ca *CA) AcceptRequest(c string) {
+	ca.Lock()
+	defer ca.Unlock()
+
+	for i, r := range ca.Requests {
+		if r.Connection == c {
+			r.approved <- true
+			close(r.approved)
+			ca.Requests = append(ca.Requests[:i], ca.Requests[i+1:]...)
+		}
+	}
+
+	ca.WebsocketSender.SendToProtocol("gui", "requests", ca.Requests)
 }

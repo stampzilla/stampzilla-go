@@ -32,6 +32,14 @@ func NewSecureWebsockerHandler(store *store.Store, config *models.Config, ws web
 
 func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *models.Message) error {
 	switch msg.Type {
+	case "accept-request":
+		connection := ""
+		err := json.Unmarshal(msg.Body, &connection)
+		if err != nil {
+			return err
+		}
+
+		wsh.CA.AcceptRequest(connection)
 	case "subscribe":
 		subscribeTo := []string{}
 		err := json.Unmarshal(msg.Body, &subscribeTo)
@@ -144,7 +152,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 func (wsh *secureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.Request, keys map[string]interface{}) error {
 	proto, _ := s.Get(websocket.KeyProtocol.String())
 	id, _ := s.Get(websocket.KeyID.String())
-	logrus.Infof("ws handle secure connect with id %s (%s)", id, proto)
+	logrus.Debugf("ws handle secure connect with id %s (%s)", id, proto)
 
 	// Send a list of all nodes if its a webgui
 	switch proto {
@@ -162,6 +170,12 @@ func (wsh *secureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.R
 		msg.WriteTo(s)
 
 		msg, err = models.NewMessage("certificates", wsh.CA.GetCertificates())
+		if err != nil {
+			return err
+		}
+		msg.WriteTo(s)
+
+		msg, err = models.NewMessage("requests", wsh.CA.GetRequests())
 		if err != nil {
 			return err
 		}

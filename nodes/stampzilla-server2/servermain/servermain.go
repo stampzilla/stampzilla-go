@@ -120,8 +120,19 @@ func (m *Main) Init() {
 	if err = m.Store.Load(); err != nil {
 		log.Fatalf("Failed to load state from disk: %s", err)
 	}
-	m.HTTPServer = webserver.New(m.Store, m.Config, handlers.NewInSecureWebsockerHandler(m.Store, m.Config, insecureSender, m.CA), insecureMelody)
-	m.TLSServer = webserver.New(m.Store, m.Config, handlers.NewSecureWebsockerHandler(m.Store, m.Config, secureSender, m.CA), secureMelody)
+	m.HTTPServer = webserver.New(
+		m.Store,
+		m.Config,
+		handlers.NewInSecureWebsockerHandler(m.Store, m.Config, insecureSender, m.CA),
+		insecureMelody,
+	)
+	m.TLSServer = webserver.New(
+		m.Store,
+		m.Config,
+		handlers.NewSecureWebsockerHandler(m.Store, m.Config, secureSender, m.CA),
+		secureMelody,
+	)
+	m.CA.WebsocketSender = secureSender
 
 	m.Config.Save("config.json")
 

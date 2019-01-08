@@ -36,31 +36,34 @@ func (wsh *insecureWebsocketHandler) Message(s interfaces.MelodySession, msg *mo
 	// client requested certificate. We must approve manually
 
 	if msg.Type == "certificate-signing-request" {
-		var body string
+		var body models.Request
 		json.Unmarshal(msg.Body, &body)
 
 		//TODO we want to add this to for example store to make it statefull and so the admin can approve the request
 		// for now we just approve automaticly and send it directly
 
 		cert := &strings.Builder{}
-		err := wsh.ca.CreateCertificateFromRequest(cert, "nodename", []byte(body))
-		if err != nil {
-			return err
-		}
+		id, _ := s.Get(websocket.KeyID.String())
+		go func() {
+			err := wsh.ca.CreateCertificateFromRequest(cert, id.(string), body)
+			if err != nil {
+				return
+			}
 
-		// send certificate to node
-		err = wsh.WebsocketSender.SendToID(msg.FromUUID, "approved-certificate-signing-request", cert.String())
-		if err != nil {
-			return err
-		}
+			// send certificate to node
+			err = wsh.WebsocketSender.SendToID(msg.FromUUID, "approved-certificate-signing-request", cert.String())
+			if err != nil {
+				return
+			}
 
-		// send ca to node
-		ca := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: wsh.ca.CAX509.Raw})
+			// send ca to node
+			ca := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: wsh.ca.CAX509.Raw})
 
-		err = wsh.WebsocketSender.SendToID(msg.FromUUID, "certificate-authority", string(ca))
-		if err != nil {
-			return err
-		}
+			err = wsh.WebsocketSender.SendToID(msg.FromUUID, "certificate-authority", string(ca))
+			if err != nil {
+				return
+			}
+		}()
 
 	}
 
@@ -68,8 +71,7 @@ func (wsh *insecureWebsocketHandler) Message(s interfaces.MelodySession, msg *mo
 }
 
 func (wsh *insecureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.Request, keys map[string]interface{}) error {
-
-	logrus.Info("ws handle insecure connect")
+	logrus.Debug("ws handle insecure connect")
 	msg, err := models.NewMessage("server-info", models.ServerInfo{
 		Name:    wsh.Config.Name,
 		UUID:    wsh.Config.UUID,
@@ -86,6 +88,6 @@ func (wsh *insecureWebsocketHandler) Connect(s interfaces.MelodySession, r *http
 
 func (wsh *insecureWebsocketHandler) Disconnect(s interfaces.MelodySession) error {
 	id, _ := s.Get(websocket.KeyID.String())
-	wsh.Store.RemoveConnection(id.(string))
+	wsh.ca.AbortRequest(id.(string))
 	return nil
 }

@@ -32,6 +32,7 @@ type OnFunc func(json.RawMessage) error
 type Node struct {
 	UUID     string
 	Type     string
+	Version  string
 	Protocol string
 
 	Client websocket.Websocket
@@ -135,7 +136,11 @@ func (n *Node) fetchCertificate() error {
 	n.Config.TLSPort = serverInfo.TLSPort
 	n.Config.Save("config.json")
 
-	n.WriteMessage("certificate-signing-request", string(csr))
+	n.WriteMessage("certificate-signing-request", models.Request{
+		Type:    n.Type,
+		Version: n.Version,
+		CSR:     string(csr),
+	})
 	if err != nil {
 		return err
 	}

@@ -6,12 +6,14 @@ import Dashboard from './routes/dashboard';
 import Debug from './routes/debug';
 import Node from './routes/nodes/Node';
 import Nodes from './routes/nodes';
+import Security from './routes/security';
 
 const Routes = () => (
   <Switch>
     <Route exact path="/" component={Dashboard} />
     <Route exact path="/nodes" component={Nodes} />
     <Route path="/nodes/:uuid" component={Node} />
+    <Route exact path="/security" component={Security} />
     <Route path="/debug" component={Debug} />
   </Switch>
 );

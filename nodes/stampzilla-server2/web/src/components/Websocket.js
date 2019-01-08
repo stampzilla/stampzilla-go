@@ -8,9 +8,11 @@ import {
   disconnected,
   received,
 } from '../ducks/connection';
+import { update as updateCertificates } from '../ducks/certificates';
 import { update as updateConnections } from '../ducks/connections';
 import { update as updateDevices } from '../ducks/devices';
 import { update as updateNodes } from '../ducks/nodes';
+import { update as updateRequests } from '../ducks/requests';
 import { update as updateServer } from '../ducks/server';
 
 // Placeholder until we have the write func from the websocket
@@ -64,6 +66,14 @@ class Websocket extends Component {
       }
       case 'devices': {
         dispatch(updateDevices(parsed.body));
+        break;
+      }
+      case 'certificates': {
+        dispatch(updateCertificates(parsed.body));
+        break;
+      }
+      case 'requests': {
+        dispatch(updateRequests(parsed.body));
         break;
       }
       default: {
