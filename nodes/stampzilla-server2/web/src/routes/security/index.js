@@ -11,19 +11,19 @@ class Security extends Component {
       history.push(`/security/${uuid}`);
     }
 
-  onClickAccept = (connection) => () => {
+  onClickAccept = connection => () => {
     write({
       type: 'accept-request',
       body: connection,
     });
   }
 
-    render() {
-      const { certificates, requests, connections } = this.props;
+  render() {
+    const { certificates, requests, connections } = this.props;
 
-      return (
-        <React.Fragment>
-          {requests.size > 0 &&
+    return (
+      <React.Fragment>
+        {requests.size > 0 &&
           <div className="row">
             <div className="col-md-12">
               <Card
@@ -36,7 +36,7 @@ class Security extends Component {
                       <th>Requested identity</th>
                       <th>Type</th>
                       <th>Connecting from</th>
-                      <th></th>
+                      <th />
                     </tr>
                   </thead>
                   <tbody>
@@ -47,10 +47,12 @@ class Security extends Component {
                           <td>{connections.getIn([n.get('connection'), 'type'])} ({n.get('type')})</td>
                           <td>{connections.getIn([n.get('connection'), 'remoteAddr'])}</td>
                           <td className="text-right">
-                            <button 
-                              className="btn btn-success" 
+                            <button
+                              className="btn btn-success"
                               onClick={this.onClickAccept(n.get('connection'))}
-                            >Accept</button></td>
+                            >Accept
+                            </button>
+                          </td>
                         </tr>
                     )).toArray()}
                   </tbody>
@@ -60,24 +62,24 @@ class Security extends Component {
           </div>
           }
 
-          <div className="row">
-            <div className="col-md-12">
-              <Card
-                title="Certificates"
-                bodyClassName="p-0"
-              >
-                <table className="table table-striped table-valign-middle">
-                  <thead>
-                    <tr>
-                      <th>Common name</th>
-                      <th>Type</th>
-                      <th>Issued</th>
-                      <th>Fingerprint (sha1)</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {certificates
+        <div className="row">
+          <div className="col-md-12">
+            <Card
+              title="Certificates"
+              bodyClassName="p-0"
+            >
+              <table className="table table-striped table-valign-middle">
+                <thead>
+                  <tr>
+                    <th>Common name</th>
+                    <th>Type</th>
+                    <th>Issued</th>
+                    <th>Fingerprint (sha1)</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {certificates
                       .map(n => (
                         <tr key={n.get('serial')} style={{ cursor: 'pointer' }} onClick={this.onClickNode(n.get('serial'))}>
                           <td>{n.get('commonName')}</td>
@@ -87,14 +89,14 @@ class Security extends Component {
                           <td className="text-right"><button className="btn btn-danger" disabled>Revoke</button></td>
                         </tr>
                     )).toArray()}
-                  </tbody>
-                </table>
-              </Card>
-            </div>
+                </tbody>
+              </table>
+            </Card>
           </div>
-        </React.Fragment>
-      );
-    }
+        </div>
+      </React.Fragment>
+    );
+  }
 }
 
 const mapToProps = state => ({

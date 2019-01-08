@@ -4,13 +4,14 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 const SWPrecacheWebpackPlugin = require('sw-precache-webpack-plugin');
 const WebpackPwaManifest = require('webpack-pwa-manifest');
+const TerserPlugin = require('terser-webpack-plugin');
 // const path = require('path');
 const webpack = require('webpack');
 
 const DEV = process.env.NODE_ENV === 'development';
 
 module.exports = {
-  devtool: DEV ? 'cheap-module-eval-source-map' : 'source-map',
+  devtool: DEV ? 'cheap-module-eval-source-map' : undefined,
   output: {
     filename: 'assets/[name].js',
     publicPath: '/',
@@ -18,6 +19,7 @@ module.exports = {
   optimization: {
     minimizer: [
       new OptimizeCSSAssetsPlugin({}),
+      new TerserPlugin(),
     ],
     usedExports: true,
     sideEffects: true,
