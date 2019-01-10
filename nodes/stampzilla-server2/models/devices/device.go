@@ -17,6 +17,7 @@ func (ds State) Clone() State {
 	return newState
 }
 
+//TODO diff function should handle new state on right side. Should compare length and do something smart
 func (ds State) Diff(right State) State {
 	diff := make(State)
 	for k, v := range ds {

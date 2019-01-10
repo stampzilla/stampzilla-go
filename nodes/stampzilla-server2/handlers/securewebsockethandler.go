@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/olahol/melody"
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/ca"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/interfaces"
@@ -30,6 +31,47 @@ func NewSecureWebsockerHandler(store *store.Store, config *models.Config, ws web
 	}
 }
 
+func BroadcastUpdate(sender websocket.Sender) func(string, *store.Store) error {
+	send := func(area string, data interface{}) error {
+		return sender.BroadcastWithFilter(area, data, func(s *melody.Session) bool {
+			v, exists := s.Get("subscriptions")
+			if !exists {
+				return false
+			}
+			if v, ok := v.([]string); ok {
+				for _, topic := range v {
+					if topic == area {
+						return true
+					}
+				}
+			}
+			return false
+		})
+	}
+
+	return func(area string, store *store.Store) error {
+		switch area {
+		case "devices":
+			return send(area, store.GetDevices())
+		case "connections":
+			return send(area, store.GetConnections())
+		case "nodes":
+			return send(area, store.GetNodes())
+		}
+		return nil
+	}
+}
+
+func sliceHas(s []string, val string) bool {
+	for _, v := range s {
+		if v == val {
+			return true
+		}
+
+	}
+	return false
+}
+
 func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *models.Message) error {
 	switch msg.Type {
 	case "accept-request":
@@ -51,20 +93,24 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		if !exists {
 			s.Set("subscriptions", subscribeTo)
 		} else {
+			subs := []string{}
 			if v, ok := v.([]string); ok {
-				s.Set("subscriptions", append(v, subscribeTo...))
+				for _, sub := range subscribeTo {
+					if !sliceHas(v, sub) {
+						subs = append(subs, sub)
+					}
+				}
+				s.Set("subscriptions", append(v, subs...))
 			}
 		}
+
 		if v, exists := s.Get("subscriptions"); exists {
 			logrus.Info("Active subscriptions: ", v)
 		}
 
-		subs, _ := s.Get("subscriptions")
-		for _, v := range subs.([]string) {
-			switch v {
-			case "devices":
-				return wsh.WebsocketSender.SendToID(msg.FromUUID, "devices", wsh.Store.GetDevices())
-			}
+		fn := BroadcastUpdate(wsh.WebsocketSender)
+		for _, v := range subscribeTo {
+			fn(v, wsh.Store)
 		}
 
 	case "update-device":

@@ -58,13 +58,10 @@ func onDevices(deviceChan chan func()) func(data json.RawMessage) error {
 
 		for _, d := range devs.All() {
 			device := d
-			logrus.Info("got device ", device)
 			deviceChan <- func() {
 				//check if state is different
-				logrus.Info("state", device.State)
 				state := make(devices.State)
 				if prevDev := deviceList.Get(device.ID); prevDev != nil {
-					logrus.Info("prevState", prevDev.State)
 					state = prevDev.State.Diff(device.State)
 				} else {
 					state = device.State

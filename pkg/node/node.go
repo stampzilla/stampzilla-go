@@ -72,6 +72,8 @@ func NewWithClient(client websocket.Websocket) *Node {
 func (n *Node) Stop() {
 	close(n.stop)
 }
+
+// Wait for node to be done after shutdown
 func (n *Node) Wait() {
 	n.Client.Wait()
 	n.wg.Wait()
@@ -87,6 +89,7 @@ func (n *Node) setup() {
 	//n.Config.Save("config.json")
 }
 
+// WriteMessage writes a message to the server over websocket client
 func (n *Node) WriteMessage(msgType string, data interface{}) error {
 	msg, err := models.NewMessage(msgType, data)
 	logrus.WithFields(logrus.Fields{
@@ -116,7 +119,7 @@ func (n *Node) WaitForMessage(msgType string, dst interface{}) error {
 
 func (n *Node) fetchCertificate() error {
 	// Start with creating a CSR and assign a UUID
-	csr, err := n.GenerateCSR()
+	csr, err := n.generateCSR()
 	if err != nil {
 		return err
 	}
@@ -168,9 +171,10 @@ func (n *Node) fetchCertificate() error {
 	n.Wait()
 
 	// We should have a certificate now. Try to load it
-	return n.LoadCertificateKeyPair("crt")
+	return n.loadCertificateKeyPair("crt")
 }
 
+// Connect starts the node and makes connection to the server. Normally discovered using mdns but can be configured aswell.
 func (n *Node) Connect() error {
 	n.setup()
 
@@ -185,7 +189,7 @@ func (n *Node) Connect() error {
 	}
 
 	// Load our signed certificate and get our UUID
-	err := n.LoadCertificateKeyPair("crt")
+	err := n.loadCertificateKeyPair("crt")
 
 	if err != nil {
 		logrus.Error("Error trying to load certificate: ", err)
@@ -223,6 +227,9 @@ func (n *Node) Connect() error {
 	}()
 
 	n.Client.OnConnect(func() {
+		for what := range n.callbacks {
+			n.Subscribe(what)
+		}
 		n.SyncDevices()
 	})
 	n.connect(ctx, u)
@@ -271,7 +278,7 @@ func (n *Node) connect(ctx context.Context, addr string) {
 	n.Client.ConnectWithRetry(ctx, addr, headers)
 }
 
-func (n *Node) LoadCertificateKeyPair(name string) error {
+func (n *Node) loadCertificateKeyPair(name string) error {
 	certTLS, err := tls.LoadX509KeyPair(name+".crt", name+".key")
 	if err != nil {
 		return err
@@ -320,7 +327,7 @@ func (n *Node) generateKey() (*rsa.PrivateKey, error) {
 	return priv, err
 }
 
-func (n *Node) GenerateCSR() ([]byte, error) {
+func (n *Node) generateCSR() ([]byte, error) {
 
 	subj := pkix.Name{
 		CommonName: uuid.New().String(),
@@ -349,7 +356,9 @@ func (n *Node) GenerateCSR() ([]byte, error) {
 	return d, nil
 }
 
+// On sets up a callback that is run when a message recieved with type what
 func (n *Node) On(what string, cb OnFunc) {
+	n.Subscribe(what)
 	n.callbacks[what] = append(n.callbacks[what], cb)
 }
 
@@ -366,10 +375,12 @@ func (n *Node) OnConfig(cb OnFunc) {
 	})
 }
 
+// OnShutdown registeres a callback that is run before the server shuts down
 func (n *Node) OnShutdown(cb func()) {
 	n.shutdown = append(n.shutdown, cb)
 }
 
+// OnRequestStateChange is run if we get a state-change request from the server to update our devices (for example we are requested to turn on a light)
 func (n *Node) OnRequestStateChange(cb func(state devices.State, device *devices.Device) error) {
 	n.On("state-change", func(data json.RawMessage) error {
 		//devs := devices.NewList()
@@ -421,12 +432,14 @@ func (n *Node) OnRequestStateChange(cb func(state devices.State, device *devices
 	})
 }
 
+// AddOrUpdate adds or updates a device in our local device store and notifies the server about the new state of the device.
 func (n *Node) AddOrUpdate(d *devices.Device) error {
 	d.ID.Node = n.UUID
 	n.Devices.Add(d)
 	return n.WriteMessage("update-device", d)
 }
 
+//SyncDevices notifies the server about the state of all our known devices.
 func (n *Node) SyncDevices() error {
 	return n.WriteMessage("update-devices", n.Devices)
 }

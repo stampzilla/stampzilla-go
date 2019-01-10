@@ -136,44 +136,5 @@ func (m *Main) Init() {
 
 	m.Config.Save("config.json")
 
-	m.Store.OnUpdate("nodes", broadcastNodeUpdate(secureSender))
-	m.Store.OnUpdate("connections", broadcastConnectionsUpdate(secureSender))
-	m.Store.OnUpdate("devices", broadcastDevicesUpdate(secureSender))
-
-}
-
-func broadcastNodeUpdate(sender websocket.Sender) func(*store.Store) error {
-	return func(store *store.Store) error {
-		return sender.SendToProtocol("gui", "nodes", store.GetNodes())
-	}
-}
-
-func broadcastConnectionsUpdate(sender websocket.Sender) func(*store.Store) error {
-	return func(store *store.Store) error {
-		return sender.SendToProtocol("gui", "connections", store.GetConnections())
-	}
-}
-
-func broadcastDevicesUpdate(sender websocket.Sender) func(*store.Store) error {
-	return func(store *store.Store) error {
-		err := sender.BroadcastWithFilter("devices", store.GetDevices(), func(s *melody.Session) bool {
-			v, exists := s.Get("subscriptions")
-			if !exists {
-				return false
-			}
-			if v, ok := v.([]string); ok {
-				for _, topic := range v {
-					if topic == "devices" {
-						return true
-					}
-				}
-			}
-			return false
-		})
-		if err != nil {
-			return err
-		}
-
-		return sender.SendToProtocol("gui", "devices", store.GetDevices())
-	}
+	m.Store.OnUpdate(handlers.BroadcastUpdate(secureSender))
 }
