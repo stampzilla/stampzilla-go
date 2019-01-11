@@ -10,7 +10,7 @@ import (
 	"path"
 	"strconv"
 
-	"github.com/jonaz/mdns"
+	"github.com/micro/mdns"
 	"github.com/olahol/melody"
 	"github.com/onrik/logrus/filename"
 	"github.com/sirupsen/logrus"

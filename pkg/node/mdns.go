@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jonaz/mdns"
+	"github.com/micro/mdns"
 )
 
 //func main() {
