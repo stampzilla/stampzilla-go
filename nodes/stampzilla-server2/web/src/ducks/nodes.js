@@ -15,6 +15,13 @@ export function update(connections) {
   return { type: c.UPDATE, connections };
 }
 
+// Subscribe to channels and register the action for the packages
+export function subscribe(dispatch) {
+  return {
+    nodes: nodes => dispatch(update(nodes)),
+  };
+}
+
 // Reducer
 export default function reducer(state = defaultState, action) {
   switch (action.type) {

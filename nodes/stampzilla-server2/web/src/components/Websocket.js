@@ -3,24 +3,31 @@ import { connect } from 'react-redux';
 import ReconnectableWebSocket from 'reconnectable-websocket';
 import Url from 'url';
 
+import { subscribe as certificates } from '../ducks/certificates';
 import {
   connected,
   disconnected,
   received,
 } from '../ducks/connection';
-import { update as updateCertificates } from '../ducks/certificates';
-import { update as updateConnections } from '../ducks/connections';
-import { update as updateDevices } from '../ducks/devices';
-import { update as updateNodes } from '../ducks/nodes';
-import { update as updateRequests } from '../ducks/requests';
+import { subscribe as connections } from '../ducks/connections';
+import { subscribe as devices } from '../ducks/devices';
+import { subscribe as nodes } from '../ducks/nodes';
+import { subscribe as requests } from '../ducks/requests';
 import { update as updateServer } from '../ducks/server';
 
 // Placeholder until we have the write func from the websocket
 let writeFunc = () => {
   throw new Error('Not initialized yet');
 };
+export const write = msg => writeFunc(JSON.stringify(msg));
 
 class Websocket extends Component {
+  constructor(props) {
+    super(props);
+
+    this.subscriptions = {};
+  }
+
   componentDidMount() {
     this.setupSocket(this.props);
   }
@@ -42,44 +49,34 @@ class Websocket extends Component {
     if (url.protocol === 'wss:') {
       this.props.dispatch(updateServer({ secure: true }));
     }
+
+    this.subscribe({
+      certificates,
+      connections,
+      devices,
+      nodes,
+      requests,
+    });
   }
   onClose = () => () => {
     this.props.dispatch(disconnected());
+    this.subscriptions = {};
   }
   onMessage = () => (event) => {
     const { dispatch } = this.props;
     const parsed = JSON.parse(event.data);
 
     dispatch(received(parsed));
-    switch (parsed.type) {
-      case 'server-info': {
-        dispatch(updateServer(parsed.body));
-        break;
-      }
-      case 'connections': {
-        dispatch(updateConnections(parsed.body));
-        break;
-      }
-      case 'nodes': {
-        dispatch(updateNodes(parsed.body));
-        break;
-      }
-      case 'devices': {
-        dispatch(updateDevices(parsed.body));
-        break;
-      }
-      case 'certificates': {
-        dispatch(updateCertificates(parsed.body));
-        break;
-      }
-      case 'requests': {
-        dispatch(updateRequests(parsed.body));
-        break;
-      }
-      default: {
-        break;
-      }
+    const subscriptions = this.subscriptions[parsed.type];
+    if (subscriptions) {
+      subscriptions.forEach(callback => callback(parsed.body));
     }
+    // switch (parsed.type) {
+    // case 'server-info': {
+    // dispatch(updateServer(parsed.body));
+    // break;
+    // }
+    // }
   }
 
   setupSocket(props) {
@@ -101,6 +98,24 @@ class Websocket extends Component {
     this.socket.onclose = this.onClose();
   }
 
+  subscribe = (ducks) => {
+    Object.keys(ducks).forEach((duck) => {
+      if (!ducks[duck]) {
+        return;
+      }
+
+      const channels = ducks[duck](this.props.dispatch);
+      Object.keys(channels).forEach((channel) => {
+        this.subscriptions[channel] = this.subscriptions[channel] || [];
+        this.subscriptions[channel].push(channels[channel]);
+        write({
+          type: 'subscribe',
+          body: [channel],
+        });
+      });
+    });
+  }
+
   render = () => null;
 }
 
@@ -109,4 +124,3 @@ const mapToProps = state => ({
 });
 export default connect(mapToProps)(Websocket);
 
-export const write = msg => writeFunc(JSON.stringify(msg));

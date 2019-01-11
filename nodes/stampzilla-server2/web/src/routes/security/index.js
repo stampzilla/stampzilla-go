@@ -6,15 +6,22 @@ import { write } from '../../components/Websocket';
 import Card from '../../components/Card';
 
 class Security extends Component {
-    onClickNode = uuid => () => {
-      const { history } = this.props;
-      history.push(`/security/${uuid}`);
-    }
+  onClickNode = uuid => () => {
+    const { history } = this.props;
+    history.push(`/security/${uuid}`);
+  }
 
   onClickAccept = connection => () => {
     write({
       type: 'accept-request',
       body: connection,
+    });
+  }
+
+  onClickRevoke = serial => () => {
+    write({
+      type: 'revoke',
+      body: serial,
     });
   }
 
@@ -81,12 +88,18 @@ class Security extends Component {
                 <tbody>
                   {certificates
                       .map(n => (
-                        <tr key={n.get('serial')} style={{ cursor: 'pointer' }} onClick={this.onClickNode(n.get('serial'))}>
+                        <tr key={n.get('serial')}>
                           <td>{n.get('commonName')}</td>
                           <td>{n.get('usage').sort().join(', ')}</td>
                           <td><Moment fromNow withTitle>{n.get('issued')}</Moment></td>
                           <td>{n.getIn(['fingerprints', 'sha1'])}</td>
-                          <td className="text-right"><button className="btn btn-danger" disabled>Revoke</button></td>
+                          <td className="text-right">
+                            <button
+                              className="btn btn-danger"
+                              onClick={this.onClickRevoke(n.get('serial'))}
+                            >Revoke
+                            </button>
+                          </td>
                         </tr>
                     )).toArray()}
                 </tbody>
