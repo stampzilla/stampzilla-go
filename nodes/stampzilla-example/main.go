@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
@@ -50,6 +51,24 @@ func main() {
 			dev3.State["on"] = state["on"]
 			node.AddOrUpdate(dev3)
 		}
+
+		devConfig, ok := config.Devices[device.ID.ID]
+		if !ok {
+			return fmt.Errorf("Foudn no config for device %s", device.ID)
+		}
+
+		state.Bool("on", func(on bool) {
+			if on {
+				fmt.Printf("turning on %s with senderid %s\n", device.ID.String(), devConfig.SenderID)
+				return
+			}
+			fmt.Printf("turning off %s with senderid %s\n", device.ID.String(), devConfig.SenderID)
+		})
+
+		state.Float("brightness", func(lvl float64) {
+			fmt.Printf("dimming to %f on device %s with senderid %s\n", lvl, device.ID.String(), devConfig.SenderID)
+		})
+
 		return nil
 	})
 
@@ -78,7 +97,55 @@ func main() {
 	node.Wait()
 }
 
+var config = &Config{}
+
 func updatedConfig(data json.RawMessage) error {
 	logrus.Info("Received config from server:", string(data))
+
+	newConf := &Config{}
+	err := json.Unmarshal(data, newConf)
+	if err != nil {
+		return err
+	}
+
+	// example when we change "global" config
+	if newConf.GatewayIP != config.GatewayIP {
+		fmt.Println("ip changed. lets connect to that instead")
+	}
+
+	config = newConf
+	logrus.Info("Config is now: ", config)
+
 	return nil
 }
+
+type Config struct {
+	Devices map[string]struct {
+		SenderID string
+		RecvEEPs []string // example config taken from enocean node
+	}
+	GatewayIP string
+}
+
+/*
+Config to put into gui:
+{
+	"devices":{
+		"1":{
+			"senderid":"senderid1",
+			"recveeps":[
+				"asdf1",
+				"asdf2"
+			]
+		},
+		"2":{
+			"senderid":"senderid1",
+			"recveeps":[
+				"asdf1",
+				"asdf2"
+			]
+		}
+	}
+}
+
+*/
