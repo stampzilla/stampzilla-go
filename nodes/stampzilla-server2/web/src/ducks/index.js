@@ -20,12 +20,4 @@ const rootReducer = combineReducers({
   server,
 });
 
-export const subscriptions = [
-  'certificates',
-  'connections',
-  'devices',
-  'nodes',
-  'request',
-];
-
 export default rootReducer;

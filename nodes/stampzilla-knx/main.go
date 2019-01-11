@@ -31,7 +31,7 @@ func main() {
 
 	node.OnConfig(updatedConfig(node, tunnel, config))
 	node.OnRequestStateChange(func(state devices.State, device *devices.Device) error {
-		id := strings.SplitN(device.ID, ".", 2)
+		id := strings.SplitN(device.ID.ID, ".", 2)
 
 		switch id[0] {
 		case "light":

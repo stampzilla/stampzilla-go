@@ -5,6 +5,14 @@ import Moment from 'react-moment';
 import { write } from '../../components/Websocket';
 import Card from '../../components/Card';
 
+const typeOrder = [
+  'ca',
+  'server',
+  'client',
+];
+
+const sortPrio = usages => usages.map(usage => typeOrder.indexOf(usage)).sort().first();
+
 class Security extends Component {
   onClickNode = uuid => () => {
     const { history } = this.props;
@@ -87,10 +95,11 @@ class Security extends Component {
                 </thead>
                 <tbody>
                   {certificates
+                      .sort((a, b) => sortPrio(a.get('usage')) - sortPrio(b.get('usage')))
                       .map(n => (
                         <tr key={n.get('serial')}>
                           <td>{n.get('commonName')}</td>
-                          <td>{n.get('usage').sort().join(', ')}</td>
+                          <td>{n.get('usage').sort((a, b) => typeOrder.indexOf(a) - typeOrder.indexOf(b)).join(', ')}</td>
                           <td><Moment fromNow withTitle>{n.get('issued')}</Moment></td>
                           <td>{n.getIn(['fingerprints', 'sha1'])}</td>
                           <td className="text-right">

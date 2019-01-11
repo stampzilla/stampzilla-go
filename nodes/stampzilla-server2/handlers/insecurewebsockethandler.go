@@ -88,6 +88,6 @@ func (wsh *insecureWebsocketHandler) Connect(s interfaces.MelodySession, r *http
 
 func (wsh *insecureWebsocketHandler) Disconnect(s interfaces.MelodySession) error {
 	id, _ := s.Get(websocket.KeyID.String())
-	wsh.ca.AbortRequest(id.(string))
+	wsh.Store.RemoveRequest(id.(string), false)
 	return nil
 }

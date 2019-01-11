@@ -116,6 +116,7 @@ func (m *Main) Init() {
 
 	l := logic.New(secureSender)
 	m.Store = store.New(l)
+	m.CA.SetStore(m.Store)
 
 	if err = m.Store.Load(); err != nil {
 		log.Fatalf("Failed to load state from disk: %s", err)
@@ -132,7 +133,6 @@ func (m *Main) Init() {
 		handlers.NewSecureWebsockerHandler(m.Store, m.Config, secureSender, m.CA),
 		secureMelody,
 	)
-	m.CA.WebsocketSender = secureSender
 
 	m.Config.Save("config.json")
 

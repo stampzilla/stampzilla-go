@@ -57,6 +57,10 @@ func BroadcastUpdate(sender websocket.Sender) func(string, *store.Store) error {
 			return send(area, store.GetConnections())
 		case "nodes":
 			return send(area, store.GetNodes())
+		case "certificates":
+			return send(area, store.GetCertificates())
+		case "requests":
+			return send(area, store.GetRequests())
 		}
 		return nil
 	}
@@ -81,7 +85,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 			return err
 		}
 
-		wsh.CA.AcceptRequest(connection)
+		wsh.Store.AcceptRequest(connection)
 	case "subscribe":
 		subscribeTo := []string{}
 		err := json.Unmarshal(msg.Body, &subscribeTo)
@@ -112,6 +116,8 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		for _, v := range subscribeTo {
 			fn(v, wsh.Store)
 		}
+
+		wsh.Store.ConnectionChanged()
 
 	case "update-device":
 		device := &devices.Device{}
@@ -202,30 +208,6 @@ func (wsh *secureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.R
 
 	// Send a list of all nodes if its a webgui
 	switch proto {
-	case "gui":
-		msg, err := models.NewMessage("nodes", wsh.Store.GetNodes())
-		if err != nil {
-			return err
-		}
-		msg.WriteTo(s)
-
-		msg, err = models.NewMessage("devices", wsh.Store.GetDevices())
-		if err != nil {
-			return err
-		}
-		msg.WriteTo(s)
-
-		msg, err = models.NewMessage("certificates", wsh.CA.GetCertificates())
-		if err != nil {
-			return err
-		}
-		msg.WriteTo(s)
-
-		msg, err = models.NewMessage("requests", wsh.CA.GetRequests())
-		if err != nil {
-			return err
-		}
-		msg.WriteTo(s)
 	case "node":
 		n := wsh.Store.GetNode(id.(string))
 		if n == nil {

@@ -123,9 +123,11 @@ func (tunnel *tunnel) onConnect() {
 	logrus.Info("Connected to KNX gateway")
 	tunnel.Connected = true
 	// Trigger a read on each group address that we monitor
+	tunnel.RLock()
 	for ga, _ := range tunnel.Groups {
 		tunnel.triggerRead(ga)
 	}
+	tunnel.RUnlock()
 	tunnel.OnConnect()
 }
 func (tunnel *tunnel) onDisconnect() {
@@ -168,10 +170,12 @@ func (tunnel *tunnel) decodeKNX(msg knx.GroupEvent) error {
 	tunnel.RLock()
 	defer tunnel.RUnlock()
 
+	tunnel.RLock()
 	links, ok := tunnel.Groups[msg.Destination.String()]
 	if !ok {
 		return fmt.Errorf("No link was found for: %s", msg.Destination.String())
 	}
+	tunnel.RUnlock()
 
 	for _, gl := range links {
 		logrus.WithFields(logrus.Fields{
@@ -208,7 +212,9 @@ func (tunnel *tunnel) decodeKNX(msg knx.GroupEvent) error {
 }
 
 func (tunnel *tunnel) ClearAllLinks() {
+	tunnel.Lock()
 	tunnel.Groups = make(map[string][]groupLink)
+	tunnel.Unlock()
 }
 
 func (tunnel *tunnel) AddLink(ga string, n string, t string, d *devices.Device) {

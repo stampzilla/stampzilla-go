@@ -99,6 +99,7 @@ class Websocket extends Component {
   }
 
   subscribe = (ducks) => {
+    const subscriptions = [];
     Object.keys(ducks).forEach((duck) => {
       if (!ducks[duck]) {
         return;
@@ -108,11 +109,13 @@ class Websocket extends Component {
       Object.keys(channels).forEach((channel) => {
         this.subscriptions[channel] = this.subscriptions[channel] || [];
         this.subscriptions[channel].push(channels[channel]);
-        write({
-          type: 'subscribe',
-          body: [channel],
-        });
+        subscriptions.push(channel);
       });
+    });
+
+    write({
+      type: 'subscribe',
+      body: subscriptions,
     });
   }
 

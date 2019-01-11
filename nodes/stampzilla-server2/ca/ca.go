@@ -24,31 +24,10 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/websocket"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/store"
 )
 
 const storagePath = "certificates"
-
-type Cert struct {
-	Serial     string    `json:"serial"`
-	CommonName string    `json:"commonName"`
-	IsCA       bool      `json:"isCA"`
-	Usage      []string  `json:"usage"`
-	Revoked    bool      `json:"revoked"`
-	Issued     time.Time `json:"issued"`
-	Expires    time.Time `json:"expires"`
-
-	Fingerprints map[string]string `json:"fingerprints"`
-}
-
-type Request struct {
-	Identity   string `json:"identity"`
-	Connection string `json:"connection"`
-	Type       string `json:"type"`
-	Version    string `json:"version"`
-
-	approved chan bool `json:"approved"`
-}
 
 type CA struct {
 	X509   *x509.Certificate
@@ -56,9 +35,8 @@ type CA struct {
 	CAX509 *x509.Certificate
 	CATLS  *tls.Certificate
 
-	WebsocketSender websocket.Sender
+	Store *store.Store
 
-	Requests []Request
 	sync.Mutex
 }
 
@@ -104,6 +82,7 @@ func (ca *CA) Load(name string) error {
 	}
 	ca.TLS = &certTLS
 	ca.X509 = certX509
+
 	return nil
 }
 
@@ -142,6 +121,11 @@ func (ca *CA) CreateCA() error {
 	}
 
 	return ca.Load("ca")
+}
+
+func (ca *CA) SetStore(s *store.Store) {
+	ca.Store = s
+	ca.Store.UpdateCertificates(ca.GetCertificates())
 }
 
 func bigIntHash(n *big.Int) []byte {
@@ -234,7 +218,7 @@ func (ca *CA) CreateCertificateFromRequest(wr io.Writer, c string, r models.Requ
 	certOut.Close()
 	logrus.Info("Wrote " + clientCSR.Subject.CommonName + ".crt\n")
 
-	ca.WebsocketSender.SendToProtocol("gui", "certificates", ca.GetCertificates())
+	ca.Store.UpdateCertificates(ca.GetCertificates())
 
 	return pem.Encode(wr, &pem.Block{Type: "CERTIFICATE", Bytes: certBytes})
 }
@@ -275,14 +259,14 @@ func (ca *CA) ExportToDisk(name string, certBytes []byte, privateKey *rsa.Privat
 	return nil
 }
 
-func (ca *CA) GetCertificates() []Cert {
+func (ca *CA) GetCertificates() []store.Certificate {
 
 	files, err := ioutil.ReadDir(storagePath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	certs := make([]Cert, 0)
+	certs := make([]store.Certificate, 0)
 
 	for _, f := range files {
 		n := strings.Split(f.Name(), ".")
@@ -307,7 +291,7 @@ func (ca *CA) GetCertificates() []Cert {
 		sh1 := sha1.Sum(crt.Raw)
 		sh256 := sha256.Sum256(crt.Raw)
 
-		cert := Cert{
+		cert := store.Certificate{
 			Serial:     crt.SerialNumber.String(),
 			CommonName: crt.Subject.CommonName,
 			IsCA:       crt.IsCA,
@@ -341,61 +325,18 @@ func (ca *CA) GetCertificates() []Cert {
 	return certs
 }
 
-func (ca *CA) GetRequests() []Request {
-	if ca.Requests == nil {
-		ca.Requests = make([]Request, 0)
-	}
-
-	ca.Lock()
-	defer ca.Unlock()
-	return ca.Requests
-}
-
 func (ca *CA) WaitForApproval(i, c string, r models.Request) chan bool {
-	req := Request{
+	req := store.Request{
 		Identity:   i,
 		Connection: c,
 
 		Type:    r.Type,
 		Version: r.Version,
 
-		approved: make(chan bool),
+		Approved: make(chan bool),
 	}
 
-	ca.Lock()
-	ca.Requests = append(ca.Requests, req)
-	ca.Unlock()
+	ca.Store.AddRequest(req)
 
-	ca.WebsocketSender.SendToProtocol("gui", "requests", ca.Requests)
-
-	return req.approved
-}
-
-func (ca *CA) AbortRequest(c string) {
-	ca.Lock()
-	defer ca.Unlock()
-
-	for i, r := range ca.Requests {
-		if r.Connection == c {
-			close(r.approved)
-			ca.Requests = append(ca.Requests[:i], ca.Requests[i+1:]...)
-		}
-	}
-
-	ca.WebsocketSender.SendToProtocol("gui", "requests", ca.Requests)
-}
-
-func (ca *CA) AcceptRequest(c string) {
-	ca.Lock()
-	defer ca.Unlock()
-
-	for i, r := range ca.Requests {
-		if r.Connection == c {
-			r.approved <- true
-			close(r.approved)
-			ca.Requests = append(ca.Requests[:i], ca.Requests[i+1:]...)
-		}
-	}
-
-	ca.WebsocketSender.SendToProtocol("gui", "requests", ca.Requests)
+	return req.Approved
 }

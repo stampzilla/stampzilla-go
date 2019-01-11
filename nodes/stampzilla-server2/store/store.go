@@ -14,22 +14,27 @@ type Connections map[string]*models.Connection
 type UpdateCallback func(string, *Store) error
 
 type Store struct {
-	Nodes       Nodes
-	SavedState  *logic.SavedStateStore
-	Logic       *logic.Logic
-	Devices     *devices.List
-	Connections Connections
-	onUpdate    []UpdateCallback
+	Nodes        Nodes
+	SavedState   *logic.SavedStateStore
+	Logic        *logic.Logic
+	Devices      *devices.List
+	Connections  Connections
+	Certificates []Certificate
+	Requests     []Request
+
+	onUpdate []UpdateCallback
 	sync.RWMutex
 }
 
 func New(l *logic.Logic) *Store {
 	return &Store{
-		Nodes:       make(Nodes),
-		SavedState:  logic.NewSavedStateStore(),
-		Devices:     devices.NewList(),
-		Connections: make(Connections),
-		Logic:       l,
+		Nodes:        make(Nodes),
+		SavedState:   logic.NewSavedStateStore(),
+		Devices:      devices.NewList(),
+		Connections:  make(Connections),
+		Logic:        l,
+		Certificates: make([]Certificate, 0),
+		Requests:     make([]Request, 0),
 	}
 }
 

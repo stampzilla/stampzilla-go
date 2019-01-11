@@ -25,6 +25,10 @@ func (store *Store) AddOrUpdateConnection(id string, c *models.Connection) {
 	store.runCallbacks("connections")
 }
 
+func (store *Store) ConnectionChanged() {
+	store.runCallbacks("connections")
+}
+
 func (store *Store) RemoveConnection(id string) {
 	store.Lock()
 	delete(store.Connections, id)

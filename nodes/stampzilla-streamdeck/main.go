@@ -9,7 +9,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/llgcode/draw2d"
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
 	"github.com/stampzilla/stampzilla-go/pkg/node"
 )
 
@@ -24,7 +24,7 @@ type appState struct {
 	sync.Mutex
 }
 
-var devices = models.NewDevices()
+var previous = devices.NewList()
 var app = &appState{
 	render: make(chan struct{}),
 }
@@ -92,7 +92,7 @@ func updatedConfig(node *node.Node, config *config) func(json.RawMessage) error 
 }
 
 func onDevices(data json.RawMessage) error {
-	devs := models.NewDevices()
+	devs := devices.NewList()
 	err := json.Unmarshal(data, devs)
 	if err != nil {
 		return err
@@ -103,15 +103,15 @@ func onDevices(data json.RawMessage) error {
 	for _, device := range devs.All() {
 		//check if state is different
 		//logrus.Info("state", device.State)
-		state := make(models.DeviceState)
-		if prevDev := devices.Get(device.Node, device.ID); prevDev != nil {
+		state := make(devices.State)
+		if prevDev := previous.Get(device.ID); prevDev != nil {
 			//logrus.Info("prevState", prevDev.State)
 			state = prevDev.State.Diff(device.State)
 		} else {
 			state = device.State
 		}
 
-		devices.Add(device)
+		previous.Add(device)
 
 		if len(state) > 0 {
 			// Check if we should re-render
@@ -123,7 +123,7 @@ func onDevices(data json.RawMessage) error {
 				}
 
 				for _, keyConfig := range pageConfig.Keys {
-					if keyConfig.Node == device.Node && keyConfig.Device == device.ID {
+					if keyConfig.Node == device.ID.Node && keyConfig.Device == device.ID.ID {
 						triggerRender = true
 					}
 				}
@@ -164,18 +164,21 @@ func (app *appState) worker() {
 			keyConfig := pageConfig.Keys[key]
 
 			// Find the linked device
-			d := devices.Get(keyConfig.Node, keyConfig.Device)
+			d := previous.Get(devices.ID{Node: keyConfig.Node, ID: keyConfig.Device})
 			if d != nil {
 				current, ok := d.State[keyConfig.Field]
 				if ok {
-					if c := current.(bool); ok {
-						devs := models.NewDevices()
-						newState := make(models.DeviceState)
-						newState[keyConfig.Field] = !c
-						devs.Add(d.Copy())
-						devs.SetState(keyConfig.Node, keyConfig.Device, newState)
-						app.node.WriteMessage("state-change", devs)
+					targetState := true
+					if current != nil {
+						targetState = !current.(bool)
 					}
+
+					devs := devices.NewList()
+					newState := make(devices.State)
+					newState[keyConfig.Field] = targetState
+					devs.Add(d.Copy())
+					devs.SetState(devices.ID{Node: keyConfig.Node, ID: keyConfig.Device}, newState)
+					app.node.WriteMessage("state-change", devs)
 				}
 			}
 
@@ -194,7 +197,7 @@ func (app *appState) worker() {
 			logrus.Infof("Draw page %s to deck %d", page, index)
 			for key, keyConfig := range pageConfig.Keys {
 				// Try to find out if we have a state
-				d := devices.Get(keyConfig.Node, keyConfig.Device)
+				d := previous.Get(devices.ID{Node: keyConfig.Node, ID: keyConfig.Device})
 				if d != nil {
 					drawStateToKey(deck, keyConfig.Name, d.State[keyConfig.Field], key)
 					continue

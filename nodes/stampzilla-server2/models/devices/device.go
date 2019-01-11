@@ -76,7 +76,7 @@ func (id ID) MarshalText() (text []byte, err error) {
 }
 
 func (id *ID) UnmarshalText(text []byte) error {
-	tmp := strings.Split(string(text), ".")
+	tmp := strings.SplitN(string(text), ".", 2)
 	if len(tmp) != 2 {
 		return fmt.Errorf("wrong ID format. Expected nodeuuid.deviceid")
 	}

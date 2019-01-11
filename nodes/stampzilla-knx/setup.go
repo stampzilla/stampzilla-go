@@ -18,7 +18,7 @@ func setupLight(node *node.Node, tunnel *tunnel, light light) {
 
 	dev := &devices.Device{
 		Name:   light.ID,
-		ID:     "light." + light.ID,
+		ID:     devices.ID{ID: "light." + light.ID},
 		Traits: traits,
 		State: devices.State{
 			"on": false,
@@ -41,7 +41,7 @@ func setupLight(node *node.Node, tunnel *tunnel, light light) {
 func setupSensor(node *node.Node, tunnel *tunnel, sensor sensor) {
 	dev := &devices.Device{
 		Name:  sensor.ID,
-		ID:    "sensor." + sensor.ID,
+		ID:    devices.ID{ID: "sensor." + sensor.ID},
 		State: make(devices.State),
 	}
 
