@@ -27,8 +27,10 @@ import (
 	"github.com/stampzilla/stampzilla-go/pkg/websocket"
 )
 
+// OnFunc is used in all the callbacks
 type OnFunc func(json.RawMessage) error
 
+// Node is the main struct
 type Node struct {
 	UUID     string
 	Type     string
@@ -371,6 +373,10 @@ func (n *Node) OnConfig(cb OnFunc) {
 			return err
 		}
 
+		if len(conf.Config) == 0 {
+			return nil
+		}
+
 		return cb(conf.Config)
 	})
 }
@@ -437,6 +443,10 @@ func (n *Node) AddOrUpdate(d *devices.Device) error {
 	d.ID.Node = n.UUID
 	n.Devices.Add(d)
 	return n.WriteMessage("update-device", d)
+}
+
+func (n *Node) GetDevice(id string) *devices.Device {
+	return n.Devices.Get(devices.ID{Node: n.UUID, ID: id})
 }
 
 //SyncDevices notifies the server about the state of all our known devices.
