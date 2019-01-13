@@ -419,8 +419,7 @@ func (n *Node) OnRequestStateChange(cb func(state devices.State, device *devices
 				}
 
 				// set the new state and send it to the server
-				//TODO create new type for device.ID that contains both node uuid and device id and remove all splits currently used
-				err = n.Devices.SetState(devID, state)
+				err = n.Devices.SetState(devID, state.Merge(stateChange))
 				if err != nil {
 					logrus.Error(err)
 					continue

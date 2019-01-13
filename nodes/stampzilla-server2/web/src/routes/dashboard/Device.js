@@ -20,13 +20,13 @@ const traitPriority = [
 const traitNames = {
   Brightness: 'Brightness',
   OnOff: 'Power',
-  ColorSetting: 'Color',
+  ColorSetting: 'Temperature',
 };
 
 const traitStates = {
   Brightness: 'brightness',
   OnOff: 'on',
-  ColorSetting: 'color',
+  ColorSetting: 'temperature',
 };
 
 const icons = {

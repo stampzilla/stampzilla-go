@@ -55,6 +55,25 @@ func (ds State) Diff(right State) State {
 			diff[k] = right[k]
 		}
 	}
+
+	for k, v := range right {
+		if _, ok := ds[k]; !ok {
+			diff[k] = v
+		}
+	}
+
+	return diff
+}
+
+// Merge two states
+func (ds State) Merge(right State) State {
+	diff := make(State)
+	for k, v := range ds {
+		diff[k] = v
+	}
+	for k, v := range right {
+		diff[k] = v
+	}
 	return diff
 }
 

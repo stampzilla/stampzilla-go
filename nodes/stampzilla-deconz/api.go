@@ -115,6 +115,17 @@ func (a *API) Put(path string, body io.Reader, v interface{}) error {
 	return a.do("PUT", path, body, v)
 }
 
+func (a *API) PutData(path string, v interface{}) error {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	err := enc.Encode(v)
+	if err != nil {
+		return err
+	}
+	//TODO read response awsell and verify errors
+	return a.do("PUT", path, &buf, nil)
+}
+
 func (a *API) Lights() (models.Lights, error) {
 
 	lights := models.NewLights()

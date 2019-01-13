@@ -57,9 +57,9 @@ func (lc *LocalConfig) Load() error {
 /*
 Config to put into gui:
 {
-	"ip":"192.168.13.1",
-	"port":"9042",
-	"password":"password"
+  "ip":"192.168.13.1",
+  "port":"9042",
+  "password":"password"
 }
 
 */

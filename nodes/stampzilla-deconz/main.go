@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -25,7 +24,7 @@ func main() {
 
 	node.OnConfig(updatedConfig(node, api))
 	node.OnShutdown(func() {
-		err := localConfig.Save()
+		err = localConfig.Save()
 		if err != nil {
 			log.Println(err)
 			return
@@ -33,29 +32,38 @@ func main() {
 	})
 
 	node.OnRequestStateChange(func(state devices.State, device *devices.Device) error {
-		logrus.Info("OnRequestStateChange:", state, device.ID)
 
-		u := fmt.Sprintf("lights/%s/state", device.ID.ID)
-
-		lightState := make(map[string]interface{})
-		if b, ok := state["brightness"]; ok {
-			bri := int(math.Round(255 * b.(float64)))
+		lightState := make(devices.State)
+		state.Float("brightness", func(v float64) {
+			bri := int(math.Round(255 * v))
 			lightState["bri"] = bri
-			if bri != 0 {
-				lightState["on"] = true
-			}
-		}
-		if b, ok := state["on"]; ok {
-			lightState["on"] = b
-		}
+			lightState["on"] = bri != 0
+			state["on"] = lightState["on"]
+		})
+		state.Bool("on", func(on bool) {
+			lightState["on"] = on
+		})
 
-		var buf bytes.Buffer
-		enc := json.NewEncoder(&buf)
-		err = enc.Encode(lightState)
-		if err != nil {
-			return err
+		state.Float("temperature", func(v float64) {
+			// 153 (6500K) to 500 (2000K)
+			if v > 6500.0 {
+				v = 6500.0
+			}
+			if v < 2000.0 {
+				v = 2000.0
+			}
+			v = (6500 + 2000) - v                                                   // invert value
+			ct := int(math.Round(((v - 2000) / (6500 - 2000) * (500 - 153)) + 153)) // rescale value
+			//fmt.Println("temperature: ", v)
+			//fmt.Println("setting ct to ", ct)
+			lightState["ct"] = ct
+		})
+
+		if len(lightState) == 0 {
+			return nil
 		}
-		return api.Put(u, &buf, nil)
+		u := fmt.Sprintf("lights/%s/state", device.ID.ID)
+		return api.PutData(u, &lightState)
 	})
 
 	err = node.Connect()

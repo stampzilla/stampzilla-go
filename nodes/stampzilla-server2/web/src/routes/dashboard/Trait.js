@@ -47,7 +47,25 @@ class Trait extends Component {
         />
       );
       case 'ColorSetting': return (
-        <HueColorPicker />
+        // <HueColorPicker />
+        <AlphaPicker
+          style={{
+            gradient: {
+              background: 'linear-gradient(to right, #ff0 10%, #00f 10%)',
+            },
+          }}
+          pointer={SliderPointer}
+          height="12px"
+          width="100%"
+          color={{
+              r: 0,
+              g: 0,
+              b: 0,
+              a: state,
+          }}
+          onChange={({ rgb }) => onChange((rgb.a * 4500) + 2000)}
+          disabled={!device.get('online')}
+        />
       );
       default: return null;
     }
