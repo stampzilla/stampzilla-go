@@ -179,15 +179,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 			"devices": devs,
 		}).Info("Received state change request")
 
-		devicesByNode := make(map[string]map[devices.ID]devices.State)
-		for devID, device := range devs.All() {
-			if devicesByNode[device.ID.Node] == nil {
-				devicesByNode[device.ID.Node] = make(map[devices.ID]devices.State)
-			}
-			devicesByNode[device.ID.Node][devID] = device.State
-		}
-
-		for node, devices := range devicesByNode {
+		for node, devices := range devs.StateGroupedByNode() {
 			logrus.WithFields(logrus.Fields{
 				"to": node,
 			}).Debug("Send state change request to node")
