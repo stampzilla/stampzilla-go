@@ -14,6 +14,7 @@ var config = &Config{}
 type Config struct {
 	IP       string
 	Port     string
+	WsPort   string
 	Password string
 }
 

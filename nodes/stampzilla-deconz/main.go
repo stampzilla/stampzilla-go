@@ -1,14 +1,17 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"math"
+	"strconv"
 
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
 	"github.com/stampzilla/stampzilla-go/pkg/node"
+	"github.com/stampzilla/stampzilla-go/pkg/websocket"
 )
 
 func main() {
@@ -24,6 +27,7 @@ func main() {
 
 	node.OnConfig(updatedConfig(node, api))
 	node.OnShutdown(func() {
+		stopWs()
 		err = localConfig.Save()
 		if err != nil {
 			log.Println(err)
@@ -76,6 +80,8 @@ func main() {
 	node.Wait()
 }
 
+var stopWs context.CancelFunc
+
 func updatedConfig(node *node.Node, api *API) func(data json.RawMessage) error {
 	return func(data json.RawMessage) error {
 		logrus.Info("Received config from server:", string(data))
@@ -86,7 +92,6 @@ func updatedConfig(node *node.Node, api *API) func(data json.RawMessage) error {
 			return err
 		}
 
-		// example when we change "global" config
 		if newConf.IP != config.IP || newConf.Port != config.Port {
 			fmt.Println("ip changed. TODO lets connect to that instead")
 		}
@@ -100,6 +105,15 @@ func updatedConfig(node *node.Node, api *API) func(data json.RawMessage) error {
 			createUser()
 			api.Key = localConfig.APIKey
 		}
+
+		config.WsPort = getWsPort(api)
+		logrus.Info("Ws port is: ", config.WsPort)
+
+		ws := websocket.New()
+
+		var ctx context.Context
+		ctx, stopWs = context.WithCancel(context.Background())
+		ws.ConnectWithRetry(ctx, fmt.Sprintf("ws://%s:%s", config.IP, config.WsPort), nil)
 
 		syncLights(node, api)
 
@@ -146,4 +160,21 @@ func syncLights(node *node.Node, api *API) error {
 		node.SyncDevices()
 	}
 	return nil
+}
+
+func getWsPort(api *API) string {
+
+	type config struct {
+		Websocketport int
+	}
+
+	c := &config{}
+
+	err := api.Get("config", c)
+	if err != nil {
+		logrus.Error(err)
+		return ""
+	}
+
+	return strconv.Itoa(c.Websocketport)
 }
