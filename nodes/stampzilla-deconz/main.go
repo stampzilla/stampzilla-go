@@ -14,6 +14,8 @@ import (
 	"github.com/stampzilla/stampzilla-go/pkg/websocket"
 )
 
+var wsClient = websocket.New()
+
 func main() {
 	node := node.New("deconz")
 
@@ -25,7 +27,13 @@ func main() {
 
 	api := NewAPI(localConfig.APIKey, config)
 
-	node.OnConfig(updatedConfig(node, api))
+	ctx, stopWs := context.WithCancel(context.Background())
+	changed := make(chan struct{})
+
+	go configChanged(ctx, changed, node, api)
+	go reader(ctx)
+
+	node.OnConfig(updatedConfig(changed, api))
 	node.OnShutdown(func() {
 		stopWs()
 		err = localConfig.Save()
@@ -80,9 +88,52 @@ func main() {
 	node.Wait()
 }
 
-var stopWs context.CancelFunc
+type WsEvent struct {
+	Type     string        `json:"t"`  // event
+	Event    string        `json:"e"`  // changed
+	Resource string        `json:"r"`  // lights/sensors/groups
+	ID       string        `json:"id"` // 1
+	State    devices.State `json:"state"`
+}
 
-func updatedConfig(node *node.Node, api *API) func(data json.RawMessage) error {
+func reader(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			logrus.Info("Stopping reader because:", ctx.Err())
+			return
+		case data := <-wsClient.Read():
+			event := &WsEvent{}
+			json.Unmarshal(data, event)
+
+			fmt.Printf("event: %#v\n", event)
+			//TODO
+			// {"e":"changed","id":"1","r":"lights","state":{"on":false},"t":"event","uniqueid":"00:0b:57:ff:fe:c0:28:82-01"}
+			// http://dresden-elektronik.github.io/deconz-rest-doc/websocket/
+		}
+	}
+}
+
+func configChanged(parentCtx context.Context, changed chan struct{}, node *node.Node, api *API) error {
+	for {
+		var ctx context.Context
+		var cancel context.CancelFunc
+		select {
+		case <-parentCtx.Done():
+			return parentCtx.Err()
+		case <-changed:
+			syncLights(node, api)
+			if cancel != nil {
+				cancel()
+			}
+			ctx, cancel = context.WithCancel(parentCtx)
+			defer cancel()
+			wsClient.ConnectWithRetry(ctx, fmt.Sprintf("ws://%s:%s", config.IP, config.WsPort), nil)
+		}
+	}
+}
+
+func updatedConfig(changed chan struct{}, api *API) func(data json.RawMessage) error {
 	return func(data json.RawMessage) error {
 		logrus.Info("Received config from server:", string(data))
 
@@ -92,8 +143,8 @@ func updatedConfig(node *node.Node, api *API) func(data json.RawMessage) error {
 			return err
 		}
 
-		if newConf.IP != config.IP || newConf.Port != config.Port {
-			fmt.Println("ip changed. TODO lets connect to that instead")
+		if newConf.IP == config.IP && newConf.Port == config.Port && newConf.Password == config.Password {
+			return nil
 		}
 
 		config.IP = newConf.IP
@@ -109,14 +160,7 @@ func updatedConfig(node *node.Node, api *API) func(data json.RawMessage) error {
 		config.WsPort = getWsPort(api)
 		logrus.Info("Ws port is: ", config.WsPort)
 
-		ws := websocket.New()
-
-		var ctx context.Context
-		ctx, stopWs = context.WithCancel(context.Background())
-		ws.ConnectWithRetry(ctx, fmt.Sprintf("ws://%s:%s", config.IP, config.WsPort), nil)
-
-		syncLights(node, api)
-
+		changed <- struct{}{}
 		return nil
 	}
 }
