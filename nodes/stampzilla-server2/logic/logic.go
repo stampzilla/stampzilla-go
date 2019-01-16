@@ -18,6 +18,8 @@ func main() {
 	fmt.Println("vim-go")
 }
 
+type Rules map[string]*Rule
+
 // Logic is the main struct
 type Logic struct {
 	StateStore *SavedStateStore
@@ -59,6 +61,19 @@ func (l *Logic) AddRule(name string) *Rule {
 	defer l.Unlock()
 	l.Rules[r.Uuid()] = r
 	return r
+}
+
+func (l *Logic) GetRules() Rules {
+	l.RLock()
+	defer l.RUnlock()
+	return l.Rules
+}
+
+// SetRules overwrites all rules in logic
+func (l *Logic) SetRules(rules Rules) {
+	l.Lock()
+	l.Rules = rules
+	l.Unlock()
 }
 
 // Start starts the logic worker
@@ -136,6 +151,8 @@ func (l *Logic) Save(path string) error {
 	}
 	encoder := json.NewEncoder(configFile)
 	encoder.SetIndent("", "\t")
+	l.Lock()
+	defer l.Unlock()
 	err = encoder.Encode(l.Rules)
 	if err != nil {
 		return fmt.Errorf("logic: error saving rules: %s", err.Error())
