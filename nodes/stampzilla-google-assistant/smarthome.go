@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/RangelReale/osin"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-google-assistant/googleassistant"
@@ -16,17 +17,20 @@ func smartHomeActionHandler(oauth2server *osin.Server) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		auth := osin.CheckBearerAuth(c.Request)
 		if auth == nil {
+			logrus.Error("CheckBearerAuth error")
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 
 		accessToken, err := oauth2server.Storage.LoadAccess(auth.Code)
 		if err != nil || accessToken == nil {
+			logrus.Errorf("LoadAccess error: %#v", err)
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 
 		if accessToken.IsExpired() {
+			logrus.Errorf("Accesstoken %s expired at: %s", accessToken.AccessToken, accessToken.ExpireAt())
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
@@ -50,6 +54,7 @@ func smartHomeActionHandler(oauth2server *osin.Server) func(c *gin.Context) {
 		}
 
 		logrus.Info("Intent: ", r.Inputs.Intent())
+		logrus.Debug("Request:", spew.Sdump(r))
 		switch r.Inputs.Intent() {
 		case googleassistant.SyncIntent:
 			c.JSON(http.StatusOK, syncHandler(r))
@@ -73,7 +78,7 @@ func executeHandler(req *googleassistant.Request) *googleassistant.Response {
 	onCommand.States.On = true
 	onCommand.States.Online = true
 	offCommand := googleassistant.NewResponseCommand()
-	onCommand.States.Online = true
+	offCommand.States.Online = true
 
 	for _, command := range req.Inputs.Payload().Commands {
 
@@ -127,6 +132,10 @@ func executeHandler(req *googleassistant.Request) *googleassistant.Response {
 		resp.Payload.Commands = append(resp.Payload.Commands, offCommand)
 	}
 
+	if debug {
+		jResp, err := json.Marshal(resp)
+		logrus.Debugf("Execute Error: %s Response: %s", err, string(jResp))
+	}
 	return resp
 }
 
@@ -161,5 +170,6 @@ func syncHandler(req *googleassistant.Request) *googleassistant.Response {
 
 	}
 
+	logrus.Debug("Sync Response: ", resp)
 	return resp
 }

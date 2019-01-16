@@ -37,6 +37,14 @@ func init() {
 func main() {
 	flag.Parse()
 
+	if debug {
+		log.Println("Setting logrus level to DEBUG")
+		logrus.SetLevel(logrus.DebugLevel)
+	} else {
+		log.Println("Setting logrus level to INFO")
+		logrus.SetLevel(logrus.InfoLevel)
+	}
+
 	config := basenode.NewConfig()
 
 	basenode.SetConfig(config)
