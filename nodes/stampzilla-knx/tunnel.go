@@ -188,11 +188,11 @@ func (tunnel *tunnel) decodeKNX(msg knx.GroupEvent) error {
 		var err error
 		switch gl.Type {
 		case "bool":
-			value = new(dpt.Switch)
+			value = new(dpt.DPT_1001)
 		case "temperature":
-			value = new(dpt.ValueTemp) //2 bytes floating point
+			value = new(dpt.DPT_9001) //2 bytes floating point
 		case "lux":
-			value = new(dpt.ValueTemp) //2 bytes floating point
+			value = new(dpt.DPT_9004) //2 bytes floating point
 		}
 
 		if dptv, ok := value.(dpt.DatapointValue); ok {

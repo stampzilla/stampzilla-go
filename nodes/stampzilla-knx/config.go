@@ -47,7 +47,7 @@ func (light *light) Switch(tunnel *tunnel, target bool) error {
 	cmd := knx.GroupEvent{
 		Command:     knx.GroupWrite,
 		Destination: addr,
-		Data:        dpt.Switch(target).Pack(),
+		Data:        dpt.DPT_1001(target).Pack(),
 	}
 	return tunnel.Client.Send(cmd)
 }
@@ -64,7 +64,7 @@ func (light *light) Brightness(tunnel *tunnel, target float64) error {
 	cmd := knx.GroupEvent{
 		Command:     knx.GroupWrite,
 		Destination: addr,
-		Data:        dpt.Scaling(float32(target)).Pack(),
+		Data:        dpt.DPT_5001(float32(target)).Pack(),
 	}
 	return tunnel.Client.Send(cmd)
 }
