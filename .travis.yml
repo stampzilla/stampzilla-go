@@ -10,14 +10,12 @@ install:
 
 script:
 - make test
-- make cover-normal
+- make cover
 after_success:
 - bash <(curl -s https://codecov.io/bash)
 
 before_deploy:
-  - go get github.com/laher/goxc
-  - "./.xc-all.bash $TRAVIS_TAG"
-  - find .
+  - go run build.go
 
 deploy:
   skip_cleanup: true
@@ -25,9 +23,9 @@ deploy:
   api_key:
     secure: JBuaQNghrwATvyFiItYUeXMGIFr7Fy7SQwnM/kk1poMBoKTo2KduC7q+E5i+H7ZJCSOmO+IFLMEhnFDaAJ4tq4JWHC6lt56KXkkVz0XNyGSc69QoSWfv8vDBClYKpyhdNVTk3O73gK+h3R7etvFiMLccYJ4zGhJ6QxQVbFv5qoA=
   file_glob: true
-  file: build/*/prepare/*
+  file: dist/*
   on:
     tags: true
     repo: stampzilla/stampzilla-go
-    condition: $TRAVIS_GO_VERSION =~ ^1\.7\.[0-9]+$
+    condition: $TRAVIS_GO_VERSION =~ ^1\.11
 

@@ -3,7 +3,9 @@
 test:
 	go test `go list ./... | grep -v /vendor/ | grep -v telldus-events | grep -v stampzilla-hidcommander`
 
-cover-e2e:
+# todo: use this when golang issue 23910 is resolved
+# go test -v -coverpkg=./... -coverprofile=all `go list ./... | grep -v /vendor/ | grep -v telldus-events | grep -v stampzilla-hidcommander`
+cover:
 	@echo Running coverage
 	go get github.com/wadey/gocovmerge
 	$(eval PKGS := $(shell go list ./... | grep -v /vendor/ | grep -v telldus-events | grep -v stampzilla-hidcommander ))
@@ -14,7 +16,7 @@ cover-e2e:
 cover-normal:
 	bash coverage
 
-cover-html: cover-normal
+cover-html: cover
 	go tool cover -html coverage.txt
 
 build-ui: 

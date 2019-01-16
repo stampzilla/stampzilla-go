@@ -8,35 +8,35 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
 	"github.com/stampzilla/stampzilla-go/pkg/node"
 )
 
 func main() {
 	node := node.New("linux")
 
-	monitor := &models.Device{
+	monitor := &devices.Device{
 		Name:   "Monitor",
-		ID:     "monitor",
+		ID:     devices.ID{ID: "monitor"},
 		Online: true,
 		Traits: []string{"OnOff"},
-		State: models.DeviceState{
+		State: devices.State{
 			"on": false,
 		},
 	}
 
-	health := &models.Device{
+	health := &devices.Device{
 		Name:   "Health",
-		ID:     "health",
+		ID:     devices.ID{ID: "health"},
 		Online: true,
-		State:  models.DeviceState{},
+		State:  devices.State{},
 	}
 
 	node.OnConfig(updatedConfig)
-	node.OnRequestStateChange(func(state models.DeviceState, device *models.Device) error {
+	node.OnRequestStateChange(func(state devices.State, device *devices.Device) error {
 		logrus.Info("OnRequestStateChange:", state, device.ID)
 
-		switch device.ID {
+		switch device.ID.ID {
 		case "monitor":
 			if state["on"] == true {
 				cmd := exec.Command("xset", "dpms", "force", "on")
@@ -76,7 +76,7 @@ func updatedConfig(data json.RawMessage) error {
 	return nil
 }
 
-func monitorDpms(node *node.Node, dev *models.Device) {
+func monitorDpms(node *node.Node, dev *devices.Device) {
 	err := node.AddOrUpdate(dev)
 	if err != nil {
 		logrus.Error(err)
@@ -99,7 +99,7 @@ func monitorDpms(node *node.Node, dev *models.Device) {
 	}
 }
 
-func monitorHealth(node *node.Node, dev *models.Device) {
+func monitorHealth(node *node.Node, dev *devices.Device) {
 	err := node.AddOrUpdate(dev)
 	if err != nil {
 		logrus.Error(err)

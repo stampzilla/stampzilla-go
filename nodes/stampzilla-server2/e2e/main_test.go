@@ -67,6 +67,8 @@ func TestInsecureWebsocketRequestCertificate(t *testing.T) {
 	main, node, cleanup := setupWebsocketTest(t)
 	defer cleanup()
 
+	acceptCertificateRequest(t, main)
+
 	err := node.Connect()
 	assert.NoError(t, err)
 
@@ -94,6 +96,8 @@ func TestInsecureWebsocketRequestCertificate(t *testing.T) {
 func TestNodeToServerDevices(t *testing.T) {
 	main, node, cleanup := setupWebsocketTest(t)
 	defer cleanup()
+
+	acceptCertificateRequest(t, main)
 
 	err := node.Connect()
 	assert.NoError(t, err)

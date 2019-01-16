@@ -93,3 +93,13 @@ func waitFor(t *testing.T, timeout time.Duration, msg string, ok func() bool) {
 		}
 	}
 }
+
+func acceptCertificateRequest(t *testing.T, main *servermain.Main) {
+	go func() {
+		waitFor(t, 2*time.Second, "nodes should be 1", func() bool {
+			return len(main.Store.GetRequests()) == 1
+		})
+		r := main.Store.GetRequests()
+		main.Store.AcceptRequest(r[0].Connection)
+	}()
+}
