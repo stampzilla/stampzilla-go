@@ -134,7 +134,7 @@ func executeHandler(req *googleassistant.Request) *googleassistant.Response {
 
 	if debug {
 		jResp, err := json.Marshal(resp)
-		logrus.Debug("Execute Error: %s Response: %s", err, string(jResp))
+		logrus.Debugf("Execute Error: %s Response: %s", err, string(jResp))
 	}
 	return resp
 }
