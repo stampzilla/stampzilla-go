@@ -4,41 +4,10 @@ import {
 } from 'reactstrap';
 import { connect } from 'react-redux';
 import Form from 'react-jsonschema-form';
-import JSONInput from 'react-json-editor-ajrm';
-import locale from 'react-json-editor-ajrm/locale/en';
 
 import { write } from '../../components/Websocket';
 import Card from '../../components/Card';
 import CustomCheckbox from '../../components/CustomCheckbox';
-
-const JsonWidget = (props) => {
-  const {
-    value,
-    onChange,
-  } = props;
-
-  let parsedValue = {};
-  try {
-    parsedValue = value && JSON.parse(value);
-  } catch (err) {
-    parsedValue = {
-      'parse error': err,
-    };
-  }
-
-  return (
-    <JSONInput
-      placeholder={typeof parsedValue === 'object' ? parsedValue : undefined}
-      onChange={({ jsObject }) => onChange(jsObject && JSON.stringify(jsObject))}
-      theme="dark_vscode_tribute"
-      locale={locale}
-      height="550px"
-      width="100%"
-      reset={false}
-      waitAfterKeyPress={60000}
-    />
-  );
-};
 
 const schema = {
   type: 'object',
@@ -51,43 +20,51 @@ const schema = {
       type: 'string',
       title: 'Name',
     },
-    config: {
-      type: 'string',
-      title: 'Config',
+    enabled: {
+      type: 'boolean',
+      title: 'Enabled',
+      description: 'Turn on and off this rule',
     },
+    expression: {
+      type: 'string',
+      title: 'Expression',
+      description: 'The main expression that describes the state that should activate the rule',
+    },
+  // conditions: {
+  // title: 'Conditions',
+  // description: 'A list of related rules that should be active or not active to enable this rule',
+  // type: "array",
+  // items: {
+  // type: 'object',
+  // properties: {
+  // rule: {
+  // type: 'string',
+  // title: 'Rule',
+  // },
+  // state: {
+  // type: 'boolean',
+  // title: 'Active',
+  // description: 'Should the rule be active or not?',
+  // },
+  // },
+  // },
+  // }
   },
 };
 const uiSchema = {
   config: {
-    'ui:widget': 'json',
     'ui:options': {
       rows: 15,
     },
   },
 };
 
-class Node extends Component {
+
+class Automation extends Component {
   state = {
     isValid: true,
     formData: {
     },
-  }
-
-  componentDidMount = () => {
-    this.componentWillReceiveProps(this.props);
-  }
-
-  componentWillReceiveProps = (props) => {
-    const { nodes, match } = props;
-    const node = nodes && nodes.find(n => n.get('uuid') === match.params.uuid);
-    if (node) {
-      this.setState({
-        formData: {
-          name: node.get('name'),
-          config: JSON.stringify(node.get('config')),
-        },
-      });
-    }
   }
 
   onChange = () => (data) => {
@@ -112,21 +89,23 @@ class Node extends Component {
     });
   }
 
-  onClickNode = uuid => () => {
-    const { history } = this.props;
-    history.push(`/nodes/${uuid}`);
-  }
-
   render() {
-    const { nodes, match } = this.props;
-    const node = nodes.find(n => n.get('uuid') === match.params.uuid);
+    const { match, devices } = this.props;
+
+    const params = devices.reduce((acc, dev) => {
+      console.log(dev.toJS());
+      dev.get('state').forEach((value, key) => {
+        acc[`devices["${dev.get('id')}"].${key}`] = value;
+      });
+      return acc;
+    }, {});
 
     return (
       <React.Fragment>
         <div className="row">
           <div className="col-md-12">
             <Card
-              title={node ? `Settings for node <strong>${node.get('uuid')}</strong> (type <strong>${node.get('type')}</strong>)` : 'Settings'}
+              title={match.params.uuid ? 'Edit rule ' : 'New rule'}
               bodyClassName="p-0"
             >
               <div className="card-body">
@@ -143,11 +122,17 @@ class Node extends Component {
                   // transformErrors={this.props.transformErrors}
                   widgets={{
                     CheckboxWidget: CustomCheckbox,
-                    json: JsonWidget,
                   }}
                 >
                   <button ref={(btn) => { this.submitButton = btn; }} style={{ display: 'none' }} type="submit" />
                 </Form>
+
+
+                <pre>
+                  {Object.keys(params).map(key => (
+                    <div>{key}: {params[key]}</div>
+                  ))}
+                </pre>
               </div>
               <div className="card-footer">
                 <Button color="primary" disabled={!this.state.isValid || this.props.disabled} onClick={() => this.submitButton.click()}>
@@ -163,8 +148,8 @@ class Node extends Component {
 }
 
 const mapToProps = state => ({
-  nodes: state.getIn(['nodes', 'list']),
-  connections: state.getIn(['connections', 'list']),
+  rules: state.getIn(['rules', 'list']),
+  devices: state.getIn(['devices', 'list']),
 });
 
-export default connect(mapToProps)(Node);
+export default connect(mapToProps)(Automation);

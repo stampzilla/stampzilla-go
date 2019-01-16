@@ -12,5 +12,6 @@ func (store *Store) GetRules() logic.Rules {
 
 func (store *Store) AddOrUpdateRules(rules logic.Rules) {
 	store.Logic.SetRules(rules)
+	store.Logic.Save("rules.json")
 	store.runCallbacks("rules")
 }

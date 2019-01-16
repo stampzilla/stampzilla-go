@@ -18,22 +18,22 @@ class Debug extends Component {
     }
 
     render() {
-      const { messages, connections } = this.props;
+      const { messages, connections, nodes } = this.props;
 
       return (
         <React.Fragment>
           <div className="row">
-            <div className="col-md-6">
+            <div className="col-md-4">
               <Card
                 title="Send message"
               >
-                <button onClick={this.onClickTestButton()} className="btn btn-primary">Test send message</button>
+                <button onClick={this.onClickTestButton()} className="btn btn-primary" disabled>Test send message</button>
               </Card>
 
             </div>
-            <div className="col-md-6">
+            <div className="col-md-8">
               <Card
-                title="Server connections"
+                title="Active connections"
                 bodyClassName="p-0"
               >
                 <table className="table table-striped table-valign-middle">
@@ -43,6 +43,7 @@ class Debug extends Component {
                       <th>Identity</th>
                       <th>Address</th>
                       <th>Type</th>
+                      <th>Subscriptions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -60,7 +61,7 @@ class Debug extends Component {
                         return (a.getIn(['attributes', 'identity']) || '').localeCompare(b.getIn(['attributes', 'identity']));
                       })
                       .map(c => (
-                        <tr key={c.get('id')}>
+                        <tr key={c.getIn(['attributes', 'ID'])}>
                           <td>
                             {c.getIn(['attributes', 'secure']) &&
                             <React.Fragment>
@@ -73,9 +74,10 @@ class Debug extends Component {
                             </React.Fragment>
                             }
                           </td>
-                          <td>{c.getIn(['attributes', 'identity'])}</td>
+                          <td>{nodes.getIn([c.getIn(['attributes', 'identity']), 'name']) || c.getIn(['attributes', 'ID'])}</td>
                           <td>{c.get('remoteAddr')}</td>
                           <td>{c.get('type')}</td>
+                          <td>{c.getIn(['attributes', 'subscriptions']) && c.getIn(['attributes', 'subscriptions']).sort().join(', ')}</td>
                         </tr>
                     )).toArray()}
                   </tbody>
@@ -84,21 +86,21 @@ class Debug extends Component {
             </div>
           </div>
           <Card
-            title="Command bus"
+            title="Received messages"
             bodyClassName="p-0"
           >
             <table className="table table-striped table-valign-middle">
               <thead>
                 <tr>
-                  <th>Node</th>
+                  <th>Count</th>
                   <th>Type</th>
                   <th>Body</th>
                 </tr>
               </thead>
               <tbody>
                 {messages.reverse().map(message => (
-                  <tr>
-                    <td />
+                  <tr key={message.id}>
+                    <td>{message.id}</td>
                     <td>{message.type}</td>
                     <td>{JSON.stringify(message.body)}</td>
                   </tr>
@@ -114,6 +116,7 @@ class Debug extends Component {
 const mapToProps = state => ({
   messages: state.getIn(['connection', 'messages']),
   connections: state.getIn(['connections', 'list']),
+  nodes: state.getIn(['nodes', 'list']),
 });
 
 export default connect(mapToProps)(Debug);

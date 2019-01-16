@@ -54,7 +54,7 @@ class Nodes extends Component {
                             </React.Fragment>
                             }
                             {!connections.has(n.get('uuid')) &&
-                              <i className="nav-icon fa fa-exclamation-triangle text-danger" title="Not connected" />
+                              <i className="nav-icon fa fa-exclamation-triangle text-warning" title="Not connected" />
                             }
                           </td>
                           <td>{n.get('uuid')}</td>

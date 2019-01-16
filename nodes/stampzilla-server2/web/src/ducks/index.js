@@ -7,6 +7,7 @@ import connections from './connections';
 import devices from './devices';
 import nodes from './nodes';
 import requests from './requests';
+import rules from './rules';
 import server from './server';
 
 const rootReducer = combineReducers({
@@ -17,6 +18,7 @@ const rootReducer = combineReducers({
   devices,
   nodes,
   requests,
+  rules,
   server,
 });
 

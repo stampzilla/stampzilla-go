@@ -34,6 +34,7 @@ export function received(message) {
 }
 
 // Reducer
+let idCount = 0;
 export default function reducer(state = defaultState, action) {
   switch (action.type) {
     case c.CONNECTED: {
@@ -50,8 +51,12 @@ export default function reducer(state = defaultState, action) {
         .set('error', action.error);
     }
     case c.RECEIVED: {
+      idCount += 1;
       return state
-        .set('messages', state.get('messages').push(action.message).slice(-10));
+        .set('messages', state.get('messages').push({
+          ...action.message,
+          id: idCount,
+        }).slice(-10));
     }
     default: return state;
   }
