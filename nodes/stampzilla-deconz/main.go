@@ -9,15 +9,17 @@ import (
 	"strconv"
 
 	"github.com/sirupsen/logrus"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-deconz/models"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
 	"github.com/stampzilla/stampzilla-go/pkg/node"
+	nodelib "github.com/stampzilla/stampzilla-go/pkg/node"
 	"github.com/stampzilla/stampzilla-go/pkg/websocket"
 )
 
 var wsClient = websocket.New()
 
 func main() {
-	node := node.New("deconz")
+	node := nodelib.New("deconz")
 
 	err := localConfig.Load()
 	if err != nil {
@@ -31,7 +33,7 @@ func main() {
 	changed := make(chan struct{})
 
 	go configChanged(ctx, changed, node, api)
-	go reader(ctx)
+	go reader(ctx, node)
 
 	node.OnConfig(updatedConfig(changed, api))
 	node.OnShutdown(func() {
@@ -72,10 +74,15 @@ func main() {
 		})
 
 		if len(lightState) == 0 {
-			return nil
+			return fmt.Errorf("Found no known config in state-change request")
 		}
 		u := fmt.Sprintf("lights/%s/state", device.ID.ID)
-		return api.PutData(u, &lightState)
+		err := api.PutData(u, &lightState)
+		if err != nil {
+			logrus.Error(err)
+		}
+		return nodelib.ErrSkipSync
+
 	})
 
 	err = node.Connect()
@@ -96,7 +103,7 @@ type WsEvent struct {
 	State    devices.State `json:"state"`
 }
 
-func reader(ctx context.Context) {
+func reader(ctx context.Context, node *node.Node) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -106,7 +113,19 @@ func reader(ctx context.Context) {
 			event := &WsEvent{}
 			json.Unmarshal(data, event)
 
-			fmt.Printf("event: %#v\n", event)
+			if event.Resource != "lights" {
+				continue
+			}
+
+			dev := node.GetDevice(event.ID)
+			if dev == nil {
+				continue
+			}
+			if models.LightToDeviceState(event.State, dev.State) {
+				node.SyncDevice(event.ID)
+			}
+
+			logrus.Tracef("event: %#v\n", event)
 			//TODO
 			// {"e":"changed","id":"1","r":"lights","state":{"on":false},"t":"event","uniqueid":"00:0b:57:ff:fe:c0:28:82-01"}
 			// http://dresden-elektronik.github.io/deconz-rest-doc/websocket/
@@ -165,6 +184,48 @@ func updatedConfig(changed chan struct{}, api *API) func(data json.RawMessage) e
 	}
 }
 
+/*
+{
+  "1": {
+    "ctmax": 454,
+    "ctmin": 250,
+    "etag": "1926a9a4a0a2f03deafdc9b5749770c1",
+    "hascolor": true,
+    "manufacturername": "IKEA of Sweden",
+    "modelid": "TRADFRI bulb E27 WS opal 980lm",
+    "name": "Light 1",
+    "state": {
+      "alert": "none",
+      "bri": 25,
+      "colormode": "xy",
+      "ct": 359,
+      "on": false,
+      "reachable": true
+    },
+    "swversion": "1.2.217",
+    "type": "Color temperature light",
+    "uniqueid": "00:0b:57:ff:fe:c0:28:82-01"
+  },
+  "2": {
+    "etag": "7a23e35470c7aeae365325a826f610ca",
+    "hascolor": false,
+    "manufacturername": "IKEA of Sweden",
+    "modelid": "TRADFRI control outlet",
+    "name": "Light 2",
+    "state": {
+      "alert": "none",
+      "bri": 194,
+      "on": false,
+      "reachable": true
+    },
+    "swversion": "2.0.019",
+    "type": "On\/Off plug-in unit",
+    "uniqueid": "00:0d:6f:ff:fe:ac:33:bd-01"
+  }
+}
+
+*/
+
 func syncLights(node *node.Node, api *API) error {
 
 	lights, err := api.Lights()
@@ -172,35 +233,22 @@ func syncLights(node *node.Node, api *API) error {
 		return err
 	}
 
-	foundStateChange := false
+	change := 0
 	for id, light := range lights {
 
 		dev := node.GetDevice(id)
 		if dev == nil {
-			newDev := &devices.Device{
-				Type: "light",
-				ID: devices.ID{
-					Node: node.UUID,
-					ID:   id,
-				},
-				Name:   light.Name,
-				Online: true, //TODO use state["reashable"] to set here
-				State:  light.State,
-				Traits: []string{
-					"OnOff",
-					"Brightness",
-					"ColorSetting",
-				},
-			}
+			newDev := light.GenerateDevice(id)
 			node.AddOrUpdate(newDev)
 			continue
 		}
 
-		foundStateChange = true
-		dev.State = light.State
+		if models.LightToDeviceState(light.State, dev.State) {
+			change++
+		}
 	}
 
-	if foundStateChange {
+	if change > 0 {
 		node.SyncDevices()
 	}
 	return nil

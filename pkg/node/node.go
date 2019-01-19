@@ -414,6 +414,9 @@ func (n *Node) OnRequestStateChange(cb func(state devices.State, device *devices
 				if err != nil {
 					// set state back to before. we could not change it as requested
 					// continue to next device
+					if err == ErrSkipSync { // skip sync without logging error if needed
+						continue
+					}
 					logrus.Error(err)
 					continue
 				}
@@ -437,6 +440,8 @@ func (n *Node) OnRequestStateChange(cb func(state devices.State, device *devices
 	})
 }
 
+var ErrSkipSync = fmt.Errorf("skipping device sync after RequestStateChange")
+
 // AddOrUpdate adds or updates a device in our local device store and notifies the server about the new state of the device.
 func (n *Node) AddOrUpdate(d *devices.Device) error {
 	d.ID.Node = n.UUID
@@ -451,6 +456,11 @@ func (n *Node) GetDevice(id string) *devices.Device {
 //SyncDevices notifies the server about the state of all our known devices.
 func (n *Node) SyncDevices() error {
 	return n.WriteMessage("update-devices", n.Devices)
+}
+
+// SyncDevice sync single device
+func (n *Node) SyncDevice(id string) error {
+	return n.WriteMessage("update-device", n.GetDevice(id))
 }
 
 //Subscribe subscribes to a topic in the server
