@@ -11,6 +11,7 @@ import (
 
 type mockSender struct {
 	Devices *devices.List
+	count   int
 }
 
 func NewMockSender() *mockSender {
@@ -20,6 +21,7 @@ func NewMockSender() *mockSender {
 }
 
 func (mss *mockSender) SendToID(to string, msgType string, data interface{}) error {
+	mss.count++
 	for k, v := range data.(map[devices.ID]devices.State) {
 		mss.Devices.Add(&devices.Device{
 			ID:    k,
