@@ -41,7 +41,8 @@ func (mss *mockSender) BroadcastWithFilter(msgType string, data interface{}, fn 
 func TestLoadRulesFromFile(t *testing.T) {
 
 	syncer := NewMockSender()
-	l := New(syncer)
+	savedState := NewSavedStateStore()
+	l := New(savedState, syncer)
 	l.Load("rules.json")
 	//spew.Dump(l.Rules)
 	jsonData, err := json.MarshalIndent(l.Rules, "", "\t")
@@ -53,7 +54,8 @@ func TestEvaluateRules(t *testing.T) {
 
 	syncer := NewMockSender()
 
-	l := New(syncer)
+	savedState := NewSavedStateStore()
+	l := New(savedState, syncer)
 	r := l.AddRule("test")
 	r.Expression_ = `devices["node.id"].on == true`
 
