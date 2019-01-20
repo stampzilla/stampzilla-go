@@ -33,8 +33,6 @@ func NewScheduler(savedStateStore *SavedStateStore, sender websocket.Sender) *Sc
 
 func (s *Scheduler) Start() {
 	logrus.Info("Starting Scheduler")
-
-	s.loadFromFile("schedule.json")
 	s.Cron.Start()
 }
 
@@ -47,6 +45,7 @@ func (s *Scheduler) Reload() {
 		s.Cron.RemoveJob(job.Id)
 	}
 	s.Cron.Stop()
+	s.Load()
 	s.Start()
 }
 
@@ -82,22 +81,8 @@ func (s *Scheduler) RemoveTask(uuid string) error {
 	return nil
 }
 
-/*
-func (s *Scheduler) CreateExampleFile() {
-	task := s.AddTask("Test1")
-	cmd := &protocol.Command{Cmd: "testCMD"}
-	action := &action{
-		Commands: []Command{NewCommand(cmd, "simple")},
-	}
-	task.AddAction(action)
-	task.Schedule("0 * * * * *")
-
-	s.saveToFile("schedule.json")
-}
-*/
-
-func (s *Scheduler) saveToFile(filepath string) {
-	configFile, err := os.Create(filepath)
+func (s *Scheduler) Save() {
+	configFile, err := os.Create("schedule.json")
 	if err != nil {
 		logrus.Error("creating config file", err.Error())
 		return
@@ -112,47 +97,32 @@ func (s *Scheduler) saveToFile(filepath string) {
 	out.WriteTo(configFile)
 }
 
-func (s *Scheduler) loadFromFile(filepath string) {
+func (s *Scheduler) Load() {
 	logrus.Info("Loading schedule from json file")
 
-	configFile, err := os.Open(filepath)
+	configFile, err := os.Open("schedule.json")
 	if err != nil {
 		logrus.Warn("opening config file", err.Error())
 		return
 	}
 
-	//TODO we can use normal task here if we refactor some stuff :)
-	type localTasks struct {
-		Name     string   `json:"name"`
-		UUID     string   `json:"uuid"`
-		Actions  []string `json:"actions"`
-		CronWhen string   `json:"when"`
-	}
-
-	var tasks []*localTasks
+	s.Lock()
+	defer s.Unlock()
 	jsonParser := json.NewDecoder(configFile)
-	if err = jsonParser.Decode(&tasks); err != nil {
+	if err = jsonParser.Decode(&s.tasks); err != nil {
 		logrus.Error(err)
 		return
 	}
 
-	for _, task := range tasks {
-		t := s.AddTask(task.Name)
+	for _, task := range s.tasks {
+		task.sender = s.sender
+		task.SavedStateStore = s.SavedStateStore
 
-		//Set the uuid from json if it exists. Otherwise use the generated one
-		if task.UUID != "" {
-			t.SetUuid(task.UUID)
+		// generate uuid if missing
+		if task.Uuid() == "" {
+			task.SetUuid(uuid.New().String())
 		}
-		for _, uuid := range task.Actions {
-			//a := s.ActionService.GetByUuid(uuid)
-			//if a == nil {
-			//logrus.Errorf("Could not find action %s. Skipping adding it to task.\n", uuid)
-			//continue
-			//}
-			t.AddAction(uuid)
-		}
-		//Schedule the task!
-		s.ScheduleTask(t, task.CronWhen)
+		s.ScheduleTask(task, task.CronWhen)
 	}
 
 }

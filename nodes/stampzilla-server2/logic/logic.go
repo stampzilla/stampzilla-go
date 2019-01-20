@@ -42,12 +42,12 @@ type ActionProgress struct {
 */
 
 // NewLogic returns a new logic that is ready to use
-func New(websocketSender websocket.Sender) *Logic {
+func New(sss *SavedStateStore, websocketSender websocket.Sender) *Logic {
 	l := &Logic{
 		devices: devices.NewList(),
 		//ActionProgressChan: make(chan ActionProgress, 100),
 		Rules:           make(map[string]*Rule),
-		StateStore:      NewSavedStateStore(),
+		StateStore:      sss,
 		c:               make(chan func()),
 		WebsocketSender: websocketSender,
 	}

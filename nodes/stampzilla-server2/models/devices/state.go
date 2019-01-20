@@ -40,6 +40,15 @@ func (ds State) Float(key string, fn func(float64)) {
 	}
 }
 
+// String runs fn only if key is found in map and it is of type int
+func (ds State) String(key string, fn func(string)) {
+	if v, ok := ds[key]; ok {
+		if v, ok := v.(string); ok {
+			fn(v)
+		}
+	}
+}
+
 func (ds State) Diff(right State) State {
 	diff := make(State)
 	for k, v := range ds {

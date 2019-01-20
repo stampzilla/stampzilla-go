@@ -44,22 +44,29 @@ func LightToDeviceState(lightState, state devices.State) bool {
 
 	changes := 0
 	lightState.Float("bri", func(f float64) {
+		if f != state["brightness"] {
+			changes++
+		}
 		state["brightness"] = f / 255
-		changes++
 	})
 
 	lightState.Bool("on", func(v bool) {
+		if v != state["on"] {
+			changes++
+		}
 		state["on"] = v
 		if !v {
 			state["brightness"] = 0.0
 		}
-		changes++
 	})
 
 	lightState.Float("ct", func(v float64) {
 		v = (500 + 153) - v // invert value
-		state["temperature"] = int(math.Round(((v - 153) / (500 - 153) * (6500 - 2000)) + 2000))
-		changes++
+		temp := float64(math.Round(((v - 153) / (500 - 153) * (6500 - 2000)) + 2000))
+		if temp != state["temperature"] {
+			changes++
+		}
+		state["temperature"] = temp
 	})
 
 	return changes > 0

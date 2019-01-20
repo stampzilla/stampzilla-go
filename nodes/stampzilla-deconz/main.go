@@ -7,6 +7,7 @@ import (
 	"log"
 	"math"
 	"strconv"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-deconz/models"
@@ -33,7 +34,7 @@ func main() {
 	changed := make(chan struct{})
 
 	go configChanged(ctx, changed, node, api)
-	go reader(ctx, node)
+	go reader(ctx, node, api)
 
 	node.OnConfig(updatedConfig(changed, api))
 	node.OnShutdown(func() {
@@ -47,13 +48,15 @@ func main() {
 
 	node.OnRequestStateChange(func(state devices.State, device *devices.Device) error {
 
+		//fmt.Printf("onstate req %v\n", state)
 		lightState := make(devices.State)
 		state.Float("brightness", func(v float64) {
 			bri := int(math.Round(255 * v))
 			lightState["bri"] = bri
 			lightState["on"] = bri != 0
-			state["on"] = lightState["on"]
+			state["on"] = bri != 0
 		})
+
 		state.Bool("on", func(on bool) {
 			lightState["on"] = on
 		})
@@ -100,10 +103,23 @@ type WsEvent struct {
 	Event    string        `json:"e"`  // changed
 	Resource string        `json:"r"`  // lights/sensors/groups
 	ID       string        `json:"id"` // 1
+	UniqueID string        `json:"uniqueid"`
 	State    devices.State `json:"state"`
+	Config   devices.State `json:"config"`
 }
 
-func reader(ctx context.Context, node *node.Node) {
+//Get ID returns different IDs if its a light or sensor. This is because a single sensor device can be devided in multiple sensors in the API
+func (we *WsEvent) GetID() string {
+
+	if we.Resource == "sensors" {
+		// take first part of uniqueid 00:15:8d:00:02:55:82:0f-01-0402 which is the mac address
+		return strings.SplitN(we.UniqueID, "-", 2)[0]
+	}
+
+	return we.ID
+}
+
+func reader(ctx context.Context, node *node.Node, api *API) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -112,20 +128,70 @@ func reader(ctx context.Context, node *node.Node) {
 		case data := <-wsClient.Read():
 			event := &WsEvent{}
 			json.Unmarshal(data, event)
-
-			if event.Resource != "lights" {
-				continue
-			}
-
-			dev := node.GetDevice(event.ID)
-			if dev == nil {
-				continue
-			}
-			if models.LightToDeviceState(event.State, dev.State) {
-				node.SyncDevice(event.ID)
-			}
-
 			logrus.Tracef("event: %#v\n", event)
+
+			if event.Type != "event" {
+				continue
+			}
+
+			dev := node.GetDevice(event.GetID())
+			if dev == nil {
+				switch event.Resource {
+				case "sensors":
+					syncSensors(node, api)
+				case "lights":
+					syncLights(node, api)
+
+				}
+				continue
+			}
+
+			changes := 0
+			if event.Resource == "lights" {
+				if models.LightToDeviceState(event.State, dev.State) {
+					changes++
+				}
+			}
+			if event.Resource == "sensors" {
+				if models.SensorToDeviceState(event.State, dev.State) {
+					changes++
+				}
+			}
+
+			// reachable again
+			//{"e":"changed","id":"1","r":"lights","state":{"reachable":true},"t":"event","uniqueid":"00:0b:57:ff:fe:c0:28:82-01"}
+			event.State.Bool("reachable", func(online bool) {
+				if online != dev.Online {
+					changes++
+				}
+				dev.SetOnline(online)
+			})
+			// sensors have reachable in config
+			event.Config.Bool("reachable", func(online bool) {
+				if online != dev.Online {
+					changes++
+				}
+				dev.SetOnline(online)
+			})
+			//Sensor battery
+			event.Config.Float("battery", func(b float64) {
+				i := int(b)
+				if i != dev.State["batteri"] {
+					changes++
+				}
+				dev.State["battery"] = i
+			})
+
+			if changes > 0 {
+				node.SyncDevice(dev.ID.ID)
+			}
+
+			// SENSOR
+			//{"config":{"battery":100,"offset":0,"on":true,"reachable":true},"e":"changed","id":"3","r":"sensors","t":"event","uniqueid":"00:15:8d:00:02:3d:26:5e-01-0402"}
+			//{"e":"changed","id":"3","r":"sensors","state":{"lastupdated":"2019-01-20T19:15:51","temperature":2581},"t":"event","uniqueid":"00:15:8d:00:02:3d:26:5e-01-0402"}
+			//{"config":{"battery":100,"offset":0,"on":true,"reachable":true},"e":"changed","id":"4","r":"sensors","t":"event","uniqueid":"00:15:8d:00:02:3d:26:5e-01-0405"}
+			//{"e":"changed","id":"4","r":"sensors","state":{"humidity":2289,"lastupdated":"2019-01-20T19:15:51"},"t":"event","uniqueid":"00:15:8d:00:02:3d:26:5e-01-0405"}
+
 			//TODO
 			// {"e":"changed","id":"1","r":"lights","state":{"on":false},"t":"event","uniqueid":"00:0b:57:ff:fe:c0:28:82-01"}
 			// http://dresden-elektronik.github.io/deconz-rest-doc/websocket/
@@ -142,6 +208,7 @@ func configChanged(parentCtx context.Context, changed chan struct{}, node *node.
 			return parentCtx.Err()
 		case <-changed:
 			syncLights(node, api)
+			syncSensors(node, api)
 			if cancel != nil {
 				cancel()
 			}
@@ -244,6 +311,36 @@ func syncLights(node *node.Node, api *API) error {
 		}
 
 		if models.LightToDeviceState(light.State, dev.State) {
+			change++
+		}
+	}
+
+	if change > 0 {
+		node.SyncDevices()
+	}
+	return nil
+}
+func syncSensors(node *node.Node, api *API) error {
+
+	sensors, err := api.Sensors()
+	if err != nil {
+		return err
+	}
+
+	change := 0
+	for _, sensor := range sensors {
+
+		if sensor.Modelid == "PHDL00" {
+			continue // Skip default daylight "virtual/fake" sensor
+		}
+		dev := node.GetDevice(sensor.GetID())
+		if dev == nil {
+			newDev := sensor.GenerateDevice()
+			node.AddOrUpdate(newDev)
+			continue
+		}
+
+		if models.SensorToDeviceState(sensor.State, dev.State) {
 			change++
 		}
 	}

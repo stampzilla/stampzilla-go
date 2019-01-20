@@ -88,6 +88,15 @@ func (n *Node) setup() {
 	//Make sure we have a config
 	n.Config = &models.Config{}
 	n.Config.Load()
+	if n.Config.LogLevel != "" {
+		lvl, err := logrus.ParseLevel(n.Config.LogLevel)
+		if err != nil {
+			logrus.Fatal(err)
+			return
+		}
+		logrus.SetLevel(lvl)
+	}
+
 	//n.Config.Save("config.json")
 }
 
@@ -396,15 +405,16 @@ func (n *Node) OnRequestStateChange(cb func(state devices.State, device *devices
 			return err
 		}
 
-		// loop over all devices and compare state
-		stateChange := make(devices.State)
-
 		for devID, state := range devs {
+			// loop over all devices and compare state
+			stateChange := make(devices.State)
 			foundChange := false
 			oldDev := n.Devices.Get(devID)
 			for s, newState := range state {
 				oldState := oldDev.State[s]
 				if newState != oldState {
+					//fmt.Printf("oldstate %T %#v\n", oldState, newState)
+					//fmt.Printf("newState %T %#v\n", newState, newState)
 					stateChange[s] = newState
 					foundChange = true
 				}

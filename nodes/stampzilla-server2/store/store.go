@@ -17,6 +17,7 @@ type Store struct {
 	Nodes        Nodes
 	SavedState   *logic.SavedStateStore
 	Logic        *logic.Logic
+	Scheduler    *logic.Scheduler
 	Devices      *devices.List
 	Connections  Connections
 	Certificates []Certificate
@@ -26,13 +27,14 @@ type Store struct {
 	sync.RWMutex
 }
 
-func New(l *logic.Logic) *Store {
+func New(l *logic.Logic, s *logic.Scheduler, sss *logic.SavedStateStore) *Store {
 	return &Store{
 		Nodes:        make(Nodes),
-		SavedState:   logic.NewSavedStateStore(),
+		SavedState:   sss,
 		Devices:      devices.NewList(),
 		Connections:  make(Connections),
 		Logic:        l,
+		Scheduler:    s,
 		Certificates: make([]Certificate, 0),
 		Requests:     make([]Request, 0),
 	}

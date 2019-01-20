@@ -47,6 +47,13 @@ type Device struct {
 	sync.RWMutex
 }
 
+//SetOnline set online state
+func (d *Device) SetOnline(v bool) {
+	d.Lock()
+	d.Online = v
+	d.Unlock()
+}
+
 // Copy copies a device
 func (d *Device) Copy() *Device {
 	d.Lock()

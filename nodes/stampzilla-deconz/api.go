@@ -132,3 +132,8 @@ func (a *API) Lights() (models.Lights, error) {
 	err := a.Get("lights", &lights)
 	return lights, err
 }
+func (a *API) Sensors() (models.Sensors, error) {
+	data := models.NewSensors()
+	err := a.Get("sensors", &data)
+	return data, err
+}

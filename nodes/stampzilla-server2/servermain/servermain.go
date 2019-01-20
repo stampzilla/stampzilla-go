@@ -114,8 +114,10 @@ func (m *Main) Init() {
 	insecureSender := websocket.NewWebsocketSender(insecureMelody)
 	secureSender := websocket.NewWebsocketSender(secureMelody)
 
-	l := logic.New(secureSender)
-	m.Store = store.New(l)
+	sss := logic.NewSavedStateStore()
+	l := logic.New(sss, secureSender)
+	scheduler := logic.NewScheduler(sss, secureSender)
+	m.Store = store.New(l, scheduler, sss)
 	m.CA.SetStore(m.Store)
 
 	if err = m.Store.Load(); err != nil {
