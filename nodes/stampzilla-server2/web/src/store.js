@@ -4,9 +4,11 @@ import ReduxThunk from 'redux-thunk';
 import persistState from 'redux-localstorage';
 
 import rootReducer from './ducks';
+import rules from './middlewares/rules';
 
 const middleware = [
   ReduxThunk,
+  rules,
 ];
 
 const preloadedState = undefined;

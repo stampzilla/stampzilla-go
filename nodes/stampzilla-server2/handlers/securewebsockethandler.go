@@ -8,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/ca"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/interfaces"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/logic"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/store"
@@ -187,6 +188,19 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 			}).Debug("Send state change request to node")
 			wsh.WebsocketSender.SendToID(node, "state-change", devices)
 		}
+	case "update-rules":
+		rules := logic.Rules{}
+		err := json.Unmarshal(msg.Body, &rules)
+		if err != nil {
+			return err
+		}
+
+		logrus.WithFields(logrus.Fields{
+			"from":  msg.FromUUID,
+			"rules": rules,
+		}).Info("Received new rules")
+
+		wsh.Store.AddOrUpdateRules(rules)
 	default:
 		logrus.WithFields(logrus.Fields{
 			"type": msg.Type,

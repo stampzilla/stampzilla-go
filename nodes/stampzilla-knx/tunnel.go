@@ -163,7 +163,7 @@ func (tunnel *tunnel) triggerRead(ga string) {
 		"group_address": ga,
 	}).Info("Sent read request")
 
-	<-time.After(time.Millisecond * 100)
+	<-time.After(time.Millisecond * 200)
 }
 
 func (tunnel *tunnel) decodeKNX(msg knx.GroupEvent) error {
@@ -193,6 +193,8 @@ func (tunnel *tunnel) decodeKNX(msg knx.GroupEvent) error {
 			value = new(dpt.DPT_9001) //2 bytes floating point
 		case "lux":
 			value = new(dpt.DPT_9004) //2 bytes floating point
+		case "humidity":
+			value = new(dpt.DPT_9001) //2 bytes floating point
 		}
 
 		if dptv, ok := value.(dpt.DatapointValue); ok {
@@ -203,6 +205,23 @@ func (tunnel *tunnel) decodeKNX(msg knx.GroupEvent) error {
 
 			gl.Device.State[gl.Name] = dptv
 			gl.Device.Online = true
+
+			//If temperature and relative humidity is known, calculate absolute humidity
+			dh, okh := gl.Device.State["humidity"]
+			dt, okt := gl.Device.State["temperature"]
+			if okh && okt {
+				h, _ := dh.(dpt.DPT_9001)
+				t, _ := dt.(dpt.DPT_9001)
+
+				logrus.Warnf("Got temp %s (%#v) and humid %s (%#v) %#v", t, dt, h, dh, gl.Device.State)
+
+				//pws := 6.116441 * 10 * ((7.591386 - t) / (t + 240.7263))
+				//pw := pws * h / 100
+				//a := 2.116679 * pw / (273.15 + t)
+				//logrus.Warnf("absolute humidity %.2f", a)
+				////gl.Device.State["absolute_humidity"] = a
+			}
+
 			tunnel.Node.AddOrUpdate(gl.Device)
 		} else {
 			return fmt.Errorf("Unsupported type: %s", gl.Type)

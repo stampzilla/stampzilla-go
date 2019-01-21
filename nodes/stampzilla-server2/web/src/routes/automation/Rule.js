@@ -5,7 +5,7 @@ import {
 import { connect } from 'react-redux';
 import Form from 'react-jsonschema-form';
 
-import { write } from '../../components/Websocket';
+import { add, save } from '../../ducks/rules';
 import Card from '../../components/Card';
 import CustomCheckbox from '../../components/CustomCheckbox';
 
@@ -13,7 +13,6 @@ const schema = {
   type: 'object',
   required: [
     'name',
-    'config',
   ],
   properties: {
     name: {
@@ -61,10 +60,29 @@ const uiSchema = {
 
 
 class Automation extends Component {
-  state = {
-    isValid: true,
-    formData: {
-    },
+  constructor(props) {
+    super();
+
+    const { rules, match } = props;
+    const rule = rules.find(n => n.get('uuid') === match.params.uuid);
+    this.state = {
+      formData: rule && rule.toJS(),
+      isValid: true,
+    };
+  }
+
+  componentWillReceiveProps(nextProps) {
+    const { rules, match } = nextProps;
+    if (
+      !this.props ||
+      match.params.uuid !== this.props.match.params.uuid ||
+      rules !== this.props.rules
+    ) {
+      const rule = rules.find(n => n.get('uuid') === match.params.uuid);
+      this.setState({
+        formData: rule && rule.toJS(),
+      });
+    }
   }
 
   onChange = () => (data) => {
@@ -76,24 +94,22 @@ class Automation extends Component {
   }
 
   onSubmit = () => ({ formData }) => {
-    const { nodes, match } = this.props;
-    const node = nodes.find(n => n.get('uuid') === match.params.uuid);
+    const { dispatch } = this.props;
 
-    write({
-      type: 'setup-node',
-      body: {
-        ...node.toJS(),
-        ...formData,
-        config: JSON.parse(formData.config),
-      },
-    });
+    if (formData.uuid) {
+      dispatch(save(formData));
+    } else {
+      dispatch(add(formData));
+    }
+
+    const { history } = this.props;
+    history.push('/aut');
   }
 
   render() {
     const { match, devices } = this.props;
 
     const params = devices.reduce((acc, dev) => {
-      console.log(dev.toJS());
       dev.get('state').forEach((value, key) => {
         acc[`devices["${dev.get('id')}"].${key}`] = value;
       });
@@ -126,13 +142,6 @@ class Automation extends Component {
                 >
                   <button ref={(btn) => { this.submitButton = btn; }} style={{ display: 'none' }} type="submit" />
                 </Form>
-
-
-                <pre>
-                  {Object.keys(params).map(key => (
-                    <div>{key}: {params[key]}</div>
-                  ))}
-                </pre>
               </div>
               <div className="card-footer">
                 <Button color="primary" disabled={!this.state.isValid || this.props.disabled} onClick={() => this.submitButton.click()}>
@@ -140,6 +149,12 @@ class Automation extends Component {
                 </Button>
               </div>
             </Card>
+
+            <pre>
+              {Object.keys(params).map(key => (
+                <div>{key}: {params[key]}</div>
+                  ))}
+            </pre>
           </div>
         </div>
       </React.Fragment>

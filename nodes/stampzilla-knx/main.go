@@ -64,7 +64,7 @@ func main() {
 						}
 
 						if diff {
-							err := light.Brightness(tunnel, value)
+							err := light.Brightness(tunnel, value*100)
 							if err != nil {
 								return err
 							}

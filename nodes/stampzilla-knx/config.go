@@ -33,6 +33,7 @@ type sensor struct {
 	Motion      string `json:"motion"`
 	Lux         string `json:"lux"`
 	Temperature string `json:"temperature"`
+	Humidity    string `json:"humidity"`
 }
 
 func (light *light) Switch(tunnel *tunnel, target bool) error {

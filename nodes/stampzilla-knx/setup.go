@@ -54,6 +54,9 @@ func setupSensor(node *node.Node, tunnel *tunnel, sensor sensor) {
 	if sensor.Lux != "" {
 		tunnel.AddLink(sensor.Lux, "lux", "lux", dev)
 	}
+	if sensor.Humidity != "" {
+		tunnel.AddLink(sensor.Humidity, "humidity", "humidity", dev)
+	}
 
 	err := node.AddOrUpdate(dev)
 	if err != nil {
