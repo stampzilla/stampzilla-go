@@ -9,11 +9,11 @@ import (
 )
 
 type Task struct {
-	Name_    string   `json:"name"`
-	Uuid_    string   `json:"uuid"`
-	Actions  []string `json:"actions"`
-	cronId   int
-	CronWhen string `json:"when"`
+	Name_   string   `json:"name"`
+	Uuid_   string   `json:"uuid"`
+	Actions []string `json:"actions"`
+	cronId  int64
+	When    string `json:"when"`
 	sync.RWMutex
 	SavedStateStore *SavedStateStore
 	sender          websocket.Sender
@@ -22,6 +22,11 @@ type Task struct {
 func (t *Task) SetUuid(uuid string) {
 	t.Lock()
 	t.Uuid_ = uuid
+	t.Unlock()
+}
+func (t *Task) SetWhen(when string) {
+	t.Lock()
+	t.When = when
 	t.Unlock()
 }
 func (r *Task) Uuid() string {
@@ -34,7 +39,7 @@ func (r *Task) Name() string {
 	defer r.RUnlock()
 	return r.Name_
 }
-func (r *Task) CronId() int {
+func (r *Task) CronId() int64 {
 	r.RLock()
 	defer r.RUnlock()
 	return r.cronId
@@ -42,6 +47,7 @@ func (r *Task) CronId() int {
 
 func (t *Task) Run() {
 	t.RLock()
+	defer t.RUnlock()
 	for _, id := range t.Actions {
 		stateList := t.SavedStateStore.Get(id)
 		if stateList == nil {
@@ -66,7 +72,6 @@ func (t *Task) Run() {
 			}
 		}
 	}
-	t.RUnlock()
 }
 
 func (t *Task) AddAction(uuid string) {

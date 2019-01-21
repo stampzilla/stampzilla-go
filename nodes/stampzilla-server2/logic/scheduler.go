@@ -1,8 +1,9 @@
 package logic
 
 import (
-	"bytes"
+	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"sync"
 
@@ -12,6 +13,19 @@ import (
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/websocket"
 )
 
+/* schedule.json
+[
+    {
+        "name": "test1",
+        "uuid": "398d8a42-cb31-42ff-b4ae-99bdbb44d0ae",
+        "when": "0 * * * * *",
+        "actions": [
+            "6fbaea24-6b3f-4856-9194-735b349bbf4d"
+        ]
+    }
+]
+*/
+
 // Scheduler that schedule running saved state actions
 type Scheduler struct {
 	tasks []*Task
@@ -20,6 +34,7 @@ type Scheduler struct {
 
 	SavedStateStore *SavedStateStore
 	sender          websocket.Sender
+	stop            context.CancelFunc
 }
 
 func NewScheduler(savedStateStore *SavedStateStore, sender websocket.Sender) *Scheduler {
@@ -31,22 +46,22 @@ func NewScheduler(savedStateStore *SavedStateStore, sender websocket.Sender) *Sc
 	return scheduler
 }
 
-func (s *Scheduler) Start() {
-	logrus.Info("Starting Scheduler")
-	s.Cron.Start()
+func (s *Scheduler) Start(parentCtx context.Context) {
+	ctx, cancel := context.WithCancel(parentCtx)
+	s.Lock()
+	s.stop = cancel
+	s.Cron.Start(ctx)
+	s.Unlock()
+	logrus.Info("scheduler: started")
 }
 
-func (s *Scheduler) Reload() {
-	//TODO verify the the new JSON is valid before unloading the existing schedule
+func (s *Scheduler) Stop() {
 	s.Lock()
-	s.tasks = nil
-	s.Unlock()
-	for _, job := range s.Cron.Entries() {
-		s.Cron.RemoveJob(job.Id)
+	if s.stop != nil {
+		s.stop()
 	}
-	s.Cron.Stop()
-	s.Load()
-	s.Start()
+	s.Unlock()
+	logrus.Info("Scheduler stopped")
 }
 
 func (s *Scheduler) Tasks() []*Task {
@@ -81,58 +96,71 @@ func (s *Scheduler) RemoveTask(uuid string) error {
 	return nil
 }
 
-func (s *Scheduler) Save() {
+func (s *Scheduler) Save() error {
 	configFile, err := os.Create("schedule.json")
 	if err != nil {
-		logrus.Error("creating config file", err.Error())
-		return
+		return fmt.Errorf("scheduler: error saving tasks: %s", err)
 	}
-	var out bytes.Buffer
-	b, err := json.Marshal(s.tasks)
+	encoder := json.NewEncoder(configFile)
+	encoder.SetIndent("", "\t")
+	s.Lock()
+	defer s.Unlock()
+	err = encoder.Encode(s.tasks)
 	if err != nil {
-		logrus.Error("error marshal json", err)
-		return
+		return fmt.Errorf("scheduler: error saving tasks: %s", err)
 	}
-	json.Indent(&out, b, "", "\t")
-	out.WriteTo(configFile)
+	return nil
 }
 
-func (s *Scheduler) Load() {
+func (s *Scheduler) Load() error {
 	logrus.Info("Loading schedule from json file")
 
 	configFile, err := os.Open("schedule.json")
 	if err != nil {
-		logrus.Warn("opening config file", err.Error())
-		return
+		if os.IsNotExist(err) {
+			logrus.Warn(err)
+			return nil // We dont want to error our if the file does not exist when we start the server
+		}
+		return err
 	}
 
 	s.Lock()
 	defer s.Unlock()
 	jsonParser := json.NewDecoder(configFile)
 	if err = jsonParser.Decode(&s.tasks); err != nil {
-		logrus.Error(err)
-		return
+		return fmt.Errorf("scheduler: error loading tasks: %s", err)
 	}
 
+	s.syncTaskDependencies()
+
+	return nil
+}
+
+func (s *Scheduler) syncTaskDependencies() {
+	s.Cron.RemoveAll() // always remove all when we load new tasks to make sure we dont get duplicate jobs scheduled
 	for _, task := range s.tasks {
-		task.sender = s.sender
-		task.SavedStateStore = s.SavedStateStore
+		task.Lock()
+		if task.sender == nil {
+			task.sender = s.sender
+		}
+		if task.SavedStateStore == nil {
+			task.SavedStateStore = s.SavedStateStore
+		}
+		task.Unlock()
 
 		// generate uuid if missing
 		if task.Uuid() == "" {
 			task.SetUuid(uuid.New().String())
 		}
-		s.ScheduleTask(task, task.CronWhen)
+		s.ScheduleTask(task)
 	}
 
 }
 
-func (s *Scheduler) ScheduleTask(t *Task, when string) {
+func (s *Scheduler) ScheduleTask(t *Task) {
 	var err error
 	t.Lock()
-	t.CronWhen = when
-
-	t.cronId, err = s.Cron.AddJob(when, t)
+	t.cronId, err = s.Cron.AddJob(t.When, t)
 	if err != nil {
 		logrus.Error(err)
 	}

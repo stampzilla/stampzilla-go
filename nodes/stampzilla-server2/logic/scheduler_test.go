@@ -1,6 +1,8 @@
 package logic
 
 import (
+	"context"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -37,18 +39,22 @@ func TestSchedulerRunTask(t *testing.T) {
 	//Add first task.
 	task := scheduler.AddTask("Test1")
 	task.AddAction("uuid")
-	scheduler.ScheduleTask(task, "* * * * * *")
+	task.SetWhen("* * * * * *")
+	scheduler.ScheduleTask(task)
 
 	//Add a second task.
 	task = scheduler.AddTask("Test2")
 	task.AddAction("uuid2")
-	scheduler.ScheduleTask(task, "* * * * * *")
+	task.SetWhen("* * * * * *")
+	scheduler.ScheduleTask(task)
 
 	//Start Cron
-	scheduler.Cron.Start()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	scheduler.Cron.Start(ctx)
 	time.Sleep(time.Second * 2)
 
-	assert.Equal(t, 4, syncer.count, "expected to be run 4 times. 2 tasks for 2 seconds")
+	assert.Equal(t, int64(4), atomic.LoadInt64(&syncer.count), "expected to be run 4 times. 2 tasks for 2 seconds")
 
 	assert.Equal(t, 1, syncer.Devices.Get(devices.ID{"node", "id1"}).State["a"])
 	assert.Equal(t, 2, syncer.Devices.Get(devices.ID{"node", "id2"}).State["a"])

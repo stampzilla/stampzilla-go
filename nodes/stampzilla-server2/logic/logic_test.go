@@ -2,6 +2,7 @@ package logic
 
 import (
 	"encoding/json"
+	"sync/atomic"
 	"testing"
 
 	"github.com/olahol/melody"
@@ -11,7 +12,7 @@ import (
 
 type mockSender struct {
 	Devices *devices.List
-	count   int
+	count   int64
 }
 
 func NewMockSender() *mockSender {
@@ -21,7 +22,7 @@ func NewMockSender() *mockSender {
 }
 
 func (mss *mockSender) SendToID(to string, msgType string, data interface{}) error {
-	mss.count++
+	atomic.AddInt64(&mss.count, 1)
 	for k, v := range data.(map[devices.ID]devices.State) {
 		mss.Devices.Add(&devices.Device{
 			ID:    k,

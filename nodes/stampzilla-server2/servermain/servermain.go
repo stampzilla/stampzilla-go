@@ -56,6 +56,7 @@ func (c *Main) Run() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	c.Store.Logic.Start(ctx)
+	c.Store.Scheduler.Start(ctx)
 
 	<-done
 	<-tlsDone

@@ -66,6 +66,11 @@ func (store *Store) Load() error {
 		return err
 	}
 
+	err = store.Scheduler.Load()
+	if err != nil {
+		return err
+	}
+
 	// load all the nodes
 	return store.LoadNodes()
 }
