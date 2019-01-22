@@ -9,13 +9,29 @@ import (
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
 )
 
+/* savedstate.json example
+{
+    "6fbaea24-6b3f-4856-9194-735b349bbf4d": {
+        "name": "test state 1",
+        "uuid": "6fbaea24-6b3f-4856-9194-735b349bbf4d",
+        "state": {
+            "nodeuuid.deviceid": {
+                "on": true
+            }
+        }
+    }
+}
+*/
+
+type SavedStates map[string]*SavedState
+
 type SavedState struct {
-	Name  string
-	UUID  string
-	State map[devices.ID]devices.State
+	Name  string                       `json:"name"`
+	UUID  string                       `json:"uuid"`
+	State map[devices.ID]devices.State `json:"state"`
 }
 type SavedStateStore struct {
-	State map[string]*SavedState
+	State SavedStates
 	sync.RWMutex
 }
 
@@ -23,7 +39,11 @@ func (sss *SavedStateStore) Get(id string) *SavedState {
 	sss.RLock()
 	defer sss.RUnlock()
 	return sss.State[id]
-
+}
+func (sss *SavedStateStore) All() SavedStates {
+	sss.RLock()
+	defer sss.RUnlock()
+	return sss.State
 }
 
 func NewSavedStateStore() *SavedStateStore {

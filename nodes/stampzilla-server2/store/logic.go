@@ -16,8 +16,6 @@ func (store *Store) AddOrUpdateRules(rules logic.Rules) {
 	store.runCallbacks("rules")
 }
 
-func (store *Store) GetSavedStates() *logic.SavedStateStore {
-	store.Logic.RLock()
-	defer store.Logic.RUnlock()
-	return store.Logic.StateStore
+func (store *Store) GetSavedStates() logic.SavedStates {
+	return store.Logic.StateStore.All()
 }

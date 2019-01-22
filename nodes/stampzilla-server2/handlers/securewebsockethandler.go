@@ -134,7 +134,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		logrus.WithFields(logrus.Fields{
 			"from":   msg.FromUUID,
 			"device": device,
-		}).Info("Received device")
+		}).Debug("Received device")
 
 		if device != nil {
 			wsh.Store.AddOrUpdateDevice(device)
@@ -149,7 +149,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		logrus.WithFields(logrus.Fields{
 			"from":    msg.FromUUID,
 			"devices": devices,
-		}).Info("Received devices")
+		}).Debug("Received devices")
 
 		for _, dev := range devices {
 			wsh.Store.AddOrUpdateDevice(dev)
@@ -164,7 +164,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		logrus.WithFields(logrus.Fields{
 			"from":   msg.FromUUID,
 			"config": node,
-		}).Info("Received new node configuration")
+		}).Debug("Received new node configuration")
 
 		wsh.Store.AddOrUpdateNode(node)
 		err = wsh.Store.SaveNodes()
@@ -182,7 +182,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		logrus.WithFields(logrus.Fields{
 			"from":    msg.FromUUID,
 			"devices": devs,
-		}).Info("Received state change request")
+		}).Debug("Received state change request")
 
 		for node, devices := range devs.StateGroupedByNode() {
 			logrus.WithFields(logrus.Fields{
@@ -200,7 +200,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		logrus.WithFields(logrus.Fields{
 			"from":  msg.FromUUID,
 			"rules": rules,
-		}).Info("Received new rules")
+		}).Debug("Received new rules")
 
 		wsh.Store.AddOrUpdateRules(rules)
 	default:
@@ -236,12 +236,6 @@ func (wsh *secureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.R
 			return err
 		}
 		msg.WriteTo(s)
-		//case "metrics":
-		//msg, err := models.NewMessage("devices", wsh.Store.GetDevices())
-		//if err != nil {
-		//return err
-		//}
-		//msg.WriteTo(s)
 	}
 
 	return nil

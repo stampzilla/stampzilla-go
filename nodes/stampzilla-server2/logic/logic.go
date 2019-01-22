@@ -23,9 +23,8 @@ type Rules map[string]*Rule
 // Logic is the main struct
 type Logic struct {
 	StateStore *SavedStateStore
-	// TODO MAJOR important! must move rules storage to store.Store and load them from there when we start logic so we dont get circular dependencies! :(
-	Rules   map[string]*Rule
-	devices *devices.List
+	Rules      map[string]*Rule
+	devices    *devices.List
 	//ActionProgressChan chan ActionProgress
 	sync.RWMutex
 	sync.WaitGroup

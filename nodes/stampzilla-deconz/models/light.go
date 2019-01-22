@@ -55,9 +55,6 @@ func LightToDeviceState(lightState, state devices.State) bool {
 			changes++
 		}
 		state["on"] = v
-		if !v {
-			state["brightness"] = 0.0
-		}
 	})
 
 	lightState.Float("ct", func(v float64) {

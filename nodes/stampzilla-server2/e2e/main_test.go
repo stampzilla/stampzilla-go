@@ -55,7 +55,6 @@ func TestInsecureWebsocket(t *testing.T) {
 		assert.Equal(t, "node", v.Attributes["protocol"])
 	}
 	c.Close()
-	//time.Sleep(200 * time.Millisecond) //TODO better way than sleep?
 
 	waitFor(t, 1*time.Second, "connections should be zero after connection close", func() bool {
 		return len(main.Store.GetConnections()) == 0

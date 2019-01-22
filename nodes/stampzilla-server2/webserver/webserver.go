@@ -177,11 +177,8 @@ func (ws *Webserver) handleDownloadCA() func(c *gin.Context) {
 
 func (ws *Webserver) handleWs(m *melody.Melody) func(c *gin.Context) {
 	return func(c *gin.Context) {
-		uuid := uuid.New()
 		keys := make(map[string]interface{})
-		//TODO check if node sent uuid then use that
-
-		keys[websocket.KeyID.String()] = uuid.String()
+		keys[websocket.KeyID.String()] = uuid.New().String()
 
 		if c.Request.TLS != nil {
 			keys["secure"] = true
