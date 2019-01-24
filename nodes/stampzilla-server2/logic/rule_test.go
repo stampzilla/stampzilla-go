@@ -153,7 +153,7 @@ func TestRunActionsCancelSleep(t *testing.T) {
 	if dur < time.Millisecond*110 {
 		t.Error("Expected to sleep in the action for at least 200ms slept: ", dur)
 	}
-	assert.Contains(t, logBuf.String(), "Stopping action 1 due to cancel")
+	assert.Contains(t, logBuf.String(), "stopping action 1 due to cancel")
 }
 func BenchmarkEval(b *testing.B) {
 	devs := devices.NewList()
