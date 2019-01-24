@@ -100,10 +100,11 @@ func (r *Rule) Run(store *SavedStateStore, sender websocket.Sender) {
 
 		duration, err := time.ParseDuration(v)
 		if err == nil { // its a duration. Do the sleep only
+			logrus.Debugf("logic: sleep action: %s", duration)
 			select {
 			case <-time.After(duration):
 			case <-ctx.Done():
-				logrus.Debugf("Stopping action %d due to cancel", k)
+				logrus.Debugf("logic: stopping action %d due to cancel", k)
 				return
 
 			}
@@ -111,7 +112,7 @@ func (r *Rule) Run(store *SavedStateStore, sender websocket.Sender) {
 		}
 		// assume its a saved state
 		if ctx.Err() == context.Canceled {
-			logrus.Debugf("Stopping action %d due to cancel", k)
+			logrus.Debugf("logic: stopping action %d due to cancel", k)
 			return
 		}
 

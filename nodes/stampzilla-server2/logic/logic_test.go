@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/olahol/melody"
+	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
 	"github.com/stretchr/testify/assert"
 )
@@ -19,6 +21,10 @@ func NewMockSender() *mockSender {
 	return &mockSender{
 		Devices: devices.NewList(),
 	}
+}
+
+func (mss *mockSender) Count() int64 {
+	return atomic.LoadInt64(&mss.count)
 }
 
 func (mss *mockSender) SendToID(to string, msgType string, data interface{}) error {
@@ -85,4 +91,62 @@ func TestEvaluateRules(t *testing.T) {
 	})
 	l.EvaluateRules()
 	assert.Equal(t, false, l.Rules[r.Uuid()].Active())
+}
+
+func TestEvaluateRulesCanceledIfNotActive(t *testing.T) {
+
+	logrus.SetLevel(logrus.DebugLevel)
+	syncer := NewMockSender()
+
+	savedState := NewSavedStateStore()
+	savedState.State["uuid"] = &SavedState{
+		Name: "testname",
+		UUID: "uuid",
+		State: map[devices.ID]devices.State{
+			devices.ID{Node: "node", ID: "id"}: devices.State{
+				"on": false,
+				"a":  true,
+				"b":  true,
+			},
+		},
+	}
+	l := New(savedState, syncer)
+	r := l.AddRule("test")
+	r.Expression_ = `devices["node.id"].on == true`
+	r.Actions_ = []string{
+		"uuid",
+		"20ms",
+		"uuid",
+	}
+
+	l.updateDevice(&devices.Device{
+		ID: devices.ID{
+			Node: "node",
+			ID:   "id",
+		},
+		State: devices.State{
+			"on": true,
+		},
+	})
+
+	l.EvaluateRules()
+	assert.Equal(t, true, l.Rules[r.Uuid()].Active())
+
+	time.Sleep(10 * time.Millisecond)
+
+	l.updateDevice(&devices.Device{
+		ID: devices.ID{
+			Node: "node",
+			ID:   "id",
+		},
+		State: devices.State{
+			"on": false,
+		},
+	})
+	l.EvaluateRules()
+	assert.Equal(t, false, l.Rules[r.Uuid()].Active())
+
+	l.Wait()
+
+	assert.Equal(t, int64(1), syncer.Count())
 }

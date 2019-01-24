@@ -90,7 +90,7 @@ func TestRunActions(t *testing.T) {
 		Name: "testname",
 		UUID: "uuid",
 		State: map[devices.ID]devices.State{
-			devices.ID{"node", "id"}: devices.State{
+			devices.ID{Node: "node", ID: "id"}: devices.State{
 				"on": false,
 				"a":  true,
 				"b":  true,

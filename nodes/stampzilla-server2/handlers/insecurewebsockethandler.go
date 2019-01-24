@@ -39,9 +39,6 @@ func (wsh *insecureWebsocketHandler) Message(s interfaces.MelodySession, msg *mo
 		var body models.Request
 		json.Unmarshal(msg.Body, &body)
 
-		//TODO we want to add this to for example store to make it statefull and so the admin can approve the request
-		// for now we just approve automaticly and send it directly
-
 		cert := &strings.Builder{}
 		id, _ := s.Get(websocket.KeyID.String())
 		go func() {

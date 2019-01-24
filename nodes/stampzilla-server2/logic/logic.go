@@ -124,7 +124,13 @@ func (l *Logic) EvaluateRules() {
 			rule.SetActive(evaluation)
 			if evaluation {
 				logrus.Info("Rule: ", rule.Name(), " (", rule.Uuid(), ") - running actions")
-				go rule.Run(l.StateStore, l.WebsocketSender)
+				l.Add(1)
+				go func() {
+					rule.Run(l.StateStore, l.WebsocketSender)
+					l.Done()
+				}()
+			} else {
+				rule.Cancel()
 			}
 		}
 	}
@@ -189,7 +195,7 @@ new way:
 	"active": true|false,
 	"uuid": "e8092b86-1261-44cd-ab64-38121df58a79",
 	"expression": "devices["asdf.123"].on == true && devices["asdf.123"].temperature > 20.0",
-	"conditions": {
+	"conditions": { // this is implemented in expression instead. rules are available there
 		"id på annan regel": true,
 	}
 	"for": "5m", // after for we must evaluate expression again
