@@ -77,8 +77,11 @@ class Websocket extends Component {
     }
     switch (parsed.type) {
       case 'server-info': {
-       dispatch(updateServer(parsed.body));
-       break;
+        dispatch(updateServer(parsed.body));
+        break;
+      }
+      default: {
+        // Nothing
       }
     }
   }
@@ -87,7 +90,7 @@ class Websocket extends Component {
     const { url } = props;
     if (this.socket) {
       // this is becuase there is a bug in reconnecting websocket causing it to retry forever
-      this.socket.onclose = () => throw ('force close socket');
+      this.socket.onclose = () => { throw new Error('force close socket'); };
       // Close the existing connection
       this.socket.close();
     }
