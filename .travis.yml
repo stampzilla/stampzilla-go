@@ -4,7 +4,6 @@ sudo: false
 go:
 - 1.11
 install:
-- go generate nodes/stampzilla-server/main.go
 - go get -d -t -v ./...
 
 script:
