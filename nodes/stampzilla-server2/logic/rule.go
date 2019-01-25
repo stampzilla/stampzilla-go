@@ -28,8 +28,8 @@ type Rule struct {
 	Expression_ string          `json:"expression"`
 	Conditions_ map[string]bool `json:"conditions"`
 	Actions_    []string        `json:"actions"`
-	//actions_    []Action
-	checkedExp *exprpb.CheckedExpr
+	Labels_     []string        `json:"labels"`
+	checkedExp  *exprpb.CheckedExpr
 	sync.RWMutex
 	cancel context.CancelFunc
 }

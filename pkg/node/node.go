@@ -15,7 +15,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -148,7 +147,6 @@ func (n *Node) fetchCertificate() error {
 	}
 	n.Config.Port = serverInfo.Port
 	n.Config.TLSPort = serverInfo.TLSPort
-	n.Config.Save("config.json")
 
 	n.WriteMessage("certificate-signing-request", models.Request{
 		Type:    n.Type,
@@ -190,13 +188,9 @@ func (n *Node) Connect() error {
 	n.setup()
 
 	if n.Config.Host == "" {
-		ip, port, err := queryMDNS()
-		if err != nil {
-			return err
-		}
-
+		ip, port := queryMDNS()
 		n.Config.Host = ip
-		n.Config.Port = strconv.Itoa(port)
+		n.Config.Port = port
 	}
 
 	// Load our signed certificate and get our UUID

@@ -121,6 +121,9 @@ func (l *Logic) EvaluateRules() {
 	for _, rule := range l.Rules {
 		evaluation := l.evaluateRule(rule)
 		if evaluation != rule.Active() {
+			//TODO implement for 5m here. Do not run or set active until 5m passed.
+			// go run sleep 5m. cancel go routine if we have new evaluation. After 5m run evaluateRule again before rule.Run
+
 			rule.SetActive(evaluation)
 			if evaluation {
 				logrus.Info("Rule: ", rule.Name(), " (", rule.Uuid(), ") - running actions")
