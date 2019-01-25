@@ -14,10 +14,40 @@ import (
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
 )
 
-func main() {
-	fmt.Println("vim-go")
+/* rules.json example:
+{
+    "e8092b86-1261-44cd-ab64-38121df58a79": {
+        "name": "All off",
+        "enabled": true,
+        "active": false,
+        "uuid": "e8092b86-1261-44cd-ab64-38121df58a79",
+        "expression": "devices['fd230f30-6d84-4507-8ace-c1ec715be51e.1'].on == true",
+        "for": "5m",
+        "actions": [
+            "1s",
+            "c7d352bb-23f4-468c-b476-f76599c09a0d"
+        ]
+    },
+    "1fd25327-f43c-4a00-aa67-3969dfed06b5": {
+        "name": "chromecast p\u00e5",
+        "enabled": true,
+        "active": false,
+        "uuid": "1fd25327-f43c-4a00-aa67-3969dfed06b5",
+        "expression": "devices['asdf.123'].on == true ",
+        "for": "5m",
+        "actions": [
+            "1m",
+            "c7d352bb-23f4-468c-b476-f76599c09a0d"
+        ],
+		"labels": [
+			"livingroom",
+			"kitchen"
+		]
+    }
 }
+*/
 
+// Rules is a list of rules
 type Rules map[string]*Rule
 
 // Logic is the main struct
@@ -40,7 +70,7 @@ type ActionProgress struct {
 }
 */
 
-// NewLogic returns a new logic that is ready to use
+// New returns a new logic that is ready to use
 func New(sss *SavedStateStore, websocketSender websocket.Sender) *Logic {
 	l := &Logic{
 		devices: devices.NewList(),
@@ -62,6 +92,7 @@ func (l *Logic) AddRule(name string) *Rule {
 	return r
 }
 
+//GetRules returns a list of Rules
 func (l *Logic) GetRules() Rules {
 	l.RLock()
 	defer l.RUnlock()
@@ -117,6 +148,7 @@ func (l *Logic) updateDevice(dev *devices.Device) {
 	l.devices.Add(dev)
 }
 
+// EvaluateRules loops over each rule and run evaluation on them
 func (l *Logic) EvaluateRules() {
 	for _, rule := range l.Rules {
 		evaluation := l.evaluateRule(rule)
@@ -152,6 +184,7 @@ func (l *Logic) evaluateRule(r *Rule) bool {
 	return result
 }
 
+// Save saves the rules to rules.json
 func (l *Logic) Save() error {
 	configFile, err := os.Create("rules.json")
 	if err != nil {
@@ -168,6 +201,7 @@ func (l *Logic) Save() error {
 	return nil
 }
 
+//Load loads the rules from rules.json
 func (l *Logic) Load() error {
 	logrus.Debug("logic: loading rules from rules.json")
 	configFile, err := os.Open("rules.json")

@@ -8,41 +8,47 @@ import (
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
 )
 
+// Task is a task that can be scheduled using scheduler
 type Task struct {
-	Name_   string   `json:"name"`
-	Uuid_   string   `json:"uuid"`
+	XName   string   `json:"name"`
+	XUuid   string   `json:"uuid"`
 	Actions []string `json:"actions"`
-	cronId  int64
+	cronID  int64
 	When    string `json:"when"`
 	sync.RWMutex
 	SavedStateStore *SavedStateStore
 	sender          websocket.Sender
 }
 
+// SetUuid sets ths uuid on the task
 func (t *Task) SetUuid(uuid string) {
 	t.Lock()
-	t.Uuid_ = uuid
+	t.XUuid = uuid
 	t.Unlock()
 }
+
+// SetWhen sets when the task should be run in cron syntax
 func (t *Task) SetWhen(when string) {
 	t.Lock()
 	t.When = when
 	t.Unlock()
 }
+
+// Uuid returns tasks uuid
 func (r *Task) Uuid() string {
 	r.RLock()
 	defer r.RUnlock()
-	return r.Uuid_
+	return r.XUuid
 }
 func (r *Task) Name() string {
 	r.RLock()
 	defer r.RUnlock()
-	return r.Name_
+	return r.XName
 }
 func (r *Task) CronId() int64 {
 	r.RLock()
 	defer r.RUnlock()
-	return r.cronId
+	return r.cronID
 }
 
 func (t *Task) Run() {

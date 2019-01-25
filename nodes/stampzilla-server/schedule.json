@@ -1,5 +1,5 @@
-[
-    {
+{
+    "398d8a42-cb31-42ff-b4ae-99bdbb44d0ae": {
         "name": "test1",
         "uuid": "398d8a42-cb31-42ff-b4ae-99bdbb44d0ae",
         "when": "0 * * * * *",
@@ -7,4 +7,4 @@
             "6fbaea24-6b3f-4856-9194-735b349bbf4d"
         ]
     }
-]
+}

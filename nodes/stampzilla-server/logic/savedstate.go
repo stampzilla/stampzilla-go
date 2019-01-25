@@ -52,7 +52,12 @@ func NewSavedStateStore() *SavedStateStore {
 	}
 }
 
-func (sss *SavedStateStore) Save(path string) error {
+func (sss *SavedStateStore) SetState(s SavedStates) {
+	sss.Lock()
+	sss.State = s
+	sss.Unlock()
+}
+func (sss *SavedStateStore) Save() error {
 	sss.Lock()
 	defer sss.Unlock()
 	configFile, err := os.Create("savedstate.json")

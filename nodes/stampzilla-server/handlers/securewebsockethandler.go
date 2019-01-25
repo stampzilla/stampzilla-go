@@ -66,6 +66,8 @@ func BroadcastUpdate(sender websocket.Sender) func(string, *store.Store) error {
 			return send(area, store.GetRules())
 		case "savedstates":
 			return send(area, store.GetSavedStates())
+		case "scheduledtasks":
+			return send(area, store.GetScheduledTasks())
 		}
 		return nil
 	}
@@ -114,7 +116,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		}
 
 		if v, exists := s.Get("subscriptions"); exists {
-			logrus.Info("Active subscriptions: ", v)
+			logrus.Debug("Active subscriptions: ", v)
 		}
 
 		fn := BroadcastUpdate(wsh.WebsocketSender)

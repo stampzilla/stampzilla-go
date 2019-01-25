@@ -14,8 +14,8 @@ import (
 )
 
 /* schedule.json
-[
-    {
+{
+    "398d8a42-cb31-42ff-b4ae-99bdbb44d0ae": {
         "name": "test1",
         "uuid": "398d8a42-cb31-42ff-b4ae-99bdbb44d0ae",
         "when": "0 * * * * *",
@@ -23,12 +23,14 @@ import (
             "6fbaea24-6b3f-4856-9194-735b349bbf4d"
         ]
     }
-]
+}
 */
+
+type Tasks map[string]*Task
 
 // Scheduler that schedule running saved state actions
 type Scheduler struct {
-	tasks []*Task
+	tasks Tasks
 	Cron  *cron.Cron
 	sync.RWMutex
 
@@ -41,6 +43,7 @@ func NewScheduler(savedStateStore *SavedStateStore, sender websocket.Sender) *Sc
 	scheduler := &Scheduler{
 		SavedStateStore: savedStateStore,
 		sender:          sender,
+		tasks:           make(Tasks),
 	}
 	scheduler.Cron = cron.New()
 	return scheduler
@@ -64,7 +67,13 @@ func (s *Scheduler) Stop() {
 	logrus.Info("Scheduler stopped")
 }
 
-func (s *Scheduler) Tasks() []*Task {
+func (s *Scheduler) SetTasks(t Tasks) {
+	s.Lock()
+	s.tasks = t
+	s.syncTaskDependencies()
+	s.Unlock()
+}
+func (s *Scheduler) Tasks() Tasks {
 	s.RLock()
 	defer s.RUnlock()
 	return s.tasks
@@ -72,28 +81,31 @@ func (s *Scheduler) Tasks() []*Task {
 
 func (s *Scheduler) AddTask(name string) *Task {
 	task := &Task{
-		Name_:           name,
-		Uuid_:           uuid.New().String(),
+		XName:           name,
+		XUuid:           uuid.New().String(),
 		sender:          s.sender,
 		SavedStateStore: s.SavedStateStore,
 	}
 	s.Lock()
-	s.tasks = append(s.tasks, task)
+	s.tasks[task.XUuid] = task
 	s.Unlock()
 	return task
 }
+func (s *Scheduler) Task(uuid string) *Task {
+	s.RLock()
+	defer s.RUnlock()
+	return s.tasks[uuid]
+}
 
-func (s *Scheduler) RemoveTask(uuid string) error {
+func (s *Scheduler) RemoveTask(uuid string) {
 	s.Lock()
 	defer s.Unlock()
-	for i, task := range s.tasks {
-		if task.Uuid() == uuid {
-			s.Cron.RemoveJob(task.CronId())
-			s.tasks = append(s.tasks[:i], s.tasks[i+1:]...)
-			return nil
-		}
+	task := s.Task(uuid)
+	if task == nil {
+		return
 	}
-	return nil
+	s.Cron.RemoveJob(task.CronId())
+	delete(s.tasks, uuid)
 }
 
 func (s *Scheduler) Save() error {
@@ -160,7 +172,7 @@ func (s *Scheduler) syncTaskDependencies() {
 func (s *Scheduler) ScheduleTask(t *Task) {
 	var err error
 	t.Lock()
-	t.cronId, err = s.Cron.AddJob(t.When, t)
+	t.cronID, err = s.Cron.AddJob(t.When, t)
 	if err != nil {
 		logrus.Error(err)
 	}
