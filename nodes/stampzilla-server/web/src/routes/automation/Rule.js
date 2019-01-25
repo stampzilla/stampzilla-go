@@ -29,25 +29,13 @@ const schema = {
       title: 'Expression',
       description: 'The main expression that describes the state that should activate the rule',
     },
-  // conditions: {
-  // title: 'Conditions',
-  // description: 'A list of related rules that should be active or not active to enable this rule',
-  // type: "array",
-  // items: {
-  // type: 'object',
-  // properties: {
-  // rule: {
-  // type: 'string',
-  // title: 'Rule',
-  // },
-  // state: {
-  // type: 'boolean',
-  // title: 'Active',
-  // description: 'Should the rule be active or not?',
-  // },
-  // },
-  // },
-  // }
+    actions: {
+      type: 'array',
+      title: 'Actions',
+      items: {
+        type: 'string',
+      },
+    },
   },
 };
 const uiSchema = {
@@ -59,14 +47,23 @@ const uiSchema = {
 };
 
 
+const loadFromProps = (props) => {
+  const { rules, match } = props;
+  const rule = rules.find(n => n.get('uuid') === match.params.uuid);
+  const formData = rule && rule.toJS();
+
+  if (rule) {
+    formData.actions = formData.actions || [];
+  }
+  return { formData };
+};
+
 class Automation extends Component {
   constructor(props) {
     super();
 
-    const { rules, match } = props;
-    const rule = rules.find(n => n.get('uuid') === match.params.uuid);
     this.state = {
-      formData: rule && rule.toJS(),
+      ...loadFromProps(props),
       isValid: true,
     };
   }
@@ -78,10 +75,7 @@ class Automation extends Component {
       match.params.uuid !== this.props.match.params.uuid ||
       rules !== this.props.rules
     ) {
-      const rule = rules.find(n => n.get('uuid') === match.params.uuid);
-      this.setState({
-        formData: rule && rule.toJS(),
-      });
+      this.setState(loadFromProps(nextProps));
     }
   }
 
@@ -115,6 +109,7 @@ class Automation extends Component {
       });
       return acc;
     }, {});
+    console.log(this.state.formData);
 
     return (
       <React.Fragment>
@@ -152,7 +147,7 @@ class Automation extends Component {
 
             <pre>
               {Object.keys(params).map(key => (
-                <div>{key}: {params[key]}</div>
+                <div>{key}: <strong>{JSON.stringify(params[key])}</strong></div>
                   ))}
             </pre>
           </div>

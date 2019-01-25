@@ -9,10 +9,11 @@ class Nodes extends Component {
     const { devices, nodes } = this.props;
 
     const devicesByNode = devices.reduce((acc, device) => {
-      if (acc[device.get('node')] === undefined) {
-        acc[device.get('node')] = [];
+      const [node] = device.get('id').split('.', 2);
+      if (acc[node] === undefined) {
+        acc[node] = [];
       }
-      acc[device.get('node')].push(device);
+      acc[node].push(device);
       return acc;
     }, {});
 

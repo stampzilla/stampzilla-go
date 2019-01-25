@@ -10,6 +10,7 @@ import requests from './requests';
 import rules from './rules';
 import savedstates from './savedstates';
 import server from './server';
+import schedules from './schedules';
 
 const rootReducer = combineReducers({
   app,
@@ -22,6 +23,7 @@ const rootReducer = combineReducers({
   rules,
   savedstates,
   server,
+  schedules,
 });
 
 export default rootReducer;

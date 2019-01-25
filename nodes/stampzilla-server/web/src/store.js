@@ -5,10 +5,12 @@ import persistState from 'redux-localstorage';
 
 import rootReducer from './ducks';
 import rules from './middlewares/rules';
+import schedules from './middlewares/schedules';
 
 const middleware = [
   ReduxThunk,
   rules,
+  schedules,
 ];
 
 const preloadedState = undefined;

@@ -15,6 +15,7 @@ import { subscribe as nodes } from '../ducks/nodes';
 import { subscribe as requests } from '../ducks/requests';
 import { subscribe as rules } from '../ducks/rules';
 import { subscribe as savedstates } from '../ducks/savedstates';
+import { subscribe as schedules } from '../ducks/schedules';
 import { update as updateServer } from '../ducks/server';
 
 // Placeholder until we have the write func from the websocket
@@ -60,6 +61,7 @@ class Websocket extends Component {
       requests,
       rules,
       savedstates,
+      schedules,
     });
   }
   onClose = () => () => {
