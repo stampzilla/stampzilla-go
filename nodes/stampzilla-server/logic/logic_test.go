@@ -50,7 +50,7 @@ func TestLoadRulesFromFile(t *testing.T) {
 	syncer := NewMockSender()
 	savedState := NewSavedStateStore()
 	l := New(savedState, syncer)
-	l.Load("rules.json")
+	l.Load()
 	//spew.Dump(l.Rules)
 	jsonData, err := json.MarshalIndent(l.Rules, "", "\t")
 	assert.NoError(t, err)

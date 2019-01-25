@@ -55,33 +55,33 @@ func NewSavedStateStore() *SavedStateStore {
 func (sss *SavedStateStore) Save(path string) error {
 	sss.Lock()
 	defer sss.Unlock()
-	configFile, err := os.Create(path)
+	configFile, err := os.Create("savedstate.json")
 	if err != nil {
-		return fmt.Errorf("savedstate: error saving state: %s", err.Error())
+		return fmt.Errorf("savedstate: error saving savedstate.json: %s", err.Error())
 	}
 	encoder := json.NewEncoder(configFile)
 	encoder.SetIndent("", "\t")
 	err = encoder.Encode(sss.State)
 	if err != nil {
-		return fmt.Errorf("savedstate: error saving state: %s", err.Error())
+		return fmt.Errorf("savedstate: error saving savedstate.json: %s", err.Error())
 	}
 	return nil
 }
 
-func (sss *SavedStateStore) Load(path string) error {
-	configFile, err := os.Open(path)
+func (sss *SavedStateStore) Load() error {
+	configFile, err := os.Open("savedstate.json")
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil // We dont want to error our if the file does not exist when we start the server
 		}
-		return fmt.Errorf("savedstate: error loading state: %s", err.Error())
+		return fmt.Errorf("savedstate: error loading savedstate.json: %s", err.Error())
 	}
 
 	sss.Lock()
 	defer sss.Unlock()
 	jsonParser := json.NewDecoder(configFile)
 	if err = jsonParser.Decode(&sss.State); err != nil {
-		return fmt.Errorf("savedstate: error loading state: %s", err.Error())
+		return fmt.Errorf("savedstate: error loading savedstate.json: %s", err.Error())
 	}
 	return nil
 }

@@ -57,10 +57,10 @@ func (store *Store) OnUpdate(callback UpdateCallback) {
 // Load loads all stuff from disk.
 func (store *Store) Load() error {
 	// Load logic stuff
-	if err := store.SavedState.Load("savedstate.json"); err != nil {
+	if err := store.SavedState.Load(); err != nil {
 		return err
 	}
-	if err := store.Logic.Load("rules.json"); err != nil {
+	if err := store.Logic.Load(); err != nil {
 		return err
 	}
 

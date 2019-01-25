@@ -152,8 +152,8 @@ func (l *Logic) evaluateRule(r *Rule) bool {
 	return result
 }
 
-func (l *Logic) Save(path string) error {
-	configFile, err := os.Create(path)
+func (l *Logic) Save() error {
+	configFile, err := os.Create("rules.json")
 	if err != nil {
 		return fmt.Errorf("logic: error saving rules: %s", err.Error())
 	}
@@ -168,20 +168,20 @@ func (l *Logic) Save(path string) error {
 	return nil
 }
 
-func (l *Logic) Load(path string) error {
-	logrus.Debug("logic: loading rules from ", path)
-	configFile, err := os.Open(path)
+func (l *Logic) Load() error {
+	logrus.Debug("logic: loading rules from rules.json")
+	configFile, err := os.Open("rules.json")
 	if err != nil {
 		if os.IsNotExist(err) {
 			logrus.Warn(err)
 			return nil // We dont want to error our if the file does not exist when we start the server
 		}
-		return fmt.Errorf("logic: error loading rules: %s", err.Error())
+		return fmt.Errorf("logic: error loading rules.json: %s", err.Error())
 	}
 
 	jsonParser := json.NewDecoder(configFile)
 	if err = jsonParser.Decode(&l.Rules); err != nil {
-		return fmt.Errorf("logic: error loading rules: %s", err.Error())
+		return fmt.Errorf("logic: error loading rules.json: %s", err.Error())
 	}
 
 	//TODO loop over rules and generate UUIDs if needed. If it was needed save the rules again
