@@ -8,7 +8,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/llgcode/draw2d"
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-streamdeck/streamdeck"
 	"github.com/stampzilla/stampzilla-go/pkg/node"
 )

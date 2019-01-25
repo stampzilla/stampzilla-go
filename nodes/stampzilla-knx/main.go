@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
 	"github.com/stampzilla/stampzilla-go/pkg/node"
 )
 

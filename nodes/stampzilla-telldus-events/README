@@ -1,6 +1,0 @@
-The telldus c lib is needed for compilation and the search paths is not set correctly by default.
-
-Here is a dirty workaround
-
-ln -s /usr/local/include/telldus/telldus-core/client/telldus-core.h /usr/include/telldus-core.h
-ln -s /usr/lib/libtelldus-core.so.2 /usr/lib/libtelldus-core.so

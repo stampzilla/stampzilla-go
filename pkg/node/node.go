@@ -21,8 +21,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
 	"github.com/stampzilla/stampzilla-go/pkg/websocket"
 )
 

@@ -3,7 +3,7 @@ package models
 import (
 	"strings"
 
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/models/devices"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
 )
 
 /*
