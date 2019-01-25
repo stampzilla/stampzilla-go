@@ -10,10 +10,10 @@ import (
 	"path"
 	"strconv"
 
-	"github.com/micro/mdns"
 	"github.com/olahol/melody"
 	"github.com/onrik/logrus/filename"
 	"github.com/sirupsen/logrus"
+	"github.com/stamp/mdns"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/ca"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/handlers"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server2/logic"

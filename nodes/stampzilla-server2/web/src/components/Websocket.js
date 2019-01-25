@@ -75,12 +75,12 @@ class Websocket extends Component {
     if (subscriptions) {
       subscriptions.forEach(callback => callback(parsed.body));
     }
-    // switch (parsed.type) {
-    // case 'server-info': {
-    // dispatch(updateServer(parsed.body));
-    // break;
-    // }
-    // }
+    switch (parsed.type) {
+      case 'server-info': {
+       dispatch(updateServer(parsed.body));
+       break;
+      }
+    }
   }
 
   setupSocket(props) {

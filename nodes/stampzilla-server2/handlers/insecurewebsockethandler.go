@@ -31,7 +31,6 @@ func NewInSecureWebsockerHandler(store *store.Store, config *models.Config, ws w
 }
 
 func (wsh *insecureWebsocketHandler) Message(s interfaces.MelodySession, msg *models.Message) error {
-	logrus.Warn("Unsecure ws sent data: ", msg)
 
 	// client requested certificate. We must approve manually
 
@@ -61,8 +60,10 @@ func (wsh *insecureWebsocketHandler) Message(s interfaces.MelodySession, msg *mo
 				return
 			}
 		}()
-
+		return nil
 	}
+
+	logrus.Warn("Unsecure ws sent data: ", msg)
 
 	return nil
 }
