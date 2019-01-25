@@ -66,7 +66,7 @@ func BroadcastUpdate(sender websocket.Sender) func(string, *store.Store) error {
 			return send(area, store.GetRules())
 		case "savedstates":
 			return send(area, store.GetSavedStates())
-		case "scheduledtasks":
+		case "schedules":
 			return send(area, store.GetScheduledTasks())
 		}
 		return nil
@@ -205,6 +205,32 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		}).Debug("Received new rules")
 
 		wsh.Store.AddOrUpdateRules(rules)
+	case "update-schedules":
+		tasks := logic.Tasks{}
+		err := json.Unmarshal(msg.Body, &tasks)
+		if err != nil {
+			return err
+		}
+
+		logrus.WithFields(logrus.Fields{
+			"from":      msg.FromUUID,
+			"schedules": tasks,
+		}).Debug("Received new schedules")
+
+		wsh.Store.AddOrUpdateScheduledTasks(tasks)
+	case "update-savedstates":
+		ss := logic.SavedStates{}
+		err := json.Unmarshal(msg.Body, &ss)
+		if err != nil {
+			return err
+		}
+
+		logrus.WithFields(logrus.Fields{
+			"from":        msg.FromUUID,
+			"savedstates": ss,
+		}).Debug("Received new savedstates")
+
+		wsh.Store.AddOrUpdateSavedStates(ss)
 	default:
 		logrus.WithFields(logrus.Fields{
 			"type": msg.Type,

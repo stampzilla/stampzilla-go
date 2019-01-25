@@ -33,5 +33,5 @@ func (store *Store) GetScheduledTasks() logic.Tasks {
 func (store *Store) AddOrUpdateScheduledTasks(tasks logic.Tasks) {
 	store.Scheduler.SetTasks(tasks)
 	store.Scheduler.Save()
-	store.runCallbacks("scheduledtasks")
+	store.runCallbacks("schedules")
 }
