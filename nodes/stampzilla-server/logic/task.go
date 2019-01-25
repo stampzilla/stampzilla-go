@@ -2,87 +2,80 @@ package logic
 
 import (
 	"sync"
-	"time"
 
-	log "github.com/cihub/seelog"
-	"github.com/jonaz/cron"
-	"github.com/stampzilla/stampzilla-go/protocol"
+	"github.com/sirupsen/logrus"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
 )
 
-type task struct {
+type Task struct {
 	Name_   string   `json:"name"`
 	Uuid_   string   `json:"uuid"`
 	Actions []string `json:"actions"`
-	//actions  []Action
-	cronId   int
-	CronWhen string `json:"when"`
+	cronId  int64
+	When    string `json:"when"`
 	sync.RWMutex
-	cron      *cron.Cron
-	entryTime time.Time
-
-	ActionProgressChan chan ActionProgress `json:"-"`
-	actionService      *ActionService      `json:"-"`
+	SavedStateStore *SavedStateStore
+	sender          websocket.Sender
 }
 
-type Task interface {
-	cron.Job
-	SetUuid(string)
-	Uuid() string
-	Name() string
-	CronId() int
-	AddAction(a protocol.Identifiable)
-	Schedule(string)
-}
-
-func (t *task) SetUuid(uuid string) {
+func (t *Task) SetUuid(uuid string) {
 	t.Lock()
 	t.Uuid_ = uuid
 	t.Unlock()
 }
-func (r *task) Uuid() string {
+func (t *Task) SetWhen(when string) {
+	t.Lock()
+	t.When = when
+	t.Unlock()
+}
+func (r *Task) Uuid() string {
 	r.RLock()
 	defer r.RUnlock()
 	return r.Uuid_
 }
-func (r *task) Name() string {
+func (r *Task) Name() string {
 	r.RLock()
 	defer r.RUnlock()
 	return r.Name_
 }
-func (r *task) CronId() int {
+func (r *Task) CronId() int64 {
 	r.RLock()
 	defer r.RUnlock()
 	return r.cronId
 }
 
-func (t *task) Run() {
+func (t *Task) Run() {
 	t.RLock()
-	for _, uuid := range t.Actions {
-		a := t.actionService.GetByUuid(uuid)
-		if a == nil {
-			log.Errorf("Action %s not found in actionService", uuid)
-			continue
+	defer t.RUnlock()
+	for _, id := range t.Actions {
+		stateList := t.SavedStateStore.Get(id)
+		if stateList == nil {
+			logrus.Errorf("SavedState %s does not exist", id)
+			return
 		}
-		a.Run(t.ActionProgressChan)
+		devicesByNode := make(map[string]map[devices.ID]devices.State)
+		for id, state := range stateList.State {
+			if devicesByNode[id.Node] == nil {
+				devicesByNode[id.Node] = make(map[devices.ID]devices.State)
+			}
+			devicesByNode[id.Node][id] = state
+		}
+		for nodeID, devs := range devicesByNode {
+			logrus.WithFields(logrus.Fields{
+				"to": nodeID,
+			}).Debug("Send state change request to node")
+			err := t.sender.SendToID(nodeID, "state-change", devs)
+			if err != nil {
+				logrus.Error("logic: error sending state-change to node: ", err)
+				continue
+			}
+		}
 	}
-	t.RUnlock()
-
 }
 
-func (t *task) Schedule(when string) {
-	var err error
+func (t *Task) AddAction(uuid string) {
 	t.Lock()
-	t.CronWhen = when
-
-	t.cronId, err = t.cron.AddJob(when, t)
-	if err != nil {
-		log.Error(err)
-	}
+	t.Actions = append(t.Actions, uuid)
 	t.Unlock()
-}
-
-func (r *task) AddAction(i protocol.Identifiable) {
-	r.Lock()
-	r.Actions = append(r.Actions, i.Uuid())
-	r.Unlock()
 }

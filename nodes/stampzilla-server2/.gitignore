@@ -1,6 +1,0 @@
-*.crt
-*.key
-vendor
-configs
-statik
-rules.json

@@ -1,0 +1,11 @@
+{
+    "6fbaea24-6b3f-4856-9194-735b349bbf4d": {
+        "name": "test state 1",
+        "uuid": "6fbaea24-6b3f-4856-9194-735b349bbf4d",
+        "state": {
+            "nodeuuid.deviceid": {
+                "on": true
+            }
+        }
+    }
+}

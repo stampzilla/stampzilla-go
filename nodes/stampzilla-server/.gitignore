@@ -1,8 +1,7 @@
-build
-.goxc.local.json
-stampzilla-server
-gin-bin
+*.crt
+*.key
+vendor
+configs
 rules.json
-actions.json
-schedule.json
-notifications.json
+
+web/dist

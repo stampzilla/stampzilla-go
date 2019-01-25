@@ -1,0 +1,6 @@
+{
+    "port": "8080",
+    "tlsPort": "6443",
+    "uuid": "serveruuid",
+    "name": "stampzilla server"
+}
