@@ -84,7 +84,7 @@ func (s *Scheduler) AddTask(name string) *Task {
 		XName:           name,
 		XUuid:           uuid.New().String(),
 		sender:          s.sender,
-		SavedStateStore: s.SavedStateStore,
+		savedStateStore: s.SavedStateStore,
 	}
 	s.Lock()
 	s.tasks[task.XUuid] = task
@@ -155,8 +155,8 @@ func (s *Scheduler) syncTaskDependencies() {
 		if task.sender == nil {
 			task.sender = s.sender
 		}
-		if task.SavedStateStore == nil {
-			task.SavedStateStore = s.SavedStateStore
+		if task.savedStateStore == nil {
+			task.savedStateStore = s.SavedStateStore
 		}
 		task.Unlock()
 

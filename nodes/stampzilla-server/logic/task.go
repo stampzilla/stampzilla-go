@@ -16,7 +16,7 @@ type Task struct {
 	cronID  int64
 	When    string `json:"when"`
 	sync.RWMutex
-	SavedStateStore *SavedStateStore
+	savedStateStore *SavedStateStore
 	sender          websocket.Sender
 }
 
@@ -55,7 +55,7 @@ func (t *Task) Run() {
 	t.RLock()
 	defer t.RUnlock()
 	for _, id := range t.Actions {
-		stateList := t.SavedStateStore.Get(id)
+		stateList := t.savedStateStore.Get(id)
 		if stateList == nil {
 			logrus.Errorf("SavedState %s does not exist", id)
 			return
