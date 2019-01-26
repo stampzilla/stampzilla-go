@@ -168,8 +168,8 @@ func (l *Logic) runFor(ctx context.Context, rule *Rule, evaluation bool) {
 		rule.stop = make(chan struct{})
 	}
 
-	rule.Stop()
 	if evaluation && !rule.Active() {
+		rule.Stop()
 		l.Add(1)
 		go func() {
 			defer l.Done()
