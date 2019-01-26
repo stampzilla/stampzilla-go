@@ -16,6 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
+	stypes "github.com/stampzilla/stampzilla-go/pkg/types"
 	exprpb "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 )
 
@@ -24,14 +25,17 @@ type Rule struct {
 	Uuid_       string          `json:"uuid"`
 	Operator_   string          `json:"operator"`
 	Active_     bool            `json:"active"`
+	Pending     bool            `json:"pending"`
 	Enabled     bool            `json:"enabled"`
 	Expression_ string          `json:"expression"`
 	Conditions_ map[string]bool `json:"conditions"`
 	Actions_    []string        `json:"actions"`
 	Labels_     []string        `json:"labels"`
+	For_        stypes.Duration `json:"for"`
 	checkedExp  *exprpb.CheckedExpr
 	sync.RWMutex
 	cancel context.CancelFunc
+	stop   chan struct{}
 }
 
 func (r *Rule) Operator() string {
@@ -75,6 +79,17 @@ func (r *Rule) SetActive(a bool) {
 	r.Lock()
 	r.Active_ = a
 	r.Unlock()
+}
+func (r *Rule) For() stypes.Duration {
+	r.RLock()
+	defer r.RUnlock()
+	return r.For_
+}
+func (r *Rule) Stop() {
+	select {
+	case r.stop <- struct{}{}:
+	default:
+	}
 }
 
 func (r *Rule) Cancel() {

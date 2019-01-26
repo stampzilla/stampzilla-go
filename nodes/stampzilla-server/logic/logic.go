@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -119,7 +120,7 @@ func (l *Logic) worker(ctx context.Context) {
 		select {
 		case f := <-l.c:
 			f()
-			l.EvaluateRules()
+			l.EvaluateRules(ctx)
 		case <-ctx.Done():
 			logrus.Info("logic: stopping worker")
 			return
@@ -149,24 +150,62 @@ func (l *Logic) updateDevice(dev *devices.Device) {
 }
 
 // EvaluateRules loops over each rule and run evaluation on them
-func (l *Logic) EvaluateRules() {
+func (l *Logic) EvaluateRules(ctx context.Context) {
 	for _, rule := range l.Rules {
 		evaluation := l.evaluateRule(rule)
-		if evaluation != rule.Active() {
-			//TODO implement for 5m here. Do not run or set active until 5m passed.
-			// go run sleep 5m. cancel go routine if we have new evaluation. After 5m run evaluateRule again before rule.Run
+		if rule.For_ == 0 {
+			l.runNow(rule, evaluation)
+			continue
+		}
+		l.runFor(ctx, rule, evaluation)
+	}
+}
+func (l *Logic) runFor(ctx context.Context, rule *Rule, evaluation bool) {
+	//TODO implement for 5m here. Do not run or set active until 5m passed.
+	// go run sleep 5m. cancel go routine if we have new evaluation. After 5m run evaluateRule again before rule.Run
 
-			rule.SetActive(evaluation)
-			if evaluation {
-				logrus.Info("Rule: ", rule.Name(), " (", rule.Uuid(), ") - running actions")
-				l.Add(1)
-				go func() {
-					rule.Run(l.StateStore, l.WebsocketSender)
-					l.Done()
-				}()
-			} else {
-				rule.Cancel()
+	if rule.stop == nil { // lazy initialized
+		rule.stop = make(chan struct{})
+	}
+
+	rule.Stop()
+	if evaluation && !rule.Active() {
+		l.Add(1)
+		go func() {
+			defer l.Done()
+			logrus.Debug("Rule: ", rule.Name(), " (", rule.Uuid(), ") - sleeping for: ", rule.For())
+			select {
+			case <-time.After(time.Duration(rule.For())):
+			case <-ctx.Done():
+				return
+			case <-rule.stop:
+				return
 			}
+			if !l.evaluateRule(rule) {
+				return
+			}
+
+			logrus.Info("Rule: ", rule.Name(), " (", rule.Uuid(), ") - running actions after for: ", rule.For())
+			rule.SetActive(true)
+			rule.Run(l.StateStore, l.WebsocketSender)
+		}()
+		return
+	}
+
+	rule.SetActive(false)
+}
+func (l *Logic) runNow(rule *Rule, evaluation bool) {
+	if evaluation != rule.Active() {
+		rule.SetActive(evaluation)
+		if evaluation {
+			l.Add(1)
+			go func() {
+				logrus.Info("Rule: ", rule.Name(), " (", rule.Uuid(), ") - running actions")
+				rule.Run(l.StateStore, l.WebsocketSender)
+				l.Done()
+			}()
+		} else {
+			rule.Cancel()
 		}
 	}
 }
@@ -213,6 +252,8 @@ func (l *Logic) Load() error {
 		return fmt.Errorf("logic: error loading rules.json: %s", err.Error())
 	}
 
+	l.Lock()
+	defer l.Unlock()
 	jsonParser := json.NewDecoder(configFile)
 	if err = jsonParser.Decode(&l.Rules); err != nil {
 		return fmt.Errorf("logic: error loading rules.json: %s", err.Error())

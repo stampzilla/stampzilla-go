@@ -122,9 +122,9 @@ func TestRunActions(t *testing.T) {
 	}
 
 	//t.Log(store.Devices.Get("node", "id"))
-	assert.Equal(t, false, syncer.Devices.Get(devices.ID{"node", "id"}).State["on"])
-	assert.Equal(t, true, syncer.Devices.Get(devices.ID{"node", "id"}).State["a"])
-	assert.Equal(t, true, syncer.Devices.Get(devices.ID{"node", "id"}).State["b"])
+	assert.Equal(t, false, syncer.Devices.Get(devices.ID{Node: "node", ID: "id"}).State["on"])
+	assert.Equal(t, true, syncer.Devices.Get(devices.ID{Node: "node", ID: "id"}).State["a"])
+	assert.Equal(t, true, syncer.Devices.Get(devices.ID{Node: "node", ID: "id"}).State["b"])
 }
 
 func TestRunActionsCancelSleep(t *testing.T) {
