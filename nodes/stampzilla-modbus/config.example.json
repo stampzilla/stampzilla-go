@@ -1,0 +1,69 @@
+{
+
+	"device":"/dev/ttyUSB0",
+    "registers": {
+        "outsideTemp": {
+            "Name": "outSideTemp",
+            "Id": 218,
+            "Base": 10
+        },
+        "supplyAirTemp": {
+            "Name": "supplyTemp",
+            "Id": 214,
+            "Base": 10
+        },
+        "exitAirTemp": {
+            "Name": "exitAirTemp",
+            "Id": 215,
+            "Base": 10
+        },
+        "coolerSignal": {
+            "Name": "coolerSignal",
+            "Id": 204
+        },
+        "bypassSignal": {
+            "Name": "bypassSignal",
+            "Id": 301
+        },
+        "fanSpeed": {
+            "Name": "fanSpeed",
+            "Id": 101
+        },
+        "defrostState": {
+            "Name": "defrostState",
+            "Id": 651
+        },
+        "defrostConfig": {
+            "Name": "defrostConfig",
+            "Id": 652
+        },
+        "defrostMode": {
+            "Name": "defrostMode",
+            "Id": 654
+        },
+        "supplyFanRpm": {
+            "Name": "supplyFanRpm",
+            "Id": 111
+        },
+        "exitFanRpm": {
+            "Name": "exitFanRpm",
+            "Id": 112
+        },
+        "supplyFanPwm": {
+            "Name": "supplyFanPwm",
+            "Id": 109
+        },
+        "exitFanPwm": {
+            "Name": "exitFanPwm",
+            "Id": 110
+        },
+        "preHeaterRelays": {
+            "Name": "preHeaterRelays",
+            "Id": 751
+        },
+        "alarms": {
+            "Name": "alarms",
+            "Id": 801
+        }
+    }
+}
