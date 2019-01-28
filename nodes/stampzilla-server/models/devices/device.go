@@ -47,6 +47,13 @@ type Device struct {
 	sync.RWMutex
 }
 
+//NewDevice initializes a new device with needed maps
+func NewDevice() *Device {
+	return &Device{
+		State: make(State),
+	}
+}
+
 //SetOnline set online state
 func (d *Device) SetOnline(v bool) {
 	d.Lock()

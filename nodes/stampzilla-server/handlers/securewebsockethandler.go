@@ -127,7 +127,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		wsh.Store.ConnectionChanged()
 
 	case "update-device":
-		device := &devices.Device{}
+		device := devices.NewDevice()
 		err := json.Unmarshal(msg.Body, device)
 		if err != nil {
 			return err
@@ -142,18 +142,21 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 			wsh.Store.AddOrUpdateDevice(device)
 		}
 	case "update-devices":
-		devices := make(devices.DeviceMap)
-		err := json.Unmarshal(msg.Body, &devices)
+		devs := make(devices.DeviceMap)
+		err := json.Unmarshal(msg.Body, &devs)
 		if err != nil {
 			return err
 		}
 
 		logrus.WithFields(logrus.Fields{
 			"from":    msg.FromUUID,
-			"devices": devices,
+			"devices": devs,
 		}).Debug("Received devices")
 
-		for _, dev := range devices {
+		for _, dev := range devs {
+			if dev.State == nil {
+				dev.State = make(devices.State)
+			}
 			wsh.Store.AddOrUpdateDevice(dev)
 		}
 	case "setup-node":
