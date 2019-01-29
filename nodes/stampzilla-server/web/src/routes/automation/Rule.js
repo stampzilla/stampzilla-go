@@ -1,19 +1,20 @@
 import React, { Component } from 'react';
-import {
-  Button,
-} from 'reactstrap';
+import { Button } from 'reactstrap';
 import { connect } from 'react-redux';
 import Form from 'react-jsonschema-form';
 
 import { add, save } from '../../ducks/rules';
 import Card from '../../components/Card';
-import CustomCheckbox from '../../components/CustomCheckbox';
+import SavedStateWidget from './components/SavedStatePicker';
+import {
+  ArrayFieldTemplate,
+  CustomCheckbox,
+  ObjectFieldTemplate,
+} from './components/formComponents';
 
 const schema = {
   type: 'object',
-  required: [
-    'name',
-  ],
+  required: ['name'],
   properties: {
     name: {
       type: 'string',
@@ -27,7 +28,8 @@ const schema = {
     expression: {
       type: 'string',
       title: 'Expression',
-      description: 'The main expression that describes the state that should activate the rule',
+      description:
+        'The main expression that describes the state that should activate the rule',
     },
     actions: {
       type: 'array',
@@ -44,8 +46,12 @@ const uiSchema = {
       rows: 15,
     },
   },
+  actions: {
+    items: {
+      'ui:widget': 'SavedStateWidget',
+    },
+  },
 };
-
 
 const loadFromProps = (props) => {
   const { rules, match } = props;
@@ -85,7 +91,7 @@ class Automation extends Component {
       isValid: errors.length === 0,
       formData,
     });
-  }
+  };
 
   onSubmit = () => ({ formData }) => {
     const { dispatch } = this.props;
@@ -98,7 +104,7 @@ class Automation extends Component {
 
     const { history } = this.props;
     history.push('/aut');
-  }
+  };
 
   render() {
     const { match, devices } = this.props;
@@ -131,15 +137,28 @@ class Automation extends Component {
                   // onError={log('errors')}
                   // disabled={this.props.disabled}
                   // transformErrors={this.props.transformErrors}
+                  ObjectFieldTemplate={ObjectFieldTemplate}
+                  ArrayFieldTemplate={ArrayFieldTemplate}
                   widgets={{
                     CheckboxWidget: CustomCheckbox,
+                    SavedStateWidget,
                   }}
                 >
-                  <button ref={(btn) => { this.submitButton = btn; }} style={{ display: 'none' }} type="submit" />
+                  <button
+                    ref={(btn) => {
+                      this.submitButton = btn;
+                    }}
+                    style={{ display: 'none' }}
+                    type="submit"
+                  />
                 </Form>
               </div>
               <div className="card-footer">
-                <Button color="primary" disabled={!this.state.isValid || this.props.disabled} onClick={() => this.submitButton.click()}>
+                <Button
+                  color="primary"
+                  disabled={!this.state.isValid || this.props.disabled}
+                  onClick={() => this.submitButton.click()}
+                >
                   {'Save'}
                 </Button>
               </div>
@@ -147,8 +166,10 @@ class Automation extends Component {
 
             <pre>
               {Object.keys(params).map(key => (
-                <div>{key}: <strong>{JSON.stringify(params[key])}</strong></div>
-                  ))}
+                <div>
+                  {key}: <strong>{JSON.stringify(params[key])}</strong>
+                </div>
+              ))}
             </pre>
           </div>
         </div>

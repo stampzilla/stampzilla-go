@@ -64,29 +64,36 @@ class Landing extends Component {
         <div className="d-flex flex-column justify-content-center  align-items-center">
 
           <h1>stampzilla-go</h1>
-          <h2>{server.get('name') || '-'}</h2>
+          {connected === null &&
+            <i className="fa fa-refresh fa-spin fa-3x fa-fw"></i>
+          }
+          {connected &&
+            <React.Fragment>
+              <h2>{server.get('name') || '-'}</h2>
 
-          <pre>
-            Port: {server.get('port')}<br />
-            TLS port: {server.get('tlsPort')}
-          </pre>
+              <pre>
+                 Port: {server.get('port')}<br />
+                 TLS port: {server.get('tlsPort')}
+              </pre>
 
-          <a
-            href={`http://${window.location.hostname}:${server.get('port')}/ca.crt`}
-            className={classnames({
-              'btn btn-outline-secondary mt-3': true,
-              disabled: !server.get('port'),
-            })}
-          >
-            Download CA certificate
-          </a>
+              <a
+                href={`http://${window.location.hostname}:${server.get('port')}/ca.crt`}
+                className={classnames({
+                  'btn btn-outline-secondary mt-3': true,
+                  disabled: !server.get('port'),
+                })}
+              >
+                 Download CA certificate
+              </a>
 
-          <button
-            className="btn btn-primary mt-4"
-            disabled={!server.get('tlsPort')}
-            onClick={this.onGoSecureClick()}
-          >Go secure
-          </button>
+              <button
+                className="btn btn-primary mt-4"
+                disabled={!server.get('tlsPort')}
+                onClick={this.onGoSecureClick()}
+              >Go secure
+              </button>
+            </React.Fragment>
+          }
         </div>
       </React.Fragment>
     );

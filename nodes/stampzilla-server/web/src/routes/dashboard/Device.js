@@ -11,19 +11,19 @@ import './device.scss';
 import { write } from '../../components/Websocket';
 import Trait from './Trait';
 
-const traitPriority = [
+export const traitPriority = [
   'OnOff',
   'Brightness',
   'ColorSetting',
 ];
 
-const traitNames = {
+export const traitNames = {
   Brightness: 'Brightness',
   OnOff: 'Power',
   ColorSetting: 'Temperature',
 };
 
-const traitStates = {
+export const traitStates = {
   Brightness: 'brightness',
   OnOff: 'on',
   ColorSetting: 'temperature',

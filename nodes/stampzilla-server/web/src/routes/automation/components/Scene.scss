@@ -1,0 +1,27 @@
+.saved-state-builder {
+  .menu {
+    display: flex;
+    background: #eee;
+    padding: 6px 14px;
+    margin-left: -16px;
+    margin-right: -16px;
+  }
+
+  .devices {
+    display: flex;
+    flex-direction: column;
+
+    color: #999;
+
+    .trait {
+      filter: blur(2px);
+    }
+    .selected {
+      color: #000;
+
+      .trait {
+        filter: none;
+      }
+    }
+  }
+}

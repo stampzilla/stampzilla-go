@@ -1,6 +1,6 @@
 import { Component } from 'react';
 import { connect } from 'react-redux';
-import ReconnectableWebSocket from 'reconnectable-websocket';
+import ReconnectableWebSocket from 'reconnectingwebsocket';
 import Url from 'url';
 
 import { subscribe as certificates } from '../ducks/certificates';
@@ -19,8 +19,12 @@ import { subscribe as schedules } from '../ducks/schedules';
 import { update as updateServer } from '../ducks/server';
 
 // Placeholder until we have the write func from the websocket
-let writeFunc = () => {
-  throw new Error('Not initialized yet');
+let writeSocket = null;
+const writeFunc = (data) => {
+  if (writeSocket === null) {
+    throw new Error('Not initialized yet');
+  }
+  writeSocket.send(data);
 };
 export const write = msg => writeFunc(JSON.stringify(msg));
 
@@ -101,7 +105,8 @@ class Websocket extends Component {
       reconnectInterval: 3000,
       timeoutInterval: 1000,
     });
-    writeFunc = this.socket.send;
+    writeSocket = this.socket;
+    //writeFunc = this.socket.send;
     this.socket.onmessage = this.onMessage();
     this.socket.onopen = this.onOpen();
     this.socket.onclose = this.onClose();

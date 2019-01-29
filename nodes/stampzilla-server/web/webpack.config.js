@@ -17,10 +17,7 @@ module.exports = {
     publicPath: '/',
   },
   optimization: {
-    minimizer: [
-      new OptimizeCSSAssetsPlugin({}),
-      new TerserPlugin(),
-    ],
+    minimizer: [new OptimizeCSSAssetsPlugin({}), new TerserPlugin()],
     usedExports: true,
     sideEffects: true,
   },
@@ -32,29 +29,30 @@ module.exports = {
         // exclude: /node_modules\/(?!(react-json-editor-ajrm)\/).*/,
         // exclude: /node_modules\/(?![react\-json\-editor\-ajrm])/,
         // exclude: /node_modules/,
-        include: [
-          /src/,
-          /node_modules\/react-json-editor-ajrm/,
-        ],
+        include: [/src/, /node_modules\/react-json-editor-ajrm/],
         use: {
           loader: 'babel-loader',
         },
       },
       {
         test: /\.s?css$/,
-        use: [{
-          loader: DEV ? 'style-loader' : MiniCssExtractPlugin.loader,
-        }, {
-          loader: 'css-loader',
-          options: {
-            sourceMap: true,
+        use: [
+          {
+            loader: DEV ? 'style-loader' : MiniCssExtractPlugin.loader,
           },
-        }, {
-          loader: 'sass-loader',
-          options: {
-            sourceMap: true,
+          {
+            loader: 'css-loader',
+            options: {
+              sourceMap: true,
+            },
           },
-        }],
+          {
+            loader: 'sass-loader',
+            options: {
+              sourceMap: true,
+            },
+          },
+        ],
       },
       {
         test: /\.html$/,
@@ -111,7 +109,18 @@ module.exports = {
     }),
     new GoogleFontsPlugin({
       fonts: [
-        { family: 'Source Sans Pro', variants: ['300', '400', '600', '700', '300italic', '400italic', '600italic'] },
+        {
+          family: 'Source Sans Pro',
+          variants: [
+            '300',
+            '400',
+            '600',
+            '700',
+            '300italic',
+            '400italic',
+            '600italic',
+          ],
+        },
       ],
       path: 'assets/',
       filename: 'assets/fonts.css',
