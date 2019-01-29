@@ -16,11 +16,8 @@ const temperatureToRgb = (temp) => {
 const temperatureGradient = (start = 2000, end = 6000, steps = 10) => {
   const grad = [];
   for (let i = 0; i <= steps; i += 1) {
-    grad.push(
-      `${temperatureToRgb(((end - start) / steps) * i + start)} ${(100 /
-        steps) *
-        i}%`,
-    );
+    const temp = ((end - start) / steps) * i;
+    grad.push(`${temperatureToRgb(temp + start)} ${(100 / steps) * i}%`);
   }
 
   return grad.join(', ');
@@ -38,7 +35,7 @@ class Trait extends Component {
         return (
           <label htmlFor={`switch-${id}`} className="mb-0 d-flex">
             <Switch
-              checked={!!state}
+              checked={!!state || false}
               onChange={checked => onChange(checked)}
               disabled={!device.get('online') || !onChange}
               id={`switch-${id}`}
@@ -70,7 +67,7 @@ class Trait extends Component {
               r: 0,
               g: 0,
               b: 0,
-              a: state,
+              a: state || 0,
             }}
             onChange={({ rgb }) => onChange(rgb.a)}
             disabled={!device.get('online') || !onChange}
@@ -98,9 +95,12 @@ class Trait extends Component {
               r: 0,
               g: 0,
               b: 0,
-              a: state,
+              a: state || 0,
             }}
-            onChange={({ rgb }) => onChange(rgb.a * (stop - start) + start)}
+            onChange={({ rgb }) => {
+              const temp = rgb.a * (stop - start);
+              return onChange(temp + start);
+            }}
             disabled={!device.get('online') || !onChange}
           />
         );

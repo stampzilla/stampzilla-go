@@ -65,7 +65,7 @@ class Landing extends Component {
 
           <h1>stampzilla-go</h1>
           {connected === null &&
-            <i className="fa fa-refresh fa-spin fa-3x fa-fw"></i>
+            <i className="fa fa-refresh fa-spin fa-3x fa-fw" />
           }
           {connected &&
             <React.Fragment>

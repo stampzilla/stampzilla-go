@@ -2,19 +2,30 @@ import React from 'react';
 import Modal from 'react-modal';
 import classnames from 'classnames';
 import { connect } from 'react-redux';
+import makeUUID from 'uuid/v4';
 
 import './SavedStatePicker.scss';
 import Scene from './Scene';
+import { save } from '../../../ducks/savedstates';
 
 Modal.setAppElement('#app');
 
-const valueToText = (value) => {
+const valueToText = (value, savedstates) => {
   if (value && value.length === 36) {
-    return `Scene ${value}`;
+    return (
+      <React.Fragment>
+        <small>Scene</small>{' '}
+        <strong>{savedstates.getIn([value, 'name']) || value}</strong>
+      </React.Fragment>
+    );
   }
 
   if (value && value.length > 0) {
-    return `Delay for ${value}`;
+    return (
+      <React.Fragment>
+        <small>Delay for</small> <strong>{value}</strong>
+      </React.Fragment>
+    );
   }
 
   return 'New action';
@@ -40,6 +51,8 @@ class SavedStatePicker extends React.Component {
       value: props.value,
       modalIsOpen: props.value === undefined,
     };
+
+    this.selectRef = React.createRef();
   }
 
   componentWillReceiveProps(props) {
@@ -47,9 +60,17 @@ class SavedStatePicker extends React.Component {
       this.setState({
         tab: valueToTab(props.value),
         value: props.value,
+        scene: props.savedstates.get(props.value).toJS() || {},
       });
     }
   }
+
+  onSceneChange = () => (state) => {
+    const { scene } = this.state;
+    this.setState({
+      scene: { ...scene, state },
+    });
+  };
 
   openModal = () => () => {
     const { value } = this.props;
@@ -66,14 +87,23 @@ class SavedStatePicker extends React.Component {
   };
 
   save = () => () => {
-    const { onChange } = this.props;
-    const { value } = this.state;
+    const { onChange, dispatch } = this.props;
+    const { value, scene } = this.state;
+
+    if (value.length === 36) {
+      dispatch(save({ ...scene, uuid: value }));
+    }
+
     onChange(value);
     this.setState({ modalIsOpen: false });
   };
 
   render() {
-    const { tab, modalIsOpen, value } = this.state;
+    const {
+      tab, modalIsOpen, value, scene,
+    } = this.state;
+    const { state: states } = scene || {};
+    const { savedstates } = this.props;
 
     return (
       <React.Fragment>
@@ -83,7 +113,7 @@ class SavedStatePicker extends React.Component {
           role="button"
           tabIndex={-1}
         >
-          {valueToText(this.props.value)}
+          {valueToText(this.props.value, savedstates)}
         </div>
         <Modal
           className="Modal__Bootstrap modal-dialog saved-state-modal"
@@ -110,19 +140,21 @@ class SavedStatePicker extends React.Component {
                     Scene
                   </a>
                 </li>
-                <li className="nav-item">
-                  <a
-                    className={classnames(
-                      'nav-link',
-                      tab === 'time' && 'active',
-                    )}
-                    role="button"
-                    tabIndex="0"
-                    onClick={() => this.setState({ tab: 'time' })}
-                  >
-                    Time delay
-                  </a>
-                </li>
+                {!(value && value.length === 36) && (
+                  <li className="nav-item">
+                    <a
+                      className={classnames(
+                        'nav-link',
+                        tab === 'time' && 'active',
+                      )}
+                      role="button"
+                      tabIndex="0"
+                      onClick={() => this.setState({ tab: 'time' })}
+                    >
+                      Time delay
+                    </a>
+                  </li>
+                )}
               </ul>
               <button
                 type="button"
@@ -147,7 +179,7 @@ class SavedStatePicker extends React.Component {
                       id="name"
                       className="form-control"
                       placeholder="ex. 2h15m"
-                      value={value}
+                      value={value || ''}
                       onChange={event =>
                         this.setState({ value: event.target.value })
                       }
@@ -165,7 +197,47 @@ class SavedStatePicker extends React.Component {
                   </div>
                 </form>
               )}
-              {tab === 'state' && (
+              {tab === 'state' && (!value || value.length !== 36) && (
+                <React.Fragment>
+                  <button
+                    type="button"
+                    className="btn btn-success btn-block"
+                    onClick={() => this.setState({ value: makeUUID() })}
+                  >
+                    Create a new scene
+                  </button>
+                  <div className="text-center p-4">or select an existing</div>
+                  <div>
+                    <select
+                      size={10}
+                      style={{ width: '100%' }}
+                      ref={this.selectRef}
+                    >
+                      {savedstates.map(savedstate => (
+                        <option value={savedstate.get('uuid')}>
+                          {savedstate.get('name')}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-block"
+                    onClick={() => {
+                      this.setState({
+                        value: this.selectRef.current.value,
+                        scene:
+                          savedstates
+                            .get(this.selectRef.current.value)
+                            .toJS() || {},
+                      });
+                    }}
+                  >
+                    Select
+                  </button>
+                </React.Fragment>
+              )}
+              {tab === 'state' && value && value.length === 36 && (
                 <form>
                   <div className="form-group">
                     <label htmlFor="name">Name</label>
@@ -174,7 +246,12 @@ class SavedStatePicker extends React.Component {
                       id="name"
                       className="form-control"
                       placeholder=""
-                      value=""
+                      value={(scene && scene.name) || ''}
+                      onChange={event =>
+                        this.setState({
+                          scene: { ...scene, name: event.target.value },
+                        })
+                      }
                     />
                     <small className="form-text text-muted">
                       Give the state a good name so you can find it later
@@ -182,19 +259,34 @@ class SavedStatePicker extends React.Component {
                   </div>
                   <div className="form-group">
                     <label htmlFor="name">State</label>
-                    <Scene id={value} />
+                    <Scene
+                      id={value}
+                      onChange={this.onSceneChange()}
+                      states={states}
+                    />
                   </div>
                 </form>
               )}
             </div>
             <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={this.save()}
-              >
-                Use
-              </button>
+              {!value && (
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={this.closeModal()}
+                >
+                  Close
+                </button>
+              )}
+              {value && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={this.save()}
+                >
+                  Use
+                </button>
+              )}
             </div>
           </div>
         </Modal>
@@ -205,10 +297,7 @@ class SavedStatePicker extends React.Component {
 
 const mapStateToProps = state => ({
   devices: state.getIn(['devices', 'list']),
+  savedstates: state.getIn(['savedstates', 'list']),
 });
 
 export default connect(mapStateToProps)(SavedStatePicker);
-
-/*
-<div class="ReactModal__Overlay ReactModal__Overlay--after-open" style="position: fixed; top: 0px; left: 0px; right: 0px; bottom: 0px; background-color: rgba(255, 255, 255, 0.75); z-index: 20000;"><div class="ReactModal__Content ReactModal__Content--after-open Modal__Bootstrap modal-dialog" tabindex="-1" role="dialog" aria-label="Example Modal" style="z-index: 20000;"><div class="modal-content" style="border-top: none rgb(222, 226, 230); border-right-color: rgb(222, 226, 230); border-bottom-color: rgb(222, 226, 230); border-left-color: rgb(222, 226, 230);"><div style="display: flex;"><ul class="nav nav-tabs" style="margin-left: -1px; flex: 1 1 0%;"><li class="nav-item"><a class="nav-link active" role="button" tabindex="0">Scene</a></li><li class="nav-item"><a class="nav-link" role="button" tabindex="0">Time delay</a></li></ul><button type="button" class="close" style="padding: 0px 15px; border-bottom: 1px solid rgb(222, 226, 230);"><span aria-hidden="true">×</span><span class="sr-only">Close</span></button></div><div class="modal-body"><form><div class="form-group"><label for="name">Name</label><input type="text" id="name" class="form-control" placeholder="" value=""><small class="form-text text-muted">Give the state a good name so you can find it later</small></div><div class="form-group"><label for="name">State</label><div class="saved-state-builder"><div class="menu mb-1"><button class="btn btn-secondary">Record</button><button class="btn btn-secondary ml-1">Select all lights</button></div><div class="devices"><div class="selected">Device1</div><div class="selected">Device2</div></div></div></div></form></div><div class="modal-footer"><button type="button" class="btn btn-primary">Use</button></div></div></div></div>
-*/

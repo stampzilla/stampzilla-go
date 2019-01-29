@@ -18,7 +18,7 @@ const checkBox = ({
       type="checkbox"
       className="custom-control-input"
       id={`${device.get('id')}${trait}`}
-      checked={checked}
+      checked={checked || false}
       onChange={event => onChange(event.target.checked)}
     />
     <label
@@ -34,7 +34,6 @@ class Scene extends React.Component {
 
     this.state = {
       recording: false,
-      states: {},
     };
   }
 
@@ -42,7 +41,7 @@ class Scene extends React.Component {
     const { devices } = this.props;
 
     const { recording } = this.state;
-    const states = (this.state && this.state.states) || {};
+    const states = (this.props && this.props.states) || {};
 
     const useableDevices = devices.reduce((acc, dev) => {
       if (
@@ -71,25 +70,30 @@ class Scene extends React.Component {
         };
       });
 
-      this.setState({
-        states,
-      });
+      if (states !== this.props.states) {
+        this.onStateChange(states);
+      }
     }
   }
 
+  onStateChange = (states) => {
+    const { onChange } = this.props;
+    if (onChange) {
+      onChange(states);
+    }
+  };
+
   onToggleDevice = device => (checked) => {
-    const states = (this.state && this.state.states) || {};
+    const states = (this.props && this.props.states) || {};
     if (checked) {
       states[device.get('id')] = states[device.get('id')] || {};
     } else {
       delete states[device.get('id')];
     }
-    this.setState({
-      states,
-    });
+    this.onStateChange(states);
   };
   onToggleTrait = (device, trait) => (checked) => {
-    const states = (this.state && this.state.states) || {};
+    const states = (this.props && this.props.states) || {};
     if (checked) {
       states[device.get('id')] = states[device.get('id')] || {};
       states[device.get('id')][traitStates[trait]] = device.getIn([
@@ -99,25 +103,21 @@ class Scene extends React.Component {
     } else {
       delete states[device.get('id')][traitStates[trait]];
     }
-    this.setState({
-      states,
-    });
+    this.onStateChange(states);
   };
 
   onChangeTrait = (device, trait) => (value) => {
-    const states = (this.state && this.state.states) || {};
+    const states = (this.props && this.props.states) || {};
 
     states[device.get('id')] = states[device.get('id')] || {};
     states[device.get('id')][traitStates[trait]] = value;
 
-    this.setState({
-      states,
-    });
+    this.onStateChange(states);
   };
 
   render() {
-    const { devices } = this.props;
-    const { recording, states } = this.state;
+    const { devices, states } = this.props;
+    const { recording } = this.state;
 
     const useableDevices = devices
       .reduce((acc, dev) => {
@@ -166,7 +166,7 @@ class Scene extends React.Component {
                 <div className="d-flex mt-2">
                   {checkBox({
                     device: dev,
-                    checked: selected,
+                    checked: selected || false,
                     onChange: this.onToggleDevice(dev),
                   })}
                   {dev.get('name')}
@@ -215,7 +215,6 @@ class Scene extends React.Component {
 
 const mapStateToProps = state => ({
   devices: state.getIn(['devices', 'list']),
-  states: state.getIn(['savedstates', 'list']),
 });
 
 export default connect(mapStateToProps)(Scene);

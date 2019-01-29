@@ -115,7 +115,6 @@ class Automation extends Component {
       });
       return acc;
     }, {});
-    console.log(this.state.formData);
 
     return (
       <React.Fragment>

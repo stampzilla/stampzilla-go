@@ -106,7 +106,7 @@ class Websocket extends Component {
       timeoutInterval: 1000,
     });
     writeSocket = this.socket;
-    //writeFunc = this.socket.send;
+    // writeFunc = this.socket.send;
     this.socket.onmessage = this.onMessage();
     this.socket.onopen = this.onOpen();
     this.socket.onclose = this.onClose();
