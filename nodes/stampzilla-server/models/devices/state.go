@@ -49,12 +49,19 @@ func (ds State) String(key string, fn func(string)) {
 	}
 }
 
+// Diff calculates the diff between 2 states. If key is missing in right but exists in left it will not be a diff
 func (ds State) Diff(right State) State {
 	diff := make(State)
 	for k, v := range ds {
-		if v != right[k] {
-			diff[k] = right[k]
+		rv, ok := right[k]
+		if !ok {
+			//diff[k] = v
+			continue
 		}
+		if ok && v != rv {
+			diff[k] = rv
+		}
+
 	}
 
 	for k, v := range right {
@@ -76,4 +83,10 @@ func (ds State) Merge(right State) State {
 		diff[k] = v
 	}
 	return diff
+}
+
+func (ds State) MergeWith(right State) {
+	for k, v := range right {
+		ds[k] = v
+	}
 }

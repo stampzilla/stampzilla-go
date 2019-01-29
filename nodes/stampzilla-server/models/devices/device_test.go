@@ -92,13 +92,18 @@ func TestStateDiff(t *testing.T) {
 	ds1 := State{
 		"on":          true,
 		"temperature": 10,
+		"test":        1,
 	}
 	ds2 := State{
 		"on":          false,
 		"temperature": 10,
+		"asdf":        10,
 	}
 	diff := ds1.Diff(ds2)
+	assert.Len(t, diff, 2)
+	//spew.Dump(diff)
 	assert.Equal(t, false, diff["on"])
+	assert.Equal(t, 10, diff["asdf"])
 	assert.Equal(t, nil, diff["temperature"])
 }
 
