@@ -1,0 +1,148 @@
+
+{
+        "0187004e": {
+                "SenderId": "0187004e",
+                "Name": "Smartplug",
+                "On": false,
+                "Type": "",
+                "Features": null,
+                "SendEEPs": [
+                        "a53808"
+                ],
+                "RecvEEPs": [
+                        "a51201",
+                        "d20109"
+                ],
+                "PowerW": 0,
+                "PowerkWh": 0,
+                "Dim": 0
+        },
+        "018d7492": {
+                "SenderId": "018d7492",
+                "UniqueId": 18,
+                "Name": "Tak sovrum",
+                "On": false,
+                "Type": "",
+                "Features": null,
+                "SendEEPs": [
+                        "a53808eltako"
+                ],
+                "RecvEEPs": [
+                        "f60201eltako",
+                        "a53808eltako"
+                ],
+                "PowerW": 0,
+                "PowerkWh": 0,
+                "Dim": 0
+        },
+        "018df8bd": {
+                "SenderId": "018df8bd",
+                "UniqueId": 1,
+                "Name": "Fönster sovrum",
+                "On": false,
+                "Type": "",
+                "Features": null,
+                "SendEEPs": [
+                        "f60201eltako"
+                ],
+                "RecvEEPs": [
+                        "f60201eltako"
+                ],
+                "PowerW": 0,
+                "PowerkWh": 0,
+                "Dim": 0
+        },
+        "0197357c": {
+                "SenderId": "0197357c",
+                "UniqueId": 2,
+                "Name": "Fönster kontor",
+                "On": false,
+                "Type": "",
+                "Features": null,
+                "SendEEPs": [
+                        "f60201eltako"
+                ],
+                "RecvEEPs": [
+                        "f60201eltako"
+                ],
+                "PowerW": 0,
+                "PowerkWh": 0,
+                "Dim": 0
+        },
+        "01996b24": {
+                "SenderId": "01996b24",
+                "UniqueId": 3,
+                "Name": "Fönster kök",
+                "On": false,
+                "Type": "",
+                "Features": null,
+                "SendEEPs": [
+                        "f60201eltako"
+                ],
+                "RecvEEPs": [
+                        "f60201eltako"
+                ],
+                "PowerW": 0,
+                "PowerkWh": 0,
+                "Dim": 0
+        },
+        "018d88bd": {
+                "SenderId": "018d88bd",
+                "UniqueId": 4,
+                "Name": "Leias rum fönster",
+                "On": false,
+                "Type": "",
+                "Features": null,
+                "SendEEPs": [
+                        "f60201eltako"
+                ],
+                "RecvEEPs": [
+                        "f60201eltako"
+                ],
+                "PowerW": 0,
+                "PowerkWh": 0,
+                "Dim": 0
+        },
+        "fefe749b": {
+                "SenderId": "fefe749b",
+                "Name": "Knapp1",
+                "On": false,
+                "Type": "",
+                "Features": null,
+                "SendEEPs": null,
+                "RecvEEPs": [
+                        "f60201"
+                ],
+                "PowerW": 0,
+                "PowerkWh": 0,
+                "Dim": 0
+        },
+        "fefdc488": {
+                "SenderId": "fefdc488",
+                "Name": "Knapp köket",
+                "Features": null,
+                "SendEEPs": null,
+                "RecvEEPs": [
+                        "f60201"
+                ]
+        },
+        "fefcf9c1": {
+                "SenderId": "fefcf9c1",
+                "Name": "Knapp hall",
+                "Features": null,
+                "SendEEPs": null,
+                "RecvEEPs": [
+                        "f60201"
+                ]
+        },
+        "fefd3a26": {
+                "SenderId": "fefd3a26",
+                "Name": "Knapp badrum",
+                "Features": null,
+                "SendEEPs": null,
+                "RecvEEPs": [
+                        "f60201"
+                ]
+        }
+
+}

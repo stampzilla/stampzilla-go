@@ -15,6 +15,7 @@ type Task struct {
 	Actions []string `json:"actions"`
 	cronID  int64
 	When    string `json:"when"`
+	Enabled bool   `json:"enabled"`
 	sync.RWMutex
 	savedStateStore *SavedStateStore
 	sender          websocket.Sender
@@ -54,6 +55,10 @@ func (r *Task) CronId() int64 {
 func (t *Task) Run() {
 	t.RLock()
 	defer t.RUnlock()
+	if !t.Enabled {
+		logrus.Debugf("logic: scheduledtask %s (%s) not enabled. skipping", t.Name(), t.Uuid())
+		return
+	}
 	for _, id := range t.Actions {
 		stateList := t.savedStateStore.Get(id)
 		if stateList == nil {

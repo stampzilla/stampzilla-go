@@ -88,7 +88,7 @@ func (n *Node) setup() {
 
 	//Make sure we have a config
 	n.Config = &models.Config{}
-	n.Config.Load()
+	n.Config.MustLoad()
 	if n.Config.LogLevel != "" {
 		lvl, err := logrus.ParseLevel(n.Config.LogLevel)
 		if err != nil {
