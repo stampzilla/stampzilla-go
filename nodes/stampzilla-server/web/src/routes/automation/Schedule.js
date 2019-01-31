@@ -7,7 +7,12 @@ import Form from 'react-jsonschema-form';
 
 import { add, save } from '../../ducks/schedules';
 import Card from '../../components/Card';
-import CustomCheckbox from '../../components/CustomCheckbox';
+import SavedStateWidget from './components/SavedStatePicker';
+import {
+  ArrayFieldTemplate,
+  CustomCheckbox,
+  ObjectFieldTemplate,
+} from './components/formComponents';
 
 const schema = {
   type: 'object',
@@ -29,31 +34,27 @@ const schema = {
       title: 'When',
       description: 'Cron formated when line [second minute hour day month dow]',
     },
-  // conditions: {
-  // title: 'Conditions',
-  // description: 'A list of related rules that should be active or not active to enable this rule',
-  // type: "array",
-  // items: {
-  // type: 'object',
-  // properties: {
-  // rule: {
-  // type: 'string',
-  // title: 'Rule',
-  // },
-  // state: {
-  // type: 'boolean',
-  // title: 'Active',
-  // description: 'Should the rule be active or not?',
-  // },
-  // },
-  // },
-  // }
+    actions: {
+      type: 'array',
+      title: 'Actions',
+      items: {
+        type: 'string',
+      },
+    },
   },
 };
 const uiSchema = {
   config: {
     'ui:options': {
       rows: 15,
+    },
+  },
+  actions: {
+    items: {
+      'ui:widget': 'SavedStateWidget',
+      'ui:options': {
+        hideDelay: true,
+      },
     },
   },
 };
@@ -136,8 +137,11 @@ class Automation extends Component {
                   // onError={log('errors')}
                   // disabled={this.props.disabled}
                   // transformErrors={this.props.transformErrors}
+                  ObjectFieldTemplate={ObjectFieldTemplate}
+                  ArrayFieldTemplate={ArrayFieldTemplate}
                   widgets={{
                     CheckboxWidget: CustomCheckbox,
+                    SavedStateWidget,
                   }}
                 >
                   <button ref={(btn) => { this.submitButton = btn; }} style={{ display: 'none' }} type="submit" />

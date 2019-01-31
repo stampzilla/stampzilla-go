@@ -107,7 +107,7 @@ class SavedStatePicker extends React.Component {
       tab, modalIsOpen, value, scene,
     } = this.state;
     const { state: states } = scene || {};
-    const { savedstates } = this.props;
+    const { savedstates, options } = this.props;
 
     return (
       <React.Fragment>
@@ -144,7 +144,7 @@ class SavedStatePicker extends React.Component {
                     Scene
                   </a>
                 </li>
-                {!(value && value.length === 36) && (
+                {!(value && value.length === 36) && !options.hideDelay && (
                   <li className="nav-item">
                     <a
                       className={classnames(

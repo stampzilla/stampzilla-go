@@ -31,6 +31,12 @@ const schema = {
       description:
         'The main expression that describes the state that should activate the rule',
     },
+    for: {
+      type: 'string',
+      title: 'Delay',
+      description:
+        'The expression must be fullfilled this amount of time before the actions are carried out',
+    },
     actions: {
       type: 'array',
       title: 'Actions',
