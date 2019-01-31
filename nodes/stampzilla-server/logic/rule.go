@@ -196,8 +196,12 @@ func (r *Rule) Eval(devices *devices.List, rules map[string]bool) (bool, error) 
 
 	// Interpret the checked expression using the standard overloads.
 	i := interpreter.NewStandardInterpreter(packages.DefaultPackage, typeProvider)
-	eval := i.NewInterpretable(interpreter.NewCheckedProgram(r.checkedExp))
-	result, _ := eval.Eval(
+	eval, err := i.NewInterpretable(r.checkedExp)
+	if err != nil {
+		return false, err
+	}
+
+	result := eval.Eval(
 		interpreter.NewActivation(
 			map[string]interface{}{
 				"devices": devicesState,
