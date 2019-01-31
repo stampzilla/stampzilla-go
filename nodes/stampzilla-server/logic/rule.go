@@ -153,9 +153,7 @@ func (r *Rule) Run(store *SavedStateStore, sender websocket.Sender) {
 				continue
 			}
 		}
-
 	}
-
 }
 
 //Eval evaluates the cel expression

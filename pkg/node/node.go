@@ -38,15 +38,16 @@ type Node struct {
 
 	Client websocket.Websocket
 	//DisconnectClient context.CancelFunc
-	wg        *sync.WaitGroup
-	Config    *models.Config
-	X509      *x509.Certificate
-	TLS       *tls.Certificate
-	CA        *x509.CertPool
-	callbacks map[string][]OnFunc
-	Devices   *devices.List
-	shutdown  []func()
-	stop      chan struct{}
+	wg         *sync.WaitGroup
+	Config     *models.Config
+	X509       *x509.Certificate
+	TLS        *tls.Certificate
+	CA         *x509.CertPool
+	callbacks  map[string][]OnFunc
+	Devices    *devices.List
+	shutdown   []func()
+	stop       chan struct{}
+	sendUpdate chan devices.ID
 }
 
 // New returns a new Node
@@ -61,11 +62,12 @@ func New(t string) *Node {
 // NewWithClient returns a new Node with a custom websocket client
 func NewWithClient(client websocket.Websocket) *Node {
 	return &Node{
-		Client:    client,
-		wg:        &sync.WaitGroup{},
-		callbacks: make(map[string][]OnFunc),
-		Devices:   devices.NewList(),
-		stop:      make(chan struct{}),
+		Client:     client,
+		wg:         &sync.WaitGroup{},
+		callbacks:  make(map[string][]OnFunc),
+		Devices:    devices.NewList(),
+		stop:       make(chan struct{}),
+		sendUpdate: make(chan devices.ID),
 	}
 }
 
@@ -240,6 +242,7 @@ func (n *Node) Connect() error {
 	n.connect(ctx, u)
 	n.wg.Add(1)
 	go n.reader(ctx)
+	go n.syncWorker()
 	return nil
 }
 
@@ -384,6 +387,17 @@ func (n *Node) OnConfig(cb OnFunc) {
 	})
 }
 
+func (n *Node) OnConfigOnce(cb OnFunc) {
+	var once sync.Once
+	n.OnConfig(func(data json.RawMessage) error {
+		var err error
+		once.Do(func() {
+			err = cb(data)
+		})
+		return err
+	})
+}
+
 // OnShutdown registeres a callback that is run before the server shuts down
 func (n *Node) OnShutdown(cb func()) {
 	n.shutdown = append(n.shutdown, cb)
@@ -447,14 +461,63 @@ func (n *Node) OnRequestStateChange(cb func(state devices.State, device *devices
 var ErrSkipSync = fmt.Errorf("skipping device sync after RequestStateChange")
 
 // AddOrUpdate adds or updates a device in our local device store and notifies the server about the new state of the device.
-func (n *Node) AddOrUpdate(d *devices.Device) error {
+func (n *Node) AddOrUpdate(d *devices.Device) {
 	d.ID.Node = n.UUID
 	n.Devices.Add(d)
-	return n.WriteMessage("update-device", d)
+	n.sendUpdate <- d.ID
+}
+
+// syncWorker is a debouncer to send multiple devices to the server if we change many rapidly
+func (n *Node) syncWorker() {
+	for {
+		que := make([]devices.ID, 0)
+		id := <-n.sendUpdate
+		que = append(que, id)
+
+		max := time.NewTimer(10 * time.Millisecond)
+	outer:
+		for {
+			select {
+			case id := <-n.sendUpdate:
+				que = append(que, id)
+			case <-time.After(1 * time.Millisecond):
+				break outer
+			case <-max.C:
+				break outer
+
+			}
+		}
+
+		// send message to server
+		devs := make(devices.DeviceMap)
+		for _, id := range que {
+			d := n.GetDevice(id.ID)
+			devs[d.ID] = d
+		}
+		err := n.WriteMessage("update-devices", devs)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
+	}
 }
 
 func (n *Node) GetDevice(id string) *devices.Device {
 	return n.Devices.Get(devices.ID{Node: n.UUID, ID: id})
+}
+
+// UpdateState updates the new state on the node if if differs and sends update to server if there was a diff
+func (n *Node) UpdateState(id string, newState devices.State) {
+	if len(newState) == 0 {
+		return
+	}
+	device := n.GetDevice(id)
+	if diff := device.State.Diff(newState); len(diff) != 0 {
+		device.Lock()
+		device.State.MergeWith(diff)
+		device.Unlock()
+		n.SyncDevice(id)
+	}
 }
 
 //SyncDevices notifies the server about the state of all our known devices.
@@ -463,8 +526,8 @@ func (n *Node) SyncDevices() error {
 }
 
 // SyncDevice sync single device
-func (n *Node) SyncDevice(id string) error {
-	return n.WriteMessage("update-device", n.GetDevice(id))
+func (n *Node) SyncDevice(id string) {
+	n.sendUpdate <- devices.ID{ID: id}
 }
 
 //Subscribe subscribes to a topic in the server

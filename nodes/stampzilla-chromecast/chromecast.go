@@ -241,18 +241,6 @@ func (c *Chromecast) Event(node *node.Node) func(event events.Event) {
 		default:
 			logrus.Warnf("unexpected event %T: %#v\n", data, data)
 		}
-
-		if len(newState) == 0 {
-			return
-		}
-
-		device := node.GetDevice(c.Uuid())
-		if diff := device.State.Diff(newState); len(diff) != 0 {
-			device.Lock()
-			device.State.MergeWith(diff)
-			device.Unlock()
-			node.SyncDevice(c.Uuid())
-		}
-
+		node.UpdateState(c.Uuid(), newState)
 	}
 }

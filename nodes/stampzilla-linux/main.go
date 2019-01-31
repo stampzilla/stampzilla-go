@@ -77,10 +77,7 @@ func updatedConfig(data json.RawMessage) error {
 }
 
 func monitorDpms(node *node.Node, dev *devices.Device) {
-	err := node.AddOrUpdate(dev)
-	if err != nil {
-		logrus.Error(err)
-	}
+	node.AddOrUpdate(dev)
 
 	re := regexp.MustCompile("Monitor is (in )?([^ \n]+)")
 
@@ -100,10 +97,7 @@ func monitorDpms(node *node.Node, dev *devices.Device) {
 }
 
 func monitorHealth(node *node.Node, dev *devices.Device) {
-	err := node.AddOrUpdate(dev)
-	if err != nil {
-		logrus.Error(err)
-	}
+	node.AddOrUpdate(dev)
 
 	for {
 		out, _ := exec.Command("uptime").Output()

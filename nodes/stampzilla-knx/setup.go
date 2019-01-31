@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
 	"github.com/stampzilla/stampzilla-go/pkg/node"
 )
@@ -33,10 +32,7 @@ func setupLight(node *node.Node, tunnel *tunnel, light light) {
 		tunnel.AddLink(light.StateBrightness, "brightness", "level", dev)
 	}
 
-	err := node.AddOrUpdate(dev)
-	if err != nil {
-		logrus.Error(err)
-	}
+	node.AddOrUpdate(dev)
 }
 func setupSensor(node *node.Node, tunnel *tunnel, sensor sensor) {
 	dev := &devices.Device{
@@ -58,8 +54,5 @@ func setupSensor(node *node.Node, tunnel *tunnel, sensor sensor) {
 		tunnel.AddLink(sensor.Humidity, "humidity", "humidity", dev)
 	}
 
-	err := node.AddOrUpdate(dev)
-	if err != nil {
-		logrus.Error(err)
-	}
+	node.AddOrUpdate(dev)
 }

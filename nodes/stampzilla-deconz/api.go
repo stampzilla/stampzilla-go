@@ -95,7 +95,7 @@ func (a *API) do(method, path string, body io.Reader, v interface{}) error {
 		}
 		return fmt.Errorf("api status: %s error: %s", resp.Status, string(b))
 	}
-	logrus.Info("status is ", resp.Status)
+	logrus.Debug("status is ", resp.Status)
 
 	if v == nil {
 		return nil
