@@ -43,17 +43,31 @@ func main() {
 			"on": false,
 		},
 	}
+	dev4 := &devices.Device{
+		Name:   "Device4 that requires a node config",
+		Type:   "light",
+		ID:     devices.ID{ID: "4"},
+		Online: true,
+		Traits: []string{"OnOff"},
+		State: devices.State{
+			"on": false,
+		},
+	}
 
 	node.OnRequestStateChange(func(state devices.State, device *devices.Device) error {
 		logrus.Info("OnRequestStateChange:", state, device.ID)
 
+		// Make device 3 follow the value of device 1
 		if device.ID.ID == "1" {
 			dev3.State["on"] = state["on"]
 			node.AddOrUpdate(dev3)
 		}
 
+		// Load device config from the config struct
 		devConfig, ok := config.Devices[device.ID.ID]
-		if !ok {
+
+		// Require a device config for node 4 only
+		if !ok && device.ID.ID == "4" {
 			return fmt.Errorf("Foudn no config for device %s", device.ID)
 		}
 
@@ -66,7 +80,7 @@ func main() {
 		})
 
 		state.Float("brightness", func(lvl float64) {
-			fmt.Printf("dimming to %f on device %s with senderid %s\n", lvl, device.ID.String(), devConfig.SenderID)
+			fmt.Printf("dimming to %f on device %s\n", lvl, device.ID.String())
 		})
 
 		return nil
@@ -90,6 +104,11 @@ func main() {
 	}
 
 	err = node.AddOrUpdate(dev3)
+	if err != nil {
+		logrus.Error(err)
+	}
+
+	err = node.AddOrUpdate(dev4)
 	if err != nil {
 		logrus.Error(err)
 	}
