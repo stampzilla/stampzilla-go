@@ -96,11 +96,7 @@ func main() {
 	node.AddOrUpdate(dev1)
 	node.AddOrUpdate(dev2)
 	node.AddOrUpdate(dev3)
-
-	err = node.AddOrUpdate(dev4)
-	if err != nil {
-		logrus.Error(err)
-	}
+	node.AddOrUpdate(dev4)
 
 	node.Wait()
 }
