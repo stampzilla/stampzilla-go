@@ -46,10 +46,13 @@ const valueToTab = (value) => {
 class SavedStatePicker extends React.Component {
   constructor(props) {
     super(props);
+
+    const scene = props.savedstates.get(props.value);
     this.state = {
       tab: valueToTab(props.value),
       value: props.value,
       modalIsOpen: props.value === undefined,
+      scene: (scene && scene.toJS()) || {},
     };
 
     this.selectRef = React.createRef();
@@ -57,10 +60,11 @@ class SavedStatePicker extends React.Component {
 
   componentWillReceiveProps(props) {
     if (props.value !== this.props.value) {
+      const scene = props.savedstates.get(props.value);
       this.setState({
         tab: valueToTab(props.value),
         value: props.value,
-        scene: props.savedstates.get(props.value).toJS() || {},
+        scene: (scene && scene.toJS()) || {},
       });
     }
   }
