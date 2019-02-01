@@ -65,7 +65,7 @@ func (c *Main) Run() {
 	c.Config.Save("config.json")
 }
 
-func (c *Main) TLSConfig() *tls.Config {
+func (m *Main) TLSConfig() *tls.Config {
 	caCert, err := ioutil.ReadFile(path.Join("certificates", "ca.crt"))
 	if err != nil {
 		log.Fatal(err)
@@ -73,10 +73,13 @@ func (c *Main) TLSConfig() *tls.Config {
 	caCertPool := x509.NewCertPool()
 	caCertPool.AppendCertsFromPEM(caCert)
 	return &tls.Config{
+		// Dynamic load certificates
+		GetCertificate: m.CA.GetCertificate,
+
 		// Needed to verify client certificates
-		ClientCAs:    caCertPool,
-		Certificates: []tls.Certificate{*c.CA.TLS},
-		ClientAuth:   tls.VerifyClientCertIfGiven,
+		ClientCAs: caCertPool,
+		//Certificates: []tls.Certificate{*c.CA.TLS},
+		ClientAuth: tls.VerifyClientCertIfGiven,
 	}
 }
 
@@ -97,10 +100,6 @@ func (m *Main) Init() {
 	}
 
 	m.CA, err = ca.LoadOrCreate()
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	err = m.CA.LoadOrCreate("localhost")
 	if err != nil {
 		logrus.Fatal(err)
 	}

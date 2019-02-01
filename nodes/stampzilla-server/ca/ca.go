@@ -30,8 +30,8 @@ import (
 const storagePath = "certificates"
 
 type CA struct {
-	X509   *x509.Certificate
-	TLS    *tls.Certificate
+	X509   map[string]*x509.Certificate
+	TLS    map[string]*tls.Certificate
 	CAX509 *x509.Certificate
 	CATLS  *tls.Certificate
 
@@ -40,12 +40,19 @@ type CA struct {
 	sync.Mutex
 }
 
+func New() *CA {
+	return &CA{
+		X509: make(map[string]*x509.Certificate),
+		TLS:  make(map[string]*tls.Certificate),
+	}
+}
+
 func LoadOrCreate(names ...string) (*CA, error) {
 	name := "ca"
 	if len(names) == 1 {
 		name = names[0]
 	}
-	cert := &CA{}
+	cert := New()
 	return cert, cert.LoadOrCreate(name)
 }
 
@@ -80,30 +87,30 @@ func (ca *CA) Load(name string) error {
 		ca.CAX509 = certX509
 		return nil
 	}
-	ca.TLS = &certTLS
-	ca.X509 = certX509
+	ca.TLS[name] = &certTLS
+	ca.X509[name] = certX509
 
 	return nil
 }
 
 func (ca *CA) CreateCA() error {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil
+	}
+
 	// Create a 10year CA cert
 	recipe := &x509.Certificate{
-		SerialNumber: big.NewInt(int64(mrand.Int())),
+		SerialNumber: ca.GetNextSerial(),
 		Subject: pkix.Name{
-			Organization: []string{"stampzilla-go"},
-			CommonName:   "stampzilla-go CA",
-			//Country:       []string{"se"},
-			//Province:      []string{"PROVINCE"},
-			//Locality:      []string{"CITY"},
-			//StreetAddress: []string{"ADDRESS"},
-			//PostalCode:    []string{"POSTAL_CODE"},
+			Organization:       []string{"stampzilla-go"},
+			OrganizationalUnit: []string{hostname},
+			CommonName:         "stampzilla-go CA for " + hostname,
 		},
 		SubjectKeyId:          bigIntHash(big.NewInt(int64(mrand.Int()))),
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().AddDate(10, 0, 0), // 10 years
 		IsCA:                  true,
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
 		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
 		BasicConstraintsValid: true,
 	}
@@ -135,19 +142,24 @@ func bigIntHash(n *big.Int) []byte {
 }
 
 func (ca *CA) CreateCertificate(name string) error {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil
+	}
+
 	recipe := &x509.Certificate{
-		SerialNumber: big.NewInt(1653),
+		SerialNumber: ca.GetNextSerial(),
 		Subject: pkix.Name{
-			Organization: []string{"stampzilla-go"},
-			CommonName:   name,
+			Organization:       []string{"stampzilla-go"},
+			OrganizationalUnit: []string{hostname},
+			CommonName:         name,
 		},
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().AddDate(10, 0, 0), // 10 years
 		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
-		//IPAddresses:           []net.IP{net.ParseIP("127.0.0.1")},
-		DNSNames: []string{"localhost"},
+		DNSNames:              []string{name},
 	}
 
 	// Generate keys
@@ -191,7 +203,7 @@ func (ca *CA) CreateCertificateFromRequest(wr io.Writer, c string, r models.Requ
 		PublicKeyAlgorithm: clientCSR.PublicKeyAlgorithm,
 		PublicKey:          clientCSR.PublicKey,
 
-		SerialNumber: big.NewInt(2),
+		SerialNumber: ca.GetNextSerial(),
 		Issuer:       ca.CAX509.Subject,
 		Subject:      clientCSR.Subject,
 		NotBefore:    time.Now(),
@@ -259,8 +271,13 @@ func (ca *CA) ExportToDisk(name string, certBytes []byte, privateKey *rsa.Privat
 	return nil
 }
 
-func (ca *CA) GetCertificates() []store.Certificate {
+func (ca *CA) GetNextSerial() *big.Int {
+	// TODO: Make something more sofisticated than counting the amount of certs :)
+	certificates := ca.GetCertificates()
+	return big.NewInt(int64(1000 + len(certificates)))
+}
 
+func (ca *CA) GetCertificates() []store.Certificate {
 	files, err := ioutil.ReadDir(storagePath)
 	if err != nil {
 		log.Fatal(err)
@@ -339,4 +356,17 @@ func (ca *CA) WaitForApproval(i, c string, r models.Request) chan bool {
 	ca.Store.AddRequest(req)
 
 	return req.Approved
+}
+
+// Dynamic TLS server config
+func (ca *CA) GetCertificate(helo *tls.ClientHelloInfo) (*tls.Certificate, error) {
+	// Dynamicly load or create based on the requested hostname
+	if _, ok := ca.TLS[helo.ServerName]; !ok {
+		err := ca.LoadOrCreate(helo.ServerName)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return ca.TLS[helo.ServerName], nil
 }

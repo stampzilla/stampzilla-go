@@ -8,6 +8,7 @@ import (
 	"path"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -54,6 +55,7 @@ func (ws *Webserver) Init() *gin.Engine {
 	ws.initMelody()
 
 	r.Use(ginlogrus.New(logrus.StandardLogger()))
+	r.Use(cors.Default())
 
 	statikFS, err := fs.New()
 	if err == nil { // we only service GUI if statik files can be found

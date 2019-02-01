@@ -4,11 +4,7 @@ import ReconnectableWebSocket from 'reconnectingwebsocket';
 import Url from 'url';
 
 import { subscribe as certificates } from '../ducks/certificates';
-import {
-  connected,
-  disconnected,
-  received,
-} from '../ducks/connection';
+import { connected, disconnected, received } from '../ducks/connection';
 import { subscribe as connections } from '../ducks/connections';
 import { subscribe as devices } from '../ducks/devices';
 import { subscribe as nodes } from '../ducks/nodes';
@@ -67,11 +63,11 @@ class Websocket extends Component {
       savedstates,
       schedules,
     });
-  }
+  };
   onClose = () => () => {
     this.props.dispatch(disconnected());
     this.subscriptions = {};
-  }
+  };
   onMessage = () => (event) => {
     const { dispatch } = this.props;
     const parsed = JSON.parse(event.data);
@@ -90,13 +86,15 @@ class Websocket extends Component {
         // Nothing
       }
     }
-  }
+  };
 
   setupSocket(props) {
     const { url } = props;
     if (this.socket) {
       // this is becuase there is a bug in reconnecting websocket causing it to retry forever
-      this.socket.onclose = () => { throw new Error('force close socket'); };
+      this.socket.onclose = () => {
+        throw new Error('force close socket');
+      };
       // Close the existing connection
       this.socket.close();
     }
@@ -109,6 +107,7 @@ class Websocket extends Component {
     // writeFunc = this.socket.send;
     this.socket.onmessage = this.onMessage();
     this.socket.onopen = this.onOpen();
+    this.socket.onerror = this.onClose();
     this.socket.onclose = this.onClose();
   }
 
@@ -131,7 +130,7 @@ class Websocket extends Component {
       type: 'subscribe',
       body: subscriptions,
     });
-  }
+  };
 
   render = () => null;
 }
@@ -140,4 +139,3 @@ const mapToProps = state => ({
   url: state.getIn(['app', 'url']),
 });
 export default connect(mapToProps)(Websocket);
-
