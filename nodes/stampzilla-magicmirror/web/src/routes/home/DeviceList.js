@@ -13,12 +13,19 @@ class DeviceList extends React.PureComponent {
             state.getIn([device.get('device'), 'state', device.get('state')])
           )
 
+          if (value && device.get('decimals')) {
+            value *= Math.pow(10, device.get('decimals'))
+            value = Math.round(value)
+            value /= Math.pow(10, device.get('decimals'))
+            console.log(value)
+          }
+
           if (value && device.get('states')) {
             value = device.getIn(['states', value])
           }
 
-          if (value && device.get('unit')) {
-            value = value.concat(` ${device.get('unit')}`)
+          if (device.get('unit')) {
+            value = `${value} ${device.get('unit')}`
           }
 
           return (

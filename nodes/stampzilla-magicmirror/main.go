@@ -1,4 +1,4 @@
-//go:generate bash -c "go get -u github.com/rakyll/statik && statik -src ./web/build -f"
+//go:generate bash -c "go get -u github.com/rakyll/statik && cd web/ && npm run build && cd .. && statik -src ./web/build -f"
 package main
 
 import (
