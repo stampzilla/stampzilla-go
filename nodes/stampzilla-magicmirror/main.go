@@ -12,6 +12,8 @@ import (
 	"github.com/stampzilla/stampzilla-go/pkg/node"
 )
 
+var lastDeviceData json.RawMessage
+
 func main() {
 	node := node.New("magic-mirror")
 
@@ -25,7 +27,11 @@ func main() {
 		},
 	}
 
-	node.OnConfig(updatedConfig)
+	// Forward messages to webgui
+	node.OnConfig(forwardAs("config"))
+	node.On("devices", forwardAs("devices"))
+
+	// Receive state change requests
 	node.OnRequestStateChange(func(state devices.State, device *devices.Device) error {
 		logrus.Info("OnRequestStateChange:", state, device.ID)
 
@@ -60,13 +66,20 @@ func main() {
 		return
 	}
 
+	node.Subscribe("devices")
 	go monitorDpms(node, monitor)
 
 	node.Wait()
 }
 
-func updatedConfig(data json.RawMessage) error {
+func onConfig(data json.RawMessage) error {
 	logrus.Info("DATA:", string(data))
+	return nil
+}
+
+func onDevices(data json.RawMessage) error {
+	lastDeviceData = data
+	m.Broadcast(lastDeviceData)
 	return nil
 }
 

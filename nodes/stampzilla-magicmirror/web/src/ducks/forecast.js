@@ -1,15 +1,15 @@
-import yrno from 'yr.no-forecast';
-import moment from 'moment';
+import yrno from 'yr.no-forecast'
+import moment from 'moment'
+import { List, Map } from 'immutable'
 
-export const LOADING = 'forecast/LOADING';
-export const SUCCESS = 'forecast/SUCCESS';
+export const LOADING = 'forecast/LOADING'
+export const SUCCESS = 'forecast/SUCCESS'
 
-const initialState = {
+const initialState = Map({
   forecast: null,
   current: null,
-  loading: false,
-}
-
+  loading: false
+})
 
 export const loadForecast = () => {
   return dispatch => {
@@ -18,42 +18,35 @@ export const loadForecast = () => {
     })
 
     const LOCATION = {
-      // This is Dublin, Ireland
       lat: 56.870349,
       lon: 14.541664
-    };
+    }
 
-    return yrno().getWeather(LOCATION)
-      .then((weather) => {
+    return yrno()
+      .getWeather(LOCATION)
+      .then(weather => {
         Promise.all([
           weather.getFiveDaySummary(),
-          weather.getForecastForTime(moment().startOf('day')),
+          weather.getForecastForTime(moment().startOf('day'))
         ]).then(result => {
-          console.log(result);
           dispatch({
             type: SUCCESS,
             forecast: result[0],
-            current: result[1],
+            current: result[1]
           })
-        });
-      });
+        })
+      })
   }
 }
 
 export default (state = initialState, action) => {
   switch (action.type) {
     case LOADING:
-      return {
-        ...state,
-        loading: true,
-      }
+      return state.set('loading', true)
     case SUCCESS:
-      return {
-        ...state,
-        forecast: action.forecast,
-        current: action.current,
-      }
-
+      return state
+        .set('forecast', action.forecast)
+        .set('current', action.current)
     default:
       return state
   }

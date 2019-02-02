@@ -1,10 +1,9 @@
-import React, { Component } from 'react';
-import { push } from 'connected-react-router';
-import { bindActionCreators } from 'redux';
-import { connect } from 'react-redux';
-import moment from 'moment';
-import Moment from 'react-moment';
-import { loadForecast } from '../../ducks/forecast';
+import React, { Component } from 'react'
+//import { push } from 'connected-react-router';
+import { connect } from 'react-redux'
+import moment from 'moment'
+import Moment from 'react-moment'
+import { loadForecast } from '../../ducks/forecast'
 
 const iconMap = {
   Sun: 'sunny',
@@ -47,8 +46,8 @@ const iconMap = {
   LightSleet: 'cloudy',
   HeavySleet: 'cloudy',
   LightSnow: 'snowy',
-  HeavySnow: 'snowy',
-};
+  HeavySnow: 'snowy'
+}
 
 const textMap = {
   Sun: 'Sunny',
@@ -91,109 +90,121 @@ const textMap = {
   LightSleet: 'Light sleet',
   HeavySleet: 'Heavy sleet',
   LightSnow: 'Light snow',
-  HeavySnow: 'Heavy snow',
-};
+  HeavySnow: 'Heavy snow'
+}
 
 const unitMap = {
   celsius: 'C',
   farenheight: 'F',
-  kelvin: 'K',
-};
+  kelvin: 'K'
+}
 
 class Home extends Component {
   constructor(props) {
-    super(props);
-    this.clock = React.createRef();
-    this.seconds = React.createRef();
-    this.date = React.createRef();
+    super(props)
+    this.clock = React.createRef()
+    this.seconds = React.createRef()
+    this.date = React.createRef()
   }
 
   componentDidMount() {
-    const { dispatch } = this.props;
+    const { dispatch } = this.props
 
     const updateClock = () => {
-      this.clock.current.innerHTML = moment().format('HH:mm');
-      this.seconds.current.innerHTML = moment().format('ss');
-      this.date.current.innerHTML = moment().format('dddd - D MMMM');
+      this.clock.current.innerHTML = moment().format('HH:mm')
+      this.seconds.current.innerHTML = moment().format('ss')
+      this.date.current.innerHTML = moment().format('dddd - D MMMM')
     }
-    updateClock();
-    setInterval(updateClock, 1000);
+    updateClock()
+    setInterval(updateClock, 1000)
 
-    this.forecastInterval = setInterval(() => dispatch(loadForecast()), 60*60*1000);
-    dispatch(loadForecast());
+    this.forecastInterval = setInterval(
+      () => dispatch(loadForecast()),
+      60 * 60 * 1000
+    )
+    dispatch(loadForecast())
   }
 
   componentWillUnmount() {
-    clearTimeout(this.forecastInterval);
+    clearTimeout(this.forecastInterval)
   }
 
   render() {
-    const { forecasts } = this.props; 
+    const { forecasts } = this.props
 
     const calendarStrings = {
-        lastDay : '[Yesterday]',
-        sameDay : '[Today]',
-        nextDay : '[Tomorrow]',
-        lastWeek : '[last] dddd [at] LT',
-        nextWeek : 'dddd',
-        sameElse : 'L'
-    };
-
+      lastDay: '[Yesterday]',
+      sameDay: '[Today]',
+      nextDay: '[Tomorrow]',
+      lastWeek: '[last] dddd [at] LT',
+      nextWeek: 'dddd',
+      sameElse: 'L'
+    }
 
     return (
       <div>
         <div className="clock">
           <div ref={this.clock}>00:00</div>
-          <div className="seconds" ref={this.seconds}>00</div>
+          <div className="seconds" ref={this.seconds}>
+            00
+          </div>
         </div>
         <div className="date" ref={this.date}>
-        -  
+          -
         </div>
 
-        {forecasts && forecasts.filter(forecast => moment().diff(moment(forecast.from), 'date') < 0).map(forecast => (
-          <div className="forecast">
-            <strong><Moment calendar={calendarStrings}>{forecast.from}</Moment></strong>
-            <div className="weather">
-              <div className="weathericon">
-                <div className={iconMap[forecast.icon]}></div>
+        {forecasts &&
+          forecasts
+            .filter(
+              forecast => moment().diff(moment(forecast.from), 'date') < 0
+            )
+            .map(forecast => (
+              <div className="forecast" key={forecast.from}>
+                <strong>
+                  <Moment calendar={calendarStrings}>{forecast.from}</Moment>
+                </strong>
+                <div className="weather">
+                  <div className="weathericon">
+                    <div className={iconMap[forecast.icon]} />
+                  </div>
+                  <div className="weathervalues">
+                    {forecast.temperature && (
+                      <div>
+                        {forecast.temperature.value}&deg;
+                        {unitMap[forecast.temperature.unit]}{' '}
+                        {textMap[forecast.icon]}
+                      </div>
+                    )}
+                    {forecast.rain && <small>{forecast.rain}</small>}
+                    {forecast.windSpeed && (
+                      <small>{forecast.windSpeed.mps} m/s</small>
+                    )}
+                    {forecast.pressure && (
+                      <small>
+                        {forecast.pressure.value} {forecast.pressure.unit}
+                      </small>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="weathervalues">
-                {forecast.temperature && 
-                  <div >{forecast.temperature.value}&deg;{unitMap[forecast.temperature.unit]} {textMap[forecast.icon]}</div>
-                }
-                {forecast.rain && 
-                  <small>{forecast.rain}</small>
-                }
-                {forecast.windSpeed && 
-                  <small>{forecast.windSpeed.mps} m/s</small>
-                }
-                {forecast.pressure && 
-                  <small>{forecast.pressure.value} {forecast.pressure.unit}</small>
-                }
-              </div>
-            </div>
-          </div>
-        ))}
+            ))}
 
-
-        <div style={{ position: 'relative' }}>
-        </div>
-
+        <div style={{ position: 'relative' }} />
       </div>
-    );
+    )
   }
 }
 
-          //<div className="cloudy"></div>
-          //<div className="rainy"></div>
-          //<div className="snowy"></div>
-          //<div className="rainbow"></div>
-          //<div className="starry"></div>
-          //<div className="stormy"></div>
+//<div className="cloudy"></div>
+//<div className="rainy"></div>
+//<div className="snowy"></div>
+//<div className="rainbow"></div>
+//<div className="starry"></div>
+//<div className="stormy"></div>
 
-const mapStateToProps = ({ forecast }) => ({
-  forecasts: forecast.forecast,
-  current: forecast.current,
+const mapStateToProps = state => ({
+  forecasts: state.getIn(['forecast', 'forecast']),
+  current: state.getIn(['forecast', 'current'])
 })
 
 export default connect(mapStateToProps)(Home)

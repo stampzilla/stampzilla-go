@@ -1,12 +1,13 @@
 import { createStore, applyMiddleware, compose } from 'redux'
-import { connectRouter, routerMiddleware } from 'connected-react-router'
+import { routerMiddleware } from 'connected-react-router/immutable'
 import thunk from 'redux-thunk'
 import createHistory from 'history/createBrowserHistory'
 import rootReducer from './ducks'
+import { Map } from 'immutable'
 
 export const history = createHistory()
 
-const initialState = {}
+const initialState = Map({})
 const enhancers = []
 const middleware = [thunk, routerMiddleware(history)]
 
@@ -24,7 +25,7 @@ const composedEnhancers = compose(
 )
 
 export default createStore(
-  connectRouter(history)(rootReducer),
+  rootReducer(history),
   initialState,
   composedEnhancers
 )
