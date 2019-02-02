@@ -85,7 +85,6 @@
     "react-router-dom": "^4.3.1",
     "react-switch": "^3.0.4",
     "reactstrap": "^6.5.0",
-    "reconnecting-websocket": "github:quentinus95/reconnecting-websocket#patch-1",
     "reconnectingwebsocket": "^1.0.0",
     "redux": "^4.0.1",
     "redux-define": "^1.1.1",

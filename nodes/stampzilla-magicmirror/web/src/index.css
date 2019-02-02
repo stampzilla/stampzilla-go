@@ -32,7 +32,7 @@ body {
 .date {
   font-size: 6vw;
   margin-left: 1rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
 }
 
 .forecast {
@@ -513,4 +513,17 @@ body {
       #eeeeee 70px 100px, #eeeeee 80px 95px, #eeeeee 110px 45px,
       #eeeeee 90px 35px;
   }
+}
+
+.device-list {
+  display: flex;
+  flex-direction: row;
+}
+
+.device-list-item {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+  margin-left: 1rem;
+  align-items: center;
 }

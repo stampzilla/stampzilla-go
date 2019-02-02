@@ -3,7 +3,9 @@ import { connect } from 'react-redux'
 import ReconnectableWebSocket from 'reconnectingwebsocket'
 import Url from 'url'
 
-import { connected, disconnected, received } from '../ducks/connection'
+import { connected, disconnected } from '../ducks/connection'
+import { subscribe as devices } from '../ducks/devices'
+import { update as config } from '../ducks/config'
 
 // Placeholder until we have the write func from the websocket
 let writeSocket = null
@@ -41,8 +43,9 @@ class Websocket extends Component {
 
     const url = Url.parse(this.props.url)
 
-    //this.subscribe({
-    //});
+    this.subscribe({
+      devices
+    })
   }
   onClose = () => () => {
     this.props.dispatch(disconnected())
@@ -52,14 +55,13 @@ class Websocket extends Component {
     const { dispatch } = this.props
     const parsed = JSON.parse(event.data)
 
-    dispatch(received(parsed))
     const subscriptions = this.subscriptions[parsed.type]
     if (subscriptions) {
-      subscriptions.forEach(callback => callback(parsed.body))
+      subscriptions.forEach(callback => callback(parsed.data))
     }
     switch (parsed.type) {
-      case 'server-info': {
-        //dispatch(updateServer(parsed.body));
+      case 'config': {
+        dispatch(config(parsed.data))
         break
       }
       default: {

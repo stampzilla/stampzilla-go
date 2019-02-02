@@ -1,0 +1,30 @@
+{
+  widgets: [
+    {
+      type: 'clock'
+    },
+    {
+      type: 'devicelist',
+      devices: [
+        {
+          title: 'Temperatur',
+          device: 'dfc28c72-0e5c-451b-add2-c99af57510c8.1',
+          state: 'on',
+          states: {
+            true: 'Till',
+            false: 'Från'
+          }
+        },
+        {
+          title: 'Luftfuktighet',
+          device: 'dfc28c72-0e5c-451b-add2-c99af57510c8.2',
+          state: 'on',
+          unit: 'grader'
+        }
+      ]
+    },
+    {
+      type: 'forecast'
+    }
+  ]
+}

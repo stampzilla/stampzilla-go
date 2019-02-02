@@ -3,13 +3,12 @@ import { defineAction } from 'redux-define';
 
 const c = defineAction(
   'connection',
-  ['CONNECTED', 'DISCONNECTED', 'ERROR', 'RECEIVED'],
+  ['CONNECTED', 'DISCONNECTED', 'ERROR'],
 );
 
 const defaultState = Map({
   connected: null,
   error: null,
-  messages: List(),
 });
 
 // Actions
@@ -29,10 +28,6 @@ export function error(err) {
   return { type: c.ERROR, error: err };
 }
 
-export function received(message) {
-  return { type: c.RECEIVED, message };
-}
-
 // Reducer
 let idCount = 0;
 export default function reducer(state = defaultState, action) {
@@ -49,14 +44,6 @@ export default function reducer(state = defaultState, action) {
     case c.ERROR: {
       return state
         .set('error', action.error);
-    }
-    case c.RECEIVED: {
-      idCount += 1;
-      return state
-        .set('messages', state.get('messages').push({
-          ...action.message,
-          id: idCount,
-        }).slice(-10));
     }
     default: return state;
   }
