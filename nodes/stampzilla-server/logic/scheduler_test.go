@@ -39,12 +39,14 @@ func TestSchedulerRunTask(t *testing.T) {
 	task := scheduler.AddTask("Test1")
 	task.AddAction("uuid")
 	task.SetWhen("* * * * * *")
+	task.Enabled = true
 	scheduler.ScheduleTask(task)
 
 	//Add a second task.
 	task = scheduler.AddTask("Test2")
 	task.AddAction("uuid2")
 	task.SetWhen("* * * * * *")
+	task.Enabled = true
 	scheduler.ScheduleTask(task)
 
 	//Start Cron
