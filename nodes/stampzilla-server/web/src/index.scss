@@ -1,4 +1,3 @@
-
 //$white:    #ffffff !default;
 //$gray-100: #f8f9fa !default;
 //$gray-200: #e9ecef !default;
@@ -13,15 +12,15 @@
 
 //$grays: () !default;
 //$grays: map-merge((
-        //"100": $gray-100,
-        //"200": $gray-200,
-        //"300": $gray-300,
-        //"400": $gray-400,
-        //"500": $gray-500,
-        //"600": $gray-600,
-        //"700": $gray-700,
-        //"800": $gray-800,
-        //"900": $gray-900
+//"100": $gray-100,
+//"200": $gray-200,
+//"300": $gray-300,
+//"400": $gray-400,
+//"500": $gray-500,
+//"600": $gray-600,
+//"700": $gray-700,
+//"800": $gray-800,
+//"900": $gray-900
 //), $grays);
 
 //$blue:    #009688 !default;
@@ -46,21 +45,21 @@
 
 //$theme-colors: () !default;
 //$theme-colors: map-merge((
-        //"primary":    $primary,
-        //"secondary":  $secondary,
-        //"success":    $success,
-        //"info":       $info,
-        //"warning":    $warning,
-        //"danger":     $danger,
-        //"light":      $light,
-        //"dark":       $dark
+//"primary":    $primary,
+//"secondary":  $secondary,
+//"success":    $success,
+//"info":       $info,
+//"warning":    $warning,
+//"danger":     $danger,
+//"light":      $light,
+//"dark":       $dark
 //), $theme-colors);
 
 @import "~admin-lte/dist/css/adminlte";
 @import "~bootstrap/scss/bootstrap";
 
 //.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active {
-    //background: $primary;
+//background: $primary;
 //}
 
 $fa-font-path: "~font-awesome/fonts";
@@ -72,19 +71,20 @@ $ionicons-font-path: "~ionicons/dist/fonts";
 
 $custom-control-description-disabled-color: #868e96;
 
-$switch-height: calc(#{$input-height} * .8) !default;
-$switch-height-sm: calc(#{$input-height-sm} * .8) !default;
-$switch-height-lg: calc(#{$input-height-lg} * .8) !default;
+$switch-height: calc(#{$input-height} * 0.8) !default;
+$switch-height-sm: calc(#{$input-height-sm} * 0.8) !default;
+$switch-height-lg: calc(#{$input-height-lg} * 0.8) !default;
 $switch-border-radius: $switch-height !default;
 $switch-bg: $custom-control-indicator-bg !default;
-$switch-checked-bg: map-get($theme-colors, 'primary') !default;
+$switch-checked-bg: map-get($theme-colors, "primary") !default;
 $switch-disabled-bg: $custom-control-indicator-disabled-bg !default;
 $switch-disabled-color: $custom-control-description-disabled-color !default;
 $switch-thumb-bg: $white !default;
 $switch-thumb-border-radius: 50% !default;
 $switch-thumb-padding: 2px !default;
-$switch-focus-box-shadow: 0 0 0 $input-btn-focus-width rgba(map-get($theme-colors, 'primary'), .25);
-$switch-transition: .2s all !default;
+$switch-focus-box-shadow: 0 0 0 $input-btn-focus-width
+  rgba(map-get($theme-colors, "primary"), 0.25);
+$switch-transition: 0.2s all !default;
 
 .switch {
   font-size: $font-size-base;
@@ -112,12 +112,12 @@ $switch-transition: .2s all !default;
       outline: none;
       user-select: none;
       vertical-align: middle;
-      text-indent: calc(calc(#{$switch-height} * 2) + .5rem);
+      text-indent: calc(calc(#{$switch-height} * 2) + 0.5rem);
     }
 
     + label::before,
     + label::after {
-      content: '';
+      content: "";
       position: absolute;
       top: 0;
       left: 0;
@@ -175,7 +175,7 @@ $switch-transition: .2s all !default;
         min-width: calc(#{$switch-height-sm} * 2);
         height: $switch-height-sm;
         line-height: $switch-height-sm;
-        text-indent: calc(calc(#{$switch-height-sm} * 2) + .5rem);
+        text-indent: calc(calc(#{$switch-height-sm} * 2) + 0.5rem);
       }
 
       + label::before {
@@ -202,7 +202,7 @@ $switch-transition: .2s all !default;
         min-width: calc(#{$switch-height-lg} * 2);
         height: $switch-height-lg;
         line-height: $switch-height-lg;
-        text-indent: calc(calc(#{$switch-height-lg} * 2) + .5rem);
+        text-indent: calc(calc(#{$switch-height-lg} * 2) + 0.5rem);
       }
 
       + label::before {
@@ -222,5 +222,14 @@ $switch-transition: .2s all !default;
 
   + .switch {
     margin-left: 1rem;
+  }
+}
+
+.nav-item a {
+  display: flex;
+  align-items: center;
+
+  span {
+    flex: 1;
   }
 }

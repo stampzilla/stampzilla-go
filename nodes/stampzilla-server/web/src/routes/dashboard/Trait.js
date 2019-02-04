@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { AlphaPicker } from 'react-color';
-import Switch from 'react-switch';
 import SliderPointer from 'react-color/lib/components/slider/SliderPointer';
+import Switch from 'react-switch';
 import ct from 'color-temperature';
 
 import { uniqeId } from '../../helpers';
@@ -95,7 +95,7 @@ class Trait extends Component {
               r: 0,
               g: 0,
               b: 0,
-              a: state || 0,
+              a: (state - start) / (stop - start) || 0,
             }}
             onChange={({ rgb }) => {
               const temp = rgb.a * (stop - start);
