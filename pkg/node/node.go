@@ -336,14 +336,15 @@ func (n *Node) generateKey() (*rsa.PrivateKey, error) {
 }
 
 func (n *Node) generateCSR() ([]byte, error) {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, err
+	}
 
 	subj := pkix.Name{
-		CommonName: uuid.New().String(),
-		Country:    []string{"SE"},
-		//Province:           []string{"Some-State"},
-		//Locality:           []string{"MyCity"},
-		//Organization:       []string{"Company Ltd"},
-		//OrganizationalUnit: []string{"IT"},
+		CommonName:         uuid.New().String(),
+		Organization:       []string{"stampzilla-go"},
+		OrganizationalUnit: []string{hostname, n.Type},
 	}
 
 	template := x509.CertificateRequest{

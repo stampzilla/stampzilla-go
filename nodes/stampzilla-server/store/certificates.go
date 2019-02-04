@@ -3,13 +3,14 @@ package store
 import "time"
 
 type Certificate struct {
-	Serial     string    `json:"serial"`
-	CommonName string    `json:"commonName"`
-	IsCA       bool      `json:"isCA"`
-	Usage      []string  `json:"usage"`
-	Revoked    bool      `json:"revoked"`
-	Issued     time.Time `json:"issued"`
-	Expires    time.Time `json:"expires"`
+	Serial     string         `json:"serial"`
+	Subject    RequestSubject `json:"subject"`
+	CommonName string         `json:"commonName"`
+	IsCA       bool           `json:"isCA"`
+	Usage      []string       `json:"usage"`
+	Revoked    bool           `json:"revoked"`
+	Issued     time.Time      `json:"issued"`
+	Expires    time.Time      `json:"expires"`
 
 	Fingerprints map[string]string `json:"fingerprints"`
 }

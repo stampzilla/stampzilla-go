@@ -1,12 +1,27 @@
 package store
 
 type Request struct {
-	Identity   string `json:"identity"`
-	Connection string `json:"connection"`
-	Type       string `json:"type"`
-	Version    string `json:"version"`
+	Identity   string         `json:"identity"`
+	Subject    RequestSubject `json:"subject"`
+	Connection string         `json:"connection"`
+	Type       string         `json:"type"`
+	Version    string         `json:"version"`
 
 	Approved chan bool `json:"-"`
+}
+
+type RequestSubject struct {
+	CommonName         string        `json:"common_name,omitempty"`
+	SerialNumber       string        `json:"serial_number,omitempty"`
+	Country            []string      `json:"country,omitempty"`
+	Organization       []string      `json:"organization,omitempty"`
+	OrganizationalUnit []string      `json:"organizational_unit,omitempty"`
+	Locality           []string      `json:"locality,omitempty"`
+	Province           []string      `json:"province,omitempty"`
+	StreetAddress      []string      `json:"street_address,omitempty"`
+	PostalCode         []string      `json:"postal_code,omitempty"`
+	Names              []interface{} `json:"names,omitempty"`
+	//ExtraNames         []interface{} `json:"extra_names,omitempty"`
 }
 
 func (store *Store) GetRequests() []Request {

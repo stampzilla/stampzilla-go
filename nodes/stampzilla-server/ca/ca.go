@@ -190,7 +190,7 @@ func (ca *CA) CreateCertificateFromRequest(wr io.Writer, c string, r models.Requ
 		return err
 	}
 
-	approved := <-ca.WaitForApproval(clientCSR.Subject.CommonName, c, r)
+	approved := <-ca.WaitForApproval(clientCSR.Subject, c, r)
 	if approved != true {
 		return fmt.Errorf("Request was not approved")
 	}
@@ -309,7 +309,18 @@ func (ca *CA) GetCertificates() []store.Certificate {
 		sh256 := sha256.Sum256(crt.Raw)
 
 		cert := store.Certificate{
-			Serial:     crt.SerialNumber.String(),
+			Serial: crt.SerialNumber.String(),
+			Subject: store.RequestSubject{
+				CommonName:         crt.Subject.CommonName,
+				SerialNumber:       crt.Subject.SerialNumber,
+				Country:            crt.Subject.Country,
+				Organization:       crt.Subject.Organization,
+				OrganizationalUnit: crt.Subject.OrganizationalUnit,
+				Locality:           crt.Subject.Locality,
+				Province:           crt.Subject.Province,
+				StreetAddress:      crt.Subject.StreetAddress,
+				PostalCode:         crt.Subject.PostalCode,
+			},
 			CommonName: crt.Subject.CommonName,
 			IsCA:       crt.IsCA,
 			//Usage      []string
@@ -342,9 +353,20 @@ func (ca *CA) GetCertificates() []store.Certificate {
 	return certs
 }
 
-func (ca *CA) WaitForApproval(i, c string, r models.Request) chan bool {
+func (ca *CA) WaitForApproval(s pkix.Name, c string, r models.Request) chan bool {
 	req := store.Request{
-		Identity:   i,
+		Identity: s.CommonName,
+		Subject: store.RequestSubject{
+			CommonName:         s.CommonName,
+			SerialNumber:       s.SerialNumber,
+			Country:            s.Country,
+			Organization:       s.Organization,
+			OrganizationalUnit: s.OrganizationalUnit,
+			Locality:           s.Locality,
+			Province:           s.Province,
+			StreetAddress:      s.StreetAddress,
+			PostalCode:         s.PostalCode,
+		},
 		Connection: c,
 
 		Type:    r.Type,
