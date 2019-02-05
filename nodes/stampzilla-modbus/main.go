@@ -5,10 +5,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"log"
-	"os"
-	"os/signal"
-	"sync"
-	"syscall"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -18,18 +14,10 @@ import (
 
 // MAIN - This is run when the init function is done
 func main() {
-	var once sync.Once
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
 	node := node.New("modbus")
 	config := NewConfig()
 
-	waitForFirstConfig := make(chan struct{})
-	node.OnConfig(updatedConfig(config, func() {
-		once.Do(func() {
-			close(waitForFirstConfig)
-		})
-	}))
+	wait := node.WaitForFirstConfig()
 
 	err := node.Connect()
 	if err != nil {
@@ -37,12 +25,12 @@ func main() {
 		return
 	}
 	logrus.Info("Waiting for config from server")
-	select {
-	case <-waitForFirstConfig:
-	case <-interrupt:
-		log.Println("Stopping modbus node")
+	err = wait()
+	if err != nil {
+		logrus.Error(err)
 		return
 	}
+
 	modbusConnection := &Modbus{}
 	logrus.Infof("Connecting to modbus device: %s", config.Device)
 	err = modbusConnection.Connect()
@@ -104,7 +92,7 @@ func main() {
 				dev.State[v.Name] = v.Value
 			}
 			node.SyncDevices()
-		case <-interrupt:
+		case <-node.Stopped():
 			ticker.Stop()
 			log.Println("Stopping modbus node")
 			return

@@ -76,6 +76,11 @@ func (n *Node) Stop() {
 	close(n.stop)
 }
 
+// Stopped is closed when the node is stopped by n.Stop or os signal
+func (n *Node) Stopped() <-chan struct{} {
+	return n.stop
+}
+
 // Wait for node to be done after shutdown
 func (n *Node) Wait() {
 	n.Client.Wait()
@@ -225,6 +230,7 @@ func (n *Node) Connect() error {
 		defer n.wg.Done()
 		select {
 		case <-interrupt:
+			close(n.stop)
 		case <-n.stop:
 		}
 		cancel()
@@ -388,15 +394,26 @@ func (n *Node) OnConfig(cb OnFunc) {
 	})
 }
 
-func (n *Node) OnConfigOnce(cb OnFunc) {
+// WaitForFirstConfig blocks until we recieve the first config from server
+func (n *Node) WaitForFirstConfig() func() error {
 	var once sync.Once
+	waitForConfig := make(chan struct{})
 	n.OnConfig(func(data json.RawMessage) error {
 		var err error
 		once.Do(func() {
-			err = cb(data)
+			close(waitForConfig)
 		})
 		return err
 	})
+
+	return func() error {
+		select {
+		case <-waitForConfig:
+			return nil
+		case <-n.stop:
+			return fmt.Errorf("node: stopped before first config")
+		}
+	}
 }
 
 // OnShutdown registeres a callback that is run before the server shuts down

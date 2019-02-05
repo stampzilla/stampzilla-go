@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math"
 	"os"
 	"os/signal"
@@ -30,12 +29,7 @@ func main() {
 
 	node := node.New("enocean")
 	node.OnConfig(updatedConfig(node))
-
-	waitForConfig := make(chan struct{}, 1)
-	node.OnConfigOnce(func(data json.RawMessage) error {
-		waitForConfig <- struct{}{}
-		return nil
-	})
+	wait := node.WaitForFirstConfig()
 
 	node.OnRequestStateChange(onRequestStateChange(node))
 
@@ -46,10 +40,9 @@ func main() {
 	}
 
 	logrus.Info("Waiting for config from server")
-	select {
-	case <-waitForConfig:
-	case <-interrupt:
-		log.Println("Stopping node")
+	err = wait()
+	if err != nil {
+		logrus.Error(err)
 		return
 	}
 
