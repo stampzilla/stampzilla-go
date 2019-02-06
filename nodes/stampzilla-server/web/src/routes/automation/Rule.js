@@ -77,6 +77,7 @@ class Automation extends Component {
     this.state = {
       ...loadFromProps(props),
       isValid: true,
+      isModified: false,
     };
   }
 
@@ -87,7 +88,10 @@ class Automation extends Component {
       match.params.uuid !== this.props.match.params.uuid ||
       rules !== this.props.rules
     ) {
-      this.setState(loadFromProps(nextProps));
+      this.setState({
+        ...loadFromProps(nextProps),
+        isModified: false,
+      });
     }
   }
 
@@ -96,6 +100,7 @@ class Automation extends Component {
     this.setState({
       isValid: errors.length === 0,
       formData,
+      isModified: true,
     });
   };
 
@@ -107,13 +112,16 @@ class Automation extends Component {
     } else {
       dispatch(add(formData));
     }
+  }
 
+  onBackClick = () => () => {
     const { history } = this.props;
     history.push('/aut');
-  };
+  }
 
   render() {
-    const { match, devices } = this.props;
+    const { rules, match, devices } = this.props;
+    const { isModified } = this.state;
 
     const params = devices.reduce((acc, dev) => {
       dev.get('state').forEach((value, key) => {
@@ -126,6 +134,9 @@ class Automation extends Component {
       <React.Fragment>
         <div className="row">
           <div className="col-md-12">
+            {rules.getIn([match.params.uuid, 'error']) &&
+            <div className="alert alert-danger">{rules.getIn([match.params.uuid, 'error'])}</div>
+            }
             <Card
               title={match.params.uuid ? 'Edit rule ' : 'New rule'}
               bodyClassName="p-0"
@@ -160,9 +171,16 @@ class Automation extends Component {
               </div>
               <div className="card-footer">
                 <Button
-                  color="primary"
+                  color="secondary"
+                  onClick={this.onBackClick()}
+                >
+                  {'Back'}
+                </Button>
+                <Button
+                  color={isModified ? "primary" : "secondary"}
                   disabled={!this.state.isValid || this.props.disabled}
                   onClick={() => this.submitButton.click()}
+                  className="float-right"
                 >
                   {'Save'}
                 </Button>

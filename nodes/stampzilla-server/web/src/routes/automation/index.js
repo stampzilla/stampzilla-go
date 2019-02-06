@@ -3,79 +3,115 @@ import { connect } from 'react-redux';
 
 import Card from '../../components/Card';
 
-class Automation extends Component {
-    onClickNode = uuid => () => {
-      const { history } = this.props;
-      history.push(`/aut/${uuid}`);
+const toStatusBadge = (n) => {
+  if (n.get('enabled')) {
+    if (n.get('error')) {
+      return <div className="badge badge-danger">Failed</div>;
+    }
+    if (n.get('active')) {
+      return <div className="badge badge-success">Active</div>;
+    }
+    if (n.get('pending')) {
+      return <div className="badge badge-warning">Pending</div>;
     }
 
-    render() {
-      const { rules, schedules } = this.props;
+    return <div className="badge badge-secondary">Standby</div>;
+  }
 
-      return (
-        <React.Fragment>
-          <div className="row">
-            <div className="col-md-12">
-              <Card
-                title="Rules"
-                bodyClassName="p-0"
-                toolbar={[{
+  return <div className="badge badge-secondary">Disabled</div>;
+};
+
+class Automation extends Component {
+  onClickNode = uuid => () => {
+    const { history } = this.props;
+    history.push(`/aut/${uuid}`);
+  };
+
+  render() {
+    const { rules, schedules } = this.props;
+
+    return (
+      <React.Fragment>
+        <div className="row">
+          <div className="col-md-12">
+            <Card
+              title="Rules"
+              bodyClassName="p-0"
+              toolbar={[
+                {
                   icon: 'fa fa-plus',
                   className: 'btn-secondary',
                   onClick: this.onClickNode('rule/create'),
-                }]}
-              >
-                <table className="table table-striped table-valign-middle">
-                  <thead>
-                    <tr>
-                      <th>Identity</th>
-                      <th>Name</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rules && rules
+                },
+              ]}
+            >
+              <table className="table table-striped table-valign-middle">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Active</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rules &&
+                    rules
                       .map(n => (
-                        <tr key={n.get('uuid')} style={{ cursor: 'pointer' }} onClick={this.onClickNode(`rule/${n.get('uuid')}`)}>
-                          <td>{n.get('uuid')}</td>
-                          <td>{n.get('name')}</td>
+                        <tr
+                          key={n.get('uuid')}
+                          style={{ cursor: 'pointer' }}
+                          onClick={this.onClickNode(`rule/${n.get('uuid')}`)}
+                        >
+                          <td>{n.get('name') || n.get('id')}</td>
+                          <td>{toStatusBadge(n)}</td>
                         </tr>
-                    )).toArray()}
-                  </tbody>
-                </table>
-              </Card>
+                      ))
+                      .toArray()}
+                </tbody>
+              </table>
+            </Card>
 
-              <Card
-                title="Schedules"
-                bodyClassName="p-0"
-                toolbar={[{
+            <Card
+              title="Schedules"
+              bodyClassName="p-0"
+              toolbar={[
+                {
                   icon: 'fa fa-plus',
                   className: 'btn-secondary',
                   onClick: this.onClickNode('schedule/create'),
-                }]}
-              >
-                <table className="table table-striped table-valign-middle">
-                  <thead>
-                    <tr>
-                      <th>Identity</th>
-                      <th>Name</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {schedules && schedules
+                },
+              ]}
+            >
+              <table className="table table-striped table-valign-middle">
+                <thead>
+                  <tr>
+                    <th>Identity</th>
+                    <th>Name</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {schedules &&
+                    schedules
                       .map(n => (
-                        <tr key={n.get('uuid')} style={{ cursor: 'pointer' }} onClick={this.onClickNode(`schedule/${n.get('uuid')}`)}>
+                        <tr
+                          key={n.get('uuid')}
+                          style={{ cursor: 'pointer' }}
+                          onClick={this.onClickNode(
+                            `schedule/${n.get('uuid')}`,
+                          )}
+                        >
                           <td>{n.get('uuid')}</td>
                           <td>{n.get('name')}</td>
                         </tr>
-                    )).toArray()}
-                  </tbody>
-                </table>
-              </Card>
-            </div>
+                      ))
+                      .toArray()}
+                </tbody>
+              </table>
+            </Card>
           </div>
-        </React.Fragment>
-      );
-    }
+        </div>
+      </React.Fragment>
+    );
+  }
 }
 
 const mapToProps = state => ({

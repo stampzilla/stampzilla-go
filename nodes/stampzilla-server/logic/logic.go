@@ -53,9 +53,10 @@ type Rules map[string]*Rule
 
 // Logic is the main struct
 type Logic struct {
-	StateStore *SavedStateStore
-	Rules      map[string]*Rule
-	devices    *devices.List
+	StateStore    *SavedStateStore
+	Rules         map[string]*Rule
+	devices       *devices.List
+	onRulesUpdate func()
 	//ActionProgressChan chan ActionProgress
 	sync.RWMutex
 	sync.WaitGroup
@@ -78,6 +79,7 @@ func New(sss *SavedStateStore, websocketSender websocket.Sender) *Logic {
 		//ActionProgressChan: make(chan ActionProgress, 100),
 		Rules:           make(map[string]*Rule),
 		StateStore:      sss,
+		onRulesUpdate:   func() {},
 		c:               make(chan func()),
 		WebsocketSender: websocketSender,
 	}
@@ -105,6 +107,14 @@ func (l *Logic) SetRules(rules Rules) {
 	l.Lock()
 	l.Rules = rules
 	l.Unlock()
+
+	// Trigger an evaluation of the new rules
+	l.c <- func() {}
+}
+
+// OnRulesUpdate registers a callback function that is triggered everytime a rule changes state
+func (l *Logic) OnRulesUpdate(callback func()) {
+	l.onRulesUpdate = callback
 }
 
 // Start starts the logic worker
@@ -173,6 +183,9 @@ func (l *Logic) runFor(ctx context.Context, rule *Rule, evaluation bool) {
 		l.Add(1)
 		go func() {
 			defer l.Done()
+
+			rule.SetPending(true)
+			rule.RunIfChanged(l.onRulesUpdate)
 			logrus.Debug("Rule: ", rule.Name(), " (", rule.Uuid(), ") - sleeping for: ", rule.For())
 			select {
 			case <-time.After(time.Duration(rule.For())):
@@ -181,22 +194,29 @@ func (l *Logic) runFor(ctx context.Context, rule *Rule, evaluation bool) {
 			case <-rule.stop:
 				return
 			}
+
 			if !l.evaluateRule(rule) {
 				return
 			}
 
 			logrus.Info("Rule: ", rule.Name(), " (", rule.Uuid(), ") - running actions after for: ", rule.For())
+			rule.SetPending(false)
 			rule.SetActive(true)
+			rule.RunIfChanged(l.onRulesUpdate)
 			rule.Run(l.StateStore, l.WebsocketSender)
 		}()
 		return
 	}
 
+	rule.SetPending(false)
 	rule.SetActive(false)
+	rule.RunIfChanged(l.onRulesUpdate)
 }
 func (l *Logic) runNow(rule *Rule, evaluation bool) {
+	rule.SetPending(false)
+	rule.SetActive(evaluation)
+	rule.RunIfChanged(l.onRulesUpdate)
 	if evaluation != rule.Active() {
-		rule.SetActive(evaluation)
 		if evaluation {
 			l.Add(1)
 			go func() {
@@ -217,9 +237,11 @@ func (l *Logic) evaluateRule(r *Rule) bool {
 	}
 	result, err := r.Eval(l.devices, rules)
 	if err != nil {
+		r.SetError(err.Error())
 		logrus.Errorf("Error evaluating rule %s: %s", r.Uuid(), err.Error())
 		return false
 	}
+	r.SetError("")
 	return result
 }
 

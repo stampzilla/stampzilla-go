@@ -28,7 +28,7 @@ type Store struct {
 }
 
 func New(l *logic.Logic, s *logic.Scheduler, sss *logic.SavedStateStore) *Store {
-	return &Store{
+	store := &Store{
 		Nodes:        make(Nodes),
 		SavedState:   sss,
 		Devices:      devices.NewList(),
@@ -38,6 +38,12 @@ func New(l *logic.Logic, s *logic.Scheduler, sss *logic.SavedStateStore) *Store 
 		Certificates: make([]Certificate, 0),
 		Requests:     make([]Request, 0),
 	}
+
+	l.OnRulesUpdate(func() {
+		store.runCallbacks("rules")
+	})
+
+	return store
 }
 
 func (store *Store) runCallbacks(area string) {
