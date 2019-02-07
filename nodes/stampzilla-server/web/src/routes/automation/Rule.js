@@ -112,15 +112,17 @@ class Automation extends Component {
     } else {
       dispatch(add(formData));
     }
-  }
+  };
 
   onBackClick = () => () => {
     const { history } = this.props;
     history.push('/aut');
-  }
+  };
 
   render() {
-    const { rules, match, devices } = this.props;
+    const {
+      match, devices, state,
+    } = this.props;
     const { isModified } = this.state;
 
     const params = devices.reduce((acc, dev) => {
@@ -134,9 +136,11 @@ class Automation extends Component {
       <React.Fragment>
         <div className="row">
           <div className="col-md-12">
-            {rules.getIn([match.params.uuid, 'error']) &&
-            <div className="alert alert-danger">{rules.getIn([match.params.uuid, 'error'])}</div>
-            }
+            {state.getIn([match.params.uuid, 'error']) && (
+              <div className="alert alert-danger">
+                {state.getIn([match.params.uuid, 'error'])}
+              </div>
+            )}
             <Card
               title={match.params.uuid ? 'Edit rule ' : 'New rule'}
               bodyClassName="p-0"
@@ -170,14 +174,11 @@ class Automation extends Component {
                 </Form>
               </div>
               <div className="card-footer">
-                <Button
-                  color="secondary"
-                  onClick={this.onBackClick()}
-                >
+                <Button color="secondary" onClick={this.onBackClick()}>
                   {'Back'}
                 </Button>
                 <Button
-                  color={isModified ? "primary" : "secondary"}
+                  color={isModified ? 'primary' : 'secondary'}
                   disabled={!this.state.isValid || this.props.disabled}
                   onClick={() => this.submitButton.click()}
                   className="float-right"
@@ -203,6 +204,7 @@ class Automation extends Component {
 
 const mapToProps = state => ({
   rules: state.getIn(['rules', 'list']),
+  state: state.getIn(['rules', 'state']),
   devices: state.getIn(['devices', 'list']),
 });
 

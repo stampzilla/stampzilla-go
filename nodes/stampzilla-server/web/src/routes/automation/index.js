@@ -3,15 +3,19 @@ import { connect } from 'react-redux';
 
 import Card from '../../components/Card';
 
-const toStatusBadge = (n) => {
+const toStatusBadge = (n,state) => {
   if (n.get('enabled')) {
-    if (n.get('error')) {
+    if (!state) {
+      return <div className="badge badge-info">Unknown</div>;
+    }
+
+    if (state.get('error')) {
       return <div className="badge badge-danger">Failed</div>;
     }
-    if (n.get('active')) {
+    if (state.get('active')) {
       return <div className="badge badge-success">Active</div>;
     }
-    if (n.get('pending')) {
+    if (state.get('pending')) {
       return <div className="badge badge-warning">Pending</div>;
     }
 
@@ -28,7 +32,9 @@ class Automation extends Component {
   };
 
   render() {
-    const { rules, schedules } = this.props;
+    const {
+      rules, schedules, rulesState, schedulesState,
+    } = this.props;
 
     return (
       <React.Fragment>
@@ -61,8 +67,8 @@ class Automation extends Component {
                           style={{ cursor: 'pointer' }}
                           onClick={this.onClickNode(`rule/${n.get('uuid')}`)}
                         >
-                          <td>{n.get('name') || n.get('id')}</td>
-                          <td>{toStatusBadge(n)}</td>
+                          <td>{n.get('name') || n.get('uuid')}</td>
+                          <td>{toStatusBadge(n, rulesState.get(n.get('uuid')))}</td>
                         </tr>
                       ))
                       .toArray()}
@@ -116,7 +122,9 @@ class Automation extends Component {
 
 const mapToProps = state => ({
   rules: state.getIn(['rules', 'list']),
+  rulesState: state.getIn(['rules', 'state']),
   schedules: state.getIn(['schedules', 'list']),
+  schedulesState: state.getIn(['schedules', 'state']),
 });
 
 export default connect(mapToProps)(Automation);

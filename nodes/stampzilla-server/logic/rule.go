@@ -25,15 +25,12 @@ type Rule struct {
 	Uuid_       string          `json:"uuid"`
 	Operator_   string          `json:"operator"`
 	Active_     bool            `json:"active"`
-	Pending     bool            `json:"pending"`
 	Enabled     bool            `json:"enabled"`
 	Expression_ string          `json:"expression"`
 	Conditions_ map[string]bool `json:"conditions"`
 	Actions_    []string        `json:"actions"`
 	Labels_     []string        `json:"labels"`
 	For_        stypes.Duration `json:"for"`
-	Error       string          `json:"error"`
-	changed     bool
 	checkedExp  *exprpb.CheckedExpr
 	sync.RWMutex
 	cancel context.CancelFunc
@@ -79,36 +76,9 @@ func (r *Rule) Conditions() map[string]bool {
 
 func (r *Rule) SetActive(a bool) {
 	r.Lock()
-	r.changed = r.changed || r.Active_ != a
 	r.Active_ = a
 	r.Unlock()
 }
-func (r *Rule) SetPending(p bool) {
-	r.Lock()
-	r.changed = r.changed || r.Pending != p
-	r.Pending = p
-	r.Unlock()
-}
-func (r *Rule) SetError(err string) {
-	r.Lock()
-	r.changed = r.changed || r.Error != err
-	r.Error = err
-	r.Unlock()
-}
-func (r *Rule) RunIfChanged(callback func()) {
-	r.RLock()
-	if r.changed {
-		r.RUnlock()
-		r.Lock()
-		r.changed = false
-		r.Unlock()
-
-		callback()
-		return
-	}
-	r.RUnlock()
-}
-
 func (r *Rule) For() stypes.Duration {
 	r.RLock()
 	defer r.RUnlock()

@@ -22,6 +22,7 @@ type Store struct {
 	Connections  Connections
 	Certificates []Certificate
 	Requests     []Request
+	Server       map[string]map[string]map[string]interface{}
 
 	onUpdate []UpdateCallback
 	sync.RWMutex
@@ -37,10 +38,11 @@ func New(l *logic.Logic, s *logic.Scheduler, sss *logic.SavedStateStore) *Store 
 		Scheduler:    s,
 		Certificates: make([]Certificate, 0),
 		Requests:     make([]Request, 0),
+		Server:       make(map[string]map[string]map[string]interface{}),
 	}
 
-	l.OnRulesUpdate(func() {
-		store.runCallbacks("rules")
+	l.OnReportState(func(uuid string, state map[string]interface{}) {
+		store.AddOrUpdateServer("rules", uuid, state)
 	})
 
 	return store

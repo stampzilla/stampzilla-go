@@ -4,11 +4,12 @@ import makeUUID from 'uuid/v4';
 
 const c = defineAction(
   'rules',
-  ['ADD', 'SAVE', 'UPDATE'],
+  ['ADD', 'SAVE', 'UPDATE', 'UPDATE_STATE'],
 );
 
 const defaultState = Map({
   list: Map(),
+  state: Map(),
 });
 
 // Actions
@@ -21,11 +22,15 @@ export function save(rule) {
 export function update(rules) {
   return { type: c.UPDATE, rules };
 }
+export function updateState(rules) {
+  return { type: c.UPDATE_STATE, rules };
+}
 
 // Subscribe to channels and register the action for the packages
 export function subscribe(dispatch) {
   return {
     rules: rules => dispatch(update(rules)),
+    server: ({ rules }) => rules && dispatch(updateState(rules)),
   };
 }
 
@@ -47,6 +52,10 @@ export default function reducer(state = defaultState, action) {
     case c.UPDATE: {
       return state
         .set('list', fromJS(action.rules));
+    }
+    case c.UPDATE_STATE: {
+      return state
+        .set('state', fromJS(action.rules));
     }
     default: return state;
   }
