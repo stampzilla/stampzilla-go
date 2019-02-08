@@ -138,6 +138,7 @@ func (s *JSONStorage) SaveAccess(data *osin.AccessData) error {
 	return nil
 }
 
+//TODO Client information MUST be loaded together. move from SetClient to here
 //TODO AuthorizeData and AccessData DON'T NEED to be loaded if not easily available. might help growing storage file...
 func (s *JSONStorage) LoadAccess(code string) (*osin.AccessData, error) {
 	s.RLock()
@@ -157,6 +158,7 @@ func (s *JSONStorage) RemoveAccess(code string) error {
 	return nil
 }
 
+//TODO Client information MUST be loaded together. move from SetClient to here
 //TODO AuthorizeData and AccessData DON'T NEED to be loaded if not easily available. might help growing storage file...
 func (s *JSONStorage) LoadRefresh(code string) (*osin.AccessData, error) {
 	s.RLock()
