@@ -14,8 +14,7 @@ import (
 )
 
 type Config struct {
-	Display string                  `json:"display"`
-	Players map[string]PlayerConfig `json:"players"`
+	Display string `json:"display"`
 }
 
 var config Config
@@ -58,7 +57,6 @@ func main() {
 
 	go monitorDpms(node)
 	go monitorHealth(node)
-	go startPlayers()
 
 	node.Wait()
 }
@@ -72,7 +70,6 @@ func updatedConfig(data json.RawMessage) error {
 
 	config = newConf
 
-	go restartPlayers()
 	return nil
 }
 
