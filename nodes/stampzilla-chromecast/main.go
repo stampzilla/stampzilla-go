@@ -18,20 +18,20 @@ func main() {
 
 	//node.OnConfig(updatedConfig)
 
+	stop := make(chan struct{})
+	node.OnShutdown(func() {
+		close(stop)
+	})
+
 	err := node.Connect()
 	if err != nil {
 		logrus.Error(err)
 		return
 	}
 
-	stop := make(chan struct{})
-	node.OnShutdown(func() {
-		close(stop)
-	})
-
 	discovery := discovery.NewService()
 	discovery.Periodic(time.Second * 10)
-	discoveryListner(node, discovery, stop)
+	go discoveryListner(node, discovery, stop)
 
 	node.Wait()
 }

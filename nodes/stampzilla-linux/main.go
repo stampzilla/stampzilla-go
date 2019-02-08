@@ -1,8 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
-	"os"
+	"fmt"
 	"os/exec"
 	"regexp"
 	"time"
@@ -12,25 +13,15 @@ import (
 	"github.com/stampzilla/stampzilla-go/pkg/node"
 )
 
+type Config struct {
+	Display string                  `json:"display"`
+	Players map[string]PlayerConfig `json:"players"`
+}
+
+var config Config
+
 func main() {
 	node := node.New("linux")
-
-	monitor := &devices.Device{
-		Name:   "Monitor",
-		ID:     devices.ID{ID: "monitor"},
-		Online: true,
-		Traits: []string{"OnOff"},
-		State: devices.State{
-			"on": false,
-		},
-	}
-
-	health := &devices.Device{
-		Name:   "Health",
-		ID:     devices.ID{ID: "health"},
-		Online: true,
-		State:  devices.State{},
-	}
 
 	node.OnConfig(updatedConfig)
 	node.OnRequestStateChange(func(state devices.State, device *devices.Device) error {
@@ -40,15 +31,15 @@ func main() {
 		case "monitor":
 			if state["on"] == true {
 				cmd := exec.Command("xset", "dpms", "force", "on")
-				cmd.Env = append(os.Environ(), "DISPLAY=:0")
+				//cmd.Env = append(os.Environ(), "DISPLAY=:0")
 				_, err := cmd.Output()
 				if err != nil {
 					return err
 				}
 			}
 			if state["on"] == false {
-				cmd := exec.Command("uptime")
-				cmd.Env = append(os.Environ(), "DISPLAY=:0")
+				cmd := exec.Command("xset", "dpms", "force", "off")
+				//cmd.Env = append(os.Environ(), "DISPLAY=:0")
 				_, err := cmd.Output()
 				if err != nil {
 					return err
@@ -65,26 +56,50 @@ func main() {
 		return
 	}
 
-	go monitorDpms(node, monitor)
-	go monitorHealth(node, health)
+	go monitorDpms(node)
+	go monitorHealth(node)
+	go startPlayers()
 
 	node.Wait()
 }
 
 func updatedConfig(data json.RawMessage) error {
-	logrus.Info("DATA:", string(data))
+	newConf := Config{}
+	err := json.Unmarshal(data, &newConf)
+	if err != nil {
+		return err
+	}
+
+	config = newConf
+
+	go restartPlayers()
 	return nil
 }
 
-func monitorDpms(node *node.Node, dev *devices.Device) {
-	node.AddOrUpdate(dev)
+func monitorDpms(node *node.Node) {
+	dev := &devices.Device{
+		Name:   "Monitor",
+		ID:     devices.ID{ID: "monitor"},
+		Online: true,
+		Traits: []string{"OnOff"},
+		State: devices.State{
+			"on": false,
+		},
+	}
 
 	re := regexp.MustCompile("Monitor is (in )?([^ \n]+)")
 
 	for {
 		cmd := exec.Command("xset", "q")
-		cmd.Env = append(os.Environ(), "DISPLAY=:0")
-		out, _ := cmd.Output()
+		//cmd.Env = append(os.Environ(), "DISPLAY=:0")
+		var stderr bytes.Buffer
+		cmd.Stderr = &stderr
+		out, err := cmd.Output()
+
+		if err != nil {
+			logrus.Errorf("Failed to read monitor status: %s: %s", fmt.Sprint(err), stderr.String())
+			return
+		}
 
 		status := re.FindStringSubmatch(string(out))
 		if len(status) > 2 {
@@ -96,11 +111,25 @@ func monitorDpms(node *node.Node, dev *devices.Device) {
 	}
 }
 
-func monitorHealth(node *node.Node, dev *devices.Device) {
-	node.AddOrUpdate(dev)
+func monitorHealth(node *node.Node) {
+	dev := &devices.Device{
+		Name:   "Health",
+		ID:     devices.ID{ID: "health"},
+		Online: true,
+		State:  devices.State{},
+	}
 
 	for {
-		out, _ := exec.Command("uptime").Output()
+		cmd := exec.Command("uptime")
+		var stderr bytes.Buffer
+		cmd.Stderr = &stderr
+		out, err := cmd.Output()
+
+		if err != nil {
+			logrus.Errorf("Failed to read health: %s: %s", fmt.Sprint(err), stderr.String())
+			return
+		}
+
 		dev.State["uptime"] = string(out)
 
 		//out, err = exec.Command("free -h | awk -F ' ' 'NR>1 {print $3}'").Output()

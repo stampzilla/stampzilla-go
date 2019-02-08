@@ -132,22 +132,38 @@ func (c *Chromecast) Event(node *node.Node) func(event events.Event) {
 		case events.Connected:
 			logrus.Info(c.Name(), "- Connected")
 
-			node.AddOrUpdate(&devices.Device{
-				Name:   c.Name(),
-				Type:   "mediaplayer",
-				ID:     devices.ID{ID: c.Uuid()},
-				Online: true,
-				State: devices.State{
-					"playing": false,
-				},
-			})
+			dev := node.GetDevice(c.Uuid())
+			if dev == nil {
+				dev = &devices.Device{
+					Type:  "mediaplayer",
+					ID:    devices.ID{ID: c.Uuid()},
+					State: devices.State{},
+				}
+			}
 
-		case events.Disconnected:
-			logrus.Warn(c.Name(), "- Disconnected")
+			dev.Name = c.Name()
+			dev.Online = true
+			node.AddOrUpdate(dev)
 
 			newState["playing"] = false
 			newState["app"] = ""
-			state.Remove(c)
+		case events.Disconnected:
+			logrus.Warn(c.Name(), "- Disconnected")
+
+			dev := node.GetDevice(c.Uuid())
+			if dev == nil {
+				dev = &devices.Device{
+					Type:  "mediaplayer",
+					ID:    devices.ID{ID: c.Uuid()},
+					State: devices.State{},
+				}
+			}
+
+			dev.Online = false
+			node.AddOrUpdate(dev)
+
+			newState["playing"] = false
+			newState["app"] = ""
 		case events.AppStarted:
 			logrus.Info(c.Name(), "- App started:", data.DisplayName, "(", data.AppID, ")")
 			//spew.Dump("Data:", data)
