@@ -12,12 +12,27 @@ type ID struct {
 	ID   string
 }
 
+// ErrWrongIDFormat is returned if the new ID is not in the correct format
+var ErrWrongIDFormat = fmt.Errorf("wrong ID format. Expected nodeuuid.deviceid")
+
+func NewIDFromString(id string) (ID, error) {
+	tmp := strings.SplitN(string(id), ".", 2)
+	if len(tmp) != 2 {
+		return ID{}, ErrWrongIDFormat
+	}
+	return ID{Node: tmp[0], ID: tmp[1]}, nil
+}
+
 func (id ID) String() string {
-	return id.Node + "." + id.ID
+	return strings.Join([]string{id.Node, id.ID}, ".")
+}
+
+func (id ID) IsZero() bool {
+	return id == ID{}
 }
 
 func (id ID) Bytes() []byte {
-	return []byte(id.Node + "." + id.ID)
+	return []byte(strings.Join([]string{id.Node, id.ID}, "."))
 }
 func (id ID) MarshalText() (text []byte, err error) {
 	text = id.Bytes()
@@ -27,7 +42,7 @@ func (id ID) MarshalText() (text []byte, err error) {
 func (id *ID) UnmarshalText(text []byte) error {
 	tmp := strings.SplitN(string(text), ".", 2)
 	if len(tmp) != 2 {
-		return fmt.Errorf("wrong ID format. Expected nodeuuid.deviceid")
+		return ErrWrongIDFormat
 	}
 	id.Node = tmp[0]
 	id.ID = tmp[1]
@@ -96,6 +111,13 @@ func NewList() *List {
 	return &List{
 		devices: make(DeviceMap),
 	}
+}
+
+// Len return how many devices there are in the list.
+func (d *List) Len() int {
+	d.Lock()
+	defer d.Unlock()
+	return len(d.devices)
 }
 
 // Add adds a device to the list

@@ -127,7 +127,7 @@ func addOrUpdateDevice(node *node.Node, znode *nodes.Node) {
 			zp.SPECIFIC_TYPE_POWER_SWITCH_MULTILEVEL):
 			//znode.HasCommand(commands.SwitchMultilevel):
 			node.AddOrUpdate(&devices.Device{
-				Type:   "lamp",
+				Type:   "light",
 				Name:   znode.Brand + " - " + znode.Product + " (Address: " + devid + ")",
 				ID:     devices.ID{ID: devid},
 				Online: true,
@@ -138,7 +138,7 @@ func addOrUpdateDevice(node *node.Node, znode *nodes.Node) {
 		case znode.IsDeviceClass(zp.GENERIC_TYPE_SWITCH_BINARY,
 			zp.SPECIFIC_TYPE_POWER_SWITCH_BINARY):
 			node.AddOrUpdate(&devices.Device{
-				Type:   "lamp",
+				Type:   "light",
 				Name:   znode.Brand + " - " + znode.Product + " (Address: " + devid + ")",
 				ID:     devices.ID{ID: devid},
 				Online: true,
