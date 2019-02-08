@@ -69,7 +69,7 @@ func BroadcastUpdate(sender websocket.Sender) func(string, *store.Store) error {
 		case "schedules":
 			return send(area, store.GetScheduledTasks())
 		case "server":
-			return send(area, store.GetServerState())
+			return send(area, store.GetServerStateAsJson())
 		}
 		return nil
 	}

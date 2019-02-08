@@ -1,5 +1,11 @@
 package store
 
+import (
+	"encoding/json"
+
+	"github.com/sirupsen/logrus"
+)
+
 func (s *Store) AddOrUpdateServer(area, item string, state map[string]interface{}) {
 	s.Lock()
 	if s.Server[area] == nil {
@@ -17,8 +23,13 @@ func (s *Store) AddOrUpdateServer(area, item string, state map[string]interface{
 	s.runCallbacks("server")
 }
 
-func (store *Store) GetServerState() map[string]map[string]map[string]interface{} {
+func (store *Store) GetServerStateAsJson() json.RawMessage {
 	store.RLock()
-	defer store.RUnlock()
-	return store.Server
+	b, err := json.Marshal(store.Server)
+	store.RUnlock()
+
+	if err != nil {
+		logrus.Errorf("Failed to marshal server state: %s", err.Error())
+	}
+	return b
 }
