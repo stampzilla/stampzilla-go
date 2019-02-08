@@ -79,6 +79,10 @@ func main() {
 		return nil
 	})
 
+	node.OnShutdown(func() {
+		tunnel.Close()
+	})
+
 	err := node.Connect()
 	if err != nil {
 		logrus.Error(err)
@@ -89,10 +93,6 @@ func main() {
 		ForceColors: true,
 	})
 	logrus.SetReportCaller(false)
-
-	node.OnShutdown(func() {
-		tunnel.Close()
-	})
 
 	node.Wait()
 	node.Client.Wait()
