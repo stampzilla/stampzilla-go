@@ -41,7 +41,7 @@ func main() {
 	oauthConfig := osin.NewServerConfig()
 	oauthConfig.AllowClientSecretInParams = true
 	oauthConfig.AllowedAccessTypes = osin.AllowedAccessType{osin.AUTHORIZATION_CODE, osin.REFRESH_TOKEN}
-	oauthStorage := NewTestStorage()
+	oauthStorage := NewJSONStorage()
 	oauthStorage.LoadFromDisk("storage.json")
 	oauthStorage.SetClient(config.ClientID, &osin.DefaultClient{
 		Id:          config.ClientID,

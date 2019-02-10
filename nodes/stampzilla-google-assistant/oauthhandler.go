@@ -20,7 +20,7 @@ func authorize(oauth2server *osin.Server) func(c *gin.Context) {
 			if !handleLoginPage(ar, c.Writer, c.Request) {
 				return
 			}
-			ar.UserData = struct{ Login string }{Login: "test"}
+			//ar.UserData = struct{ Login string }{Login: "test"}
 			ar.Authorized = true
 			oauth2server.FinishAuthorizeRequest(resp, c.Request, ar)
 		}

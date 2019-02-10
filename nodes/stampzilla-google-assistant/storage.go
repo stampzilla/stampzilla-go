@@ -11,21 +11,19 @@ import (
 )
 
 type JSONStorage struct {
-	Clients         map[string]osin.Client
-	Authorize       map[string]*osin.AuthorizeData
-	Access          map[string]*osin.AccessData
-	Refresh         map[string]string
-	AccessClientMap map[string]string
+	Clients   map[string]osin.Client
+	Authorize map[string]*osin.AuthorizeData
+	Access    map[string]*osin.AccessData
+	Refresh   map[string]string
 	sync.RWMutex
 }
 
-func NewTestStorage() *JSONStorage {
+func NewJSONStorage() *JSONStorage {
 	r := &JSONStorage{
-		Clients:         make(map[string]osin.Client),
-		Authorize:       make(map[string]*osin.AuthorizeData),
-		Access:          make(map[string]*osin.AccessData),
-		Refresh:         make(map[string]string),
-		AccessClientMap: make(map[string]string),
+		Clients:   make(map[string]osin.Client),
+		Authorize: make(map[string]*osin.AuthorizeData),
+		Access:    make(map[string]*osin.AccessData),
+		Refresh:   make(map[string]string),
 	}
 
 	return r
@@ -62,10 +60,6 @@ func (s *JSONStorage) saveToDisk(filename string) {
 	}
 	defer file.Close()
 
-	for _, v := range s.Access {
-		s.AccessClientMap[v.AccessToken] = v.Client.GetId()
-	}
-
 	enc := json.NewEncoder(file)
 	enc.SetIndent("", "\t")
 	enc.Encode(s)
@@ -90,13 +84,6 @@ func (s *JSONStorage) SetClient(id string, client osin.Client) error {
 	s.Lock()
 	log.Printf("SetClient: %s\n", id)
 	s.Clients[id] = client
-	for _, v := range s.Access {
-		if clientID, ok := s.AccessClientMap[v.AccessToken]; ok {
-			if client, ok := s.Clients[clientID]; ok {
-				v.Client = client
-			}
-		}
-	}
 	s.Unlock()
 	return nil
 }
@@ -138,13 +125,13 @@ func (s *JSONStorage) SaveAccess(data *osin.AccessData) error {
 	return nil
 }
 
-//TODO Client information MUST be loaded together. move from SetClient to here
-//TODO AuthorizeData and AccessData DON'T NEED to be loaded if not easily available. might help growing storage file...
 func (s *JSONStorage) LoadAccess(code string) (*osin.AccessData, error) {
 	s.RLock()
 	defer s.RUnlock()
 	log.Printf("LoadAccess: %s\n", code)
 	if d, ok := s.Access[code]; ok {
+		d.AccessData = nil
+		d.AuthorizeData = nil
 		return d, nil
 	}
 	return nil, osin.ErrNotFound
@@ -158,8 +145,6 @@ func (s *JSONStorage) RemoveAccess(code string) error {
 	return nil
 }
 
-//TODO Client information MUST be loaded together. move from SetClient to here
-//TODO AuthorizeData and AccessData DON'T NEED to be loaded if not easily available. might help growing storage file...
 func (s *JSONStorage) LoadRefresh(code string) (*osin.AccessData, error) {
 	s.RLock()
 	defer s.RUnlock()
