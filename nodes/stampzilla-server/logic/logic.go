@@ -177,7 +177,11 @@ func (l *Logic) runFor(ctx context.Context, rule *Rule, evaluation bool) {
 		rule.stop = make(chan struct{})
 	}
 
-	if evaluation && !rule.Active() {
+	if evaluation == rule.Active() {
+		return
+	}
+
+	if evaluation {
 		rule.Stop()
 		l.Add(1)
 		go func() {

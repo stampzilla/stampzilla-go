@@ -527,9 +527,15 @@ func (n *Node) GetDevice(id string) *devices.Device {
 // UpdateState updates the new state on the node if if differs and sends update to server if there was a diff
 func (n *Node) UpdateState(id string, newState devices.State) {
 	device := n.GetDevice(id)
-	if len(newState) == 0 && device.State != nil {
+
+	if device == nil {
 		return
 	}
+
+	if len(newState) == 0 {
+		return
+	}
+
 	if diff := device.State.Diff(newState); len(diff) != 0 {
 		device.Lock()
 		device.State.MergeWith(diff)
