@@ -13,11 +13,13 @@ import (
 	"github.com/stampzilla/stampzilla-go/pkg/node"
 )
 
+// SmartHomeHandler contains the logic to answer Google Actions API requests and authorize them usnig oauth2.
 type SmartHomeHandler struct {
 	node       *node.Node
 	deviceList *devices.List
 }
 
+// NewSmartHomeHandler returns a new instance of SmartHomeHandler.
 func NewSmartHomeHandler(node *node.Node, deviceList *devices.List) *SmartHomeHandler {
 	return &SmartHomeHandler{
 		node:       node,
@@ -97,6 +99,8 @@ func (shh *SmartHomeHandler) executeHandler(req *googleassistant.Request) *googl
 	deviceOffline := googleassistant.NewResponseCommand()
 	deviceOffline.Status = "OFFLINE"
 
+	affectedDevs := make(devices.DeviceMap)
+
 	for _, command := range req.Inputs.Payload().Commands {
 
 		for _, v := range command.Execution {
@@ -120,18 +124,20 @@ func (shh *SmartHomeHandler) executeHandler(req *googleassistant.Request) *googl
 				if v.Command == googleassistant.CommandOnOff {
 					if v.Params.On {
 						logrus.Infof("Turning device %s (%s) on ", dev.Name, dev.ID)
-						//http.Get(dev.Url.On)
+						dev.State["on"] = true
 						onCommand.IDs = append(onCommand.IDs, googleDev.ID)
 					} else {
 						offCommand.IDs = append(onCommand.IDs, googleDev.ID)
 						logrus.Infof("Turning device %s (%s) off", dev.Name, dev.ID)
-						//http.Get(dev.Url.Off)
+						dev.State["on"] = false
 					}
+					affectedDevs[devID] = dev
 				}
 				if v.Command == googleassistant.CommandBrightnessAbsolute {
 					bri := v.Params.Brightness
 					logrus.Infof("Dimming device %s (%s) to %d", dev.Name, dev.ID, bri)
-
+					dev.State["brightness"] = float64(bri) / 100.0
+					affectedDevs[devID] = dev
 					if _, ok := levelCommands[v.Params.Brightness]; !ok {
 						levelCommands[bri] = googleassistant.ResponseCommand{
 							States: googleassistant.ResponseStates{
@@ -147,6 +153,8 @@ func (shh *SmartHomeHandler) executeHandler(req *googleassistant.Request) *googl
 			}
 		}
 	}
+
+	shh.node.WriteMessage("state-change", affectedDevs)
 
 	for _, v := range levelCommands {
 		resp.Payload.Commands = append(resp.Payload.Commands, v)
