@@ -12,7 +12,6 @@ import (
 
 type Daemon struct {
 	Name      string `json:"name"`
-	Config    string `json:"config"`
 	Autostart bool   `json:"autostart"`
 }
 type Config struct {
@@ -48,7 +47,7 @@ func (c *Config) GenerateDefault() error {
 			continue
 		}
 		name := strings.Replace(node.Name(), "stampzilla-", "", 1)
-		autostart := &Daemon{Name: name, Config: "/etc/stampzilla/nodes/" + node.Name(), Autostart: false}
+		autostart := &Daemon{Name: name}
 		config.Daemons = append(config.Daemons, autostart)
 	}
 
@@ -88,12 +87,8 @@ func (c *Config) ReadConfigFromFile(filepath string) error {
 }
 
 func (c *Config) Start(what string) {
-	cdir := ""
-	if dir := c.GetConfigForNode(what); dir != nil {
-		cdir = dir.Config
-	}
-
-	process := NewProcess(what, cdir)
+	confDir := "/etc/stampzilla/nodes/" + what
+	process := NewProcess(what, confDir)
 	process.Start()
 }
 

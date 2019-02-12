@@ -1,7 +1,7 @@
 .PHONY:	test cover cover-html cover-test
 
 test:
-	go test `go list ./... | grep -v /vendor/`
+	go test `go list ./... | grep -v /vendor/ | grep -v stampzilla-telldus`
 
 # todo: use this when golang issue 23910 is resolved
 # go test -v -coverpkg=./... -coverprofile=all `go list ./... | grep -v /vendor/ `

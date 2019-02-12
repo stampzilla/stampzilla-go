@@ -2,15 +2,19 @@ package main
 
 import (
 	"os"
+	"os/exec"
+	"time"
 
-	"github.com/codegangsta/cli"
 	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli"
 )
 
 var VERSION string = "dev"
 var BUILD_DATE string = ""
 
 func main() {
+	logrus.SetFormatter(&logrus.TextFormatter{TimestampFormat: time.RFC3339, FullTimestamp: true})
+
 	app := cli.NewApp()
 	app.Name = "stampzilla"
 	app.Version = VERSION + " (" + BUILD_DATE + ")"
@@ -19,7 +23,20 @@ func main() {
 
 	logrus.SetLevel(logrus.InfoLevel)
 
+	defaultInitSystem := "bare"
+	_, err := exec.LookPath("systemctl")
+	if err == nil {
+		defaultInitSystem = "systemd"
+	}
+
 	cliHandler := &cliHandler{}
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:  "init-system",
+			Usage: "can be bare or systemd",
+			Value: defaultInitSystem,
+		},
+	}
 
 	app.Commands = []cli.Command{
 		{
@@ -89,19 +106,6 @@ func main() {
 			},
 		},
 		{
-			Name:      "upgrade",
-			ShortName: "u",
-			Aliases:   []string{"update"},
-			Usage:     "Upgrades currently installed nodes and the server",
-			Action:    addDebug(cliHandler.Upgrade),
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "d",
-					Usage: "Show debug output",
-				},
-			},
-		},
-		{
 			Name:      "build",
 			ShortName: "b",
 			Usage:     "Compile and install stampzilla nodes. If none is specified, all available nodes will be installed",
@@ -125,16 +129,19 @@ func main() {
 		},
 	}
 
-	app.Run(os.Args)
+	err = app.Run(os.Args)
+	if err != nil {
+		logrus.Error(err)
+	}
+
 }
 
-func addDebug(in func(c *cli.Context)) func(c *cli.Context) {
-	return func(c *cli.Context) {
+func addDebug(in func(c *cli.Context) error) func(c *cli.Context) error {
+	return func(c *cli.Context) error {
 		if c.Bool("d") {
 			logrus.SetLevel(logrus.DebugLevel)
 			logrus.Info("Debug output activated")
 		}
-
-		in(c)
+		return in(c)
 	}
 }

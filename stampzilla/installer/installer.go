@@ -9,8 +9,8 @@ import (
 
 type Installer interface {
 	Prepare() error
-	Install(...string)
-	Update(...string)
+	Install(...string) error
+	Update(...string) error
 }
 
 type InstallSource uint8
