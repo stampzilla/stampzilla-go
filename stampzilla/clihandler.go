@@ -178,9 +178,19 @@ func (t *cliHandler) Debug(c *cli.Context) error {
 
 func (t *cliHandler) Log(c *cli.Context) error {
 	follow := c.Bool("f")
-	cmd := exec.Command("less", "-R", "/var/log/stampzilla/"+runner.GetProcessName(c.Args().First())+".log")
-	if follow {
-		cmd = exec.Command("tail", "-f", "/var/log/stampzilla/"+runner.GetProcessName(c.Args().First())+".log")
+	systemd := c.GlobalString("init-system") == "systemd"
+
+	var cmd *exec.Cmd
+	if systemd {
+		cmd = exec.Command("journalctl", "-u", runner.GetProcessName(c.Args().First()))
+		if follow {
+			cmd = exec.Command("journalctl", "-f", "-u", runner.GetProcessName(c.Args().First()))
+		}
+	} else {
+		cmd = exec.Command("less", "-R", "/var/log/stampzilla/"+runner.GetProcessName(c.Args().First())+".log")
+		if follow {
+			cmd = exec.Command("tail", "-f", "/var/log/stampzilla/"+runner.GetProcessName(c.Args().First())+".log")
+		}
 	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
