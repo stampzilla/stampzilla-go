@@ -64,7 +64,7 @@ func main() {
 		},
 		{
 			Name:   "disable",
-			Usage:  "disable systemd service. Only valid if init-system is systemd",
+			Usage:  "disable systemd service. Only valid if using systemd",
 			Action: addDebug(cliHandler.Disable),
 		},
 		{
