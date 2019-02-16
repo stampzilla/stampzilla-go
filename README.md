@@ -1,17 +1,14 @@
-stampzilla-go [![Build Status](https://travis-ci.org/stampzilla/stampzilla-go.svg?branch=master)](https://travis-ci.org/stampzilla/stampzilla-go) [![codecov](https://codecov.io/gh/stampzilla/stampzilla-go/branch/master/graph/badge.svg)](https://codecov.io/gh/stampzilla/stampzilla-go)
+stampzilla-go [![Build Status](https://travis-ci.org/stampzilla/stampzilla-go.svg?branch=master)](https://travis-ci.org/stampzilla/stampzilla-go) [![codecov](https://codecov.io/gh/stampzilla/stampzilla-go/branch/master/graph/badge.svg)](https://codecov.io/gh/stampzilla/stampzilla-go) [![Go Report Card](https://goreportcard.com/badge/github.com/stampzilla/stampzilla-go)](https://goreportcard.com/report/github.com/stampzilla/stampzilla-go)
 =============
 
-New version of this awesome homeautomation software written in Go and javascript with Polymer and webcomponents. 
+New version of this awesome homeautomation software written in Go and React
 
 Installation from precompiled binaries
 ```bash
-curl -s https://api.github.com/repos/stampzilla/stampzilla-go/releases | \
-grep "browser_download_url.*stampzilla-amd64" | \
-head -n 1 | cut -d '"' -f 4 | xargs curl -L -o stampzilla && \
-chmod +x stampzilla
+curl -s https://api.github.com/repos/stampzilla/stampzilla-go/releases/latest | grep "browser_download_url.*stampzilla-linux-amd64" | cut -d : -f 2,3 | tr -d \" | xargs curl -L -s -o stampzilla && chmod +x stampzilla
+sudo mv stampzilla /usr/local/bin #or ~/bin if you use that
+sudo stampzilla install
 ```
-Move stampzilla to /usr/local/bin or ~/bin depending on your setup. 
-```mv stampzilla /usr/local/bin```
 
 Installation from source
 ```bash

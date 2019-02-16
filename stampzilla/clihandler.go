@@ -95,9 +95,7 @@ func (t *cliHandler) runInstaller(c *cli.Context, i installer.Installer, upgrade
 		return err
 	}
 
-	is := c.GlobalString("init-system")
-
-	if is == "systemd" {
+	if c.GlobalBool("systemd") || c.GlobalBoolT("systemd") {
 		r := &runner.Systemd{}
 		defer r.Close()
 		if len(c.Args()) > 0 {
@@ -195,10 +193,9 @@ func (t *cliHandler) Debug(c *cli.Context) error {
 
 func (t *cliHandler) Log(c *cli.Context) error {
 	follow := c.Bool("f")
-	systemd := c.GlobalString("init-system") == "systemd"
 
 	var cmd *exec.Cmd
-	if systemd {
+	if c.GlobalBool("systemd") || c.GlobalBoolT("systemd") {
 		cmd = exec.Command("journalctl", "-u", runner.GetProcessName(c.Args().First()))
 		if follow {
 			cmd = exec.Command("journalctl", "-f", "-u", runner.GetProcessName(c.Args().First()))

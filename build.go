@@ -30,23 +30,29 @@ func main() {
 		}
 
 		log.Println("found RELEASE file", dir.Name())
+		build(path)
+	}
 
-		for _, goos := range []string{"linux"} {
-			for _, goarch := range []string{"arm", "arm64", "amd64"} {
-				binName := filepath.Base(fmt.Sprintf("%s-%s-%s", path, goos, goarch))
-				fmt.Printf("building %s...", binName)
-				cmd := exec.Command("go", getArgs(path, binName)...)
-				cmd.Env = os.Environ()
-				cmd.Env = append(cmd.Env, "GOOS="+goos, "GOARCH="+goarch)
-				stdoutStderr, err := cmd.CombinedOutput()
-				if err != nil {
-					log.Println(string(stdoutStderr))
-					log.Fatal(err)
-				}
-				fmt.Printf("done\n")
+	fmt.Println("Building stampzilla cli")
+	build("stampzilla")
+}
+
+func build(path string) {
+	for _, goos := range []string{"linux"} {
+		for _, goarch := range []string{"arm", "arm64", "amd64"} {
+			binName := filepath.Base(fmt.Sprintf("%s-%s-%s", path, goos, goarch))
+			fmt.Printf("building %s...\n", binName)
+			cmd := exec.Command("go", getArgs(path, binName)...)
+			cmd.Env = os.Environ()
+			cmd.Env = append(cmd.Env, "GOOS="+goos, "GOARCH="+goarch)
+			stdoutStderr, err := cmd.CombinedOutput()
+			if err != nil {
+				log.Println(string(stdoutStderr))
+				log.Fatal(err)
 			}
 		}
 	}
+	fmt.Printf("done\n")
 }
 
 func getArgs(path, binName string) []string {
