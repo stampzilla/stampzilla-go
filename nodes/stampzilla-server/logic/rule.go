@@ -102,15 +102,12 @@ func (r *Rule) Cancel() {
 
 func (r *Rule) Run(store *SavedStateStore, sender websocket.Sender) {
 
-	//TODO implement FOR 5m that spawns a new goroutine that sleeps for 5m and then checks if the rule is still true
-	// if rule is run again during this time the goroutine should be canceled/aborted
 	ctx, cancel := context.WithCancel(context.Background())
 	r.Lock()
 	r.cancel = cancel
 	r.Unlock()
 	defer cancel()
 	for k, v := range r.Actions_ {
-		//TODO notify progress here
 
 		duration, err := time.ParseDuration(v)
 		if err == nil { // its a duration. Do the sleep only

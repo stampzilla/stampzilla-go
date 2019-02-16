@@ -33,7 +33,6 @@ func (t *Installer) Update(nodes ...string) error {
 	return download(nodes, func(a github.ReleaseAsset) bool {
 		_, err := os.Stat(getFilePath(a))
 		return os.IsNotExist(err)
-		// TODO: Compare to hash file in release
 	})
 }
 

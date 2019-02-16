@@ -198,7 +198,6 @@ func incomingPacket(node *node.Node, p goenocean.Packet) {
 				h.Process(d, t)
 				logrus.Debug("Incoming packet processed from", d.IdString())
 				//connection.Send(node)
-				//TODO send state update to server
 				newState := devices.State{
 					"on":         d.On(),
 					"brightness": d.Dim,
