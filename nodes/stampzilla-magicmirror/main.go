@@ -67,7 +67,6 @@ func main() {
 		return
 	}
 
-	node.Subscribe("devices")
 	go monitorDpms(node, monitor)
 
 	node.Wait()

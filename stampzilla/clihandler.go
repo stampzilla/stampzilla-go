@@ -99,6 +99,7 @@ func (t *cliHandler) runInstaller(c *cli.Context, i installer.Installer, upgrade
 
 	if is == "systemd" {
 		r := &runner.Systemd{}
+		defer r.Close()
 		if len(c.Args()) > 0 {
 			for _, node := range c.Args() {
 				err := r.GenerateUnit(node)
@@ -134,23 +135,39 @@ func (t *cliHandler) runInstaller(c *cli.Context, i installer.Installer, upgrade
 func (t *cliHandler) Start(c *cli.Context) error {
 	requireRoot()
 	r := getRunner(c)
+	defer r.Close()
 	return r.Start(c.Args()...)
 }
 
 func (t *cliHandler) Stop(c *cli.Context) error {
 	requireRoot()
 	r := getRunner(c)
+	defer r.Close()
 	return r.Stop(c.Args()...)
 }
 
 func (t *cliHandler) Restart(c *cli.Context) error {
-	t.Stop(c)
-	t.Start(c)
-	return nil
+	requireRoot()
+	r := getRunner(c)
+	defer r.Close()
+
+	err := r.Stop(c.Args()...)
+	if err != nil {
+		return err
+	}
+	return r.Start(c.Args()...)
 }
 func (t *cliHandler) Status(c *cli.Context) error {
+	requireRoot()
 	r := getRunner(c)
+	defer r.Close()
 	return r.Status()
+}
+func (t *cliHandler) Disable(c *cli.Context) error {
+	requireRoot()
+	r := &runner.Systemd{}
+	defer r.Close()
+	return r.Disable(c.Args()...)
 }
 
 func (t *cliHandler) Debug(c *cli.Context) error {
@@ -198,15 +215,13 @@ func (t *cliHandler) Log(c *cli.Context) error {
 }
 
 func getRunner(c *cli.Context) runner.Runner {
-	t := c.GlobalString("init-system")
-	switch t {
-	case "bare":
-		return &runner.Bare{}
-	case "systemd":
+	if c.GlobalBool("systemd") || c.GlobalBoolT("systemd") {
+		logrus.Debug("systemd enabled")
 		return &runner.Systemd{}
-
 	}
-	return nil
+	logrus.Debug("systemd disabled")
+	return &runner.Bare{}
+
 }
 
 func requireRoot() { // {{{

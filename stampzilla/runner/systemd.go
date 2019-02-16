@@ -16,15 +16,32 @@ import (
 )
 
 type Systemd struct {
+	dbusConn *dbus.Conn
+}
+
+func (sd *Systemd) Close() {
+	if sd.dbusConn != nil {
+		sd.dbusConn.Close()
+	}
+}
+
+func (sd *Systemd) dbus() *dbus.Conn {
+	if sd.dbusConn != nil {
+		return sd.dbusConn
+	}
+
+	var err error
+	sd.dbusConn, err = dbus.NewSystemdConnection()
+	if err != nil {
+		logrus.Fatal("systemd init error: ", err)
+	}
+
+	return sd.dbusConn
 }
 
 func (sd *Systemd) Start(nodes ...string) error {
 
-	conn, err := dbus.NewSystemdConnection()
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
+	conn := sd.dbus()
 
 	if len(nodes) > 0 {
 		for _, name := range nodes {
@@ -55,11 +72,7 @@ func (sd *Systemd) Start(nodes ...string) error {
 }
 
 func (sd *Systemd) Stop(nodes ...string) error {
-	conn, err := dbus.NewSystemdConnection()
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
+	conn := sd.dbus()
 	if len(nodes) > 0 {
 		for _, node := range nodes {
 			name := getUnitName(node)
@@ -89,12 +102,7 @@ func (sd *Systemd) Stop(nodes ...string) error {
 }
 
 func (sd *Systemd) Status() error {
-	conn, err := dbus.NewSystemdConnection()
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
+	conn := sd.dbus()
 	units, err := conn.ListUnitsByPatterns([]string{"active", "activating", "failed"}, []string{"stampzilla-*"})
 	if err != nil {
 		return err
@@ -182,11 +190,7 @@ WantedBy=multi-user.target
 		return err
 	}
 
-	conn, err := dbus.NewSystemdConnection()
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
+	conn := sd.dbus()
 
 	err = conn.Reload()
 	if err != nil {
@@ -194,6 +198,17 @@ WantedBy=multi-user.target
 	}
 
 	_, _, err = conn.EnableUnitFiles([]string{getUnitName(name)}, false, false)
+	return err
+}
+
+func (sd *Systemd) Disable(names ...string) error {
+	conn := sd.dbus()
+	ns := []string{}
+
+	for _, name := range names {
+		ns = append(ns, getUnitName(name))
+	}
+	_, err := conn.DisableUnitFiles(ns, false)
 	return err
 }
 

@@ -27,7 +27,7 @@ var influxClient client.Client
 var deviceList = devices.NewList()
 
 func main() {
-	node := node.New("metrics-influx")
+	node := node.New("metrics-influxdb")
 
 	stop := make(chan struct{})
 	device := make(chan func(), 1000)
@@ -39,7 +39,6 @@ func main() {
 		logrus.Error(err)
 		return
 	}
-	node.Subscribe("devices")
 
 	defer func() {
 		if influxClient != nil {
@@ -63,8 +62,11 @@ func onDevices(deviceChan chan func()) func(data json.RawMessage) error {
 				state := make(devices.State)
 				if prevDev := deviceList.Get(device.ID); prevDev != nil {
 					state = prevDev.State.Diff(device.State)
+					prevDev.State.MergeWith(device.State)
+					prevDev.Alias = device.Alias
 				} else {
 					state = device.State
+					deviceList.Add(device)
 				}
 
 				if len(state) > 0 {
@@ -81,7 +83,6 @@ func onDevices(deviceChan chan func()) func(data json.RawMessage) error {
 						logrus.Error("error writing to influx: ", err)
 					}
 				}
-				deviceList.Add(device)
 			}
 		}
 		return err

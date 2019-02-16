@@ -53,8 +53,6 @@ func main() {
 	})
 	logrus.SetReportCaller(false)
 
-	node.Subscribe("devices")
-
 	//node.OnShutdown(func() {
 	//})
 

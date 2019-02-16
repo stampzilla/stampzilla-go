@@ -15,6 +15,8 @@ import (
 type Bare struct {
 }
 
+func (t *Bare) Close() {
+}
 func (t *Bare) Start(nodes ...string) error {
 
 	cfg := installer.Config{}

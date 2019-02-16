@@ -23,20 +23,27 @@ func main() {
 
 	logrus.SetLevel(logrus.InfoLevel)
 
-	defaultInitSystem := "bare"
-	_, err := exec.LookPath("systemctl")
-	if err == nil {
-		defaultInitSystem = "systemd"
-	}
+	if _, err := exec.LookPath("systemctl"); err == nil {
+		app.Flags = []cli.Flag{
+			cli.BoolTFlag{
+				Name:  "systemd",
+				Usage: "system has systemd",
+			},
+		}
+	} else {
+		app.Flags = []cli.Flag{
+			cli.BoolFlag{
+				Name:  "systemd",
+				Usage: "system has systemd",
+			},
+		}
 
-	cliHandler := &cliHandler{}
-	app.Flags = []cli.Flag{
-		cli.StringFlag{
-			Name:  "init-system",
-			Usage: "can be bare or systemd",
-			Value: defaultInitSystem,
-		},
 	}
+	app.Flags = append(app.Flags, cli.BoolFlag{
+		Name:  "debug",
+		Usage: "Show debug output",
+	})
+	cliHandler := &cliHandler{}
 
 	app.Commands = []cli.Command{
 		{
@@ -54,6 +61,11 @@ func main() {
 			ShortName: "r",
 			Usage:     "restart processes",
 			Action:    addDebug(cliHandler.Restart),
+		},
+		{
+			Name:   "disable",
+			Usage:  "disable systemd service. Only valid if init-system is systemd",
+			Action: addDebug(cliHandler.Disable),
 		},
 		{
 			Name:      "status",
@@ -82,12 +94,6 @@ func main() {
 			Name:   "list",
 			Usage:  "Lists avilable releases",
 			Action: addDebug(cliHandler.List),
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "d",
-					Usage: "Show debug output",
-				},
-			},
 		},
 		{
 			Name:      "install",
@@ -98,10 +104,6 @@ func main() {
 				cli.BoolFlag{
 					Name:  "u",
 					Usage: "Force update of existing binaries",
-				},
-				cli.BoolFlag{
-					Name:  "d",
-					Usage: "Show debug output",
 				},
 			},
 		},
@@ -115,10 +117,6 @@ func main() {
 					Name:  "u",
 					Usage: "Force update of source files before compile",
 				},
-				cli.BoolFlag{
-					Name:  "d",
-					Usage: "Show debug output",
-				},
 			},
 		},
 		{
@@ -129,7 +127,7 @@ func main() {
 		},
 	}
 
-	err = app.Run(os.Args)
+	err := app.Run(os.Args)
 	if err != nil {
 		logrus.Error(err)
 	}
@@ -138,7 +136,7 @@ func main() {
 
 func addDebug(in func(c *cli.Context) error) func(c *cli.Context) error {
 	return func(c *cli.Context) error {
-		if c.Bool("d") {
+		if c.GlobalBool("debug") {
 			logrus.SetLevel(logrus.DebugLevel)
 			logrus.Info("Debug output activated")
 		}
