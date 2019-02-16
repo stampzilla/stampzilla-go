@@ -2,15 +2,19 @@ package main
 
 import (
 	"os"
+	"os/exec"
+	"time"
 
-	"github.com/codegangsta/cli"
 	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli"
 )
 
 var VERSION string = "dev"
 var BUILD_DATE string = ""
 
 func main() {
+	logrus.SetFormatter(&logrus.TextFormatter{TimestampFormat: time.RFC3339, FullTimestamp: true})
+
 	app := cli.NewApp()
 	app.Name = "stampzilla"
 	app.Version = VERSION + " (" + BUILD_DATE + ")"
@@ -19,6 +23,26 @@ func main() {
 
 	logrus.SetLevel(logrus.InfoLevel)
 
+	if _, err := exec.LookPath("systemctl"); err == nil {
+		app.Flags = []cli.Flag{
+			cli.BoolTFlag{
+				Name:  "systemd",
+				Usage: "system has systemd",
+			},
+		}
+	} else {
+		app.Flags = []cli.Flag{
+			cli.BoolFlag{
+				Name:  "systemd",
+				Usage: "system has systemd",
+			},
+		}
+
+	}
+	app.Flags = append(app.Flags, cli.BoolFlag{
+		Name:  "debug",
+		Usage: "Show debug output",
+	})
 	cliHandler := &cliHandler{}
 
 	app.Commands = []cli.Command{
@@ -37,6 +61,11 @@ func main() {
 			ShortName: "r",
 			Usage:     "restart processes",
 			Action:    addDebug(cliHandler.Restart),
+		},
+		{
+			Name:   "disable",
+			Usage:  "disable systemd service. Only valid if init-system is systemd",
+			Action: addDebug(cliHandler.Disable),
 		},
 		{
 			Name:      "status",
@@ -65,12 +94,6 @@ func main() {
 			Name:   "list",
 			Usage:  "Lists avilable releases",
 			Action: addDebug(cliHandler.List),
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "d",
-					Usage: "Show debug output",
-				},
-			},
 		},
 		{
 			Name:      "install",
@@ -81,23 +104,6 @@ func main() {
 				cli.BoolFlag{
 					Name:  "u",
 					Usage: "Force update of existing binaries",
-				},
-				cli.BoolFlag{
-					Name:  "d",
-					Usage: "Show debug output",
-				},
-			},
-		},
-		{
-			Name:      "upgrade",
-			ShortName: "u",
-			Aliases:   []string{"update"},
-			Usage:     "Upgrades currently installed nodes and the server",
-			Action:    addDebug(cliHandler.Upgrade),
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "d",
-					Usage: "Show debug output",
 				},
 			},
 		},
@@ -111,10 +117,6 @@ func main() {
 					Name:  "u",
 					Usage: "Force update of source files before compile",
 				},
-				cli.BoolFlag{
-					Name:  "d",
-					Usage: "Show debug output",
-				},
 			},
 		},
 		{
@@ -125,16 +127,19 @@ func main() {
 		},
 	}
 
-	app.Run(os.Args)
+	err := app.Run(os.Args)
+	if err != nil {
+		logrus.Error(err)
+	}
+
 }
 
-func addDebug(in func(c *cli.Context)) func(c *cli.Context) {
-	return func(c *cli.Context) {
-		if c.Bool("d") {
+func addDebug(in func(c *cli.Context) error) func(c *cli.Context) error {
+	return func(c *cli.Context) error {
+		if c.GlobalBool("debug") {
 			logrus.SetLevel(logrus.DebugLevel)
 			logrus.Info("Debug output activated")
 		}
-
-		in(c)
+		return in(c)
 	}
 }

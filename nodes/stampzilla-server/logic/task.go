@@ -2,87 +2,91 @@ package logic
 
 import (
 	"sync"
-	"time"
 
-	log "github.com/cihub/seelog"
-	"github.com/jonaz/cron"
-	"github.com/stampzilla/stampzilla-go/protocol"
+	"github.com/sirupsen/logrus"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
 )
 
-type task struct {
-	Name_   string   `json:"name"`
-	Uuid_   string   `json:"uuid"`
+// Task is a task that can be scheduled using scheduler
+type Task struct {
+	XName   string   `json:"name"`
+	XUuid   string   `json:"uuid"`
 	Actions []string `json:"actions"`
-	//actions  []Action
-	cronId   int
-	CronWhen string `json:"when"`
+	cronID  int64
+	When    string `json:"when"`
+	Enabled bool   `json:"enabled"`
 	sync.RWMutex
-	cron      *cron.Cron
-	entryTime time.Time
-
-	ActionProgressChan chan ActionProgress `json:"-"`
-	actionService      *ActionService      `json:"-"`
+	savedStateStore *SavedStateStore
+	sender          websocket.Sender
 }
 
-type Task interface {
-	cron.Job
-	SetUuid(string)
-	Uuid() string
-	Name() string
-	CronId() int
-	AddAction(a protocol.Identifiable)
-	Schedule(string)
-}
-
-func (t *task) SetUuid(uuid string) {
+// SetUuid sets ths uuid on the task
+func (t *Task) SetUuid(uuid string) {
 	t.Lock()
-	t.Uuid_ = uuid
+	t.XUuid = uuid
 	t.Unlock()
 }
-func (r *task) Uuid() string {
-	r.RLock()
-	defer r.RUnlock()
-	return r.Uuid_
-}
-func (r *task) Name() string {
-	r.RLock()
-	defer r.RUnlock()
-	return r.Name_
-}
-func (r *task) CronId() int {
-	r.RLock()
-	defer r.RUnlock()
-	return r.cronId
+
+// SetWhen sets when the task should be run in cron syntax
+func (t *Task) SetWhen(when string) {
+	t.Lock()
+	t.When = when
+	t.Unlock()
 }
 
-func (t *task) Run() {
+// Uuid returns tasks uuid
+func (r *Task) Uuid() string {
+	r.RLock()
+	defer r.RUnlock()
+	return r.XUuid
+}
+func (r *Task) Name() string {
+	r.RLock()
+	defer r.RUnlock()
+	return r.XName
+}
+func (r *Task) CronId() int64 {
+	r.RLock()
+	defer r.RUnlock()
+	return r.cronID
+}
+
+func (t *Task) Run() {
 	t.RLock()
-	for _, uuid := range t.Actions {
-		a := t.actionService.GetByUuid(uuid)
-		if a == nil {
-			log.Errorf("Action %s not found in actionService", uuid)
-			continue
+	defer t.RUnlock()
+	if !t.Enabled {
+		logrus.Debugf("logic: scheduledtask %s (%s) not enabled. skipping", t.Name(), t.Uuid())
+		return
+	}
+	for _, id := range t.Actions {
+		stateList := t.savedStateStore.Get(id)
+		if stateList == nil {
+			logrus.Errorf("SavedState %s does not exist", id)
+			return
 		}
-		a.Run(t.ActionProgressChan)
+		devicesByNode := make(map[string]map[devices.ID]devices.State)
+		for id, state := range stateList.State {
+			if devicesByNode[id.Node] == nil {
+				devicesByNode[id.Node] = make(map[devices.ID]devices.State)
+			}
+			devicesByNode[id.Node][id] = state
+		}
+		for nodeID, devs := range devicesByNode {
+			logrus.WithFields(logrus.Fields{
+				"to": nodeID,
+			}).Debug("Send state change request to node")
+			err := t.sender.SendToID(nodeID, "state-change", devs)
+			if err != nil {
+				logrus.Error("logic: error sending state-change to node: ", err)
+				continue
+			}
+		}
 	}
-	t.RUnlock()
-
 }
 
-func (t *task) Schedule(when string) {
-	var err error
+func (t *Task) AddAction(uuid string) {
 	t.Lock()
-	t.CronWhen = when
-
-	t.cronId, err = t.cron.AddJob(when, t)
-	if err != nil {
-		log.Error(err)
-	}
+	t.Actions = append(t.Actions, uuid)
 	t.Unlock()
-}
-
-func (r *task) AddAction(i protocol.Identifiable) {
-	r.Lock()
-	r.Actions = append(r.Actions, i.Uuid())
-	r.Unlock()
 }

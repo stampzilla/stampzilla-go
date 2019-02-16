@@ -1,157 +1,180 @@
 package logic
 
 import (
-	"bytes"
+	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"sync"
 
-	log "github.com/cihub/seelog"
+	"github.com/google/uuid"
 	"github.com/jonaz/cron"
-	"github.com/pborman/uuid"
-	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
-	"github.com/stampzilla/stampzilla-go/protocol"
+	"github.com/sirupsen/logrus"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
 )
 
-// Schedular that schedule ruleActions
+/* schedule.json
+{
+    "398d8a42-cb31-42ff-b4ae-99bdbb44d0ae": {
+        "name": "test1",
+        "uuid": "398d8a42-cb31-42ff-b4ae-99bdbb44d0ae",
+        "when": "0 * * * * *",
+        "actions": [
+            "6fbaea24-6b3f-4856-9194-735b349bbf4d"
+        ]
+    }
+}
+*/
+
+type Tasks map[string]*Task
+
+// Scheduler that schedule running saved state actions
 type Scheduler struct {
-	tasks         []Task
-	Nodes         *serverprotocol.Nodes `inject:""`
-	ActionService *ActionService        `inject:""`
-	Logic         *Logic                `inject:""`
-	Cron          *cron.Cron
+	tasks Tasks
+	Cron  *cron.Cron
 	sync.RWMutex
+
+	SavedStateStore *SavedStateStore
+	sender          websocket.Sender
+	stop            context.CancelFunc
 }
 
-func NewScheduler() *Scheduler {
-	scheduler := &Scheduler{}
+func NewScheduler(savedStateStore *SavedStateStore, sender websocket.Sender) *Scheduler {
+	scheduler := &Scheduler{
+		SavedStateStore: savedStateStore,
+		sender:          sender,
+		tasks:           make(Tasks),
+	}
 	scheduler.Cron = cron.New()
 	return scheduler
 }
 
-func (s *Scheduler) Start() {
-	log.Info("Starting Scheduler")
-
-	s.loadFromFile("schedule.json")
-	s.Cron.Start()
-}
-
-func (s *Scheduler) Reload() {
-	//TODO verify the the new JSON is valid before unloading the existing schedule
+func (s *Scheduler) Start(parentCtx context.Context) {
+	ctx, cancel := context.WithCancel(parentCtx)
 	s.Lock()
-	s.tasks = nil
+	s.stop = cancel
+	s.Cron.Start(ctx)
 	s.Unlock()
-	for _, job := range s.Cron.Entries() {
-		s.Cron.RemoveJob(job.Id)
-	}
-	s.Cron.Stop()
-	s.Start()
+	logrus.Info("scheduler: started")
 }
 
-func (s *Scheduler) Tasks() []Task {
+func (s *Scheduler) Stop() {
+	s.Lock()
+	if s.stop != nil {
+		s.stop()
+	}
+	s.Unlock()
+	logrus.Info("Scheduler stopped")
+}
+
+func (s *Scheduler) SetTasks(t Tasks) {
+	s.Lock()
+	s.tasks = t
+	s.syncTaskDependencies()
+	s.Unlock()
+}
+func (s *Scheduler) Tasks() Tasks {
 	s.RLock()
 	defer s.RUnlock()
 	return s.tasks
 }
 
-func (s *Scheduler) AddTask(name string) Task {
-	var err error
-
-	task := &task{Name_: name, Uuid_: uuid.New()}
-	if s.Logic != nil {
-		task.ActionProgressChan = s.Logic.ActionProgressChan
-	}
-	task.actionService = s.ActionService
-
-	//task.nodes = s.Nodes
-	task.cron = s.Cron
-	if err != nil {
-		log.Error(err)
+func (s *Scheduler) AddTask(name string) *Task {
+	task := &Task{
+		XName:           name,
+		XUuid:           uuid.New().String(),
+		sender:          s.sender,
+		savedStateStore: s.SavedStateStore,
 	}
 	s.Lock()
-	s.tasks = append(s.tasks, task)
+	s.tasks[task.XUuid] = task
 	s.Unlock()
 	return task
 }
+func (s *Scheduler) Task(uuid string) *Task {
+	s.RLock()
+	defer s.RUnlock()
+	return s.tasks[uuid]
+}
 
-func (s *Scheduler) RemoveTask(uuid string) error {
+func (s *Scheduler) RemoveTask(uuid string) {
 	s.Lock()
 	defer s.Unlock()
-	for i, task := range s.tasks {
-		if task.Uuid() == uuid {
-			s.Cron.RemoveJob(task.CronId())
-			s.tasks = append(s.tasks[:i], s.tasks[i+1:]...)
-			return nil
-		}
+	task := s.Task(uuid)
+	if task == nil {
+		return
+	}
+	s.Cron.RemoveJob(task.CronId())
+	delete(s.tasks, uuid)
+}
+
+func (s *Scheduler) Save() error {
+	configFile, err := os.Create("schedule.json")
+	if err != nil {
+		return fmt.Errorf("scheduler: error saving tasks: %s", err)
+	}
+	encoder := json.NewEncoder(configFile)
+	encoder.SetIndent("", "\t")
+	s.Lock()
+	defer s.Unlock()
+	err = encoder.Encode(s.tasks)
+	if err != nil {
+		return fmt.Errorf("scheduler: error saving tasks: %s", err)
 	}
 	return nil
 }
-func (s *Scheduler) CreateExampleFile() {
-	task := s.AddTask("Test1")
-	cmd := &protocol.Command{Cmd: "testCMD"}
-	action := &action{
-		Commands: []Command{NewCommand(cmd, "simple")},
-	}
-	task.AddAction(action)
-	task.Schedule("0 * * * * *")
 
-	s.saveToFile("schedule.json")
-}
+func (s *Scheduler) Load() error {
+	logrus.Info("Loading schedule from json file")
 
-func (s *Scheduler) saveToFile(filepath string) {
-	configFile, err := os.Create(filepath)
+	configFile, err := os.Open("schedule.json")
 	if err != nil {
-		log.Error("creating config file", err.Error())
-	}
-	var out bytes.Buffer
-	b, err := json.Marshal(s.tasks)
-	if err != nil {
-		log.Error("error marshal json", err)
-	}
-	json.Indent(&out, b, "", "\t")
-	out.WriteTo(configFile)
-}
-
-func (s *Scheduler) loadFromFile(filepath string) {
-	log.Info("Loading schedule from json file")
-
-	configFile, err := os.Open(filepath)
-	if err != nil {
-		log.Warn("opening config file", err.Error())
-		return
+		if os.IsNotExist(err) {
+			logrus.Warn(err)
+			return nil // We dont want to error our if the file does not exist when we start the server
+		}
+		return err
 	}
 
-	//TODO we can use normal task here if we refactor some stuff :)
-	type localTasks struct {
-		Name     string   `json:"name"`
-		Uuid     string   `json:"uuid"`
-		Actions  []string `json:"actions"`
-		CronWhen string   `json:"when"`
-	}
-
-	var tasks []*localTasks
+	s.Lock()
+	defer s.Unlock()
 	jsonParser := json.NewDecoder(configFile)
-	if err = jsonParser.Decode(&tasks); err != nil {
-		log.Error(err)
+	if err = jsonParser.Decode(&s.tasks); err != nil {
+		return fmt.Errorf("scheduler: error loading tasks: %s", err)
 	}
 
-	for _, task := range tasks {
-		t := s.AddTask(task.Name)
+	s.syncTaskDependencies()
 
-		//Set the uuid from json if it exists. Otherwise use the generated one
-		if task.Uuid != "" {
-			t.SetUuid(task.Uuid)
+	return nil
+}
+
+func (s *Scheduler) syncTaskDependencies() {
+	s.Cron.RemoveAll() // always remove all when we load new tasks to make sure we dont get duplicate jobs scheduled
+	for _, task := range s.tasks {
+		task.Lock()
+		if task.sender == nil {
+			task.sender = s.sender
 		}
-		for _, uuid := range task.Actions {
-			a := s.ActionService.GetByUuid(uuid)
-			if a == nil {
-				log.Errorf("Could not find action %s. Skipping adding it to task.\n", uuid)
-				continue
-			}
-			t.AddAction(a)
+		if task.savedStateStore == nil {
+			task.savedStateStore = s.SavedStateStore
 		}
-		//Schedule the task!
-		t.Schedule(task.CronWhen)
+		task.Unlock()
+
+		// generate uuid if missing
+		if task.Uuid() == "" {
+			task.SetUuid(uuid.New().String())
+		}
+		s.ScheduleTask(task)
 	}
 
+}
+
+func (s *Scheduler) ScheduleTask(t *Task) {
+	var err error
+	t.Lock()
+	t.cronID, err = s.Cron.AddJob(t.When, t)
+	if err != nil {
+		logrus.Error(err)
+	}
+	t.Unlock()
 }

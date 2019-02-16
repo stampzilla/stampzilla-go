@@ -2,20 +2,18 @@ package main
 
 import (
 	"fmt"
-	"net"
 	"time"
 
-	log "github.com/cihub/seelog"
+	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/gocast"
 	"github.com/stampzilla/gocast/events"
 	"github.com/stampzilla/gocast/handlers"
 	"github.com/stampzilla/gocast/responses"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/pkg/node"
 )
 
 type Chromecast struct {
-	Id    string
-	Name_ string `json:"Name"`
-
 	PrimaryApp      string
 	PrimaryEndpoint string
 	Playing         bool
@@ -28,12 +26,12 @@ type Chromecast struct {
 	Volume float64
 	Muted  bool
 
-	Addr net.IP
-	Port int
+	//Addr net.IP
+	//Port int
 
 	Media Chromecast_Media
 
-	publish func()
+	publish func(uuid string)
 
 	mediaHandler           *handlers.Media
 	mediaConnectionHandler *handlers.Connection
@@ -51,7 +49,7 @@ type Chromecast_Media struct {
 	Duration float64
 }
 
-func NewChromecast(d *gocast.Device) *Chromecast {
+func NewChromecast(node *node.Node, d *gocast.Device) *Chromecast {
 	c := &Chromecast{
 		Device:                 d,
 		mediaHandler:           &handlers.Media{},
@@ -59,7 +57,7 @@ func NewChromecast(d *gocast.Device) *Chromecast {
 		appLaunch:              make(chan string),
 	}
 
-	c.OnEvent(c.Event)
+	c.OnEvent(c.Event(node))
 	return c
 }
 
@@ -76,14 +74,14 @@ func (c *Chromecast) Stop() {
 func (c *Chromecast) PlayUrl(url string, contentType string) {
 	err := c.Device.ReceiverHandler.LaunchApp(gocast.AppMedia)
 	if err != nil && err != handlers.ErrAppAlreadyLaunched {
-		log.Error(err)
+		logrus.Error(err)
 		return
 	}
 
 	if err != handlers.ErrAppAlreadyLaunched {
 		//Wait for new media connection to launched app
 		if err := c.waitForAppLaunch(gocast.AppMedia); err != nil {
-			log.Error(err)
+			logrus.Error(err)
 			return
 		}
 	}
@@ -98,7 +96,7 @@ func (c *Chromecast) PlayUrl(url string, contentType string) {
 	}
 	err = c.mediaHandler.LoadMedia(item, 0, true, map[string]interface{}{})
 	if err != nil {
-		log.Error(err)
+		logrus.Error(err)
 		return
 	}
 }
@@ -119,122 +117,146 @@ func (c *Chromecast) waitForAppLaunch(app string) error {
 func (c *Chromecast) appLaunched(app string) {
 	select {
 	case c.appLaunch <- app:
-		log.Info("Notified c.appLaunch")
+		logrus.Info("Notified c.appLaunch")
 	case <-time.After(time.Second * 2):
-		log.Info("No one is waiting for appLaunch event")
+		logrus.Info("No one is waiting for appLaunch event")
 	}
 }
 
-func (c *Chromecast) Event(event events.Event) {
-	switch data := event.(type) {
-	case events.Connected:
-		log.Info(c.Name(), "- Connected")
+func (c *Chromecast) Event(node *node.Node) func(event events.Event) {
+	return func(event events.Event) {
 
-		c.Addr = c.Ip()
-		c.Port = c.Device.Port()
-		c.Id = c.Uuid()
-		c.Name_ = c.Name()
+		newState := make(devices.State)
 
-		state.Add(c)
-	case events.Disconnected:
-		log.Warn(c.Name(), "- Disconnected")
+		switch data := event.(type) {
+		case events.Connected:
+			logrus.Info(c.Name(), "- Connected")
 
-		state.Remove(c)
-	case events.AppStarted:
-		log.Info(c.Name(), "- App started:", data.DisplayName, "(", data.AppID, ")")
-		//spew.Dump("Data:", data)
+			dev := node.GetDevice(c.Uuid())
+			if dev == nil {
+				dev = &devices.Device{
+					Type:  "mediaplayer",
+					ID:    devices.ID{ID: c.Uuid()},
+					State: devices.State{},
+				}
+			}
 
-		c.PrimaryApp = data.DisplayName
-		c.PrimaryEndpoint = data.TransportId
-		c.IsIdleScreen = data.IsIdleScreen
+			dev.Name = c.Name()
+			dev.Online = true
+			node.AddOrUpdate(dev)
 
-		c.Media.Title = data.DisplayName
-		if c.IsIdleScreen {
-			c.Media.Title = ""
-		}
-		c.Media.SubTitle = ""
-		c.Media.Thumb = ""
-		c.Media.Url = ""
-		c.Media.Duration = 0
+			newState["playing"] = false
+			newState["app"] = ""
+		case events.Disconnected:
+			logrus.Warn(c.Name(), "- Disconnected")
 
-		//If the app supports media controls lets subscribe to it
-		if data.HasNamespace("urn:x-cast:com.google.cast.media") {
-			log.Info(c.Name(), "- Subscribe cast.tp.connection:", data.DisplayName, "(", data.AppID, ")")
-			c.Subscribe("urn:x-cast:com.google.cast.tp.connection", data.TransportId, c.mediaConnectionHandler)
-			log.Info(c.Name(), "- Subscribe cast.media:", data.DisplayName, "(", data.AppID, ")")
-			c.Subscribe("urn:x-cast:com.google.cast.media", data.TransportId, c.mediaHandler)
-		}
-		c.appLaunched(data.AppID)
-		log.Info(c.Name(), "- Notifying appLanunched:", data.DisplayName, "(", data.AppID, ")")
+			dev := node.GetDevice(c.Uuid())
+			if dev == nil {
+				dev = &devices.Device{
+					Type:  "mediaplayer",
+					ID:    devices.ID{ID: c.Uuid()},
+					State: devices.State{},
+				}
+			}
 
-	case events.AppStopped:
-		log.Info(c.Name(), "- App stopped:", data.DisplayName, "(", data.AppID, ")")
-		//spew.Dump("Data:", data)
+			dev.Online = false
+			node.AddOrUpdate(dev)
 
-		//unsubscribe from old channels
-		for _, v := range data.Namespaces {
-			c.UnsubscribeByUrnAndDestinationId(v.Name, data.TransportId)
-		}
-		c.PrimaryApp = ""
-		c.PrimaryEndpoint = ""
-		c.Playing = false
+			newState["playing"] = false
+			newState["app"] = ""
+		case events.AppStarted:
+			logrus.Info(c.Name(), "- App started:", data.DisplayName, "(", data.AppID, ")")
+			//spew.Dump("Data:", data)
 
-		c.Media.Title = ""
-		c.Media.SubTitle = ""
-		c.Media.Thumb = ""
-		c.Media.Url = ""
-		c.Media.Duration = 0
+			newState["app"] = data.DisplayName
+			c.PrimaryApp = data.DisplayName
+			c.PrimaryEndpoint = data.TransportId
+			c.IsIdleScreen = data.IsIdleScreen
 
-	case events.ReceiverStatus:
-		c.IsStandBy = data.Status.IsStandBy
-		c.IsActiveInput = data.Status.IsActiveInput
-		c.Volume = data.Status.Volume.Level
-		c.Muted = data.Status.Volume.Muted
-	case events.Media:
-		playing := c.Playing
-		if data.PlayerState == "PLAYING" {
-			c.Playing = true
-		} else {
-			c.Playing = false
-		}
-
-		if data.PlayerState == "IDLE" {
-			c.Media.Title = c.PrimaryApp
+			c.Media.Title = data.DisplayName
+			if c.IsIdleScreen {
+				c.Media.Title = ""
+			}
 			c.Media.SubTitle = ""
 			c.Media.Thumb = ""
 			c.Media.Url = ""
 			c.Media.Duration = 0
-		}
 
-		if data.Media != nil {
-			c.Media.Title = c.PrimaryApp
-			if data.Media.MetaData.Title != "" {
-				c.Media.Title = data.Media.MetaData.Title
+			//If the app supports media controls lets subscribe to it
+			if data.HasNamespace("urn:x-cast:com.google.cast.media") {
+				logrus.Info(c.Name(), "- Subscribe cast.tp.connection:", data.DisplayName, "(", data.AppID, ")")
+				c.Subscribe("urn:x-cast:com.google.cast.tp.connection", data.TransportId, c.mediaConnectionHandler)
+				logrus.Info(c.Name(), "- Subscribe cast.media:", data.DisplayName, "(", data.AppID, ")")
+				c.Subscribe("urn:x-cast:com.google.cast.media", data.TransportId, c.mediaHandler)
 			}
-			if c.IsIdleScreen {
-				c.Media.Title = ""
-			}
+			c.appLaunched(data.AppID)
+			logrus.Info(c.Name(), "- Notifying appLanunched:", data.DisplayName, "(", data.AppID, ")")
 
-			c.Media.SubTitle = data.Media.MetaData.SubTitle
-			c.Media.Url = data.Media.ContentId
-			c.Media.Duration = data.Media.Duration
-			if len(data.Media.MetaData.Images) > 0 {
-				c.Media.Thumb = data.Media.MetaData.Images[0].Url
+		case events.AppStopped:
+			logrus.Info(c.Name(), "- App stopped:", data.DisplayName, "(", data.AppID, ")")
+			//spew.Dump("Data:", data)
+
+			//unsubscribe from old channels
+			for _, v := range data.Namespaces {
+				c.UnsubscribeByUrnAndDestinationId(v.Name, data.TransportId)
+			}
+			newState["app"] = ""
+			c.PrimaryApp = ""
+			c.PrimaryEndpoint = ""
+			newState["playing"] = false
+
+			c.Media.Title = ""
+			c.Media.SubTitle = ""
+			c.Media.Thumb = ""
+			c.Media.Url = ""
+			c.Media.Duration = 0
+
+		case events.ReceiverStatus:
+			newState["isStandBy"] = data.Status.IsStandBy
+			newState["isActiveInput"] = data.Status.IsActiveInput
+			newState["volume"] = data.Status.Volume.Level
+			newState["volume"] = data.Status.Volume.Level
+			newState["muted"] = data.Status.Volume.Muted
+		case events.Media:
+			if data.PlayerState == "PLAYING" {
+				newState["playing"] = true
 			} else {
-				c.Media.Thumb = ""
+				newState["playing"] = false
 			}
-		}
 
-		//Only publish if playing state changed
-		if playing != c.Playing {
-			c.publish()
-		}
-		return
+			/*
+				if data.PlayerState == "IDLE" {
+					c.Media.Title = c.PrimaryApp
+					c.Media.SubTitle = ""
+					c.Media.Thumb = ""
+					c.Media.Url = ""
+					c.Media.Duration = 0
+				}
 
-	//gocast.MediaEvent:
-	default:
-		log.Warn("unexpected event %T: %#v\n", data, data)
+				if data.Media != nil {
+					c.Media.Title = c.PrimaryApp
+					if data.Media.MetaData.Title != "" {
+						c.Media.Title = data.Media.MetaData.Title
+					}
+					if c.IsIdleScreen {
+						c.Media.Title = ""
+					}
+
+					c.Media.SubTitle = data.Media.MetaData.SubTitle
+					c.Media.Url = data.Media.ContentId
+					c.Media.Duration = data.Media.Duration
+					if len(data.Media.MetaData.Images) > 0 {
+						c.Media.Thumb = data.Media.MetaData.Images[0].Url
+					} else {
+						c.Media.Thumb = ""
+					}
+				}
+			*/
+
+		//gocast.MediaEvent:
+		default:
+			logrus.Warnf("unexpected event %T: %#v\n", data, data)
+		}
+		node.UpdateState(c.Uuid(), newState)
 	}
-
-	c.publish()
 }

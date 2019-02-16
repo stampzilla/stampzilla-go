@@ -26,24 +26,22 @@ func NewInstaller() *Installer {
 func (t *Installer) Prepare() error {
 	return nil
 }
-func (t *Installer) Install(nodes ...string) {
-	download(nodes)
+func (t *Installer) Install(nodes ...string) error {
+	return download(nodes)
 }
-func (t *Installer) Update(nodes ...string) {
-	download(nodes, func(a github.ReleaseAsset) bool {
+func (t *Installer) Update(nodes ...string) error {
+	return download(nodes, func(a github.ReleaseAsset) bool {
 		_, err := os.Stat(getFilePath(a))
 		return os.IsNotExist(err)
-		// TODO: Compare to hash file in release
 	})
 }
 
 // Download downloads a file and takes a callback. If callback returns true, skip download
-func download(nodes []string, cb ...func(github.ReleaseAsset) bool) {
+func download(nodes []string, cb ...func(github.ReleaseAsset) bool) error {
 	releases := getReleases()
 
 	if len(releases) < 1 {
-		logrus.Error("No available releses found")
-		return
+		return fmt.Errorf("No available releses found")
 	}
 
 	checksums := getChecksums(releases[0].Assets)
@@ -51,14 +49,14 @@ func download(nodes []string, cb ...func(github.ReleaseAsset) bool) {
 outer:
 	for _, v := range releases[0].Assets {
 		// Skip all with wrong ARCH
-		if !strings.HasSuffix(v.GetName(), runtime.GOARCH) {
+		if !strings.HasSuffix(v.GetName(), runtime.GOOS+"-"+runtime.GOARCH) {
 			continue
 		}
 
 		// Skip nodes not requested from command line arguments
 		inNodeList := false
 		for _, n := range nodes {
-			if strings.HasSuffix(v.GetName(), n+"-"+runtime.GOARCH) {
+			if strings.HasSuffix(v.GetName(), n+"-"+runtime.GOOS+"-"+runtime.GOARCH) {
 				inNodeList = true
 			}
 		}
@@ -76,20 +74,20 @@ outer:
 		//
 		tmp, err := ioutil.TempFile("", "stampzilla")
 		if err != nil {
-			logrus.Fatal(err)
+			return err
 		}
 
 		// Download the file
 		err = fetch(v, tmp)
 		if err != nil {
-			logrus.Fatal(err)
+			return err
 		}
 
 		// Validate checksum
 		hasher := sha512.New()
 		tmp.Seek(0, 0)
 		if _, err := io.Copy(hasher, tmp); err != nil {
-			logrus.Fatal(err)
+			return err
 		}
 		checksum := fmt.Sprintf("%x", hasher.Sum(nil))
 		tmp.Close()
@@ -97,32 +95,31 @@ outer:
 			logrus.WithFields(logrus.Fields{
 				"expected": checksums[v.GetName()],
 				"got":      checksum,
-			}).Error("Wrong checksum for %s", v.GetName())
+			}).Errorf("Wrong checksum for %s", v.GetName())
 			os.Remove(tmp.Name())
+			return fmt.Errorf("checksum validation failed")
 		}
 
 		// Move to installation dir
 		err = os.Rename(tmp.Name(), getFilePath(v))
 		if err != nil {
-			logrus.Fatal(err)
+			return err
 		}
 
 		//
 		for k, n := range nodes {
-			if strings.HasSuffix(v.GetName(), n+"-"+runtime.GOARCH) {
+			if strings.HasSuffix(v.GetName(), n+"-"+runtime.GOOS+"-"+runtime.GOARCH) {
 				nodes = append(nodes[:k], nodes[k+1:]...)
 				break
 			}
 		}
 	}
 
-	for _, v := range nodes {
-		logrus.Errorf("Failed to install %s", v)
-	}
+	return fmt.Errorf("Failed to install %s", strings.Join(nodes, ","))
 }
 
 func getFilePath(ra github.ReleaseAsset) string {
-	filename := strings.TrimSuffix(ra.GetName(), "-"+runtime.GOARCH)
+	filename := strings.TrimSuffix(ra.GetName(), "-"+runtime.GOOS+"-"+runtime.GOARCH)
 	return filepath.Join(GetBinPath(), filename)
 }
 
@@ -139,12 +136,7 @@ func fetch(v github.ReleaseAsset, file *os.File) error {
 		return err
 	}
 
-	err = file.Chmod(0755)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return file.Chmod(0755)
 }
 
 func getChecksums(assets []github.ReleaseAsset) map[string]string {

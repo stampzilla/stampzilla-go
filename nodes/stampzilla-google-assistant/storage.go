@@ -11,21 +11,19 @@ import (
 )
 
 type JSONStorage struct {
-	Clients         map[string]osin.Client
-	Authorize       map[string]*osin.AuthorizeData
-	Access          map[string]*osin.AccessData
-	Refresh         map[string]string
-	AccessClientMap map[string]string
+	Clients   map[string]osin.Client
+	Authorize map[string]*osin.AuthorizeData
+	Access    map[string]*osin.AccessData
+	Refresh   map[string]string
 	sync.RWMutex
 }
 
-func NewTestStorage() *JSONStorage {
+func NewJSONStorage() *JSONStorage {
 	r := &JSONStorage{
-		Clients:         make(map[string]osin.Client),
-		Authorize:       make(map[string]*osin.AuthorizeData),
-		Access:          make(map[string]*osin.AccessData),
-		Refresh:         make(map[string]string),
-		AccessClientMap: make(map[string]string),
+		Clients:   make(map[string]osin.Client),
+		Authorize: make(map[string]*osin.AuthorizeData),
+		Access:    make(map[string]*osin.AccessData),
+		Refresh:   make(map[string]string),
 	}
 
 	return r
@@ -48,7 +46,9 @@ func (s *JSONStorage) LoadFromDisk(filename string) {
 	defer file.Close()
 
 	dec := json.NewDecoder(file)
+	s.Lock()
 	dec.Decode(s)
+	s.Unlock()
 
 }
 func (s *JSONStorage) saveToDisk(filename string) {
@@ -59,10 +59,6 @@ func (s *JSONStorage) saveToDisk(filename string) {
 		return
 	}
 	defer file.Close()
-
-	for _, v := range s.Access {
-		s.AccessClientMap[v.AccessToken] = v.Client.GetId()
-	}
 
 	enc := json.NewEncoder(file)
 	enc.SetIndent("", "\t")
@@ -88,13 +84,6 @@ func (s *JSONStorage) SetClient(id string, client osin.Client) error {
 	s.Lock()
 	log.Printf("SetClient: %s\n", id)
 	s.Clients[id] = client
-	for _, v := range s.Access {
-		if clientID, ok := s.AccessClientMap[v.AccessToken]; ok {
-			if client, ok := s.Clients[clientID]; ok {
-				v.Client = client
-			}
-		}
-	}
 	s.Unlock()
 	return nil
 }
@@ -141,6 +130,8 @@ func (s *JSONStorage) LoadAccess(code string) (*osin.AccessData, error) {
 	defer s.RUnlock()
 	log.Printf("LoadAccess: %s\n", code)
 	if d, ok := s.Access[code]; ok {
+		d.AccessData = nil
+		d.AuthorizeData = nil
 		return d, nil
 	}
 	return nil, osin.ErrNotFound

@@ -1,299 +1,211 @@
 package main
 
 import (
-	"flag"
+	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"strconv"
-	"time"
 
-	log "github.com/cihub/seelog"
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/gozwave"
 	"github.com/stampzilla/gozwave/events"
 	"github.com/stampzilla/gozwave/nodes"
 	zp "github.com/stampzilla/gozwave/protocol"
 	"github.com/stampzilla/gozwave/serialrecorder"
-	"github.com/stampzilla/stampzilla-go/nodes/basenode"
-	"github.com/stampzilla/stampzilla-go/pkg/notifier"
-	"github.com/stampzilla/stampzilla-go/protocol"
-	"github.com/stampzilla/stampzilla-go/protocol/devices"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/pkg/node"
 )
 
-var VERSION string = "dev"
-var BUILD_DATE string = ""
-
-// MAIN - This is run when the init function is done
-
-var notify *notifier.Notify
-
-var recordToFile string
-
 func main() {
-	log.Info("Starting ZWAVE node")
+	node := node.New("zwave")
 
-	printVersion := flag.Bool("v", false, "Prints current version")
-	debug := flag.Bool("d", false, "Debug - show more debuging info")
-	port := flag.String("controllerport", "/dev/ttyACM0", "SerialAPI communication port (to controller)")
-	flag.StringVar(&recordToFile, "recordtofile", "", "Enable recording of serial data to file")
+	config := &Config{}
+	node.OnConfig(updatedConfig(config))
+	wait := node.WaitForFirstConfig()
 
-	// Parse all commandline arguments, host and port parameters are added in the basenode init function
-	flag.Parse()
-
-	if *printVersion != false {
-		fmt.Println(VERSION + " (" + BUILD_DATE + ")")
-		os.Exit(0)
-	}
-
-	logrus.SetLevel(logrus.WarnLevel)
-	if *debug {
-		logrus.SetLevel(logrus.DebugLevel)
-	}
-
-	//Get a config with the correct parameters
-	config := basenode.NewConfig()
-
-	//Activate the config
-	basenode.SetConfig(config)
-
-	var err error
-	var z *gozwave.Controller
-	z, f, err := getZwaveController(*port)
+	err := node.Connect()
 	if err != nil {
-		log.Error(err)
+		logrus.Error(err)
+		return
+	}
+
+	logrus.Info("Waiting for config from server")
+	err = wait()
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
+
+	var z *gozwave.Controller
+	z, f, err := getZwaveController(config)
+	if err != nil {
+		logrus.Error(err)
 		return
 	}
 	if f != nil {
 		defer f.Close()
 	}
 
-	node := protocol.NewNode("zwave")
-	node.Version = VERSION
-	node.BuildDate = BUILD_DATE
-
-	//Start communication with the server
-	connection := basenode.Connect()
-	node.Config().ListenForConfigChanges(connection.ReceiveDeviceConfigSet())
-
-	notify = notifier.New(connection)
-	notify.SetSource(node)
-
-	// Thit worker keeps track on our connection state, if we are connected or not
-	go monitorState(node, connection)
-
-	state := NewState()
-	node.SetState(state)
-	state.zwave = z
-
-	// This worker recives all incomming commands
-	go serverRecv(node, connection)
-
-	<-time.After(time.Second) // TODO: Wait for node.Uuid_ to be populated
+	node.OnRequestStateChange(onRequestStateChange(z))
 
 	// Add all existing nodes to the state / device list
 	for _, znode := range z.Nodes.All() {
 		if znode.Id == 1 {
 			continue
 		}
-
-		//state.Nodes = append(state.Nodes, newZwavenode(znode))
-		state.Nodes[strconv.Itoa(znode.Id)] = newZwavenode(znode)
-		n := state.GetNode(znode.Id)
-		n.sync(znode)
-
 		addOrUpdateDevice(node, znode)
 	}
-	connection.Send(node.Node())
 
 	// Listen from events from the zwave-controller
 	for {
 		select {
+		case <-node.Stopped():
+			logrus.Info("Shutting down")
+			return
 		case event := <-z.GetNextEvent():
-			log.Infof("Event: %#v", event)
+			logrus.Debugf("zwave event: %#v", event)
 			switch e := event.(type) {
 			case events.NodeDiscoverd:
 				znode := z.Nodes.Get(e.Address)
-				//spew.Dump(znode)
 				if znode != nil {
-					n := newZwavenode(znode)
-					state.Nodes[strconv.Itoa(znode.Id)] = n
-
 					addOrUpdateDevice(node, znode) // Device management
-					n.sync(znode)                  // State management
 				}
 
 			case events.NodeUpdated:
-				n := state.GetNode(e.Address)
-				if n != nil {
-					znode := z.Nodes.Get(e.Address)
-
+				znode := z.Nodes.Get(e.Address)
+				if znode != nil {
 					addOrUpdateDevice(node, znode) // Device management
-					n.sync(znode)                  // State management
 				}
 			}
-
-			connection.Send(node.Node())
 		}
 	}
 }
 
-func addOrUpdateDevice(node *protocol.Node, znode *nodes.Node) {
-	log.Errorf("Endpoints: %#v", znode.Endpoints)
+func updatedConfig(config *Config) func(data json.RawMessage) error {
+	return func(data json.RawMessage) error {
+		logrus.Debug("Received config from server:", string(data))
+		return json.Unmarshal(data, &config)
+	}
+}
 
+func addOrUpdateDevice(node *node.Node, znode *nodes.Node) {
 	for i := 0; i < len(znode.Endpoints); i++ {
 		devid := strconv.Itoa(int(znode.Id) + (i * 1000))
-		endpoint := ""
+
+		stateBool := znode.StateBool
+		stateFloat := znode.StateFloat
 		if i > 0 {
-			endpoint = strconv.Itoa(i)
+			ep := znode.Endpoint(i)
+			stateBool = ep.StateBool
+			stateFloat = ep.StateFloat
 		}
 
+		newState := devices.State{}
+		if v, ok := stateBool["on"]; ok {
+			newState["on"] = v
+		}
+		if v, ok := stateFloat["level"]; ok {
+			newState["brightness"] = v / 100
+		}
+		if v, ok := stateFloat["power_w"]; ok {
+			newState["power_w"] = v
+		}
 		//Dont add if it already exists
-		if node.Devices().Exists(devid) {
+		if dev := node.GetDevice(devid); dev != nil {
+			if diff := dev.State.Diff(newState); len(diff) != 0 {
+				dev.Lock()
+				dev.State.MergeWith(diff)
+				dev.Unlock()
+				node.SyncDevice(devid)
+			}
 			return
 		}
-
-		node.Config().Add(devid).Layout(
-			&protocol.DeviceConfig{
-				ID:   "46",
-				Name: "LOAD ERROR Alarmreport",
-				Options: map[string]string{
-					"0": "No reaction",
-					"1": "Send an alarm frame",
-				},
-			},
-			&protocol.DeviceConfig{
-				ID:   "47",
-				Name: "Ignorera",
-				Type: "bool",
-			},
-			&protocol.DeviceConfig{
-				ID:   "47",
-				Name: "Ignorera",
-				Type: "float",
-				Min:  0,
-				Max:  99,
-			},
-		).Handler(func(device string, c *protocol.DeviceConfig) {
-			//save c....
-			//switch c.ID {
-			//case "46": // Dimvärde:
-			////znode.SetParameter(46, c.Value)
-			//}
-			logrus.Warnf("Got config update: %s = %s", c.ID, c.Value)
-		})
 
 		switch {
 		case znode.IsDeviceClass(zp.GENERIC_TYPE_SWITCH_MULTILEVEL,
 			zp.SPECIFIC_TYPE_POWER_SWITCH_MULTILEVEL):
 			//znode.HasCommand(commands.SwitchMultilevel):
-			node.Devices().Add(&devices.Device{
-				Type:   "dimmableLamp",
+			node.AddOrUpdate(&devices.Device{
+				Type:   "light",
 				Name:   znode.Brand + " - " + znode.Product + " (Address: " + devid + ")",
-				Id:     devid,
+				ID:     devices.ID{ID: devid},
 				Online: true,
-				StateMap: map[string]string{
-					"on":    "Nodes[" + strconv.Itoa(int(znode.Id)) + "]" + ".stateBool.on" + endpoint,
-					"level": "Nodes[" + strconv.Itoa(int(znode.Id)) + "]" + ".stateFloat.level" + endpoint,
-				},
+				Traits: []string{"OnOff", "Brightness"},
+				State:  newState,
 			})
 		//case znode.HasCommand(commands.SwitchBinary):
 		case znode.IsDeviceClass(zp.GENERIC_TYPE_SWITCH_BINARY,
 			zp.SPECIFIC_TYPE_POWER_SWITCH_BINARY):
-			node.Devices().Add(&devices.Device{
-				Type:   "lamp",
+			node.AddOrUpdate(&devices.Device{
+				Type:   "light",
 				Name:   znode.Brand + " - " + znode.Product + " (Address: " + devid + ")",
-				Id:     devid,
+				ID:     devices.ID{ID: devid},
 				Online: true,
-				StateMap: map[string]string{
-					"on": "Nodes[" + strconv.Itoa(int(znode.Id)) + "]" + ".stateBool.on" + endpoint,
-				},
+				Traits: []string{"OnOff"},
+				State:  newState,
 			})
 		}
 	}
-
 }
 
-// WORKER that monitors the current connection state
-func monitorState(node *protocol.Node, connection basenode.Connection) {
-	for s := range connection.State() {
-		switch s {
-		case basenode.ConnectionStateConnected:
-			connection.Send(node.Node())
-		case basenode.ConnectionStateDisconnected:
-		}
-	}
-}
+func onRequestStateChange(z *gozwave.Controller) func(state devices.State, device *devices.Device) error {
+	return func(state devices.State, device *devices.Device) error {
+		logrus.Debugf("OnRequestStateChange for device %s: %#v", device.ID.ID, state)
 
-// WORKER that recives all incomming commands
-func serverRecv(node *protocol.Node, connection basenode.Connection) {
-	for d := range connection.Receive() {
-		processCommand(node, connection, d)
-	}
-}
-
-// THis is called on each incomming command
-func processCommand(node *protocol.Node, connection basenode.Connection, cmd protocol.Command) {
-	if s, ok := node.State().(*State); ok {
-		log.Infof("Incoming command from server: %#v \n", cmd, s)
-		if len(cmd.Args) == 0 {
-			return
-		}
-
-		id, err := strconv.Atoi(cmd.Args[0])
+		id, err := strconv.Atoi(device.ID.ID)
 		if err != nil {
-			log.Error(err)
-			return
+			return err
 		}
-
-		var device gozwave.Controllable
-
 		endpoint := int(id / 1000)
 		id = id - (endpoint * 1000)
 
-		znode := s.zwave.Nodes.Get(id)
-		if znode == nil {
-			log.Error("Node not found")
-			return
+		eDev := z.Nodes.Get(id)
+
+		if eDev == nil {
+			return fmt.Errorf("device %s not found in our config", device.ID.ID)
 		}
 
-		if id < 1000 && len(znode.Endpoints) < 2 {
-			device = znode
+		var control gozwave.Controllable
+		if id < 1000 && len(eDev.Endpoints) < 2 {
+			control = eDev
 		} else {
-			device = znode.Endpoint(endpoint)
+			control = eDev.Endpoint(endpoint)
 		}
 
-		switch cmd.Cmd {
-		case "on":
-			device.On()
-		case "off":
-			device.Off()
-		case "level":
-			level, err := strconv.ParseFloat(cmd.Args[1], 64)
-			if err != nil {
-				log.Error(err)
+		state.Bool("on", func(on bool) {
+			if on {
+				logrus.Debugf("turning on %s \n", device.ID.String())
+				control.On()
 				return
 			}
-			device.Level(level)
-		default:
-			log.Warnf("Unknown command '%s'", cmd.Cmd)
-		}
+			logrus.Debugf("turning off %s \n", device.ID.String())
+			control.Off()
+		})
+
+		state.Float("brightness", func(v float64) {
+			bri := math.Round(100 * v)
+			logrus.Debugf("dimming %s to: %f\n", device.ID.String(), bri)
+			eDev.Level(bri)
+		})
+		return nil
 	}
 }
 
-func getZwaveController(port string) (z *gozwave.Controller, f *os.File, err error) {
-	if recordToFile == "" {
-		z, err = gozwave.Connect(port, "zwave-networkmap.json")
+func getZwaveController(config *Config) (z *gozwave.Controller, f *os.File, err error) {
+	if config.RecordToFile == "" {
+		z, err = gozwave.Connect(config.Device, "zwave-networkmap.json")
 		return
 	}
 
 	f, err = os.Create("/tmp/dat2")
 	if err != nil {
-		log.Error(err)
+		logrus.Error(err)
 		return
 	}
 
-	re := serialrecorder.New(port, 115200)
+	re := serialrecorder.New(config.Device, 115200)
 	re.Logger = f
-	z, err = gozwave.ConnectWithCustomPortOpener(port, "zwave-networkmap.json", re)
+	z, err = gozwave.ConnectWithCustomPortOpener(config.Device, "zwave-networkmap.json", re)
 	return
 }

@@ -2,118 +2,130 @@
 package main
 
 import (
-	"bytes"
+	"context"
 	"encoding/hex"
 	"encoding/json"
-	"flag"
+	"fmt"
+	"math"
 	"os"
-	"strconv"
-	"sync"
+	"os/signal"
+	"syscall"
 
 	"github.com/jonaz/goenocean"
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/basenode"
-	"github.com/stampzilla/stampzilla-go/protocol"
-	"github.com/stampzilla/stampzilla-go/protocol/devices"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/pkg/node"
 )
 
-var VERSION string = "dev"
-var BUILD_DATE string = ""
-
-var state *State
+var globalState *State
+var enoceanSend chan goenocean.Encoder
+var usb300SenderId [4]byte
 
 func main() {
+	globalState = NewState()
 
-	node := protocol.NewNode("enocean")
-	node.Version = VERSION
-	node.BuildDate = BUILD_DATE
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
 
-	flag.Parse()
+	node := node.New("enocean")
+	node.OnConfig(updatedConfig(node))
+	wait := node.WaitForFirstConfig()
 
-	//Setup Config
-	config := basenode.NewConfig()
-	basenode.SetConfig(config)
+	node.OnRequestStateChange(onRequestStateChange(node))
 
-	//Start communication with the server
-	//serverSendChannel = make(chan interface{})
-	//serverRecvChannel = make(chan protocol.Command)
-	connection := basenode.Connect()
-	go monitorState(node, connection)
-	go serverRecv(connection)
+	err := node.Connect()
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
 
-	node.AddElement(&protocol.Element{
-		Type: protocol.ElementTypeToggle,
-		Name: "Lamp 0186ff7d",
-		Command: &protocol.Command{
-			Cmd:  "toggle",
-			Args: []string{"0186ff7d"},
-		},
-		Feedback: `Devices["0186ff7d"].On`,
-	})
-	node.AddElement(&protocol.Element{
-		Type: protocol.ElementTypeText,
-		Name: "Lamp 0186ff7d power",
-		//Command: &protocol.Command{
-		//Cmd:  "toggle",
-		//Args: []string{"0186ff7d"},
-		//},
-		Feedback: `Devices["0186ff7d"].PowerW`,
-	})
-
-	//Setup state
-	state = NewState()
-	state.Devices = readConfigFromFile()
-	node.SetState(state)
-
-	elementGenerator := &ElementGenerator{}
-	elementGenerator.State = state
-	elementGenerator.Node = node
-	elementGenerator.Run()
-
-	for _, dev := range state.Devices {
-		node.Devices().Add(&devices.Device{
-			Type:   getDeviceType(dev),
-			Name:   dev.Name,
-			Id:     dev.IdString(),
-			Online: true,
-			StateMap: map[string]string{
-				"on": "Devices." + dev.IdString() + ".On",
-			},
-		})
+	logrus.Info("Waiting for config from server")
+	err = wait()
+	if err != nil {
+		logrus.Error(err)
+		return
 	}
 
 	checkDuplicateSenderIds()
 
-	setupEnoceanCommunication(node, connection)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	err = setupEnoceanCommunication(ctx, node)
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
+
+	node.Wait()
+}
+
+func onRequestStateChange(node *node.Node) func(state devices.State, device *devices.Device) error {
+	return func(state devices.State, device *devices.Device) error {
+		logrus.Debug("OnRequestStateChange:", state, device.ID)
+
+		// Load device config from the config struct
+		eDev := globalState.DeviceByString(device.ID.ID)
+
+		if eDev == nil {
+			return fmt.Errorf("device %s not found in our config", device.ID.ID)
+		}
+
+		// Require a device config for node 4 only
+		state.Bool("on", func(on bool) {
+			if on {
+				logrus.Debugf("turning on %s with senderid %s\n", device.ID.String(), eDev.SenderId)
+				eDev.CmdOn()
+				return
+			}
+			logrus.Debugf("turning off %s with senderid %s\n", device.ID.String(), eDev.SenderId)
+			eDev.CmdOff()
+		})
+		state.Float("brightness", func(v float64) {
+			bri := int(math.Round(255 * v))
+			logrus.Debugf("dimming %s with senderid %s to: %d\n", device.ID.String(), eDev.SenderId, bri)
+			eDev.CmdDim(bri)
+		})
+
+		return nil
+	}
+
+}
+
+func updatedConfig(node *node.Node) func(data json.RawMessage) error {
+	return func(data json.RawMessage) error {
+		logrus.Debug("Received config from server:", string(data))
+
+		err := json.Unmarshal(data, &globalState.Devices)
+		if err != nil {
+			return err
+		}
+		for _, dev := range globalState.Devices {
+			node.AddOrUpdate(&devices.Device{
+				Type:   getDeviceType(dev),
+				Name:   dev.Name,
+				ID:     devices.ID{ID: dev.IdString()},
+				Online: true,
+				Traits: []string{"OnOff", "Brightness"},
+				State: devices.State{
+					"on": false,
+				},
+			})
+		}
+		return nil
+	}
 }
 
 func getDeviceType(d *Device) string {
 	if d.HasSingleRecvEEP("f60201") {
-		return "button"
+		return "switch"
 	}
-	return "lamp"
-}
-
-func monitorState(node *protocol.Node, connection basenode.Connection) {
-	for s := range connection.State() {
-		switch s {
-		case basenode.ConnectionStateConnected:
-			connection.Send(node)
-		case basenode.ConnectionStateDisconnected:
-		}
-	}
-}
-
-func serverRecv(connection basenode.Connection) {
-	for d := range connection.Receive() {
-		processCommand(d)
-	}
+	return "light"
 }
 
 func checkDuplicateSenderIds() {
-	for _, d := range state.Devices {
+	for _, d := range globalState.Devices {
 		id1 := d.Id()[3] & 0x7f
-		for _, d1 := range state.Devices {
+		for _, d1 := range globalState.Devices {
 			if d.Id() == d1.Id() {
 				continue
 			}
@@ -125,43 +137,18 @@ func checkDuplicateSenderIds() {
 	}
 }
 
-func processCommand(cmd protocol.Command) {
-	logrus.Debug("INCOMING COMMAND", cmd)
-	if len(cmd.Args) == 0 {
-		logrus.Error("Missing device ID in arguments")
-		return
-	}
-
-	device := state.DeviceByString(cmd.Args[0])
-	if device == nil {
-		logrus.Errorf("Device %s does not exist", device)
-		return
-	}
-	switch cmd.Cmd {
-	case "toggle":
-		device.CmdToggle()
-	case "on":
-		device.CmdOn()
-	case "off":
-		device.CmdOff()
-	case "dim":
-		lvl, _ := strconv.Atoi(cmd.Args[1])
-		device.CmdDim(lvl)
-	case "learn":
-		device.CmdLearn()
-	}
-}
-
-var enoceanSend chan goenocean.Encoder
-
-func setupEnoceanCommunication(node *protocol.Node, connection basenode.Connection) {
+func setupEnoceanCommunication(ctx context.Context, node *node.Node) error {
 
 	enoceanSend = make(chan goenocean.Encoder, 100)
 	recv := make(chan goenocean.Packet, 100)
-	goenocean.Serial(enoceanSend, recv)
+	err := goenocean.Serial("/dev/ttyUSB0", enoceanSend, recv)
+	if err != nil {
+		return err
+	}
 
 	getIDBase()
-	reciever(node, connection, recv)
+	go reciever(ctx, node, recv)
+	return nil
 }
 
 func getIDBase() {
@@ -171,30 +158,31 @@ func getIDBase() {
 	enoceanSend <- p
 }
 
-var usb300SenderId [4]byte
-
-func reciever(node *protocol.Node, connection basenode.Connection, recv chan goenocean.Packet) {
-	for p := range recv {
-		if p.PacketType() == goenocean.PacketTypeResponse && len(p.Data()) == 5 {
-			copy(usb300SenderId[:], p.Data()[1:4])
-			logrus.Debugf("senderid: % x ( % x )", usb300SenderId, p.Data())
-			continue
-		}
-		if p.SenderId() != [4]byte{0, 0, 0, 0} {
-			incomingPacket(node, connection, p)
+func reciever(ctx context.Context, node *node.Node, recv chan goenocean.Packet) {
+	for {
+		select {
+		case p := <-recv:
+			if p.PacketType() == goenocean.PacketTypeResponse && len(p.Data()) == 5 {
+				copy(usb300SenderId[:], p.Data()[1:4])
+				logrus.Debugf("senderid: % x ( % x )", usb300SenderId, p.Data())
+				continue
+			}
+			if p.SenderId() != [4]byte{0, 0, 0, 0} {
+				incomingPacket(node, p)
+			}
+		case <-ctx.Done():
+			return
 		}
 	}
 }
 
-func incomingPacket(node *protocol.Node, connection basenode.Connection, p goenocean.Packet) {
+func incomingPacket(node *node.Node, p goenocean.Packet) {
 
 	var d *Device
-	if d = state.Device(p.SenderId()); d == nil {
+	if d = globalState.Device(p.SenderId()); d == nil {
 		//Add unknown device
-		d = state.AddDevice(p.SenderId(), "UNKNOWN", nil, false)
-		//TODO add to devices list aswell? Maybe we need to configure it first?
-		saveDevicesToFile()
-		connection.Send(node)
+		d = globalState.AddDevice(p.SenderId(), "UNKNOWN", nil, false)
+		logrus.Infof("Found new device %v. Please configure it in the config", d)
 	}
 
 	logrus.Debug("Incoming packet")
@@ -202,15 +190,19 @@ func incomingPacket(node *protocol.Node, connection basenode.Connection, p goeno
 		logrus.Debug("Packet is goenocean.Telegram")
 		for _, deviceEep := range d.RecvEEPs {
 			if deviceEep[0:2] != hex.EncodeToString([]byte{t.TelegramType()}) {
-				logrus.Debug("Packet is wrong deviceEep ", deviceEep, t.TelegramType())
+				logrus.Trace("Packet is wrong deviceEep ", deviceEep, t.TelegramType())
 				continue
 			}
 
 			if h := handlers.getHandler(deviceEep); h != nil {
 				h.Process(d, t)
-				logrus.Info("Incoming packet processed from", d.IdString())
-				//TODO add return bool in process and to send depending on that!
-				connection.Send(node)
+				logrus.Debug("Incoming packet processed from", d.IdString())
+				//connection.Send(node)
+				newState := devices.State{
+					"on":         d.On(),
+					"brightness": d.Dim,
+				}
+				node.UpdateState(d.IdString(), newState)
 				return
 			}
 		}
@@ -218,38 +210,4 @@ func incomingPacket(node *protocol.Node, connection basenode.Connection, p goeno
 
 	//fmt.Println("Unknown packet")
 
-}
-
-var devFileMutex sync.Mutex
-
-func saveDevicesToFile() {
-	devFileMutex.Lock()
-	defer devFileMutex.Unlock()
-	configFile, err := os.Create("devices.json")
-	if err != nil {
-		logrus.Error("creating config file", err.Error())
-	}
-	var out bytes.Buffer
-	b, err := json.MarshalIndent(state.Devices, "", "\t")
-	if err != nil {
-		logrus.Error("error marshal json", err)
-	}
-	json.Indent(&out, b, "", "\t")
-	out.WriteTo(configFile)
-}
-func readConfigFromFile() map[string]*Device {
-	devFileMutex.Lock()
-	defer devFileMutex.Unlock()
-	configFile, err := os.Open("devices.json")
-	if err != nil {
-		logrus.Error("opening config file", err.Error())
-	}
-
-	config := make(map[string]*Device)
-	jsonParser := json.NewDecoder(configFile)
-	if err = jsonParser.Decode(&config); err != nil {
-		logrus.Error("parsing config file", err.Error())
-	}
-
-	return config
 }

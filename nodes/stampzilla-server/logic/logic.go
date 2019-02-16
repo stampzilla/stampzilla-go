@@ -1,321 +1,357 @@
 package logic
 
 import (
-	"bytes"
+	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
-	"regexp"
-	"strconv"
-	"strings"
 	"sync"
+	"time"
 
-	"github.com/pborman/uuid"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
-	log "github.com/cihub/seelog"
-	serverprotocol "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/protocol"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
 )
 
+/* rules.json example:
+{
+    "e8092b86-1261-44cd-ab64-38121df58a79": {
+        "name": "All off",
+        "enabled": true,
+        "active": false,
+        "uuid": "e8092b86-1261-44cd-ab64-38121df58a79",
+        "expression": "devices['fd230f30-6d84-4507-8ace-c1ec715be51e.1'].on == true",
+        "for": "5m",
+        "actions": [
+            "1s",
+            "c7d352bb-23f4-468c-b476-f76599c09a0d"
+        ]
+    },
+    "1fd25327-f43c-4a00-aa67-3969dfed06b5": {
+        "name": "chromecast p\u00e5",
+        "enabled": true,
+        "active": false,
+        "uuid": "1fd25327-f43c-4a00-aa67-3969dfed06b5",
+        "expression": "devices['asdf.123'].on == true ",
+        "for": "5m",
+        "actions": [
+            "1m",
+            "c7d352bb-23f4-468c-b476-f76599c09a0d"
+        ],
+		"labels": [
+			"livingroom",
+			"kitchen"
+		]
+    }
+}
+*/
+
+// Rules is a list of rules
+type Rules map[string]*Rule
+
+// Logic is the main struct
 type Logic struct {
-	states map[string]string
-	Rules_ []*rule
-	re     *regexp.Regexp
+	StateStore    *SavedStateStore
+	Rules         map[string]*Rule
+	devices       *devices.List
+	onReportState func(string, map[string]interface{})
+	//ActionProgressChan chan ActionProgress
 	sync.RWMutex
-	Nodes         *serverprotocol.Nodes `inject:""`
-	ActionService *ActionService        `inject:""`
-
-	Clients *websocket.Clients `inject:""`
-
-	ActionProgressChan chan ActionProgress
+	sync.WaitGroup
+	c               chan func()
+	WebsocketSender websocket.Sender
 }
 
-func NewLogic() *Logic {
-	l := &Logic{states: make(map[string]string)}
-	l.re = regexp.MustCompile(`^([^\s\[][^\s\[]*)?(\[.*?([0-9]+).*?\])?$`)
+/*
+type ActionProgress struct {
+	Address string `json:"address"`
+	Uuid    string `json:"uuid"`
+	Step    int    `json:"step"`
+}
+*/
+
+// New returns a new logic that is ready to use
+func New(sss *SavedStateStore, websocketSender websocket.Sender) *Logic {
+	l := &Logic{
+		devices: devices.NewList(),
+		//ActionProgressChan: make(chan ActionProgress, 100),
+		Rules:           make(map[string]*Rule),
+		StateStore:      sss,
+		onReportState:   func(string, map[string]interface{}) {},
+		c:               make(chan func()),
+		WebsocketSender: websocketSender,
+	}
 	return l
 }
 
-func (l *Logic) Start() {
-	l.ActionProgressChan = make(chan ActionProgress, 100)
-
-	go func() {
-		for {
-			msg := <-l.ActionProgressChan
-
-			l.Clients.SendToAll("actions/runner", msg)
-			log.Infof("STATE %#v", msg)
-		}
-	}()
+// AddRule adds a new logic rule. Mainly used in tests
+func (l *Logic) AddRule(name string) *Rule {
+	r := &Rule{Name_: name, Uuid_: uuid.New().String()}
+	l.Lock()
+	defer l.Unlock()
+	l.Rules[r.Uuid()] = r
+	return r
 }
 
-func (l *Logic) States() map[string]string {
+//GetRules returns a list of Rules
+func (l *Logic) GetRules() Rules {
 	l.RLock()
 	defer l.RUnlock()
-	return l.states
+	return l.Rules
 }
 
-func (l *Logic) GetRuleByUuid(uuid string) *rule {
-	l.RLock()
-	defer l.RUnlock()
-	for _, v := range l.Rules_ {
-		if v.Uuid() == uuid {
-			return v
+// SetRules overwrites all rules in logic
+func (l *Logic) SetRules(rules Rules) {
+	l.Lock()
+	l.Rules = rules
+	l.Unlock()
+
+	// Trigger an evaluation of the new rules
+	l.c <- func() {}
+}
+
+func (l *Logic) OnReportState(callback func(string, map[string]interface{})) {
+	l.onReportState = callback
+}
+
+// Start starts the logic worker
+func (l *Logic) Start(ctx context.Context) {
+	l.Add(1)
+	logrus.Info("logic: starting worker")
+	go l.worker(ctx)
+}
+
+func (l *Logic) worker(ctx context.Context) {
+	defer l.Done()
+	for {
+		select {
+		case f := <-l.c:
+			f()
+			l.EvaluateRules(ctx)
+		case <-ctx.Done():
+			logrus.Info("logic: stopping worker")
+			return
 		}
+	}
+}
+
+// UpdateDevice update the state in the logic store with the new state from the device
+func (l *Logic) UpdateDevice(dev *devices.Device) {
+	l.c <- func() {
+		l.updateDevice(dev)
+	}
+}
+func (l *Logic) updateDevice(dev *devices.Device) {
+	if oldDev := l.devices.Get(dev.ID); oldDev != nil {
+		diff := oldDev.State.Diff(dev.State)
+		if len(diff) > 0 {
+			//oldDev.Lock() // TODO check if needed with -race
+			for k, v := range diff {
+				oldDev.State[k] = v
+			}
+			//oldDev.Unlock()
+		}
+		return
+	}
+	l.devices.Add(dev)
+}
+
+// EvaluateRules loops over each rule and run evaluation on them
+func (l *Logic) EvaluateRules(ctx context.Context) {
+	for _, rule := range l.Rules {
+		evaluation := l.evaluateRule(rule)
+		if rule.For_ == 0 {
+			l.runNow(rule, evaluation)
+			continue
+		}
+		l.runFor(ctx, rule, evaluation)
+	}
+}
+func (l *Logic) runFor(ctx context.Context, rule *Rule, evaluation bool) {
+	//TODO implement for 5m here. Do not run or set active until 5m passed.
+	// go run sleep 5m. cancel go routine if we have new evaluation. After 5m run evaluateRule again before rule.Run
+
+	if rule.stop == nil { // lazy initialized
+		rule.stop = make(chan struct{})
+	}
+
+	if evaluation == rule.Active() {
+		return
+	}
+
+	if evaluation {
+		rule.Stop()
+		l.Add(1)
+		go func() {
+			defer l.Done()
+
+			l.onReportState(rule.Uuid(), map[string]interface{}{
+				"pending": true,
+			})
+			logrus.Debug("Rule: ", rule.Name(), " (", rule.Uuid(), ") - sleeping for: ", rule.For())
+			select {
+			case <-time.After(time.Duration(rule.For())):
+			case <-ctx.Done():
+				return
+			case <-rule.stop:
+				return
+			}
+
+			if !l.evaluateRule(rule) {
+				return
+			}
+
+			logrus.Info("Rule: ", rule.Name(), " (", rule.Uuid(), ") - running actions after for: ", rule.For())
+
+			l.onReportState(rule.Uuid(), map[string]interface{}{
+				"pending": false,
+				"active":  true,
+			})
+			rule.SetActive(true)
+			rule.Run(l.StateStore, l.WebsocketSender)
+		}()
+		return
+	}
+
+	l.onReportState(rule.Uuid(), map[string]interface{}{
+		"pending": false,
+		"active":  false,
+	})
+	rule.SetActive(false)
+}
+func (l *Logic) runNow(rule *Rule, evaluation bool) {
+	if evaluation != rule.Active() {
+		l.onReportState(rule.Uuid(), map[string]interface{}{
+			"pending": false,
+			"active":  evaluation,
+		})
+		rule.SetActive(evaluation)
+		if evaluation {
+			l.Add(1)
+			go func() {
+				logrus.Info("Rule: ", rule.Name(), " (", rule.Uuid(), ") - running actions")
+				rule.Run(l.StateStore, l.WebsocketSender)
+				l.Done()
+			}()
+		} else {
+			rule.Cancel()
+		}
+	}
+}
+
+func (l *Logic) evaluateRule(r *Rule) bool {
+	rules := make(map[string]bool)
+	for _, v := range l.Rules {
+		rules[v.Uuid()] = v.Active()
+	}
+	result, err := r.Eval(l.devices, rules)
+	if err != nil {
+		l.onReportState(r.Uuid(), map[string]interface{}{
+			"error": err.Error(),
+		})
+		logrus.Errorf("Error evaluating rule %s: %s", r.Uuid(), err.Error())
+		return false
+	}
+	l.onReportState(r.Uuid(), map[string]interface{}{
+		"error": "",
+	})
+	return result
+}
+
+// Save saves the rules to rules.json
+func (l *Logic) Save() error {
+	configFile, err := os.Create("rules.json")
+	if err != nil {
+		return fmt.Errorf("logic: error saving rules: %s", err.Error())
+	}
+	encoder := json.NewEncoder(configFile)
+	encoder.SetIndent("", "\t")
+	l.Lock()
+	defer l.Unlock()
+	err = encoder.Encode(l.Rules)
+	if err != nil {
+		return fmt.Errorf("logic: error saving rules: %s", err.Error())
 	}
 	return nil
 }
-func (l *Logic) GetStateByUuid(uuid string) string {
-	node := l.Nodes.Search(uuid)
-	if node == nil {
-		return ""
+
+//Load loads the rules from rules.json
+func (l *Logic) Load() error {
+	logrus.Debug("logic: loading rules from rules.json")
+	configFile, err := os.Open("rules.json")
+	if err != nil {
+		if os.IsNotExist(err) {
+			logrus.Warn(err)
+			return nil // We dont want to error our if the file does not exist when we start the server
+		}
+		return fmt.Errorf("logic: error loading rules.json: %s", err.Error())
 	}
-	l.RLock()
-	defer l.RUnlock()
-	if state, ok := l.states[node.Uuid()]; ok {
-		return state
-	}
-	return ""
-}
-func (l *Logic) SetState(uuid, jsonData string) {
-	l.Lock()
-	l.states[uuid] = jsonData
-	l.Unlock()
-}
-func (l *Logic) Rules() []*rule {
-	l.RLock()
-	defer l.RUnlock()
-	return l.Rules_
-}
-func (l *Logic) AddRule(name string) *rule {
-	r := &rule{Name_: name, Uuid_: uuid.New(), nodes: l.Nodes}
+
 	l.Lock()
 	defer l.Unlock()
-	l.Rules_ = append(l.Rules_, r)
-	return r
-}
-func (self *Logic) EmptyRules() {
-	self.Lock()
-	defer self.Unlock()
-	self.Rules_ = make([]*rule, 0)
-}
-
-func (l *Logic) EvaluateRules() {
-	for _, rule := range l.Rules() {
-		evaluation := l.evaluateRule(rule)
-		//fmt.Println("ruleEvaluationResult:", evaluation)
-		if evaluation != rule.CondState() {
-			rule.SetCondState(evaluation)
-			if evaluation {
-				log.Info("Rule: ", rule.Name(), " (", rule.Uuid(), ") - running enter actions")
-				rule.RunEnter(l.ActionProgressChan)
-				rule.Lock()
-				rule.Active_ = true
-				rule.Unlock()
-				continue
-			}
-
-			log.Info("Rule: ", rule.Name(), " (", rule.Uuid(), ") - running exit actions")
-			rule.RunExit(l.ActionProgressChan)
-			rule.Lock()
-			rule.Active_ = false
-			rule.Unlock()
-		}
-	}
-}
-func (l *Logic) evaluateRuleAnd(r Rule) bool {
-	for _, cond := range r.Conditions() {
-		value, err := l.getValueToEvaluate(cond)
-		if err != nil {
-			log.Error(err)
-			return false
-		}
-
-		if !cond.Check(value) {
-			return false
-		}
-	}
-	return true
-}
-
-func (l *Logic) evaluateRuleOr(r Rule) bool {
-	for _, cond := range r.Conditions() {
-		value, err := l.getValueToEvaluate(cond)
-		if err != nil {
-			log.Error(err)
-			return false
-		}
-
-		if cond.Check(value) {
-			return true
-		}
-	}
-	return false
-}
-
-func (l *Logic) getValueToEvaluate(cond RuleCondition) (interface{}, error) {
-	if cond.Uuid() == "server.logic" {
-		rule := l.GetRuleByUuid(cond.StatePath())
-		return rule.Active(), nil
-	}
-	if state := l.GetStateByUuid(cond.Uuid()); state != "" {
-		return l.path(state, cond.StatePath())
-	}
-	return nil, fmt.Errorf("Rule condition UUID \"%s\" not found", cond.Uuid())
-}
-
-func (l *Logic) evaluateRule(r Rule) bool {
-	//TODO if rule.enabled is false return false here??? default enabled to true in existing rules or do migration?
-	if len(r.Conditions()) == 0 {
-		return false
-	}
-
-	if strings.ToLower(r.Operator()) == "and" || r.Operator() == "" {
-		return l.evaluateRuleAnd(r)
-	}
-	if strings.ToLower(r.Operator()) == "or" {
-		return l.evaluateRuleOr(r)
-	}
-
-	return false
-}
-
-func (l *Logic) ListenForChanges(uuid string) chan string {
-	c := make(chan string)
-	go l.listen(uuid, c)
-	return c
-}
-
-func (l *Logic) Update(updateChannel chan string, node serverprotocol.Node) {
-	state, err := json.Marshal(node.State())
-	if err != nil {
-		log.Error(err)
-		return
-	}
-
-	updateChannel <- string(state)
-}
-
-// listen will run in a own goroutine and listen to incoming state changes and Parse them
-func (l *Logic) listen(uuid string, c chan string) {
-	for {
-		select {
-		case state, open := <-c:
-			if !open {
-				return
-			}
-			l.SetState(uuid, state)
-			l.EvaluateRules()
-		}
-	}
-}
-
-func (l *Logic) path(state string, jp string) (interface{}, error) {
-	var v interface{}
-	err := json.Unmarshal([]byte(state), &v)
-	if err != nil {
-		return nil, err
-	}
-	if jp == "" {
-		return nil, errors.New("invalid path")
-	}
-	for _, token := range strings.Split(jp, ".") {
-		sl := l.re.FindAllStringSubmatch(token, -1)
-		//fmt.Println("REGEXPtoken: ", token)
-		//fmt.Println("REGEXP: ", sl)
-		if len(sl) == 0 {
-			return nil, errors.New("invalid path1")
-		}
-		ss := sl[0]
-		if ss[1] != "" {
-			switch v1 := v.(type) {
-			case map[string]interface{}:
-				v = v1[ss[1]]
-			}
-		}
-		if ss[3] != "" {
-			ii, err := strconv.Atoi(ss[3])
-			is := ss[3]
-			if err != nil {
-				return nil, errors.New("invalid path2")
-			}
-			switch v2 := v.(type) {
-			case []interface{}:
-				v = v2[ii]
-			case map[string]interface{}:
-				v = v2[is]
-			}
-		}
-	}
-	return v, nil
-}
-
-func (l *Logic) SaveRulesToFile(path string) {
-	configFile, err := os.Create(path)
-	if err != nil {
-		log.Error("creating config file", err.Error())
-		return
-	}
-	var out bytes.Buffer
-	b, err := json.Marshal(l.Rules)
-	if err != nil {
-		log.Error("error marshal json", err)
-	}
-	json.Indent(&out, b, "", "\t")
-	out.WriteTo(configFile)
-}
-
-func (l *Logic) RestoreRulesFromFile(path string) {
-	configFile, err := os.Open(path)
-	if err != nil {
-		log.Warn("opening config file", err.Error())
-		return
-	}
-
-	type local_rule struct {
-		Name               string           `json:"name"`
-		Uuid               string           `json:"uuid"`
-		Conditions_        []*ruleCondition `json:"conditions"`
-		EnterActions       []string         `json:"enterActions"`
-		ExitActions        []string         `json:"exitActions"`
-		EnterCancelActions []string         `json:"enterCancelActions"`
-		ExitCancelActions  []string         `json:"exitCancelActions"`
-	}
-
-	var rules []*local_rule
 	jsonParser := json.NewDecoder(configFile)
-	if err = jsonParser.Decode(&rules); err != nil {
-		log.Error(err)
+	if err = jsonParser.Decode(&l.Rules); err != nil {
+		return fmt.Errorf("logic: error loading rules.json: %s", err.Error())
 	}
 
-	l.EmptyRules()
+	//TODO loop over rules and generate UUIDs if needed. If it was needed save the rules again
 
-	for _, rule := range rules {
-		r := l.AddRule(rule.Name)
-
-		//Set the uuid from json if it exists. Otherwise use the generated one
-		if rule.Uuid != "" {
-			r.SetUuid(rule.Uuid)
-		}
-		for _, cond := range rule.Conditions_ {
-			r.AddCondition(cond)
-		}
-		for _, uuid := range rule.EnterActions {
-			a := l.ActionService.GetByUuid(uuid)
-			r.AddEnterAction(a)
-		}
-		for _, uuid := range rule.ExitActions {
-			a := l.ActionService.GetByUuid(uuid)
-			r.AddExitAction(a)
-		}
-		for _, uuid := range rule.EnterCancelActions {
-			a := l.ActionService.GetByUuid(uuid)
-			r.AddEnterCancelAction(a)
-		}
-		for _, uuid := range rule.ExitCancelActions {
-			a := l.ActionService.GetByUuid(uuid)
-			r.AddExitCancelAction(a)
-		}
-	}
+	return nil
 }
+
+/*
+
+new way:
+{
+	"name": "All off",
+	"enabled": true,
+	"active": true|false,
+	"uuid": "e8092b86-1261-44cd-ab64-38121df58a79",
+	"expression": "devices["asdf.123"].on == true && devices["asdf.123"].temperature > 20.0",
+	"conditions": { // this is implemented in expression instead. rules are available there
+		"id på annan regel": true,
+	}
+	"for": "5m", // after for we must evaluate expression again
+	"actions": [ // save index on where we are in running actions and send to gui over websocket
+		"1m", //sleep , if rule stops being active during actions run. Stopp running!
+		"c7d352bb-23f4-468c-b476-f76599c09a0d"
+	]
+},
+
+savedState{
+	"c7d352bb-23f4-468c-b476-f76599c09a0d": {
+			"name": "tänd allt",
+			"uuid": "c7d352bb-23f4-468c-b476-f76599c09a0d",
+			"state": {
+				"a.1" :{
+					"on":true
+				},
+				"a.2" :{
+					"on":true
+				}
+			}
+		}
+	}
+
+old way:
+
+{
+	"name": "All off",
+	"enabled": true,
+	"uuid": "e8092b86-1261-44cd-ab64-38121df58a79",
+	"conditions": [
+		{
+			"statePath": "Devices.fefe749b.Status",
+			"comparator": "==",
+			"value": "R1B0",
+			"uuid": "efd2bd24-ac50-4147-bdf9-da3dd12c8f8a"
+		}
+	],
+	"enterActions": [
+		"c7d352bb-23f4-468c-b476-f76599c09a0d"
+	]
+},
+
+*/

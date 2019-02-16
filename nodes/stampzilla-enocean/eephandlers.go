@@ -4,10 +4,9 @@ import (
 	"fmt"
 
 	"github.com/jonaz/goenocean"
-	"github.com/stampzilla/stampzilla-go/protocol"
 )
 
-type baseHandler struct { // {{{
+type baseHandler struct {
 }
 
 func (h *baseHandler) On(d *Device) {
@@ -28,12 +27,6 @@ func (h *baseHandler) Dim(lvl int, d *Device) {
 func (h *baseHandler) Process(d *Device, t goenocean.Telegram) {
 	//NOOP
 }
-func (h *baseHandler) SendElements(d *Device) []*protocol.Element {
-	return nil
-}
-func (h *baseHandler) ReceiveElements(d *Device) []*protocol.Element {
-	return nil
-}
 func (h *baseHandler) generateSenderId(d *Device) [4]byte {
 	senderId := usb300SenderId
 	//id := d.Id()[3]
@@ -45,10 +38,8 @@ func (h *baseHandler) generateSenderId(d *Device) [4]byte {
 	return senderId
 }
 
-// }}}
-
 //Handler for profile f60201
-type handlerEepf60201 struct { // {{{
+type handlerEepf60201 struct {
 	baseHandler
 }
 
@@ -115,53 +106,11 @@ func (h *handlerEepf60201) Process(d *Device, t goenocean.Telegram) {
 		//}
 		//}
 
-		//TODO only send update if our values have accually changed
-		//serverSendChannel <- node
 	}
 }
-func (h *handlerEepf60201) SendElements(d *Device) []*protocol.Element {
-	var els []*protocol.Element
-
-	// TOGGLE
-	el := &protocol.Element{}
-	el.Type = protocol.ElementTypeToggle
-	el.Name = d.Name + " Toggle"
-	el.Command = &protocol.Command{
-		Cmd:  "toggle",
-		Args: []string{d.IdString()},
-	}
-	el.Feedback = `Devices["` + d.IdString() + `"].On`
-	els = append(els, el)
-
-	// ON
-	el = &protocol.Element{}
-	el.Type = protocol.ElementTypeButton
-	el.Name = d.Name + " On"
-	el.Command = &protocol.Command{
-		Cmd:  "on",
-		Args: []string{d.IdString()},
-	}
-	el.Feedback = `Devices["` + d.IdString() + `"].On`
-	els = append(els, el)
-
-	// OFF
-	el = &protocol.Element{}
-	el.Type = protocol.ElementTypeButton
-	el.Name = d.Name + " Off"
-	el.Command = &protocol.Command{
-		Cmd:  "off",
-		Args: []string{d.IdString()},
-	}
-	el.Feedback = `Devices["` + d.IdString() + `"].On`
-	els = append(els, el)
-
-	return els
-}
-
-// }}}
 
 //Handler for profile f60201eltako
-type handlerEepf60201eltako struct { // {{{
+type handlerEepf60201eltako struct {
 	handlerEepf60201
 }
 
@@ -177,15 +126,11 @@ func (h *handlerEepf60201eltako) Process(d *Device, t goenocean.Telegram) {
 		if eep.R1B1() { //OFF
 			d.SetOn(false)
 		}
-		//serverSendChannel <- node
-		//h.SendUpdateToServer()
 	}
 }
 
-// }}}
-
 //Handler for profile a53808
-type handlerEepa53808 struct { // {{{
+type handlerEepa53808 struct {
 	baseHandler
 }
 
@@ -235,60 +180,8 @@ func (h *handlerEepa53808) Learn(d *Device) {
 
 }
 
-func (h *handlerEepa53808) SendElements(d *Device) []*protocol.Element {
-	var els []*protocol.Element
-
-	// TOGGLE
-	el := &protocol.Element{}
-	el.Type = protocol.ElementTypeToggle
-	el.Name = d.Name + " Toggle"
-	el.Command = &protocol.Command{
-		Cmd:  "toggle",
-		Args: []string{d.IdString()},
-	}
-	el.Feedback = `Devices["` + d.IdString() + `"].On`
-	els = append(els, el)
-
-	// ON
-	el = &protocol.Element{}
-	el.Type = protocol.ElementTypeButton
-	el.Name = d.Name + " On"
-	el.Command = &protocol.Command{
-		Cmd:  "on",
-		Args: []string{d.IdString()},
-	}
-	el.Feedback = `Devices["` + d.IdString() + `"].On`
-	els = append(els, el)
-
-	// OFF
-	el = &protocol.Element{}
-	el.Type = protocol.ElementTypeButton
-	el.Name = d.Name + " Off"
-	el.Command = &protocol.Command{
-		Cmd:  "off",
-		Args: []string{d.IdString()},
-	}
-	el.Feedback = `Devices["` + d.IdString() + `"].On`
-	els = append(els, el)
-
-	// Learn
-	el = &protocol.Element{}
-	el.Type = protocol.ElementTypeButton
-	el.Name = d.Name + " Learn"
-	el.Command = &protocol.Command{
-		Cmd:  "learn",
-		Args: []string{d.IdString()},
-	}
-	el.Feedback = `Devices["` + d.IdString() + `"].On`
-	els = append(els, el)
-
-	return els
-}
-
-// }}}
-
 //Handler for profile a53808eltako
-type handlerEepa53808eltako struct { // {{{
+type handlerEepa53808eltako struct {
 	handlerEepa53808
 }
 
@@ -343,8 +236,6 @@ func (h *handlerEepa53808eltako) Process(d *Device, t goenocean.Telegram) {
 		d.SetOn(false)
 	}
 	d.Dim = int64(eep.DimValue())
-	//serverSendChannel <- node
-	//h.SendUpdateToServer()
 }
 func (h *handlerEepa53808eltako) Learn(d *Device) {
 	p := goenocean.NewTelegram4bsLearn()
@@ -366,10 +257,8 @@ func (h *handlerEepa53808eltako) Learn(d *Device) {
 
 }
 
-// }}}
-
 //Handler for profile a51201
-type handlerEepa51201 struct { // {{{
+type handlerEepa51201 struct {
 	baseHandler
 }
 
@@ -382,33 +271,10 @@ func (h *handlerEepa51201) Process(d *Device, t goenocean.Telegram) {
 	} else {
 		d.SetPowerkWh(eep.MeterReading())
 	}
-	//serverSendChannel <- node
-	//h.SendUpdateToServer()
 }
-func (h *handlerEepa51201) ReceiveElements(d *Device) []*protocol.Element {
-	var els []*protocol.Element
-
-	// PowerW
-	el := &protocol.Element{}
-	el.Type = protocol.ElementTypeText
-	el.Name = d.Name + " PowerW"
-	el.Feedback = `Devices["` + d.IdString() + `"].PowerW`
-	els = append(els, el)
-
-	// PowerkWh
-	el = &protocol.Element{}
-	el.Type = protocol.ElementTypeText
-	el.Name = d.Name + " PowerkWh"
-	el.Feedback = `Devices["` + d.IdString() + `"].PowerkWh`
-	els = append(els, el)
-
-	return els
-}
-
-// }}}
 
 //Handler for profile d20109
-type handlerEepd20109 struct { // {{{
+type handlerEepd20109 struct {
 	baseHandler
 }
 
@@ -426,9 +292,4 @@ func (h *handlerEepd20109) Process(d *Device, t goenocean.Telegram) {
 		}
 	}
 
-	//TODO only send update if our values have accually changed
-	//serverSendChannel <- node
-	//h.SendUpdateToServer()
 }
-
-// }}}

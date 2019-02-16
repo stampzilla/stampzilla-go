@@ -1,110 +1,71 @@
 package main
 
 import (
-	"flag"
-	"fmt"
-	"os"
-	"strings"
 	"time"
 
-	log "github.com/cihub/seelog"
-	"github.com/stampzilla/stampzilla-go/nodes/basenode"
-	"github.com/stampzilla/stampzilla-go/protocol"
+	"github.com/sirupsen/logrus"
 
 	"github.com/stampzilla/gocast/discovery"
+	"github.com/stampzilla/stampzilla-go/pkg/node"
 )
 
-var VERSION string = "dev"
-var BUILD_DATE string = ""
-
-var state State
+var state = &State{
+	Chromecasts: make(map[string]*Chromecast),
+}
 
 func main() {
-	printVersion := flag.Bool("v", false, "Prints current version")
-	// Parse all commandline arguments, host and port parameters are added in the basenode init function
-	flag.Parse()
+	node := node.New("chromecast")
 
-	if *printVersion != false {
-		fmt.Println(VERSION + " (" + BUILD_DATE + ")")
-		os.Exit(0)
+	//node.OnConfig(updatedConfig)
+
+	stop := make(chan struct{})
+	node.OnShutdown(func() {
+		close(stop)
+	})
+
+	err := node.Connect()
+	if err != nil {
+		logrus.Error(err)
+		return
 	}
-
-	log.Info("Starting CHROMECAST node")
-
-	//Get a config with the correct parameters
-	config := basenode.NewConfig()
-
-	//Activate the config
-	basenode.SetConfig(config)
-
-	node := protocol.NewNode("chromecast")
-	node.Version = VERSION
-	node.BuildDate = BUILD_DATE
-
-	//Start communication with the server
-	connection := basenode.Connect()
-
-	// Thit worker keeps track on our connection state, if we are connected or not
-	go monitorState(node, connection)
-
-	// This worker recives all incomming commands
-	go serverRecv(connection.Receive())
-
-	state = State{
-		connection: connection,
-		node:       node,
-	}
-	node.SetState(&state.Devices)
 
 	discovery := discovery.NewService()
-
-	go discoveryListner(discovery)
 	discovery.Periodic(time.Second * 10)
+	go discoveryListner(node, discovery, stop)
 
-	select {}
+	node.Wait()
 }
 
-func discoveryListner(discovery *discovery.Service) {
-	for device := range discovery.Found() {
-		log.Debugf("New device discoverd: %s", device.String())
-		NewChromecast(device)
-		go func() {
-			err := device.Connect()
-			if err != nil {
-				log.Error(err)
-			}
-		}()
-	}
-}
-
-// WORKER that monitors the current connection state
-func monitorState(node *protocol.Node, connection basenode.Connection) {
-	for s := range connection.State() {
-		switch s {
-		case basenode.ConnectionStateConnected:
-			connection.Send(node.Node())
-		case basenode.ConnectionStateDisconnected:
+func discoveryListner(node *node.Node, discovery *discovery.Service, stop chan struct{}) {
+	for {
+		select {
+		case device := <-discovery.Found():
+			logrus.Debugf("New device discoverd: %s", device.String())
+			d := NewChromecast(node, device)
+			state.Add(d)
+			go func() {
+				err := device.Connect()
+				if err != nil {
+					logrus.Error(err)
+				}
+			}()
+		case <-stop:
+			return
 		}
 	}
 }
 
-// WORKER that recives all incomming commands
-func serverRecv(recv chan protocol.Command) {
-	for d := range recv {
-		processCommand(d)
-	}
-}
-
 // THis is called on each incomming command
+/*
 func processCommand(cmd protocol.Command) {
-	log.Info("Incoming command from server:", cmd)
+	logrus.Info("Incoming command from server:", cmd)
 	if len(cmd.Args) == 0 {
-		log.Error("Missing argument 0 (which player?)")
+		logrus.Error("Missing argument 0 (which player?)")
 		return
 	}
 	player := state.GetByUUID(cmd.Args[0])
 	if player == nil {
-		log.Errorf("Player with id %s not found", cmd.Args[0])
+		logrus.Errorf("Player with id %s not found", cmd.Args[0])
 		return
 	}
 
@@ -121,3 +82,4 @@ func processCommand(cmd protocol.Command) {
 		player.Stop()
 	}
 }
+*/

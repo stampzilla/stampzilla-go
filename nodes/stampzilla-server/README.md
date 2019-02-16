@@ -1,11 +1,12 @@
-# stampzilla-server
 
+Install deps
 
-## REST API
+```
+dep ensure -vendor-only
 
-### /api/devices
+```
 
-List all devices that all nodes report to the server.
-
-
-
+Allow https to localhost in chrome
+```
+chrome://flags/#allow-insecure-localhost
+```

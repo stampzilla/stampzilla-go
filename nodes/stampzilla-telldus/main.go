@@ -1,301 +1,219 @@
 package main
 
 import (
-	"encoding/json"
-	"flag"
-	"fmt"
-	"io/ioutil"
-	"net"
-	"os/exec"
-	"regexp"
+	"errors"
 	"strconv"
-	"time"
+	"unsafe"
 
-	log "github.com/cihub/seelog"
+	"github.com/sirupsen/logrus"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
+	n "github.com/stampzilla/stampzilla-go/pkg/node"
 )
 
-var VERSION string = "dev"
-var BUILD_DATE string = ""
+/*
+#cgo LDFLAGS: -ltelldus-core
 
-var Info InfoStruct
-var devices []Device
+#include <telldus-core.h>
 
-var Connection net.Conn
+extern void registerCallbacks();
+extern void unregisterCallbacks();
+extern int updateDevices();
 
-var host string
-var port string
+*/
+import "C"
 
-type Device struct { /*{{{*/
-	Id       string
-	Name     string
-	State    string
-	Type     string
-	Features []string
-}                        /*}}}*/
-type InfoStruct struct { /*{{{*/
-	Id      string
-	Actions []Action
-	Layout  []Layout
-	State   State
-}                    /*}}}*/
-type Action struct { /*{{{*/
-	Id        string
-	Name      string
-	Arguments []string
-}                    /*}}}*/
-type Layout struct { /*{{{*/
-	Id      string
-	Type    string
-	Action  string
-	Using   string
-	Filter  []string
-	Section string
-}                   /*}}}*/
-type State struct { /*{{{*/
-	Devices []Device
-} /*}}}*/
+var node *n.Node
 
-type Command struct {
-	Cmd  string
-	Args []string
-}
+//var state *State = &State{make(map[string]*Device), make(map[string]*Sensor, 0)}
 
-func main() { /*{{{*/
-	// Load logger
-	logger, err := log.LoggerFromConfigAsFile("../logconfig.xml")
-	if err != nil {
-		panic(err)
-	}
-	log.ReplaceLogger(logger)
+func main() {
+	node = n.New("telldus")
 
-	// Load flags
-	flag.StringVar(&host, "host", "localhost", "Stampzilla server hostname")
-	flag.StringVar(&port, "port", "8282", "Stampzilla server port")
-	flag.Parse()
+	//node.OnConfig(updatedConfig)
 
-	log.Info("Starting TELLDUS node")
+	C.registerCallbacks()
+	defer C.unregisterCallbacks()
 
-	Info = InfoStruct{}
-	Info.Id = "Tellstick"
+	cnt := C.updateDevices()
+	logrus.Info("Updated ", cnt, " devices in total)")
 
-	updateActions()
-	updateLayout()
-	readState()
+	node.OnRequestStateChange(func(state devices.State, device *devices.Device) error {
+		var result C.int = C.TELLSTICK_ERROR_UNKNOWN
+		i, err := strconv.Atoi(device.ID.ID)
+		if err != nil {
+			return err
+		}
 
-	// Start the connection
-	go connection()
+		id := C.int(i)
+		state.Bool("on", func(on bool) {
+			if on {
+				result = C.tdTurnOn(id)
+				logrus.Debugf("turning on id %s\n", device.ID.ID)
+				return
+			}
+			result = C.tdTurnOff(id)
+			logrus.Debugf("turning off id %s\n", device.ID.ID)
+		})
+		if result != C.TELLSTICK_SUCCESS {
+			var errorString *C.char = C.tdGetErrorString(result)
+			C.tdReleaseString(errorString)
+			err = errors.New(C.GoString(errorString))
+		}
+		return err
+	})
+
+	//notify := notifier.New(serverConnection)
+	//notify.SetSource(node)
+
+	//sensorMonitor = sensormonitor.New(notify)
+	//sensorMonitor.MonitorSensors = nc.MonitorSensors
+	//sensorMonitor.Start()
+	//log.Println("Monitoring Sensors: ", nc.MonitorSensors)
 
 	select {}
-} /*}}}*/
-
-func connection() {
-	var err error
-	for {
-		log.Info("Connection to ", host, ":", port)
-		Connection, err = net.Dial("tcp", net.JoinHostPort(host, port))
-
-		if err != nil {
-			log.Error("Failed connection: ", err)
-			<-time.After(time.Second)
-			continue
-		}
-
-		log.Trace("Connected")
-
-		connectionWorker()
-
-		log.Warn("Lost connection, reconnecting")
-		<-time.After(time.Second)
-	}
 }
 
-func connectionWorker() {
-	// Send update
-	sendUpdate()
+//export newDevice
+func newDevice(id int, name *C.char, methods, s int, value *C.char) {
+	//log.Println(id, C.GoString(name))
 
-	// Recive data
-	for {
-		buf := make([]byte, 51200)
-		nr, err := Connection.Read(buf)
+	features := []string{}
+	if methods&C.TELLSTICK_TURNON != 0 {
+		features = append(features, "on")
+	}
+	if methods&C.TELLSTICK_TURNOFF != 0 {
+		features = append(features, "off")
+	}
+	if methods&C.TELLSTICK_BELL != 0 {
+		features = append(features, "bell")
+	}
+	if methods&C.TELLSTICK_TOGGLE != 0 {
+		features = append(features, "toggle")
+	}
+	if methods&C.TELLSTICK_DIM != 0 {
+		features = append(features, "dim")
+	}
+	if methods&C.TELLSTICK_EXECUTE != 0 {
+		features = append(features, "execute")
+	}
+	if methods&C.TELLSTICK_UP != 0 {
+		features = append(features, "up")
+	}
+	if methods&C.TELLSTICK_DOWN != 0 {
+		features = append(features, "down")
+	}
+	if methods&C.TELLSTICK_STOP != 0 {
+		features = append(features, "stop")
+	}
+
+	strID := strconv.Itoa(id)
+	dev := &devices.Device{
+		Type:   "light",
+		Name:   strID,
+		ID:     devices.ID{ID: strID},
+		Online: true,
+		State: devices.State{
+			"on":         false,
+			"brightness": 0.0,
+		},
+	}
+
+	if s&C.TELLSTICK_TURNON != 0 {
+		//state.AddDevice(strconv.Itoa(id), C.GoString(name), features, DeviceState{On: true, Dim: 100})
+		dev.State["on"] = true
+		dev.State["brightness"] = 1.0
+	}
+	if s&C.TELLSTICK_TURNOFF != 0 {
+		//state.AddDevice(strconv.Itoa(id), C.GoString(name), features, DeviceState{On: false})
+		dev.State["on"] = false
+		dev.State["brightness"] = 0.0
+	}
+	if s&C.TELLSTICK_DIM != 0 {
+		var currentState = C.GoString(value)
+		level, _ := strconv.ParseUint(currentState, 10, 16)
+		//state.AddDevice(strconv.Itoa(id), C.GoString(name), features, DeviceState{On: level > 0, Dim: int(level)})
+		dev.State["brightness"] = float64(level) / 255.0
+		dev.State["on"] = level > 0
+	}
+	node.AddOrUpdate(dev)
+}
+
+//export sensorEvent
+func sensorEvent(protocol, model *C.char, sensorID, dataType int, value *C.char) {
+	//log.Println("SensorEVENT: ", C.GoString(protocol), C.GoString(model), sensorID)
+
+	id := strconv.Itoa(sensorID)
+	dev := node.GetDevice(id)
+	if dev == nil {
+		dev = &devices.Device{
+			Type:   "sensor",
+			Name:   id,
+			ID:     devices.ID{ID: id},
+			Online: true,
+			State: devices.State{
+				"temperature": 0.0,
+				"humidity":    0.0,
+			},
+		}
+		node.AddOrUpdate(dev)
+	}
+
+	if dataType == C.TELLSTICK_TEMPERATURE {
+		t, _ := strconv.ParseFloat(C.GoString(value), 64)
+		logrus.Debugf("Temperature %s : %f\n", id, t)
+		if dev.State["temperature"] != t {
+			dev.State["temperature"] = t
+		}
+	} else if dataType == C.TELLSTICK_HUMIDITY {
+		h, _ := strconv.ParseFloat(C.GoString(value), 64)
+		logrus.Debugf("Humidity %s : %f\n", id, h)
+		if dev.State["humidity"] != h {
+			dev.State["humidity"] = h
+		}
+	}
+
+	node.SyncDevice(id)
+}
+
+//export deviceEvent
+func deviceEvent(deviceID, method int, data *C.char, callbackID int, context unsafe.Pointer) {
+	//log.Println("DeviceEVENT: ", deviceID, method, C.GoString(data))
+	id := strconv.Itoa(deviceID)
+	dev := node.GetDevice(id)
+	if dev == nil {
+		logrus.Errorf("Unknown device %s", id)
+		return
+	}
+	if method&C.TELLSTICK_TURNON != 0 {
+		dev.State["on"] = true
+	}
+	if method&C.TELLSTICK_TURNOFF != 0 {
+		dev.State["on"] = false
+	}
+	if method&C.TELLSTICK_DIM != 0 {
+		level, err := strconv.ParseUint(C.GoString(data), 10, 16)
 		if err != nil {
+			logrus.Error(err)
 			return
 		}
-
-		data := buf[0:nr]
-
-		var cmd Command
-		err = json.Unmarshal(data, &cmd)
-		if err != nil {
-			log.Warn(err)
-		} else {
-			log.Info(cmd)
-			processCommand(cmd)
+		if level == 0 {
+			dev.State["on"] = false
 		}
-
+		if level > 0 {
+			dev.State["on"] = true
+		}
+		dev.State["brightness"] = float64(level) / 255.0
 	}
+
+	node.SyncDevice(id)
 }
 
-func updateActions() { /*{{{*/
-	Info.Actions = []Action{
-		Action{
-			"set",
-			"Set",
-			[]string{"Devices.Id"},
-		},
-		Action{
-			"toggle",
-			"Toggle",
-			[]string{"Devices.Id"},
-		},
-		Action{
-			"dim",
-			"Dim",
-			[]string{"Devices.Id", "value"},
-		},
-	}
-}                     /*}}}*/
-func updateLayout() { /*{{{*/
-	Info.Layout = []Layout{
-		Layout{
-			"1",
-			"switch",
-			"toggle",
-			//"Devices[Type=!dimmable]",
-			"Devices",
-			[]string{"check"},
-			"Lamps",
-		},
-		Layout{
-			"2",
-			"slider",
-			"dim",
-			//"Devices[Type=dimmable]",
-			"Devices",
-			[]string{"dim"},
-			"Lamps",
-		},
-	}
-} /*}}}*/
-
-func readState() { /*{{{*/
-	out, err := exec.Command("tdtool", "--list").Output()
-	if err != nil {
-		log.Critical(err)
-	}
-
-	// Read number of devices
-	cnt := regexp.MustCompile("Number of devices: ([0-9]+)?")
-	if n := cnt.FindStringSubmatch(string(out)); len(n) > 1 {
-		log.Debug("tdtool says ", n[1], " devices")
-	}
-
-	// Read all devices
-	findDevices := regexp.MustCompile("(?m)^(.+)\t(.+)\t([A-Z]+|([A-Z]+):([0-9]+))$")
-	if result := findDevices.FindAllStringSubmatch(string(out), -1); len(result) > 0 {
-		for _, dev := range result {
-			// fmt.Println(dev[1:])
-			switch {
-			case dev[4] == "DIMMED":
-				devices = append(devices, Device{dev[1], dev[2], dev[5], "", []string{"check"}})
-			case dev[3] == "OFF":
-				devices = append(devices, Device{dev[1], dev[2], "false", "", []string{"check"}})
-			case dev[3] == "ON":
-				devices = append(devices, Device{dev[1], dev[2], "true", "", []string{"check"}})
-			default:
-				devices = append(devices, Device{dev[1], dev[2], dev[3], "", []string{"check"}})
-			}
-		}
-	}
-
-	Info.State.Devices = devices
-
-	// Read all features from config
-	config, _ := ioutil.ReadFile("/etc/tellstick.conf")
-	findDevices = regexp.MustCompile("(?msU)device {.*id = ([0-9]+)[^0-9].*model = \"(.*)\".*^}$")
-	if result := findDevices.FindAllStringSubmatch(string(config), -1); len(result) > 0 {
-		for _, row := range result {
-			for id, dev := range devices {
-				if dev.Id == row[1] {
-					devices[id].Type = row[2]
-
-					switch row[2] {
-					case "selflearning-dimmer":
-						log.Warn("Found DIM at row ", id, " - ", dev, " | ", row)
-						devices[id].Features = append(devices[id].Features, "dim")
-					}
-				}
-			}
-			//devices = append(devices, Device{dev[1], dev[2], dev[3], []string{"toggle"}})
-		}
-	}
-	/*
-		device {
-		  id = 7
-		  name = "tak bel."
-		  protocol = "arctech"
-		  model = "selflearning-dimmer"
-		  parameters {
-			house = "954"
-			unit = "2"
-		  }
-		}
-	*/
-
-	//log.Debug(devices)
-} /*}}}*/
-func sendUpdate() {
-	b, err := json.Marshal(Info)
-	if err != nil {
-		log.Error(err)
-	}
-	fmt.Fprintf(Connection, string(b))
+//export deviceChangeEvent
+func deviceChangeEvent(deviceID, changeEvent, changeType, callbackID int, context unsafe.Pointer) {
+	//log.Println("DeviceChangeEVENT: ", deviceID, changeEvent, changeType)
 }
-func processCommand(cmd Command) {
-	switch cmd.Cmd {
-	case "toggle":
-		for n, row := range Info.State.Devices {
-			if row.Id == cmd.Args[0] {
-				var arg = ""
-				if Info.State.Devices[n].State == "false" {
-					Info.State.Devices[n].State = "true"
-					arg = "--on"
-				} else {
-					Info.State.Devices[n].State = "false"
-					arg = "--off"
-				}
 
-				// Run command
-				out, err := exec.Command("tdtool", arg, row.Id).Output()
-				if err != nil {
-					log.Critical(err)
-				}
-				log.Warn(string(out))
-
-				sendUpdate()
-				log.Info("Toggled=", Info.State.Devices[n].State, arg)
-			}
-		}
-	case "dim":
-		for n, row := range Info.State.Devices {
-			if row.Id == cmd.Args[0] {
-				var dimmlevel float64
-				val, _ := strconv.ParseFloat(cmd.Args[1], 64)
-				dimmlevel = val * 255 / 100
-				go func() {
-					c := exec.Command("tdtool", "--dimlevel", fmt.Sprintf("%.0f", dimmlevel), "--dim", row.Id)
-					out, err := c.Output()
-					if err != nil {
-						log.Critical(err)
-					}
-					log.Warn(c)
-					log.Warn(string(out))
-				}()
-				Info.State.Devices[n].State = cmd.Args[1]
-
-				sendUpdate()
-				log.Info("Dimmed=", Info.State.Devices[n].State)
-			}
-		}
-
-	}
+//export rawDeviceEvent
+func rawDeviceEvent(data *C.char, controllerID, callbackID int, context unsafe.Pointer) {
+	//log.Println("rawDeviceEVENT: ", controllerID, C.GoString(data))
 }

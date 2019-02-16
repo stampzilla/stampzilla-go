@@ -6,21 +6,19 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path/filepath"
-	"strconv"
 	"strings"
-	"text/tabwriter"
 
-	"github.com/codegangsta/cli"
 	"github.com/google/go-github/github"
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/stampzilla/installer"
+	"github.com/stampzilla/stampzilla-go/stampzilla/runner"
+	"github.com/urfave/cli"
 )
 
 type cliHandler struct {
 }
 
-func (t *cliHandler) UpdateConfig(c *cli.Context) {
+func (t *cliHandler) UpdateConfig(c *cli.Context) error {
 	requireRoot()
 
 	oldConfig := &installer.Config{}
@@ -31,266 +29,199 @@ func (t *cliHandler) UpdateConfig(c *cli.Context) {
 	for _, n := range newConfig.Daemons {
 		if old := oldConfig.GetConfigForNode(n.Name); old != nil {
 			n.Autostart = old.Autostart
-			n.Config = old.Config
 		}
 	}
-	err := newConfig.SaveToFile("/etc/stampzilla/nodes.conf")
-	if err != nil {
-		fmt.Println(err)
-	}
-
+	return newConfig.SaveToFile("/etc/stampzilla/nodes.conf")
 }
 
-func (t *cliHandler) Install(c *cli.Context) {
+func (t *cliHandler) Install(c *cli.Context) error {
 	i, err := installer.New(installer.Binaries)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"error": err,
 		}).Error("Failed to create installer")
-		return
+		return nil
 	}
 
-	t.runInstaller(c, i, c.Bool("u"))
-}
-func (t *cliHandler) Upgrade(c *cli.Context) {
-	i, err := installer.New(installer.Binaries)
-	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("Failed to create installer")
-		return
-	}
-
-	t.runInstaller(c, i, true)
+	return t.runInstaller(c, i, c.Bool("u"))
 }
 
-func (t *cliHandler) Build(c *cli.Context) {
+func (t *cliHandler) Build(c *cli.Context) error {
 	i, err := installer.New(installer.SourceCode)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"error": err,
 		}).Error("Failed to create installer")
-		return
+		return nil
 	}
 
-	t.runInstaller(c, i, c.Bool("u"))
+	return t.runInstaller(c, i, c.Bool("u"))
 }
 
-func (t *cliHandler) List(c *cli.Context) {
+func (t *cliHandler) List(c *cli.Context) error {
 	client := github.NewClient(nil)
 	ctx := context.Background()
 	releases, _, err := client.Repositories.ListReleases(ctx, "stampzilla", "stampzilla-go", &github.ListOptions{})
 
 	if err != nil {
-		logrus.Error(err)
-		return
+		return err
 	}
 
 	for _, v := range releases {
 		fmt.Println(*v.TagName)
 	}
+	return nil
 }
 
-func (t *cliHandler) runInstaller(c *cli.Context, i installer.Installer, upgrade bool) {
+func (t *cliHandler) runInstaller(c *cli.Context, i installer.Installer, upgrade bool) error {
 	requireRoot()
 
 	err := installer.Prepare()
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("Failed to run common prepare")
-		return
+		return fmt.Errorf("Failed to run common prepare: %s", err)
 	}
 
 	err = i.Prepare()
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("Failed to run installer prepare")
-		return
+		return fmt.Errorf("Failed to run installer prepare: %s", err)
 	}
 
-	if upgrade {
-		i.Update(c.Args()...)
+	if c.Bool("u") {
+		err = i.Update(c.Args()...)
 	} else {
-		i.Install(c.Args()...)
+		err = i.Install(c.Args()...)
 	}
+	if err != nil {
+		return err
+	}
+
+	is := c.GlobalString("init-system")
+
+	if is == "systemd" {
+		r := &runner.Systemd{}
+		defer r.Close()
+		if len(c.Args()) > 0 {
+			for _, node := range c.Args() {
+				err := r.GenerateUnit(node)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+
+		// generate for all nodes in binary dir
+		nodes, err := ioutil.ReadDir("/home/stampzilla/go/bin")
+		if err != nil {
+			return err
+		}
+		for _, node := range nodes {
+			if node.IsDir() {
+				continue
+			}
+			if !strings.HasPrefix(node.Name(), "stampzilla-") {
+				continue
+			}
+			err := r.GenerateUnit(node.Name())
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
-func (t *cliHandler) Start(c *cli.Context) {
+func (t *cliHandler) Start(c *cli.Context) error {
 	requireRoot()
-
-	cfg := installer.Config{}
-	cfg.ReadConfigFromFile("/etc/stampzilla/nodes.conf")
-	installer.CreateDirAsUser("/var/log/stampzilla", "stampzilla")
-
-	if c.Args().First() != "" {
-		for _, name := range c.Args() {
-			cfg.Start(name)
-		}
-		return
-	}
-
-	for _, d := range cfg.GetAutostartingNodes() {
-		cfg.Start(d.Name)
-	}
+	r := getRunner(c)
+	defer r.Close()
+	return r.Start(c.Args()...)
 }
 
-func (t *cliHandler) Stop(c *cli.Context) {
+func (t *cliHandler) Stop(c *cli.Context) error {
 	requireRoot()
-
-	what := c.Args().First()
-	if what != "" {
-		for _, what := range c.Args() {
-			process := installer.NewProcess(what, "")
-			process.Stop()
-		}
-		return
-	}
-
-	//stop all running stampzilla processes
-	processes := t.getRunningProcesses()
-	for _, p := range processes {
-		p.Stop()
-	}
-}
-func (t *cliHandler) Restart(c *cli.Context) {
-	t.Stop(c)
-	t.Start(c)
-}
-func (t *cliHandler) Status(c *cli.Context) {
-	processes := t.getRunningProcesses()
-	if len(processes) == 0 {
-		fmt.Println("No stampzilla processes are running.")
-		return
-	}
-
-	w := tabwriter.NewWriter(os.Stdout, 0, 8, 0, '\t', 0)
-	fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", "Name", "Pid", "CPU", "Memory")
-	for _, p := range processes {
-		if p.Status != nil {
-			fmt.Fprintf(w, "%s\t%d\t%s\t%s\n", p.Name, p.Pid, p.Status.CPU, p.Status.Memory)
-			continue
-		}
-
-		fmt.Fprintf(w, "%s\t%d\t(DIED)\n", p.Name, p.Pid)
-	}
-
-	w.Flush()
+	r := getRunner(c)
+	defer r.Close()
+	return r.Stop(c.Args()...)
 }
 
-func (t *cliHandler) Debug(c *cli.Context) {
+func (t *cliHandler) Restart(c *cli.Context) error {
+	requireRoot()
+	r := getRunner(c)
+	defer r.Close()
+
+	err := r.Stop(c.Args()...)
+	if err != nil {
+		return err
+	}
+	return r.Start(c.Args()...)
+}
+func (t *cliHandler) Status(c *cli.Context) error {
+	requireRoot()
+	r := getRunner(c)
+	defer r.Close()
+	return r.Status()
+}
+func (t *cliHandler) Disable(c *cli.Context) error {
+	requireRoot()
+	r := &runner.Systemd{}
+	defer r.Close()
+	return r.Disable(c.Args()...)
+}
+
+func (t *cliHandler) Debug(c *cli.Context) error {
 	requireRoot()
 
 	what := c.Args().First()
 	shbin, err := exec.LookPath("sh")
 	if err != nil {
-		fmt.Printf("LookPath Error: %s", err)
+		return fmt.Errorf("LookPath Error: %s", err)
 	}
-	cfg := installer.Config{}
-	cfg.ReadConfigFromFile("/etc/stampzilla/nodes.conf")
-	chdircmd := ""
-	if dir := cfg.GetConfigForNode(what); dir != nil {
-		//i := &Installer{}
-		//i.CreateDirAsUser(dir.Config, "stampzilla")
-		installer.CreateDirAsUser(dir.Config, "stampzilla")
-		chdircmd = " cd " + dir.Config + "; "
-	}
-	toRun := chdircmd + "$GOPATH/bin/stampzilla-" + what
+
+	confDir := "/etc/stampzilla/nodes/" + what
+	installer.CreateDirAsUser(confDir, "stampzilla")
+	chdircmd := " cd " + confDir + "; "
+
+	toRun := chdircmd + "$GOPATH/bin/" + runner.GetProcessName(what)
 	cmd := exec.Command("sudo", "-E", "-u", "stampzilla", "-H", shbin, "-c", toRun)
 	cmd.Env = []string{
 		"GOPATH=/home/stampzilla/go",
-		"STAMPZILLA_WEBROOT=/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/public",
 	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Run()
+	return cmd.Run()
 }
 
-func (t *cliHandler) Log(c *cli.Context) {
+func (t *cliHandler) Log(c *cli.Context) error {
 	follow := c.Bool("f")
-	cmd := exec.Command("less", "-R", "/var/log/stampzilla/stampzilla-"+c.Args().First()+".log")
-	if follow {
-		cmd = exec.Command("tail", "-f", "/var/log/stampzilla/stampzilla-"+c.Args().First()+".log")
+	systemd := c.GlobalString("init-system") == "systemd"
+
+	var cmd *exec.Cmd
+	if systemd {
+		cmd = exec.Command("journalctl", "-u", runner.GetProcessName(c.Args().First()))
+		if follow {
+			cmd = exec.Command("journalctl", "-f", "-u", runner.GetProcessName(c.Args().First()))
+		}
+	} else {
+		cmd = exec.Command("less", "-R", "/var/log/stampzilla/"+runner.GetProcessName(c.Args().First())+".log")
+		if follow {
+			cmd = exec.Command("tail", "-f", "/var/log/stampzilla/"+runner.GetProcessName(c.Args().First())+".log")
+		}
 	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Run()
+	return cmd.Run()
 }
 
-func (t *cliHandler) getRunningProcesses() []*installer.Process {
-	var processes []*installer.Process
-
-	pidFiles, err := ioutil.ReadDir("/var/spool/stampzilla")
-	if err != nil {
-		fmt.Println("/var/spool/stampzilla does not exist. Have you run stampzilla install ?")
-		os.Exit(1)
+func getRunner(c *cli.Context) runner.Runner {
+	if c.GlobalBool("systemd") || c.GlobalBoolT("systemd") {
+		logrus.Debug("systemd enabled")
+		return &runner.Systemd{}
 	}
+	logrus.Debug("systemd disabled")
+	return &runner.Bare{}
 
-	for _, file := range pidFiles {
-		if file.IsDir() {
-			continue
-		}
-		process := installer.NewProcess(strings.TrimSuffix(file.Name(), ".pid"), "")
-		process.Pid = process.Pidfile.Read()
-		processes = append(processes, process)
-	}
-
-	//change to this when you have time: http://linux.die.net/man/5/proc /proc/pid/stat
-	ps, err := installer.Run("ps", "aux")
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	}
-
-	psLines := strings.Split(ps, "\n")
-	for _, psline := range psLines {
-		p := strings.Split(psline, " ")
-		var pslineslice []string
-		for _, name := range p {
-			if name != "" {
-				pslineslice = append(pslineslice, name)
-			}
-		}
-
-		if len(pslineslice) > 1 {
-			var process *installer.Process
-			for _, p1 := range processes {
-				process = nil
-				//fmt.Println(p[4], p1.Pid)
-				//fmt.Printf("%#v\n", p)
-				if strings.Contains(pslineslice[1], strconv.Itoa(p1.Pid)) {
-					process = p1
-					break
-				}
-
-			}
-
-			if process == nil {
-				continue
-			}
-			//fmt.Println("NAME", p[len(p)-1])
-			//fmt.Println("CPU", p[6])
-			//fmt.Println("MEM", p[8])
-			//process := &Process{Name: p[len(p)-1], Command: p[len(p)-1]}
-			//fmt.Printf("%#v\n", pslineslice)
-			process.Name = filepath.Base(pslineslice[len(pslineslice)-1])
-			process.Command = pslineslice[len(pslineslice)-1]
-			process.Status = &installer.ProcessStatus{true, pslineslice[2], pslineslice[3]}
-		}
-	}
-
-	//remove not found processes from the list.
-	for index, p := range processes {
-		if p.Name == "" {
-			if len(processes) > index+1 {
-				processes = append(processes[:index], processes[index+1:]...)
-			} else {
-				processes = processes[:index]
-			}
-		}
-	}
-	return processes
 }
 
 func requireRoot() { // {{{

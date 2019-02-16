@@ -28,8 +28,8 @@ type ProcessStatus struct {
 func NewProcess(name, configDir string) *Process {
 	return &Process{
 		Pidfile: PidFile("/var/spool/stampzilla/" + name + ".pid"),
-		Name:    "stampzilla-" + name,
-		Command: "stampzilla-" + name,
+		Name:    name,
+		Command: name,
 		ConfDir: configDir,
 	}
 }
@@ -68,8 +68,6 @@ func (p *Process) Start() {
 
 	log.Println("Starting: " + p.Command)
 	cmd := chdircmd + nohupbin + " $GOPATH/bin/" + p.Command + " > /var/log/stampzilla/" + p.Command + ".log 2>&1 & echo $! > " + p.Pidfile.String()
-
-	//Run("sh", "-c", cmd)
 
 	out, err := Run("sudo", "-E", "-u", "stampzilla", "-H", shbin, "-c", cmd)
 	if err != nil {
@@ -111,7 +109,6 @@ func Run(head string, parts ...string) (string, error) {
 	cmd.Env = []string{
 		"GOPATH=/home/stampzilla/go",
 		"PATH=" + os.Getenv("PATH"),
-		"STAMPZILLA_WEBROOT=/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/public/dist",
 	}
 	out, err = cmd.CombinedOutput()
 	if err != nil {

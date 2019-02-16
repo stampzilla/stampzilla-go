@@ -2,8 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/RangelReale/osin"
@@ -11,9 +9,26 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-google-assistant/googleassistant"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/pkg/node"
 )
 
-func smartHomeActionHandler(oauth2server *osin.Server) func(c *gin.Context) {
+// SmartHomeHandler contains the logic to answer Google Actions API requests and authorize them usnig oauth2.
+type SmartHomeHandler struct {
+	node       *node.Node
+	deviceList *devices.List
+}
+
+// NewSmartHomeHandler returns a new instance of SmartHomeHandler.
+func NewSmartHomeHandler(node *node.Node, deviceList *devices.List) *SmartHomeHandler {
+	return &SmartHomeHandler{
+		node:       node,
+		deviceList: deviceList,
+	}
+
+}
+
+func (shh *SmartHomeHandler) smartHomeActionHandler(oauth2server *osin.Server) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		auth := osin.CheckBearerAuth(c.Request)
 		if auth == nil {
@@ -57,18 +72,15 @@ func smartHomeActionHandler(oauth2server *osin.Server) func(c *gin.Context) {
 		logrus.Debug("Request:", spew.Sdump(r))
 		switch r.Inputs.Intent() {
 		case googleassistant.SyncIntent:
-			c.JSON(http.StatusOK, syncHandler(r))
+			c.JSON(http.StatusOK, shh.syncHandler(r))
 		case googleassistant.ExecuteIntent:
-			c.JSON(http.StatusOK, executeHandler(r))
+			c.JSON(http.StatusOK, shh.executeHandler(r))
 
 		}
-		if r.Inputs.Intent() == googleassistant.SyncIntent {
-		}
-
 	}
 }
 
-func executeHandler(req *googleassistant.Request) *googleassistant.Response {
+func (shh *SmartHomeHandler) executeHandler(req *googleassistant.Request) *googleassistant.Response {
 	resp := &googleassistant.Response{}
 	resp.RequestID = req.RequestID
 
@@ -80,31 +92,52 @@ func executeHandler(req *googleassistant.Request) *googleassistant.Response {
 	offCommand := googleassistant.NewResponseCommand()
 	offCommand.States.Online = true
 
+	deviceNotFound := googleassistant.NewResponseCommand()
+	deviceNotFound.Status = "ERROR"
+	deviceNotFound.ErrorCode = "deviceNotFound"
+
+	deviceOffline := googleassistant.NewResponseCommand()
+	deviceOffline.Status = "OFFLINE"
+
+	affectedDevs := make(devices.DeviceMap)
+
 	for _, command := range req.Inputs.Payload().Commands {
 
 		for _, v := range command.Execution {
 			for _, googleDev := range command.Devices {
-				dev := nodespecific.Device(googleDev.ID)
-				if dev == nil {
+				devID, err := devices.NewIDFromString(googleDev.ID)
+				if err != nil {
+					logrus.Error(err)
+					continue
+				}
+
+				dev := shh.deviceList.Get(devID)
+				if dev == nil || dev.Type != "light" {
+					deviceNotFound.IDs = append(deviceNotFound.IDs, googleDev.ID)
+					continue
+				}
+
+				if !dev.Online {
+					deviceOffline.IDs = append(deviceOffline.IDs, googleDev.ID)
 					continue
 				}
 				if v.Command == googleassistant.CommandOnOff {
 					if v.Params.On {
-						log.Println("Calling ", dev.Url.On)
-						http.Get(dev.Url.On)
+						logrus.Infof("Turning device %s (%s) on ", dev.Name, dev.ID)
+						dev.State["on"] = true
 						onCommand.IDs = append(onCommand.IDs, googleDev.ID)
 					} else {
 						offCommand.IDs = append(onCommand.IDs, googleDev.ID)
-						log.Println("Calling ", dev.Url.Off)
-						http.Get(dev.Url.Off)
+						logrus.Infof("Turning device %s (%s) off", dev.Name, dev.ID)
+						dev.State["on"] = false
 					}
+					affectedDevs[devID] = dev
 				}
 				if v.Command == googleassistant.CommandBrightnessAbsolute {
 					bri := v.Params.Brightness
-					u := fmt.Sprintf(dev.Url.Level, bri)
-					log.Println("Calling ", u)
-					http.Get(u)
-
+					logrus.Infof("Dimming device %s (%s) to %d", dev.Name, dev.ID, bri)
+					dev.State["brightness"] = float64(bri) / 100.0
+					affectedDevs[devID] = dev
 					if _, ok := levelCommands[v.Params.Brightness]; !ok {
 						levelCommands[bri] = googleassistant.ResponseCommand{
 							States: googleassistant.ResponseStates{
@@ -119,36 +152,37 @@ func executeHandler(req *googleassistant.Request) *googleassistant.Response {
 				}
 			}
 		}
-
 	}
+
+	shh.node.WriteMessage("state-change", affectedDevs)
 
 	for _, v := range levelCommands {
 		resp.Payload.Commands = append(resp.Payload.Commands, v)
 	}
-	if onCommand.IDs != nil {
-		resp.Payload.Commands = append(resp.Payload.Commands, onCommand)
-	}
-	if offCommand.IDs != nil {
-		resp.Payload.Commands = append(resp.Payload.Commands, offCommand)
+
+	for _, v := range []googleassistant.ResponseCommand{onCommand, offCommand, deviceNotFound, deviceOffline} {
+		if v.IDs != nil {
+			resp.Payload.Commands = append(resp.Payload.Commands, v)
+		}
 	}
 
-	if debug {
+	if logrus.GetLevel() >= logrus.DebugLevel {
 		jResp, err := json.Marshal(resp)
 		logrus.Debugf("Execute Error: %s Response: %s", err, string(jResp))
 	}
 	return resp
 }
 
-func syncHandler(req *googleassistant.Request) *googleassistant.Response {
+func (shh *SmartHomeHandler) syncHandler(req *googleassistant.Request) *googleassistant.Response {
 
 	resp := &googleassistant.Response{}
 	resp.RequestID = req.RequestID
 	resp.Payload.AgentUserID = "agentuserid"
 
-	for _, dev := range nodespecific.Devices() {
+	for _, dev := range shh.deviceList.All() {
 
 		rdev := googleassistant.Device{
-			ID:   dev.ID,
+			ID:   dev.ID.String(),
 			Type: "action.devices.types.LIGHT",
 			Name: googleassistant.DeviceName{
 				Name: dev.Name,
