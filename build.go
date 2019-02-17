@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 var dest = "dist"
@@ -59,7 +60,7 @@ func getArgs(path, binName string) []string {
 	m := []string{
 		"build",
 		"-ldflags",
-		"-X github.com/stampzilla/stampzilla-go/pkg/node.Version=" + os.Getenv("TRAVIS_TAG"),
+		"-X github.com/stampzilla/stampzilla-go/pkg/build.Version=" + os.Getenv("TRAVIS_TAG") + ` -X "github.com/stampzilla/stampzilla-go/pkg/build.BuildTime=` + time.Now().Format(time.RFC3339) + `" -X github.com/stampzilla/stampzilla-go/pkg/build.Commit=` + os.Getenv("TRAVIS_COMMIT"),
 		"-o",
 		filepath.Join(dest, binName),
 	}

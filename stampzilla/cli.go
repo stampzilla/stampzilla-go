@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/pkg/node"
+	"github.com/stampzilla/stampzilla-go/pkg/build"
 	"github.com/urfave/cli"
 )
 
@@ -15,7 +15,7 @@ func main() {
 
 	app := cli.NewApp()
 	app.Name = "stampzilla"
-	app.Version = node.Version
+	app.Version = build.String()
 	app.Usage = "Manage stampzilla on the command line"
 	app.EnableBashCompletion = true
 

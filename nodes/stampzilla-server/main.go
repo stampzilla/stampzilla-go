@@ -6,7 +6,7 @@ import (
 
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/servermain"
-	"github.com/stampzilla/stampzilla-go/pkg/node"
+	"github.com/stampzilla/stampzilla-go/pkg/build"
 
 	// Statik for the webserver gui
 	_ "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/statik"
@@ -18,7 +18,7 @@ func main() {
 	config.MustLoad()
 
 	if config.Version {
-		fmt.Printf("Version is: %s\n", node.Version)
+		fmt.Println(build.String())
 		return
 	}
 
