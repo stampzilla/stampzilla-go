@@ -22,7 +22,7 @@ deploy:
   api_key:
     secure: gHm00kgQkMxJgPmC3hxLaOzpH0TSe4ygDTe0vt0b0bhyOwE2/7RBFlYf3jvy2RNtY1YRqWB3lzeGHGMnniAQH3QBv+BsWu6bn1op8osc+jiudyiJzGtBk2J3NcOFvZZ4HUnyvvodN5PboWBIihMzAnfYh/B4SlZvfwe33biUP7M=
   file_glob: true
-  file: dist/*
+  file: "*"
   on:
     tags: true
     repo: stampzilla/stampzilla-go
