@@ -18,6 +18,9 @@ type Config struct {
 	Name     string `json:"name,omitempty"`
 	Host     string `json:"host,omitempty"`
 	LogLevel string `json:"logLevel,omitempty"`
+
+	// Version is used as command line flag to print version
+	Version bool `json:"version,omitempty" flagUsage:"show the version of the app without starting"`
 }
 
 //Save writes the config as json to specified filename

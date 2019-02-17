@@ -14,6 +14,7 @@ after_success:
 
 before_deploy:
   - go run build.go
+  - cd dist && sha512sum * > checksum
 
 deploy:
   skip_cleanup: true
