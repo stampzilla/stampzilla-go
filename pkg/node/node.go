@@ -23,11 +23,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/pkg/build"
 	"github.com/stampzilla/stampzilla-go/pkg/websocket"
 )
-
-// version is used by CI/CD system to set the version of the built binary
-var Version = "dev"
 
 // OnFunc is used in all the callbacks
 type OnFunc func(json.RawMessage) error
@@ -101,8 +99,10 @@ func (n *Node) setup() {
 	n.Config.MustLoad()
 
 	if n.Config.Version {
-		log.Fatalf("Version is: %s", Version)
+		fmt.Println(build.String())
+		os.Exit(1)
 	}
+	n.Version = build.String()
 
 	if n.Config.LogLevel != "" {
 		lvl, err := logrus.ParseLevel(n.Config.LogLevel)
