@@ -58,6 +58,8 @@ func build(path string) {
 func getArgs(path, binName string) []string {
 	m := []string{
 		"build",
+		"-ldflags",
+		"-X github.com/stampzilla/stampzilla-go/pkg/node.Version=" + os.Getenv("TRAVIS_TAG"),
 		"-o",
 		filepath.Join(dest, binName),
 	}

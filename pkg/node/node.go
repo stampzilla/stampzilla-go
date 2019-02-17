@@ -26,6 +26,9 @@ import (
 	"github.com/stampzilla/stampzilla-go/pkg/websocket"
 )
 
+// version is used by CI/CD system to set the version of the built binary
+var Version = "dev"
+
 // OnFunc is used in all the callbacks
 type OnFunc func(json.RawMessage) error
 
@@ -55,6 +58,8 @@ func New(t string) *Node {
 	client := websocket.New()
 	node := NewWithClient(client)
 	node.Type = t
+
+	node.setup()
 
 	return node
 }
@@ -94,6 +99,11 @@ func (n *Node) setup() {
 	//Make sure we have a config
 	n.Config = &models.Config{}
 	n.Config.MustLoad()
+
+	if n.Config.Version {
+		log.Fatalf("Version is: %s", Version)
+	}
+
 	if n.Config.LogLevel != "" {
 		lvl, err := logrus.ParseLevel(n.Config.LogLevel)
 		if err != nil {
@@ -192,7 +202,6 @@ func (n *Node) fetchCertificate() error {
 
 // Connect starts the node and makes connection to the server. Normally discovered using mdns but can be configured aswell.
 func (n *Node) Connect() error {
-	n.setup()
 
 	if n.Config.Host == "" {
 		ip, port := queryMDNS()

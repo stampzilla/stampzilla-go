@@ -6,18 +6,16 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"github.com/stampzilla/stampzilla-go/pkg/node"
 	"github.com/urfave/cli"
 )
-
-var VERSION string = "dev"
-var BUILD_DATE string = ""
 
 func main() {
 	logrus.SetFormatter(&logrus.TextFormatter{TimestampFormat: time.RFC3339, FullTimestamp: true})
 
 	app := cli.NewApp()
 	app.Name = "stampzilla"
-	app.Version = VERSION + " (" + BUILD_DATE + ")"
+	app.Version = node.Version
 	app.Usage = "Manage stampzilla on the command line"
 	app.EnableBashCompletion = true
 
