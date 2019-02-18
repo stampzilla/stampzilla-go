@@ -46,6 +46,9 @@ func download(nodes []string, cb ...func(github.ReleaseAsset) bool) error {
 
 	checksums := getChecksums(releases[0].Assets)
 
+	expectedToInstall := make([]string, len(nodes))
+	copy(expectedToInstall, nodes)
+
 outer:
 	for _, v := range releases[0].Assets {
 		// Skip all with wrong ARCH
@@ -58,6 +61,7 @@ outer:
 		for _, n := range nodes {
 			if strings.HasSuffix(v.GetName(), n+"-"+runtime.GOOS+"-"+runtime.GOARCH) {
 				inNodeList = true
+				break
 			}
 		}
 		if !inNodeList && len(nodes) > 0 {
@@ -114,16 +118,17 @@ outer:
 		}
 
 		//
-		for k, n := range nodes {
+
+		for k, n := range expectedToInstall {
 			if strings.HasSuffix(v.GetName(), n+"-"+runtime.GOOS+"-"+runtime.GOARCH) {
-				nodes = append(nodes[:k], nodes[k+1:]...)
+				expectedToInstall = append(expectedToInstall[:k], expectedToInstall[k+1:]...)
 				break
 			}
 		}
 	}
 
-	if len(nodes) > 0 {
-		return fmt.Errorf("Failed to install %s", strings.Join(nodes, ","))
+	if len(expectedToInstall) > 0 {
+		return fmt.Errorf("Failed to install %s", strings.Join(expectedToInstall, ","))
 	}
 	return nil
 }
