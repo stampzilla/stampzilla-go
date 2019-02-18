@@ -117,6 +117,9 @@ func (t *cliHandler) runInstaller(c *cli.Context, i installer.Installer, upgrade
 			if node.IsDir() {
 				continue
 			}
+			if node.Name() == "stampzilla" { // skip stampzilla cli if it exists
+				continue
+			}
 			if !strings.HasPrefix(node.Name(), "stampzilla-") {
 				continue
 			}
