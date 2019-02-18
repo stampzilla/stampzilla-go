@@ -29,6 +29,12 @@ var node *n.Node
 func main() {
 	node = n.New("telldus")
 
+	err := node.Connect()
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
+
 	//node.OnConfig(updatedConfig)
 
 	C.registerCallbacks()
