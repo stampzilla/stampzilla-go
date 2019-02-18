@@ -118,6 +118,7 @@ func newDevice(id int, name *C.char, methods, s int, value *C.char) {
 		Name:   strID,
 		ID:     devices.ID{ID: strID},
 		Online: true,
+		Traits: []string{"OnOff"},
 		State: devices.State{
 			"on":         false,
 			"brightness": 0.0,
