@@ -45,7 +45,7 @@ func build(path string) {
 			fmt.Printf("building %s...\n", binName)
 			cmd := exec.Command("go", getArgs(path, binName)...)
 			cmd.Env = os.Environ()
-			cmd.Env = append(cmd.Env, "GOOS="+goos, "GOARCH="+goarch)
+			cmd.Env = append(cmd.Env, "GOOS="+goos, "GOARCH="+goarch, "CGO_ENABLED=0")
 			stdoutStderr, err := cmd.CombinedOutput()
 			if err != nil {
 				log.Println(string(stdoutStderr))
