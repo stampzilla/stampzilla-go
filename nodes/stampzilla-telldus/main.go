@@ -68,15 +68,7 @@ func main() {
 		return err
 	})
 
-	//notify := notifier.New(serverConnection)
-	//notify.SetSource(node)
-
-	//sensorMonitor = sensormonitor.New(notify)
-	//sensorMonitor.MonitorSensors = nc.MonitorSensors
-	//sensorMonitor.Start()
-	//log.Println("Monitoring Sensors: ", nc.MonitorSensors)
-
-	select {}
+	node.Wait()
 }
 
 //export newDevice
