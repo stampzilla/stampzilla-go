@@ -38,8 +38,10 @@ func (t *Installer) Update(nodes ...string) error {
 func build(n []string, upgrade bool) error {
 	// Install only specified nodes
 	for _, name := range n {
-		node := "stampzilla-" + name
-		err := GoGet("github.com/stampzilla/stampzilla-go/nodes/"+node, upgrade)
+		if !strings.HasPrefix(name, "stampzilla-") {
+			name = "stampzilla-" + name
+		}
+		err := GoGet("github.com/stampzilla/stampzilla-go/nodes/"+name, upgrade)
 		if err != nil {
 			return err
 		}

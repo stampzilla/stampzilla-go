@@ -45,7 +45,6 @@ func (sd *Systemd) Start(nodes ...string) error {
 
 	if len(nodes) > 0 {
 		for _, name := range nodes {
-			installer.CreateDirAsUser(filepath.Join("/", "etc", "stampzilla", "nodes", GetProcessName(name)), "stampzilla")
 			name = getUnitName(name)
 			logrus.Info("Starting ", name)
 			_, err := conn.StartUnit(name, "replace", nil)
@@ -61,7 +60,6 @@ func (sd *Systemd) Start(nodes ...string) error {
 		return err
 	}
 	for _, u := range units {
-		installer.CreateDirAsUser(filepath.Join("/", "etc", "stampzilla", "nodes", strings.TrimSuffix(u.Name, filepath.Ext(u.Name))), "stampzilla")
 		logrus.Info("Starting ", u.Name)
 		_, err := conn.StartUnit(u.Name, "replace", nil)
 		if err != nil {
@@ -178,7 +176,10 @@ WantedBy=multi-user.target
 	if err != nil {
 		return err
 	}
-	p := filepath.Join("/", "etc", "systemd", "system", getUnitName(name))
+
+	unitName := getUnitName(name)
+	installer.CreateDirAsUser(filepath.Join("/", "etc", "stampzilla", "nodes", strings.TrimSuffix(unitName, filepath.Ext(unitName))), "stampzilla")
+	p := filepath.Join("/", "etc", "systemd", "system", unitName)
 	f, err := os.Create(p)
 	if err != nil {
 		return fmt.Errorf("create file: %s", err)
@@ -197,7 +198,7 @@ WantedBy=multi-user.target
 		return err
 	}
 
-	_, _, err = conn.EnableUnitFiles([]string{getUnitName(name)}, false, false)
+	_, _, err = conn.EnableUnitFiles([]string{unitName}, false, false)
 	return err
 }
 
