@@ -76,6 +76,10 @@ outer:
 		if err != nil {
 			return err
 		}
+		defer func() {
+			tmp.Close()
+			os.Remove(tmp.Name())
+		}()
 
 		// Download the file
 		err = fetch(v, tmp)
@@ -90,18 +94,21 @@ outer:
 			return err
 		}
 		checksum := fmt.Sprintf("%x", hasher.Sum(nil))
-		tmp.Close()
 		if checksums[v.GetName()] != checksum {
 			logrus.WithFields(logrus.Fields{
 				"expected": checksums[v.GetName()],
 				"got":      checksum,
 			}).Errorf("Wrong checksum for %s", v.GetName())
-			os.Remove(tmp.Name())
 			return fmt.Errorf("checksum validation failed")
 		}
 
 		// Move to installation dir
-		err = os.Rename(tmp.Name(), getFilePath(v))
+		dst, err := os.OpenFile(getFilePath(v), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+		if err != nil {
+			return err
+		}
+		tmp.Seek(0, 0)
+		_, err = io.Copy(dst, tmp)
 		if err != nil {
 			return err
 		}
@@ -115,7 +122,10 @@ outer:
 		}
 	}
 
-	return fmt.Errorf("Failed to install %s", strings.Join(nodes, ","))
+	if len(nodes) > 0 {
+		return fmt.Errorf("Failed to install %s", strings.Join(nodes, ","))
+	}
+	return nil
 }
 
 func getFilePath(ra github.ReleaseAsset) string {
