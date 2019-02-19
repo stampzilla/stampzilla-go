@@ -10,6 +10,7 @@ import {
   ArrayFieldTemplate,
   CustomCheckbox,
   ObjectFieldTemplate,
+  ConnectedRuleConditions,
 } from './components/formComponents';
 
 const schema = {
@@ -44,6 +45,13 @@ const schema = {
         type: 'string',
       },
     },
+    conditions: {
+      type: 'object',
+      title: 'Conditions',
+      description:
+        'This is the conditions for the rule to be evaluated. Here you can depend one rule on an other by selecting if the parent rule has to be active or not.',
+      properties: {},
+    },
   },
 };
 const uiSchema = {
@@ -56,6 +64,9 @@ const uiSchema = {
     items: {
       'ui:widget': 'SavedStateWidget',
     },
+  },
+  conditions: {
+    'ui:field': 'ConnectedRuleConditions',
   },
 };
 
@@ -78,6 +89,7 @@ class Automation extends Component {
       ...loadFromProps(props),
       isValid: true,
       isModified: false,
+      formData: {},
     };
   }
 
@@ -126,11 +138,15 @@ class Automation extends Component {
     const { isModified } = this.state;
 
     const params = devices.reduce((acc, dev) => {
-      dev.get('state').forEach((value, key) => {
+      (dev.get('state') || []).forEach((value, key) => {
         acc[`devices["${dev.get('id')}"].${key}`] = value;
       });
       return acc;
     }, {});
+
+    const patchedSchema = Object.assign({}, schema);
+    const patchedUiSchema = Object.assign({}, uiSchema);
+    patchedUiSchema.conditions.current = match.params.uuid;
 
     return (
       <React.Fragment>
@@ -147,8 +163,8 @@ class Automation extends Component {
             >
               <div className="card-body">
                 <Form
-                  schema={schema}
-                  uiSchema={uiSchema}
+                  schema={patchedSchema}
+                  uiSchema={patchedUiSchema}
                   showErrorList={false}
                   liveValidate
                   onChange={this.onChange()}
@@ -162,6 +178,9 @@ class Automation extends Component {
                   widgets={{
                     CheckboxWidget: CustomCheckbox,
                     SavedStateWidget,
+                  }}
+                  fields={{
+                    ConnectedRuleConditions,
                   }}
                 >
                   <button
@@ -190,7 +209,7 @@ class Automation extends Component {
 
             <pre>
               {Object.keys(params).map(key => (
-                <div>
+                <div key={key}>
                   {key}: <strong>{JSON.stringify(params[key])}</strong>
                 </div>
               ))}

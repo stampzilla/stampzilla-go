@@ -14,35 +14,37 @@ class Landing extends Component {
 
   componentWillReceiveProps(props) {
     if (props.server.get('tlsPort') !== this.props.server.get('tlsPort')) {
-      const url = `https://${window.location.hostname}:${props.server.get(
+      const { app } = this.props;
+      const serverUrl = Url.parse(app.get('url'));
+      const url = `https://${serverUrl.hostname}:${props.server.get(
         'tlsPort',
       )}/`;
 
+      const check = () =>
+        get(url)
+          .then(() => {
+            const socketUrl = Url.format({
+              protocol: 'wss:',
+              hostname: serverUrl.hostname,
+              port: props.server.get('tlsPort'),
+              pathname: '/ws',
+            });
+            props.dispatch(update({ url: socketUrl }));
+          })
+          .catch(() => {});
       clearTimeout(this.checker);
-      this.checker = setInterval(
-        () =>
-          get(url)
-            .then(() => {
-              const socketUrl = Url.format({
-                protocol: 'wss:',
-                hostname: window.location.hostname,
-                port: props.server.get('tlsPort'),
-                pathname: '/ws',
-              });
-              props.dispatch(update({ url: socketUrl }));
-            })
-            .catch(() => {}),
-        1000,
-      );
+      this.checker = setInterval(check, 1000);
+      check();
     }
   }
 
   onGoSecureClick = () => () => {
-    const { dispatch, server } = this.props;
+    const { dispatch, server, app } = this.props;
+    const serverUrl = Url.parse(app.get('url'));
 
     const url = Url.format({
       protocol: 'wss:',
-      hostname: window.location.hostname,
+      hostname: serverUrl.hostname,
       port: server.get('tlsPort'),
       pathname: '/ws',
     });
@@ -50,8 +52,11 @@ class Landing extends Component {
   };
 
   render = () => {
-    const { connected, dispatch, server } = this.props;
+    const {
+      connected, dispatch, server, app,
+    } = this.props;
     const { socketModal } = this.state;
+    const url = Url.parse(app.get('url'));
 
     return (
       <React.Fragment>
@@ -84,7 +89,9 @@ class Landing extends Component {
               <h2>{server.get('name') || '-'}</h2>
 
               <pre>
-                Port: {server.get('port')}
+                Hostname: {url.hostname}
+                <br />
+                HTTP Port: {server.get('port')}
                 <br />
                 TLS port: {server.get('tlsPort')}
               </pre>
@@ -119,6 +126,7 @@ class Landing extends Component {
 const mapToProps = state => ({
   connected: state.getIn(['connection', 'connected']),
   server: state.getIn(['server']),
+  app: state.getIn(['app']),
 });
 
 export default connect(mapToProps)(Landing);

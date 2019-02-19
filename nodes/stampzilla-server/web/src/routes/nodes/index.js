@@ -33,13 +33,13 @@ class Nodes extends Component {
                   <thead>
                     <tr>
                       <th>Connected</th>
-                      <th>Identity</th>
                       <th>Name</th>
-                      <th>Type</th>
+                      <th>Identity</th>
                     </tr>
                   </thead>
                   <tbody>
                     {nodes
+                      .sort((a, b) => a.get('name').localeCompare(b.get('name')))
                       .map(n => (
                         <tr key={n.get('uuid')} style={{ cursor: 'pointer' }} onClick={this.onClickNode(n.get('uuid'))}>
                           <td>
@@ -57,9 +57,8 @@ class Nodes extends Component {
                               <i className="nav-icon fa fa-exclamation-triangle text-warning" title="Not connected" />
                             }
                           </td>
-                          <td>{n.get('uuid')}</td>
                           <td>{n.get('name')}</td>
-                          <td>{n.get('type')}</td>
+                          <td><small>{n.get('uuid')}</small></td>
                         </tr>
                     )).toArray()}
                   </tbody>
