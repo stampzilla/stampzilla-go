@@ -107,7 +107,7 @@ func newDevice(id int, name *C.char, methods, s int, value *C.char) {
 	strID := strconv.Itoa(id)
 	dev := &devices.Device{
 		Type:   "light",
-		Name:   strID,
+		Name:   C.GoString(name),
 		ID:     devices.ID{ID: strID},
 		Online: true,
 		Traits: []string{"OnOff"},
