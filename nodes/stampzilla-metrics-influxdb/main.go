@@ -49,13 +49,13 @@ func main() {
 }
 func onDevices(deviceChan chan func()) func(data json.RawMessage) error {
 	return func(data json.RawMessage) error {
-		devs := devices.NewList()
+		devs := make(devices.DeviceMap)
 		err := json.Unmarshal(data, devs)
 		if err != nil {
 			return err
 		}
 
-		for _, d := range devs.All() {
+		for _, d := range devs {
 			device := d
 			deviceChan <- func() {
 				//check if state is different
@@ -64,7 +64,12 @@ func onDevices(deviceChan chan func()) func(data json.RawMessage) error {
 					state = prevDev.State.Diff(device.State)
 					prevDev.State.MergeWith(device.State)
 					prevDev.Alias = device.Alias
+					prevDev.Name = device.Name
+					prevDev.Type = device.Type
 				} else {
+					if device.State == nil {
+						device.State = make(devices.State)
+					}
 					state = device.State
 					deviceList.Add(device)
 				}

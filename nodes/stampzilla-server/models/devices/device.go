@@ -51,13 +51,12 @@ func (id *ID) UnmarshalText(text []byte) error {
 }
 
 type Device struct {
-	Type string `json:"type"`
-	//Node   string   `json:"node,omitempty"`
-	ID     ID       `json:"id,omitempty"`
+	Type   string   `json:"type"`
+	ID     ID       `json:"id"`
 	Name   string   `json:"name,omitempty"`
 	Alias  string   `json:"alias,omitempty"`
 	Online bool     `json:"online"`
-	State  State    `json:"state,omitempty"`
+	State  State    `json:"state"`
 	Traits []string `json:"traits"`
 	sync.RWMutex
 }
