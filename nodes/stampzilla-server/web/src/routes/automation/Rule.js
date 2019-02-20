@@ -86,10 +86,9 @@ class Automation extends Component {
     super();
 
     this.state = {
-      ...loadFromProps(props),
       isValid: true,
       isModified: false,
-      formData: {},
+      ...loadFromProps(props),
     };
   }
 
@@ -132,9 +131,7 @@ class Automation extends Component {
   };
 
   render() {
-    const {
-      match, devices, state,
-    } = this.props;
+    const { match, devices, state } = this.props;
     const { isModified } = this.state;
 
     const params = devices.reduce((acc, dev) => {
