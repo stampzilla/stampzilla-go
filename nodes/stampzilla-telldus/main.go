@@ -29,6 +29,12 @@ var node *n.Node
 func main() {
 	node = n.New("telldus")
 
+	err := node.Connect()
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
+
 	//node.OnConfig(updatedConfig)
 
 	C.registerCallbacks()
@@ -62,15 +68,7 @@ func main() {
 		return err
 	})
 
-	//notify := notifier.New(serverConnection)
-	//notify.SetSource(node)
-
-	//sensorMonitor = sensormonitor.New(notify)
-	//sensorMonitor.MonitorSensors = nc.MonitorSensors
-	//sensorMonitor.Start()
-	//log.Println("Monitoring Sensors: ", nc.MonitorSensors)
-
-	select {}
+	node.Wait()
 }
 
 //export newDevice
@@ -112,6 +110,7 @@ func newDevice(id int, name *C.char, methods, s int, value *C.char) {
 		Name:   strID,
 		ID:     devices.ID{ID: strID},
 		Online: true,
+		Traits: []string{"OnOff"},
 		State: devices.State{
 			"on":         false,
 			"brightness": 0.0,

@@ -17,6 +17,7 @@ func main() {
 	node := node.New("modbus")
 	config := NewConfig()
 
+	node.OnConfig(updatedConfig(config))
 	wait := node.WaitForFirstConfig()
 
 	err := node.Connect()
@@ -100,9 +101,8 @@ func main() {
 	}
 }
 
-func updatedConfig(config *Config, doOnce func()) func(data json.RawMessage) error {
+func updatedConfig(config *Config) func(data json.RawMessage) error {
 	return func(data json.RawMessage) error {
-		doOnce()
 		return json.Unmarshal(data, config)
 	}
 }
