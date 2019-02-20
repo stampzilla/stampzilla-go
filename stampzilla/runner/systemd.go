@@ -47,10 +47,12 @@ func (sd *Systemd) Start(nodes ...string) error {
 		for _, name := range nodes {
 			name = getUnitName(name)
 			logrus.Info("Starting ", name)
-			_, err := conn.StartUnit(name, "replace", nil)
+			ch := make(chan string)
+			_, err := conn.StartUnit(name, "replace", ch)
 			if err != nil {
 				return err
 			}
+			<-ch
 		}
 		return nil
 	}
@@ -61,10 +63,12 @@ func (sd *Systemd) Start(nodes ...string) error {
 	}
 	for _, u := range units {
 		logrus.Info("Starting ", u.Name)
-		_, err := conn.StartUnit(u.Name, "replace", nil)
+		ch := make(chan string)
+		_, err := conn.StartUnit(u.Name, "replace", ch)
 		if err != nil {
 			return err
 		}
+		<-ch
 	}
 	return nil
 }
@@ -75,10 +79,12 @@ func (sd *Systemd) Stop(nodes ...string) error {
 		for _, node := range nodes {
 			name := getUnitName(node)
 			logrus.Info("Stopping ", name)
-			_, err := conn.StopUnit(name, "replace", nil)
+			ch := make(chan string)
+			_, err := conn.StopUnit(name, "replace", ch)
 			if err != nil {
 				return err
 			}
+			<-ch
 		}
 		return nil
 	}
@@ -91,10 +97,12 @@ func (sd *Systemd) Stop(nodes ...string) error {
 	//stop all running stampzilla processes
 	for _, p := range units {
 		logrus.Info("Stopping ", p.Name)
-		_, err := conn.StopUnit(p.Name, "replace", nil)
+		ch := make(chan string)
+		_, err := conn.StopUnit(p.Name, "replace", ch)
 		if err != nil {
 			return err
 		}
+		<-ch
 	}
 	return nil
 }
@@ -207,7 +215,9 @@ func (sd *Systemd) Disable(names ...string) error {
 	ns := []string{}
 
 	for _, name := range names {
-		ns = append(ns, getUnitName(name))
+		un := getUnitName(name)
+		logrus.Infof("Disabling %s", un)
+		ns = append(ns, un)
 	}
 	_, err := conn.DisableUnitFiles(ns, false)
 	return err

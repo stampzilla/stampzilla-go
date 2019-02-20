@@ -43,7 +43,7 @@ func (t *cliHandler) Install(c *cli.Context) error {
 		return nil
 	}
 
-	return t.runInstaller(c, i, c.Bool("u"))
+	return t.runInstaller(c, i)
 }
 
 func (t *cliHandler) Build(c *cli.Context) error {
@@ -55,7 +55,7 @@ func (t *cliHandler) Build(c *cli.Context) error {
 		return nil
 	}
 
-	return t.runInstaller(c, i, c.Bool("u"))
+	return t.runInstaller(c, i)
 }
 
 func (t *cliHandler) List(c *cli.Context) error {
@@ -73,7 +73,7 @@ func (t *cliHandler) List(c *cli.Context) error {
 	return nil
 }
 
-func (t *cliHandler) runInstaller(c *cli.Context, i installer.Installer, upgrade bool) error {
+func (t *cliHandler) runInstaller(c *cli.Context, i installer.Installer) error {
 	requireRoot()
 
 	err := installer.Prepare()

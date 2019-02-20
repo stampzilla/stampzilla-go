@@ -27,12 +27,23 @@ func (t *Installer) Prepare() error {
 	return nil
 }
 func (t *Installer) Install(nodes ...string) error {
-	return download(nodes)
+	return download(nodes, func(a github.ReleaseAsset) bool {
+		_, err := os.Stat(getFilePath(a))
+		if err == nil {
+			logrus.Infof("%s already exists. use stampzilla install -u to update", a.GetName())
+			return true
+		}
+		return false
+	})
 }
 func (t *Installer) Update(nodes ...string) error {
 	return download(nodes, func(a github.ReleaseAsset) bool {
 		_, err := os.Stat(getFilePath(a))
-		return os.IsNotExist(err)
+		if os.IsNotExist(err) {
+			logrus.Infof("%s does not exist. use stampzilla install to install", a.GetName())
+			return true
+		}
+		return false
 	})
 }
 
