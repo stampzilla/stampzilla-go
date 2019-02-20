@@ -9,6 +9,7 @@ const c = defineAction(
 
 const defaultState = Map({
   list: Map(),
+  state: Map(),
 });
 
 // Actions

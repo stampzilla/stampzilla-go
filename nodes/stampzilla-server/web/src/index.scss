@@ -233,3 +233,10 @@ $switch-transition: 0.2s all !default;
     flex: 1;
   }
 }
+
+
+.field-description {
+     font-size: .8em;
+     color: $gray-500;
+     margin-bottom: 0.5rem;
+}

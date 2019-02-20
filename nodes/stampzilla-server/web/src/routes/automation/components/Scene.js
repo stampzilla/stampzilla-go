@@ -56,7 +56,6 @@ class Scene extends React.Component {
       const changes = diff(props.devices, this.props.devices);
 
       changes.forEach((change) => {
-        console.log('change detected: ', change.toJS());
         const [device, type, key] = change.get('path').toJS();
         if (type !== 'state') {
           return; // No state change

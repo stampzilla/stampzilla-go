@@ -11,7 +11,7 @@ const Card = (props) => {
         <h3 className="card-title" dangerouslySetInnerHTML={{ __html: title }} />
         <div className="card-tools">
           {toolbar && toolbar.map(tool => (
-            <button onClick={tool.onClick} className={classnames('btn btn-tool btn-sm', tool.className)}>
+            <button onClick={tool.onClick} className={classnames('btn btn-tool btn-sm', tool.className)} key={tool.icon}>
               <i className={tool.icon} />
             </button>
           ))}

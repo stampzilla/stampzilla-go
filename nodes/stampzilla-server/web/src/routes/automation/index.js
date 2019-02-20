@@ -3,7 +3,7 @@ import { connect } from 'react-redux';
 
 import Card from '../../components/Card';
 
-const toStatusBadge = (n,state) => {
+const toStatusBadge = (n, state) => {
   if (n.get('enabled')) {
     if (!state) {
       return <div className="badge badge-info">Unknown</div>;
@@ -54,8 +54,8 @@ class Automation extends Component {
               <table className="table table-striped table-valign-middle">
                 <thead>
                   <tr>
+                    <th style={{ width: 1 }}>Status</th>
                     <th>Name</th>
-                    <th>Active</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -67,8 +67,8 @@ class Automation extends Component {
                           style={{ cursor: 'pointer' }}
                           onClick={this.onClickNode(`rule/${n.get('uuid')}`)}
                         >
+                          <td className="text-center">{toStatusBadge(n, rulesState.get(n.get('uuid')))}</td>
                           <td>{n.get('name') || n.get('uuid')}</td>
-                          <td>{toStatusBadge(n, rulesState.get(n.get('uuid')))}</td>
                         </tr>
                       ))
                       .toArray()}
@@ -90,8 +90,8 @@ class Automation extends Component {
               <table className="table table-striped table-valign-middle">
                 <thead>
                   <tr>
-                    <th>Identity</th>
                     <th>Name</th>
+                    <th>Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -105,8 +105,8 @@ class Automation extends Component {
                             `schedule/${n.get('uuid')}`,
                           )}
                         >
-                          <td>{n.get('uuid')}</td>
                           <td>{n.get('name')}</td>
+                          <td>{JSON.stringify(schedulesState.get(n.get('uuid')))}</td>
                         </tr>
                       ))
                       .toArray()}

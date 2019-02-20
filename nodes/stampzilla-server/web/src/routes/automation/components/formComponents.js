@@ -1,17 +1,21 @@
 import PropTypes from 'prop-types';
 import React from 'react';
 import classnames from 'classnames';
+import { connect } from 'react-redux';
 
 export const ObjectFieldTemplate = (props) => {
   if (props.title !== undefined) {
     return (
       <div className="card mb-4 bg-dark text-white">
         <div className="card-header">
-          <div><strong>{props.title}</strong></div>
+          <div>
+            <strong>{props.title}</strong>
+          </div>
           <small>{props.description}</small>
         </div>
-        <div className={classnames({
-              'card-body': true,
+        <div
+          className={classnames({
+            'card-body': true,
           })}
         >
           {props.properties.map(prop => prop.content)}
@@ -22,7 +26,11 @@ export const ObjectFieldTemplate = (props) => {
 
   return typeof props.uiSchema.tableMode !== 'undefined' ? (
     <div className="row">
-      {props.properties.map(prop => <div key={prop.name} className="col-sm-6">{prop.content}</div>)}
+      {props.properties.map(prop => (
+        <div key={prop.name} className="col-sm-6">
+          {prop.content}
+        </div>
+      ))}
     </div>
   ) : (
     <React.Fragment>
@@ -33,9 +41,11 @@ export const ObjectFieldTemplate = (props) => {
 ObjectFieldTemplate.propTypes = {
   title: PropTypes.string,
   description: PropTypes.string,
-  properties: PropTypes.arrayOf(PropTypes.shape({
-    content: PropTypes.node,
-  })),
+  properties: PropTypes.arrayOf(
+    PropTypes.shape({
+      content: PropTypes.node,
+    }),
+  ),
   uiSchema: PropTypes.shape({
     tableMode: PropTypes.bool,
   }),
@@ -53,7 +63,11 @@ export const CustomCheckbox = (props) => {
     onChange,
   } = props;
   return (
-    <div className={`checkbox custom-control custom-checkbox ${disabled || readonly ? 'disabled' : ''}`}>
+    <div
+      className={`checkbox custom-control custom-checkbox ${
+        disabled || readonly ? 'disabled' : ''
+      }`}
+    >
       <input
         type="checkbox"
         className="custom-control-input"
@@ -80,7 +94,6 @@ CustomCheckbox.propTypes = {
   autofocus: PropTypes.bool,
   onChange: PropTypes.func,
 };
-
 
 const IconButton = (props) => {
   const {
@@ -110,7 +123,10 @@ const DefaultArrayItem = (props) => {
     fontWeight: 'bold',
   };
   return (
-    <div key={props.index} className={classnames(['row mb-3', props.className])}>
+    <div
+      key={props.index}
+      className={classnames(['row mb-3', props.className])}
+    >
       <div className={props.hasToolbar ? 'col-sm-9' : 'col-sm-12'}>
         {props.children}
       </div>
@@ -120,7 +136,7 @@ const DefaultArrayItem = (props) => {
           <div
             className="btn-group"
             style={{
-            display: 'flex',
+              display: 'flex',
               justifyContent: 'space-around',
             }}
           >
@@ -212,7 +228,13 @@ export const ArrayFieldTemplate = (props) => {
         <span>{title}</span>
       </label>
       {props.items && props.items.map(DefaultArrayItem)}
-      {props.canAdd && <IconButton icon="plus" className="btn-block" onClick={props.onAddClick} />}
+      {props.canAdd && (
+        <IconButton
+          icon="plus"
+          className="btn-block btn-success"
+          onClick={props.onAddClick}
+        />
+      )}
     </div>
   );
 };
@@ -222,3 +244,106 @@ ArrayFieldTemplate.propTypes = {
   onAddClick: PropTypes.func,
   items: PropTypes.arrayOf(PropTypes.shape({})),
 };
+
+const stateToTextColor = (status) => {
+  if (!status) {
+    return 'text-secondary';
+  }
+
+  if (status.get('error')) {
+    return 'text-danger';
+  }
+
+  if (status.get('active')) {
+    return 'text-success';
+  }
+
+  return '';
+};
+
+export class RuleConditions extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { ...props.formData };
+  }
+
+  componentWillReceiveProps(props) {
+    if (props.formData !== this.state) {
+      this.setState({ ...props.formData });
+    }
+  }
+
+  onChange = (name, value) => (checked) => {
+    this.setState(
+      {
+        [name]: checked ? value : undefined,
+      },
+      () => this.props.onChange(this.state),
+    );
+  };
+
+  render() {
+    const {
+      rules, schema, uiSchema, status,
+    } = this.props;
+    const {
+      id, title, required, description,
+    } = schema;
+    return (
+      <div>
+        <label htmlFor={id}>
+          {title}
+          {required ? '*' : null}
+        </label>
+        <p id="root_for__description" className="field-description">
+          {description}
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Active</th>
+              <th>Standby</th>
+              <th>Rule</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rules
+              .filter(rule => rule.get('uuid') !== uiSchema.current)
+              .map(rule => (
+                <tr key={rule.get('uuid')}>
+                  <td className="text-center">
+                    <CustomCheckbox
+                      id={`${rule.get('uuid')}-true`}
+                      value={this.state[rule.get('uuid')] === true}
+                      onChange={this.onChange(rule.get('uuid'), true)}
+                    />
+                  </td>
+                  <td className="text-center">
+                    <CustomCheckbox
+                      id={`${rule.get('uuid')}-false`}
+                      value={this.state[rule.get('uuid')] === false}
+                      onChange={this.onChange(rule.get('uuid'), false)}
+                    />
+                  </td>
+                  <td
+                    className={stateToTextColor(status.get(rule.get('uuid')))}
+                  >
+                    {rule.get('name')}
+                  </td>
+                </tr>
+              ))
+              .toArray()}
+          </tbody>
+        </table>
+      </div>
+    );
+    // <input type="number" value={lon} onChange={this.onChange('lon')} />
+  }
+}
+
+const mapStateToProps = state => ({
+  rules: state.getIn(['rules', 'list']),
+  status: state.getIn(['rules', 'state']),
+});
+
+export const ConnectedRuleConditions = connect(mapStateToProps)(RuleConditions);

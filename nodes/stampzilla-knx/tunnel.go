@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"sync"
 	"time"
 
@@ -210,16 +211,21 @@ func (tunnel *tunnel) decodeKNX(msg knx.GroupEvent) error {
 			dh, okh := gl.Device.State["humidity"]
 			dt, okt := gl.Device.State["temperature"]
 			if okh && okt {
-				h, _ := dh.(dpt.DPT_9001)
-				t, _ := dt.(dpt.DPT_9001)
-
-				logrus.Warnf("Got temp %s (%#v) and humid %s (%#v) %#v", t, dt, h, dh, gl.Device.State)
+				srh, _ := dh.(dpt.DPT_9001)
+				st, _ := dt.(dpt.DPT_9001)
 
 				//pws := 6.116441 * 10 * ((7.591386 - t) / (t + 240.7263))
 				//pw := pws * h / 100
 				//a := 2.116679 * pw / (273.15 + t)
 				//logrus.Warnf("absolute humidity %.2f", a)
 				////gl.Device.State["absolute_humidity"] = a
+
+				t := float64(st)
+				rh := float64(srh)
+				mw := 18.01534                                                           // molar mass of water g/mol
+				r := 8.31447215                                                          // Universal gas constant J/mol/K
+				ah := (6.112 * math.Exp((17.67*t)/(t+243.5)) * rh * mw) / (273.15 + t*r) // in grams/m^3
+				logrus.Warnf("Got temp %s (%#v) and humid %s (%#v) %#v -> %f", st, dt, srh, dh, gl.Device.State, ah)
 			}
 
 			tunnel.Node.AddOrUpdate(gl.Device)

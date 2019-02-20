@@ -1,7 +1,5 @@
 import React, { Component } from 'react';
-import {
-  Button,
-} from 'reactstrap';
+import { Button } from 'reactstrap';
 import { connect } from 'react-redux';
 import Form from 'react-jsonschema-form';
 
@@ -16,9 +14,7 @@ import {
 
 const schema = {
   type: 'object',
-  required: [
-    'name',
-  ],
+  required: ['name'],
   properties: {
     name: {
       type: 'string',
@@ -59,7 +55,6 @@ const uiSchema = {
   },
 };
 
-
 class Automation extends Component {
   constructor(props) {
     super();
@@ -92,7 +87,7 @@ class Automation extends Component {
       isValid: errors.length === 0,
       formData,
     });
-  }
+  };
 
   onSubmit = () => ({ formData }) => {
     const { dispatch } = this.props;
@@ -105,13 +100,13 @@ class Automation extends Component {
 
     const { history } = this.props;
     history.push('/aut');
-  }
+  };
 
   render() {
     const { match, devices } = this.props;
 
     const params = devices.reduce((acc, dev) => {
-      dev.get('state').forEach((value, key) => {
+      (dev.get('state') || []).forEach((value, key) => {
         acc[`devices["${dev.get('id')}"].${key}`] = value;
       });
       return acc;
@@ -144,11 +139,21 @@ class Automation extends Component {
                     SavedStateWidget,
                   }}
                 >
-                  <button ref={(btn) => { this.submitButton = btn; }} style={{ display: 'none' }} type="submit" />
+                  <button
+                    ref={(btn) => {
+                      this.submitButton = btn;
+                    }}
+                    style={{ display: 'none' }}
+                    type="submit"
+                  />
                 </Form>
               </div>
               <div className="card-footer">
-                <Button color="primary" disabled={!this.state.isValid || this.props.disabled} onClick={() => this.submitButton.click()}>
+                <Button
+                  color="primary"
+                  disabled={!this.state.isValid || this.props.disabled}
+                  onClick={() => this.submitButton.click()}
+                >
                   {'Save'}
                 </Button>
               </div>
@@ -156,8 +161,10 @@ class Automation extends Component {
 
             <pre>
               {Object.keys(params).map(key => (
-                <div>{key}: <strong>{JSON.stringify(params[key])}</strong></div>
-                  ))}
+                <div key={key}>
+                  {key}: <strong>{JSON.stringify(params[key])}</strong>
+                </div>
+              ))}
             </pre>
           </div>
         </div>
