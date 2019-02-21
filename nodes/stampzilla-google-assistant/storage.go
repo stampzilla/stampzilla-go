@@ -10,10 +10,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type Access struct {
+	AccessData *osin.AccessData
+	ClientID   string
+}
+
 type JSONStorage struct {
 	Clients   map[string]osin.Client
 	Authorize map[string]*osin.AuthorizeData
-	Access    map[string]*osin.AccessData
+	Access    map[string]*Access
 	Refresh   map[string]string
 	sync.RWMutex
 }
@@ -22,7 +27,7 @@ func NewJSONStorage() *JSONStorage {
 	r := &JSONStorage{
 		Clients:   make(map[string]osin.Client),
 		Authorize: make(map[string]*osin.AuthorizeData),
-		Access:    make(map[string]*osin.AccessData),
+		Access:    make(map[string]*Access),
 		Refresh:   make(map[string]string),
 	}
 
@@ -48,7 +53,8 @@ func (s *JSONStorage) LoadFromDisk(filename string) {
 	dec := json.NewDecoder(file)
 	s.Lock()
 	dec.Decode(s)
-	s.Unlock()
+
+	s.RWMutex.Unlock()
 
 }
 func (s *JSONStorage) saveToDisk(filename string) {
@@ -84,6 +90,9 @@ func (s *JSONStorage) SetClient(id string, client osin.Client) error {
 	s.Lock()
 	log.Printf("SetClient: %s\n", id)
 	s.Clients[id] = client
+	for _, v := range s.Access {
+		v.AccessData.Client = s.Clients[v.ClientID]
+	}
 	s.Unlock()
 	return nil
 }
@@ -117,7 +126,7 @@ func (s *JSONStorage) RemoveAuthorize(code string) error {
 func (s *JSONStorage) SaveAccess(data *osin.AccessData) error {
 	log.Printf("SaveAccess: %s\n", data.AccessToken)
 	s.Lock()
-	s.Access[data.AccessToken] = data
+	s.Access[data.AccessToken] = &Access{AccessData: data, ClientID: data.Client.GetId()}
 	if data.RefreshToken != "" {
 		s.Refresh[data.RefreshToken] = data.AccessToken
 	}
@@ -130,9 +139,8 @@ func (s *JSONStorage) LoadAccess(code string) (*osin.AccessData, error) {
 	defer s.RUnlock()
 	log.Printf("LoadAccess: %s\n", code)
 	if d, ok := s.Access[code]; ok {
-		d.AccessData = nil
-		d.AuthorizeData = nil
-		return d, nil
+		d.AccessData.AccessData = nil
+		return d.AccessData, nil
 	}
 	return nil, osin.ErrNotFound
 }
