@@ -7,20 +7,26 @@ import React from 'react';
 import './index.scss';
 import Wrapper from './components/Wrapper';
 import store from './store';
+import ErrorBoundary from './components/ErrorBoundary';
 
 render(
   <Provider store={store}>
-    <Wrapper />
+    <ErrorBoundary>
+      <Wrapper />
+    </ErrorBoundary>
   </Provider>,
   document.getElementById('app'),
 );
 
-if (NODE_ENV === 'production') { // eslint-disable-line no-undef
+if (NODE_ENV === 'production') {
+  // eslint-disable-line no-undef
   (function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js', { scope: '/' })
+      navigator.serviceWorker
+        .register('service-worker.js', { scope: '/' })
         .then(() => console.log('Service Worker registered successfully.'))
-        .catch(error => console.log('Service Worker registration failed:', error));
+        .catch(error =>
+          console.log('Service Worker registration failed:', error));
     }
   }());
 }

@@ -10,19 +10,24 @@ import Nodes from './routes/nodes';
 import Rule from './routes/automation/Rule';
 import Schedule from './routes/automation/Schedule';
 import Security from './routes/security';
+import { withBoudary } from './components/ErrorBoundary';
 
 const Routes = () => (
   <Switch>
-    <Route exact path="/" component={Dashboard} />
-    <Route exact path="/aut" component={Automation} />
-    <Route exact path="/aut/rule/create" component={Rule} />
-    <Route exact path="/aut/rule/:uuid" component={Rule} />
-    <Route exact path="/aut/schedule/create" component={Schedule} />
-    <Route exact path="/aut/schedule/:uuid" component={Schedule} />
-    <Route exact path="/nodes" component={Nodes} />
-    <Route path="/nodes/:uuid" component={Node} />
-    <Route exact path="/security" component={Security} />
-    <Route path="/debug" component={Debug} />
+    <Route exact path="/" component={withBoudary(Dashboard)} />
+    <Route exact path="/aut" component={withBoudary(Automation)} />
+    <Route exact path="/aut/rule/create" component={withBoudary(Rule)} />
+    <Route exact path="/aut/rule/:uuid" component={withBoudary(Rule)} />
+    <Route
+      exact
+      path="/aut/schedule/create"
+      component={withBoudary(Schedule)}
+    />
+    <Route exact path="/aut/schedule/:uuid" component={withBoudary(Schedule)} />
+    <Route exact path="/nodes" component={withBoudary(Nodes)} />
+    <Route path="/nodes/:uuid" component={withBoudary(Node)} />
+    <Route exact path="/security" component={withBoudary(Security)} />
+    <Route path="/debug" component={withBoudary(Debug)} />
   </Switch>
 );
 
