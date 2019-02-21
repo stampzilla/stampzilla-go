@@ -6,7 +6,7 @@ import (
 	"github.com/google/go-github/github"
 )
 
-func getReleases() []*github.RepositoryRelease {
+func GetReleases() []*github.RepositoryRelease {
 
 	client := github.NewClient(nil)
 	ctx := context.Background()
