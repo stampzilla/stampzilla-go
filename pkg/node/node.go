@@ -542,7 +542,7 @@ func (n *Node) syncWorker() {
 		devs := make(devices.DeviceMap)
 		for _, id := range que {
 			d := n.GetDevice(id.ID)
-			devs[d.ID] = d
+			devs[d.ID] = d.Copy()
 		}
 		err := n.WriteMessage("update-devices", devs)
 		if err != nil {
