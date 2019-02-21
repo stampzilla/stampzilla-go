@@ -3,14 +3,20 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
+	"time"
 
 	"github.com/google/go-github/github"
 	"github.com/sirupsen/logrus"
+	"github.com/stampzilla/stampzilla-go/pkg/build"
 	"github.com/stampzilla/stampzilla-go/stampzilla/installer"
+	"github.com/stampzilla/stampzilla-go/stampzilla/installer/binary"
 	"github.com/stampzilla/stampzilla-go/stampzilla/runner"
 	"github.com/urfave/cli"
 )
@@ -212,6 +218,81 @@ func (t *cliHandler) Log(c *cli.Context) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
+}
+func (t *cliHandler) SelfUpdate(c *cli.Context) error {
+	releases := binary.GetReleases()
+	if releases == nil {
+		return fmt.Errorf("error fetching releases from github.com")
+	}
+
+	if len(releases) == 0 {
+		return fmt.Errorf("found 0 releases on github.com")
+	}
+
+	version := releases[0].GetName()
+
+	if version == build.Version {
+		logrus.Info("Found no new version")
+		return nil
+	}
+
+	logrus.Infof("Found new version %s (old: %s)\n", version, build.Version)
+
+	asset := fmt.Sprintf("stampzilla-%s-%s", runtime.GOOS, runtime.GOARCH)
+	u := ""
+	for _, a := range releases[0].Assets {
+		if a.GetName() == asset {
+			u = a.GetBrowserDownloadURL()
+		}
+	}
+
+	if u == "" {
+		return fmt.Errorf("Found no asset to download named %s", asset)
+	}
+
+	binPath, err := os.Executable()
+	if err != nil {
+		return err
+	}
+
+	client := http.Client{
+		Timeout: 30 * time.Second,
+	}
+	resp, err := client.Get(u)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	err = os.Rename(binPath, binPath+".backup")
+	if err != nil {
+		return fmt.Errorf(`%v
+Possible solutions:
+1: sudo stampzilla self-update
+2: put the binary in ~/bin and make sure you have full permissions and the directory is in your PATH`, err)
+	}
+
+	file, err := os.OpenFile(binPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0777) // #nosec
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(file, resp.Body)
+	if err != nil {
+		err = os.Rename(binPath+".backup", binPath)
+		if err != nil {
+			return fmt.Errorf("Failed to restore backup: %s", err.Error())
+		}
+		return err
+	}
+
+	err = os.Remove(binPath + ".backup")
+	if err != nil {
+		return err
+	}
+
+	logrus.Infof("Update to version %s successful", version)
+	return nil
 }
 
 func getRunner(c *cli.Context) runner.Runner {
