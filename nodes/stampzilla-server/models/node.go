@@ -3,6 +3,8 @@ package models
 import (
 	"encoding/json"
 	"sync"
+
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
 )
 
 type Node struct {
@@ -12,7 +14,8 @@ type Node struct {
 	Type       string `json:"type,omitempty"`
 	Name       string `json:"name,omitempty"`
 	//Devices   Devices         `json:"devices,omitempty"`
-	Config json.RawMessage `json:"config,omitempty"`
+	Config  json.RawMessage       `json:"config,omitempty"`
+	Aliases map[devices.ID]string `json:"aliases,omitempty"`
 	sync.Mutex
 }
 
