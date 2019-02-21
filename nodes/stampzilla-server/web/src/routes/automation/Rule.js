@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { Button } from 'reactstrap';
 import { connect } from 'react-redux';
 import Form from 'react-jsonschema-form';
+import { fromJS } from 'immutable';
 
 import { add, save } from '../../ducks/rules';
 import Card from '../../components/Card';
@@ -13,7 +14,7 @@ import {
   ConnectedRuleConditions,
 } from './components/formComponents';
 
-const schema = {
+const schema = fromJS({
   type: 'object',
   required: ['name'],
   properties: {
@@ -53,8 +54,8 @@ const schema = {
       properties: {},
     },
   },
-};
-const uiSchema = {
+});
+const uiSchema = fromJS({
   config: {
     'ui:options': {
       rows: 15,
@@ -68,7 +69,7 @@ const uiSchema = {
   conditions: {
     'ui:field': 'ConnectedRuleConditions',
   },
-};
+});
 
 const loadFromProps = (props) => {
   const { rules, match } = props;
@@ -131,7 +132,9 @@ class Automation extends Component {
   };
 
   render() {
-    const { match, devices, state } = this.props;
+    const {
+      match, devices, state, rules,
+    } = this.props;
     const { isModified } = this.state;
 
     const params = devices.reduce((acc, dev) => {
@@ -141,8 +144,15 @@ class Automation extends Component {
       return acc;
     }, {});
 
-    const patchedSchema = Object.assign({}, schema);
-    const patchedUiSchema = Object.assign({}, uiSchema);
+    const patchedSchema = schema.toJS();
+    if (
+      rules.filter(rule => rule.get('uuid') !== match.params.uuid).size === 0
+    ) {
+      // Hide the conditions part if there is no other rules
+      delete patchedSchema.properties.conditions;
+    }
+
+    const patchedUiSchema = uiSchema.toJS();
     patchedUiSchema.conditions.current = match.params.uuid;
 
     return (

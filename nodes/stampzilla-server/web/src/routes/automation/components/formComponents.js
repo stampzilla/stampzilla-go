@@ -265,11 +265,18 @@ export class RuleConditions extends React.Component {
   constructor(props) {
     super(props);
     this.state = { ...props.formData };
+    if (!props.formData) {
+      this.props.onChange();
+    }
   }
 
   componentWillReceiveProps(props) {
     if (props.formData !== this.state) {
-      this.setState({ ...props.formData });
+      this.setState({ ...props.formData }, () => {
+        if (!props.formData) {
+          this.props.onChange();
+        }
+      });
     }
   }
 
