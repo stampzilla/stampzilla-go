@@ -123,6 +123,11 @@ func main() {
 			Usage:     "Generates new /etc/stampzilla/nodes.conf merging new nodes with existing config",
 			Action:    cliHandler.UpdateConfig,
 		},
+		{
+			Name:   "self-update",
+			Usage:  "Update stampzilla cli",
+			Action: addDebug(cliHandler.SelfUpdate),
+		},
 	}
 
 	err := app.Run(os.Args)

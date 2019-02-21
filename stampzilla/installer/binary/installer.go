@@ -52,7 +52,7 @@ func (t *Installer) Update(nodes ...string) error {
 
 // Download downloads a file and takes a callback. If callback returns true, skip download
 func download(nodes []string, cb ...func(github.ReleaseAsset) bool) error {
-	releases := getReleases()
+	releases := GetReleases()
 
 	if len(releases) < 1 {
 		return fmt.Errorf("No available releses found")
