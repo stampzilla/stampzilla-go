@@ -50,7 +50,7 @@ func main() {
 func onDevices(deviceChan chan func()) func(data json.RawMessage) error {
 	return func(data json.RawMessage) error {
 		devs := make(devices.DeviceMap)
-		err := json.Unmarshal(data, devs)
+		err := json.Unmarshal(data, &devs)
 		if err != nil {
 			return err
 		}

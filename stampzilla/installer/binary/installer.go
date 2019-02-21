@@ -27,6 +27,9 @@ func (t *Installer) Prepare() error {
 	return nil
 }
 func (t *Installer) Install(nodes ...string) error {
+	if len(nodes) == 0 {
+		return fmt.Errorf("Please specifiy which nodes you like to install. (ex 'stampzilla install server example')")
+	}
 	return download(nodes, func(a github.ReleaseAsset) bool {
 		_, err := os.Stat(getFilePath(a))
 		if err == nil {
@@ -97,7 +100,7 @@ outer:
 		}()
 
 		// Download the file
-		err = fetch(v, tmp)
+		err = fetch(v, *releases[0].TagName, tmp)
 		if err != nil {
 			return err
 		}
@@ -149,8 +152,8 @@ func getFilePath(ra github.ReleaseAsset) string {
 	return filepath.Join(GetBinPath(), filename)
 }
 
-func fetch(v github.ReleaseAsset, file *os.File) error {
-	logrus.Infof("Downloading %s from github.com", v.GetName())
+func fetch(v github.ReleaseAsset, version string, file *os.File) error {
+	logrus.Infof("Downloading %s@%s from github.com", v.GetName(), version)
 	resp, err := http.Get(v.GetBrowserDownloadURL())
 	if err != nil {
 		return err
