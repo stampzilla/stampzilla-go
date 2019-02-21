@@ -181,6 +181,18 @@ func (shh *SmartHomeHandler) syncHandler(req *googleassistant.Request) *googleas
 
 	for _, dev := range shh.deviceList.All() {
 
+		skip := true
+		for _, v := range dev.Traits {
+			if v == "OnOff" || v == "Brightness" {
+				skip = false
+				break
+			}
+		}
+
+		if skip {
+			continue
+		}
+
 		rdev := googleassistant.Device{
 			ID:   dev.ID.String(),
 			Type: "action.devices.types.LIGHT",
