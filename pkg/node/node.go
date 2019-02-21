@@ -154,6 +154,25 @@ func (n *Node) fetchCertificate() error {
 	u := fmt.Sprintf("ws://%s:%s/ws", n.Config.Host, n.Config.Port)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt, syscall.SIGQUIT, syscall.SIGTERM)
+	go func() {
+		select {
+		case <-interrupt:
+			close(n.stop)
+		case <-n.stop:
+		}
+		cancel()
+		go func() {
+			<-time.After(time.Second * 10)
+			log.Fatal("force shutdown after 10 seconds")
+		}()
+		for _, f := range n.shutdown {
+			f()
+		}
+	}()
+
 	n.connect(ctx, u)
 
 	// wait for server info so we can update our config
@@ -233,7 +252,7 @@ func (n *Node) Connect() error {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
+	signal.Notify(interrupt, os.Interrupt, syscall.SIGQUIT, syscall.SIGTERM)
 	n.wg.Add(1)
 	go func() {
 		defer n.wg.Done()
@@ -243,6 +262,10 @@ func (n *Node) Connect() error {
 		case <-n.stop:
 		}
 		cancel()
+		go func() {
+			<-time.After(time.Second * 10)
+			log.Fatal("force shutdown after 10 seconds")
+		}()
 		for _, f := range n.shutdown {
 			f()
 		}
