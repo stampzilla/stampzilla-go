@@ -112,7 +112,7 @@ func (shh *SmartHomeHandler) executeHandler(req *googleassistant.Request) *googl
 				}
 
 				dev := shh.deviceList.Get(devID)
-				if dev == nil || dev.Type != "light" {
+				if dev == nil {
 					deviceNotFound.IDs = append(deviceNotFound.IDs, googleDev.ID)
 					continue
 				}
