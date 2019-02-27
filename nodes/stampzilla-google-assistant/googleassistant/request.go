@@ -72,6 +72,14 @@ type Payload struct {
 			} `json:"params"`
 		} `json:"execution"`
 	} `json:"commands"`
+	Devices []struct {
+		ID string `json:"id"`
+		//CustomData struct {
+		//FooValue int    `json:"fooValue"`
+		//BarValue bool   `json:"barValue"`
+		//BazValue string `json:"bazValue"`
+		//} `json:"customData"`
+	} `json:"devices"`
 }
 
 type Request struct {
