@@ -275,10 +275,30 @@ func (wsh *secureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.R
 }
 
 func (wsh *secureWebsocketHandler) Disconnect(s interfaces.MelodySession) error {
+	proto, _ := s.Get(websocket.KeyProtocol.String())
 	id, _ := s.Get(websocket.KeyID.String())
-	n := wsh.Store.GetNode(id.(string))
-	if n != nil {
-		n.SetConnected(false)
+
+	switch proto {
+	case "node":
+		n := wsh.Store.GetNode(id.(string))
+		if n != nil {
+			n.SetConnected(false)
+		}
+
+		modified := false
+		for _, device := range wsh.Store.Devices.All() {
+			device.Lock()
+			if device.ID.Node == id {
+				if device.Online {
+					modified = true
+				}
+				device.Online = false
+			}
+			device.Unlock()
+		}
+		if modified {
+			BroadcastUpdate(wsh.WebsocketSender)("devices", wsh.Store)
+		}
 	}
 	return nil
 }
