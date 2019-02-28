@@ -60,3 +60,10 @@ type Response struct {
 		Commands    []ResponseCommand `json:"commands,omitempty"`
 	} `json:"payload"`
 }
+
+type QueryResponse struct {
+	RequestID string `json:"requestId"`
+	Payload   struct {
+		Devices map[string]map[string]interface{} `json:"devices,omitempty"`
+	} `json:"payload"`
+}

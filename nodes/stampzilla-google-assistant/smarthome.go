@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"math"
 	"net/http"
 
 	"github.com/RangelReale/osin"
@@ -30,6 +31,7 @@ func NewSmartHomeHandler(node *node.Node, deviceList *devices.List) *SmartHomeHa
 
 func (shh *SmartHomeHandler) smartHomeActionHandler(oauth2server *osin.Server) func(c *gin.Context) {
 	return func(c *gin.Context) {
+		var err error
 		auth := osin.CheckBearerAuth(c.Request)
 		if auth == nil {
 			logrus.Error("CheckBearerAuth error")
@@ -75,6 +77,8 @@ func (shh *SmartHomeHandler) smartHomeActionHandler(oauth2server *osin.Server) f
 			c.JSON(http.StatusOK, shh.syncHandler(r))
 		case googleassistant.ExecuteIntent:
 			c.JSON(http.StatusOK, shh.executeHandler(r))
+		case googleassistant.QueryIntent:
+			c.JSON(http.StatusOK, shh.queryHandler(r))
 
 		}
 	}
@@ -217,5 +221,31 @@ func (shh *SmartHomeHandler) syncHandler(req *googleassistant.Request) *googleas
 	}
 
 	logrus.Debug("Sync Response: ", resp)
+	return resp
+}
+
+func (shh *SmartHomeHandler) queryHandler(req *googleassistant.Request) *googleassistant.QueryResponse {
+	resp := &googleassistant.QueryResponse{}
+	resp.RequestID = req.RequestID
+	resp.Payload.Devices = make(map[string]map[string]interface{})
+
+	for _, v := range req.Inputs.Payload().Devices {
+		devID, err := devices.NewIDFromString(v.ID)
+		if err != nil {
+			logrus.Error(err)
+			continue
+		}
+		dev := shh.deviceList.Get(devID)
+		if dev == nil {
+			continue
+		}
+		resp.Payload.Devices[devID.String()] = map[string]interface{}{
+			"on":     dev.State["on"],
+			"online": dev.Online,
+		}
+		dev.State.Float("brightness", func(bri float64) {
+			resp.Payload.Devices[devID.String()]["brightness"] = int(math.Round(bri * 100.0))
+		})
+	}
 	return resp
 }
