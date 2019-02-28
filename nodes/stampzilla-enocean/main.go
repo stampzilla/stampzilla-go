@@ -117,7 +117,7 @@ func updatedConfig(node *node.Node) func(data json.RawMessage) error {
 
 func getDeviceType(d *Device) string {
 	if d.HasSingleRecvEEP("f60201") {
-		return "switch"
+		return "button"
 	}
 	return "light"
 }
@@ -201,6 +201,7 @@ func incomingPacket(node *node.Node, p goenocean.Packet) {
 				newState := devices.State{
 					"on":         d.On(),
 					"brightness": d.Dim,
+					"status":     d.Status, //TODO make a trait that is some kind of button and standardify X button presses.
 				}
 				node.UpdateState(d.IdString(), newState)
 				return
