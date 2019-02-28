@@ -4,23 +4,25 @@ import (
 	"encoding/json"
 
 	"github.com/sirupsen/logrus"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
 )
 
-func (s *Store) AddOrUpdateServer(area, item string, state map[string]interface{}) {
+func (s *Store) AddOrUpdateServer(area, item string, state devices.State) {
 	s.Lock()
 	if s.Server[area] == nil {
-		s.Server[area] = make(map[string]map[string]interface{})
+		s.Server[area] = make(map[string]devices.State)
 	}
 	if s.Server[area][item] == nil {
-		s.Server[area][item] = make(map[string]interface{})
+		s.Server[area][item] = make(devices.State)
 	}
 
-	for k, v := range state {
-		s.Server[area][item][k] = v
+	if diff := s.Server[area][item].Diff(state); len(diff) != 0 {
+		s.Server[area][item].MergeWith(diff)
+		s.Unlock()
+		s.runCallbacks("server")
+		return
 	}
 	s.Unlock()
-
-	s.runCallbacks("server")
 }
 
 func (store *Store) GetServerStateAsJson() json.RawMessage {

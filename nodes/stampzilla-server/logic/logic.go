@@ -56,7 +56,7 @@ type Logic struct {
 	StateStore    *SavedStateStore
 	Rules         map[string]*Rule
 	devices       *devices.List
-	onReportState func(string, map[string]interface{})
+	onReportState func(string, devices.State)
 	//ActionProgressChan chan ActionProgress
 	sync.RWMutex
 	sync.WaitGroup
@@ -79,7 +79,7 @@ func New(sss *SavedStateStore, websocketSender websocket.Sender) *Logic {
 		//ActionProgressChan: make(chan ActionProgress, 100),
 		Rules:           make(map[string]*Rule),
 		StateStore:      sss,
-		onReportState:   func(string, map[string]interface{}) {},
+		onReportState:   func(string, devices.State) {},
 		c:               make(chan func()),
 		WebsocketSender: websocketSender,
 	}
@@ -112,7 +112,7 @@ func (l *Logic) SetRules(rules Rules) {
 	l.c <- func() {}
 }
 
-func (l *Logic) OnReportState(callback func(string, map[string]interface{})) {
+func (l *Logic) OnReportState(callback func(string, devices.State)) {
 	l.onReportState = callback
 }
 
