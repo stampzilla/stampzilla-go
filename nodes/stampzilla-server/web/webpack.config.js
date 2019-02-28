@@ -13,7 +13,7 @@ const DEV = process.env.NODE_ENV === 'development';
 module.exports = {
   devtool: DEV ? 'cheap-module-eval-source-map' : undefined,
   output: {
-    filename: 'assets/[name].js',
+    filename: 'assets/[name].[contenthash].js',
     publicPath: '/',
   },
   optimization: {
@@ -104,13 +104,13 @@ module.exports = {
       jQuery: 'jquery',
     }),
     new MiniCssExtractPlugin({
-      filename: 'assets/[name].css',
-      chunkFilename: 'assets/[id].css',
+      filename: 'assets/[name].[contenthash].css',
+      chunkFilename: 'assets/[id].[contenthash].css',
     }),
     new GoogleFontsPlugin({
       fonts: [
         {
-          family: 'Source Sans Pro',
+          family: 'Roboto',
           variants: [
             '300',
             '400',
@@ -122,7 +122,7 @@ module.exports = {
           ],
         },
       ],
-      path: 'assets/',
+      path: '/',
       filename: 'assets/fonts.css',
     }),
     new SWPrecacheWebpackPlugin({

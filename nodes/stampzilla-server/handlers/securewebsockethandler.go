@@ -197,10 +197,12 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 			return fmt.Errorf("Node was not found")
 		}
 
+		node.Lock()
 		if node.Aliases == nil {
 			node.Aliases = make(map[devices.ID]string)
 		}
 		node.Aliases[device.ID] = device.Alias
+		node.Unlock()
 
 		wsh.Store.AddOrUpdateNode(node)
 		err = wsh.Store.SaveNodes()

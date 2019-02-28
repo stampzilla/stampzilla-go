@@ -51,15 +51,41 @@ func (store *Store) AddOrUpdateNode(node *models.Node) {
 
 	store.runCallbacks("nodes")
 }
+
+func (store *Store) SaveNode(node *models.Node) error {
+	path := "configs/"
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		os.MkdirAll(path, 0755)
+	}
+
+	configFile, err := os.Create(path + node.UUID + ".json")
+	if err != nil {
+		return err
+	}
+
+	var out bytes.Buffer
+	node.Lock()
+	b, err := json.MarshalIndent(node, "", "\t")
+	node.Unlock()
+
+	if err != nil {
+		return err
+	}
+	json.Indent(&out, b, "", "\t")
+	_, err = out.WriteTo(configFile)
+	return err
+}
+
 func (store *Store) SaveNodes() error {
 	nodes := store.GetNodes()
 
 	for _, node := range nodes {
-		err := saveConfigToFile(node)
+		err := store.SaveNode(node)
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -100,25 +126,4 @@ func loadNodeConfigFromFile(file string) (*models.Node, error) {
 	err = decoder.Decode(&node)
 
 	return node, err
-}
-
-func saveConfigToFile(node *models.Node) error {
-	path := "configs/"
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		os.MkdirAll(path, 0755)
-	}
-
-	configFile, err := os.Create(path + node.UUID + ".json")
-	if err != nil {
-		return err
-	}
-
-	var out bytes.Buffer
-	b, err := json.MarshalIndent(node, "", "\t")
-	if err != nil {
-		return err
-	}
-	json.Indent(&out, b, "", "\t")
-	_, err = out.WriteTo(configFile)
-	return err
 }
