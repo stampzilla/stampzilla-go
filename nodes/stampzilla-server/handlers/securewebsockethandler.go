@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/olahol/melody"
@@ -275,10 +276,38 @@ func (wsh *secureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.R
 }
 
 func (wsh *secureWebsocketHandler) Disconnect(s interfaces.MelodySession) error {
-	id, _ := s.Get(websocket.KeyID.String())
-	n := wsh.Store.GetNode(id.(string))
-	if n != nil {
-		n.SetConnected(false)
+	proto, _ := s.Get(websocket.KeyProtocol.String())
+	i, exists := s.Get(websocket.KeyID.String())
+	id, ok := i.(string)
+	if !ok {
+		return fmt.Errorf("id is not a string")
+	}
+
+	if !exists {
+		return fmt.Errorf("%s missing in session", websocket.KeyID.String())
+	}
+
+	switch proto {
+	case "node":
+		n := wsh.Store.GetNode(id)
+		if n != nil {
+			n.SetConnected(false)
+		}
+
+		modified := false
+		for _, device := range wsh.Store.Devices.All() {
+			device.Lock()
+			if device.ID.Node == id {
+				if device.Online {
+					modified = true
+				}
+				device.Online = false
+			}
+			device.Unlock()
+		}
+		if modified {
+			BroadcastUpdate(wsh.WebsocketSender)("devices", wsh.Store)
+		}
 	}
 	return nil
 }
