@@ -405,8 +405,8 @@ func (n *Node) generateCSR() ([]byte, error) {
 
 // On sets up a callback that is run when a message recieved with type what
 func (n *Node) On(what string, cb OnFunc) {
-	n.Subscribe(what)
 	n.callbacks[what] = append(n.callbacks[what], cb)
+	n.Subscribe(what)
 }
 
 //OnConfig is run when node recieves updated configuration from the server

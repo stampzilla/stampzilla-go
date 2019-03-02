@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -123,4 +124,43 @@ func TestNodeToServerDevices(t *testing.T) {
 	assert.Contains(t, main.Store.Devices.All(), devices.ID{Node: node.UUID, ID: "1"})
 	assert.Contains(t, node.Devices.All(), devices.ID{Node: node.UUID, ID: "1"})
 
+}
+
+func TestNodeToServerSubscribeDevices(t *testing.T) {
+	main, node, cleanup := setupWebsocketTest(t)
+	defer cleanup()
+
+	acceptCertificateRequest(t, main)
+
+	err := node.Connect()
+	assert.NoError(t, err)
+
+	dev1 := &devices.Device{
+		Name: "Device1",
+		ID: devices.ID{
+			ID: "1",
+		},
+		Online: true,
+		Traits: []string{"OnOff"},
+		State: devices.State{
+			"on": false,
+		},
+	}
+	node.AddOrUpdate(dev1)
+
+	waitFor(t, 1*time.Second, "should have some devices", func() bool {
+		return len(main.Store.Devices.All()) != 0
+	})
+
+	deviceSubscriptionData := ""
+	node.On("devices", func(d json.RawMessage) error {
+		deviceSubscriptionData = string(d)
+		return nil
+	})
+
+	waitFor(t, 1*time.Second, "should have gotten devices subscription data", func() bool {
+		return deviceSubscriptionData != ""
+	})
+
+	assert.Contains(t, deviceSubscriptionData, `{"on":false}`)
 }
