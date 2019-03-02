@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"io"
 	"io/ioutil"
 	"log"
@@ -42,7 +43,12 @@ func setupWebsocketTest(t *testing.T) (*servermain.Main, *node.Node, func()) {
 
 	node := node.New("example")
 
+	ctx, cancel := context.WithCancel(context.Background())
+	main.Store.Logic.Start(ctx)
+	main.Store.Scheduler.Start(ctx)
+
 	return main, node, func() {
+		cancel()
 		cleanup()
 		insecure.Close()
 		secure.Close()

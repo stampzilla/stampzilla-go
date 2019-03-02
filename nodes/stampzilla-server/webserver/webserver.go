@@ -145,7 +145,6 @@ func (ws *Webserver) handleMessage() func(s *melody.Session, msg []byte) {
 			logrus.Error(err)
 			return
 		}
-
 	}
 }
 
