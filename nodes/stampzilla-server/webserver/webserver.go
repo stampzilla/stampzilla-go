@@ -179,7 +179,7 @@ func (ws *Webserver) handleDownloadCA() func(c *gin.Context) {
 func (ws *Webserver) handleWs(m *melody.Melody) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		keys := make(map[string]interface{})
-		keys[websocket.KeyID.String()] = uuid.New().String()
+		uuid := uuid.New().String()
 
 		if c.Request.TLS != nil {
 			keys["secure"] = true
@@ -218,21 +218,21 @@ func (ws *Webserver) handleWs(m *melody.Melody) func(c *gin.Context) {
 		}
 
 		if c.Request.Header.Get("X-UUID") != "" {
-			keys[websocket.KeyID.String()] = c.Request.Header.Get("X-UUID")
+			uuid = c.Request.Header.Get("X-UUID")
 		}
 		keys["type"] = c.Request.Header.Get("X-TYPE")
 
-		if ws.Store.Connection(keys[websocket.KeyID.String()].(string)) != nil {
-			logrus.Error("Connection with same UUID already exists")
+		if ws.Store.Connection(uuid) != nil {
+			logrus.Errorf("Connection with same UUID already exists: %s", uuid)
 			c.AbortWithStatus(http.StatusForbidden)
 			return
 		}
 
+		keys[websocket.KeyID.String()] = uuid
 		err := m.HandleRequestWithKeys(c.Writer, c.Request, keys)
 		if err != nil {
 			logrus.Errorf("webserver: %s", err.Error())
 			return
 		}
-
 	}
 }
