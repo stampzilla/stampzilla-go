@@ -32,18 +32,13 @@ func (store *Store) ConnectionChanged() {
 func (store *Store) RemoveConnection(id string) {
 	store.Lock()
 	delete(store.Connections, id)
-
-	modified := false
 	for _, device := range store.Devices.All() {
 		if device.ID.Node == id {
-			modified = modified || device.Online
 			device.Online = false
 		}
 	}
 	store.Unlock()
 
 	store.runCallbacks("connections")
-	if modified {
-		store.runCallbacks("devices")
-	}
+	store.runCallbacks("devices")
 }
