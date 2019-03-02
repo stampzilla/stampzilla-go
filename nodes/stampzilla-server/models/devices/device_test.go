@@ -146,3 +146,11 @@ func TestJSONUnMarshalDevices(t *testing.T) {
 	assert.Len(t, d.All(), 1)
 
 }
+
+func TestNewIDFromString(t *testing.T) {
+	id, err := NewIDFromString("asdf.1")
+	assert.NoError(t, err)
+	assert.Equal(t, "1", id.ID)
+	assert.Equal(t, "asdf", id.Node)
+
+}
