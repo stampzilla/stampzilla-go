@@ -49,6 +49,13 @@ func TestSchedulerRunTask(t *testing.T) {
 	task.Enabled = true
 	scheduler.ScheduleTask(task)
 
+	//Add a third disabled task which should not be run
+	task = scheduler.AddTask("Test2")
+	task.AddAction("uuid2")
+	task.SetWhen("* * * * * *")
+	task.Enabled = false
+	scheduler.ScheduleTask(task)
+
 	//Start Cron
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
