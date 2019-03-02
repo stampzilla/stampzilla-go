@@ -29,3 +29,19 @@ func (n *Node) Connected() bool {
 	defer n.Unlock()
 	return n.Connected_
 }
+func (n *Node) SetAlias(id devices.ID, alias string) {
+	n.Lock()
+	if n.Aliases == nil {
+		n.Aliases = make(map[devices.ID]string)
+	}
+	n.Aliases[id] = alias
+	n.Unlock()
+}
+func (n *Node) Alias(id devices.ID) string {
+	n.Lock()
+	defer n.Unlock()
+	if a, ok := n.Aliases[id]; ok {
+		return a
+	}
+	return ""
+}

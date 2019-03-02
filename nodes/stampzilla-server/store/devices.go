@@ -12,13 +12,12 @@ func (store *Store) AddOrUpdateDevice(dev *devices.Device) {
 	store.Devices.Add(dev)
 	node := store.GetNode(dev.ID.Node)
 
-	node.Lock()
-	if a, ok := node.Aliases[dev.ID]; ok {
+	alias := node.Alias(dev.ID)
+	if alias != dev.Alias {
 		dev.Lock()
-		dev.Alias = a
+		dev.Alias = alias
 		dev.Unlock()
 	}
-	node.Unlock()
 
 	store.Logic.UpdateDevice(dev)
 	store.runCallbacks("devices")
