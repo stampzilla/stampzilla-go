@@ -180,6 +180,36 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 			return err
 		}
 		wsh.WebsocketSender.SendToID(node.UUID, "setup", node)
+	case "setup-device":
+		device := &devices.Device{}
+		err := json.Unmarshal(msg.Body, device)
+		if err != nil {
+			return err
+		}
+
+		logrus.WithFields(logrus.Fields{
+			"from":   msg.FromUUID,
+			"config": device,
+		}).Debug("Received new device configuration")
+
+		node := wsh.Store.GetNode(device.ID.Node)
+		if node == nil {
+			return fmt.Errorf("Node was not found")
+		}
+
+		node.SetAlias(device.ID, device.Alias)
+		err = wsh.Store.SaveNode(node)
+		if err != nil {
+			return err
+		}
+		BroadcastUpdate(wsh.WebsocketSender)("nodes", wsh.Store)
+
+		dev := wsh.Store.GetDevices().Get(device.ID)
+		dev.Lock()
+		dev.Alias = device.Alias
+		dev.Unlock()
+		BroadcastUpdate(wsh.WebsocketSender)("devices", wsh.Store)
+
 	case "state-change":
 		devs := devices.NewList()
 		err := json.Unmarshal(msg.Body, devs)

@@ -19,22 +19,38 @@ class Nodes extends Component {
 
     return (
       <React.Fragment>
-        <div className="row">
-          <div className="col-md-4">
-            {Object.keys(devicesByNode).map(nodeId => (
+        <div
+          style={{ display: 'flex', flexWrap: 'wrap', alignContent: 'stretch' }}
+        >
+          {Object.keys(devicesByNode).map(nodeId => (
+            <div
+              style={{
+                width: '400px',
+                maxWidth: '100%',
+                padding: '10px',
+                display: 'flex',
+              }}
+            >
               <Card
-                title={nodes.getIn([nodeId, 'name']) || `New node of type ${nodes.getIn([nodeId, 'type'])}`}
+                title={
+                  nodes.getIn([nodeId, 'name']) ||
+                  `New node of type ${nodes.getIn([nodeId, 'type'])}`
+                }
                 bodyClassName="p-3"
+                className="mb-0 flex-grow-1"
                 key={nodeId}
               >
                 {devicesByNode[nodeId]
                   .sort((a, b) => a.get('name').localeCompare(b.get('name')))
                   .map(device => (
-                    <Device device={device} key={`${nodeId}.${device.get('id')}`} />
-                ))}
+                    <Device
+                      device={device}
+                      key={`${nodeId}.${device.get('id')}`}
+                    />
+                  ))}
               </Card>
-              ))}
-          </div>
+            </div>
+          ))}
         </div>
       </React.Fragment>
     );
