@@ -1,6 +1,7 @@
 # Documentation
 
 * [Devices](devices.md)
+* [Screenshots](screenshots.md)
 
 
 ## Architecture
