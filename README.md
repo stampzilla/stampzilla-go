@@ -33,3 +33,4 @@ sudo stampzilla start
 ### Documentation
 Is work in progress and can be found here:
 * [Docs](docs/README.md)
+* [Screenshots](docs/screenshots.md)
