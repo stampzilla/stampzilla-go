@@ -154,3 +154,35 @@ func TestNewIDFromString(t *testing.T) {
 	assert.Equal(t, "asdf", id.Node)
 
 }
+
+func TestDeviceEqual(t *testing.T) {
+
+	dev1 := testDevice("1")
+	dev2 := testDevice("1")
+	eq := dev1.Equal(dev2)
+	assert.Equal(t, true, eq)
+
+	dev1 = testDevice("1")
+	dev2 = testDevice("2")
+	eq = dev1.Equal(dev2)
+	assert.Equal(t, true, eq)
+
+	dev1 = testDevice("1")
+	dev2 = testDevice("2")
+	dev2.Alias = "test"
+	eq = dev1.Equal(dev2)
+	assert.Equal(t, false, eq)
+
+	dev1 = testDevice("1")
+	dev2 = testDevice("2")
+	dev2.State["on"] = false
+	eq = dev1.Equal(dev2)
+	assert.Equal(t, false, eq)
+
+	dev1 = testDevice("1")
+	dev2 = testDevice("2")
+	dev2.State["newkey"] = false
+	eq = dev1.Equal(dev2)
+	assert.Equal(t, false, eq)
+
+}

@@ -157,9 +157,11 @@ func (r *Rule) Eval(devices *devices.List, rules map[string]bool) (bool, error) 
 	devicesState := make(map[string]map[string]interface{})
 	for devID, v := range devices.All() {
 		devicesState[devID.String()] = make(map[string]interface{})
+		v.Lock()
 		for k, v := range v.State {
 			devicesState[devID.String()][k] = v
 		}
+		v.Unlock()
 	}
 
 	// lazy loading improved performance like this:

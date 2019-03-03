@@ -146,45 +146,36 @@ func reader(ctx context.Context, node *node.Node, api *API) {
 				continue
 			}
 
-			changes := 0
+			newState := make(devices.State)
 			if event.Resource == "lights" {
-				if models.LightToDeviceState(event.State, dev.State) {
-					changes++
-				}
+				models.LightToDeviceState(event.State, newState)
 			}
 			if event.Resource == "sensors" {
-				if models.SensorToDeviceState(event.State, dev.State) {
-					changes++
-				}
+				models.SensorToDeviceState(event.State, newState)
 			}
 
 			// reachable again
 			//{"e":"changed","id":"1","r":"lights","state":{"reachable":true},"t":"event","uniqueid":"00:0b:57:ff:fe:c0:28:82-01"}
 			event.State.Bool("reachable", func(online bool) {
-				if online != dev.Online {
-					changes++
-				}
 				dev.SetOnline(online)
+				if online != dev.Online {
+					node.SyncDevice(dev.ID.ID)
+				}
 			})
-			// sensors have reachable in config
+			// sensors have reachable in Config
 			event.Config.Bool("reachable", func(online bool) {
-				if online != dev.Online {
-					changes++
-				}
 				dev.SetOnline(online)
-			})
-			//Sensor battery
-			event.Config.Float("battery", func(b float64) {
-				i := int(b)
-				if i != dev.State["batteri"] {
-					changes++
+				if online != dev.Online {
+					node.SyncDevice(dev.ID.ID)
 				}
-				dev.State["battery"] = i
 			})
 
-			if changes > 0 {
-				node.SyncDevice(dev.ID.ID)
-			}
+			//Sensor have battery in Config
+			event.Config.Float("battery", func(b float64) {
+				newState["battery"] = int(b)
+			})
+
+			node.UpdateState(dev.ID.ID, newState)
 
 			// SENSOR
 			//{"config":{"battery":100,"offset":0,"on":true,"reachable":true},"e":"changed","id":"3","r":"sensors","t":"event","uniqueid":"00:15:8d:00:02:3d:26:5e-01-0402"}

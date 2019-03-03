@@ -90,3 +90,19 @@ func (ds State) MergeWith(right State) {
 		ds[k] = v
 	}
 }
+
+func (ds State) Equal(right State) bool {
+	if (ds == nil) != (right == nil) {
+		return false
+	}
+
+	if len(ds) != len(right) {
+		return false
+	}
+	for k := range ds {
+		if ds[k] != right[k] {
+			return false
+		}
+	}
+	return true
+}

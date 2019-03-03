@@ -89,10 +89,11 @@ func main() {
 			}
 			fetchRegisters(config.Registers, modbusConnection)
 
+			newState := make(devices.State)
 			for _, v := range config.Registers {
-				dev.State[v.Name] = v.Value
+				newState[v.Name] = v.Value
 			}
-			node.SyncDevices()
+			node.UpdateState(dev.ID.ID, newState)
 		case <-node.Stopped():
 			ticker.Stop()
 			log.Println("Stopping modbus node")

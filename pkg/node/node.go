@@ -49,6 +49,7 @@ type Node struct {
 	shutdown   []func()
 	stop       chan struct{}
 	sendUpdate chan devices.ID
+	mutex      sync.Mutex
 }
 
 // New returns a new Node
@@ -272,7 +273,7 @@ func (n *Node) Connect() error {
 	}()
 
 	n.Client.OnConnect(func() {
-		for what := range n.callbacks {
+		for what := range n.getCallbacks() {
 			n.Subscribe(what)
 		}
 		n.SyncDevices()
@@ -297,14 +298,15 @@ func (n *Node) reader(ctx context.Context) {
 				logrus.Error("node:", err)
 				continue
 			}
-			for _, cb := range n.callbacks[msg.Type] {
+			cbs := n.getCallbacks()
+			for _, cb := range cbs[msg.Type] {
 				err := cb(msg.Body)
 				if err != nil {
 					logrus.Error(err)
 					continue
 				}
 			}
-			if n.callbacks[msg.Type] == nil || len(n.callbacks[msg.Type]) == 0 {
+			if cbs[msg.Type] == nil || len(cbs[msg.Type]) == 0 {
 				logrus.WithFields(logrus.Fields{
 					"type": msg.Type,
 				}).Warn("Received message but no one cared")
@@ -405,8 +407,20 @@ func (n *Node) generateCSR() ([]byte, error) {
 
 // On sets up a callback that is run when a message recieved with type what
 func (n *Node) On(what string, cb OnFunc) {
+	n.mutex.Lock()
 	n.callbacks[what] = append(n.callbacks[what], cb)
+	n.mutex.Unlock()
 	n.Subscribe(what)
+}
+
+func (n *Node) getCallbacks() map[string][]OnFunc {
+	cbs := make(map[string][]OnFunc)
+	n.mutex.Lock()
+	for k, v := range n.callbacks {
+		cbs[k] = v
+	}
+	n.mutex.Unlock()
+	return cbs
 }
 
 //OnConfig is run when node recieves updated configuration from the server
