@@ -113,12 +113,7 @@ func addOrUpdateDevice(node *node.Node, znode *nodes.Node) {
 		}
 		//Dont add if it already exists
 		if dev := node.GetDevice(devid); dev != nil {
-			if diff := dev.State.Diff(newState); len(diff) != 0 {
-				dev.Lock()
-				dev.State.MergeWith(diff)
-				dev.Unlock()
-				node.SyncDevice(devid)
-			}
+			node.UpdateState(devid, newState)
 			return
 		}
 

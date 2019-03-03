@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 
@@ -153,12 +154,17 @@ func TestNodeToServerSubscribeDevices(t *testing.T) {
 	})
 
 	deviceSubscriptionData := ""
+	var mu sync.Mutex
 	node.On("devices", func(d json.RawMessage) error {
+		mu.Lock()
 		deviceSubscriptionData = string(d)
+		mu.Unlock()
 		return nil
 	})
 
 	waitFor(t, 1*time.Second, "should have gotten devices subscription data", func() bool {
+		mu.Lock()
+		defer mu.Unlock()
 		return deviceSubscriptionData != ""
 	})
 

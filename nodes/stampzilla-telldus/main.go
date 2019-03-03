@@ -157,21 +157,18 @@ func sensorEvent(protocol, model *C.char, sensorID, dataType int, value *C.char)
 		node.AddOrUpdate(dev)
 	}
 
+	newState := make(devices.State)
 	if dataType == C.TELLSTICK_TEMPERATURE {
 		t, _ := strconv.ParseFloat(C.GoString(value), 64)
 		logrus.Debugf("Temperature %s : %f\n", id, t)
-		if dev.State["temperature"] != t {
-			dev.State["temperature"] = t
-		}
+		newState["temperature"] = t
 	} else if dataType == C.TELLSTICK_HUMIDITY {
 		h, _ := strconv.ParseFloat(C.GoString(value), 64)
 		logrus.Debugf("Humidity %s : %f\n", id, h)
-		if dev.State["humidity"] != h {
-			dev.State["humidity"] = h
-		}
+		newState["humidity"] = h
 	}
 
-	node.SyncDevice(id)
+	node.UpdateState(id, newState)
 }
 
 //export deviceEvent
@@ -183,11 +180,12 @@ func deviceEvent(deviceID, method int, data *C.char, callbackID int, context uns
 		logrus.Errorf("Unknown device %s", id)
 		return
 	}
+	newState := make(devices.State)
 	if method&C.TELLSTICK_TURNON != 0 {
-		dev.State["on"] = true
+		newState["on"] = true
 	}
 	if method&C.TELLSTICK_TURNOFF != 0 {
-		dev.State["on"] = false
+		newState["on"] = false
 	}
 	if method&C.TELLSTICK_DIM != 0 {
 		level, err := strconv.ParseUint(C.GoString(data), 10, 16)
@@ -196,15 +194,15 @@ func deviceEvent(deviceID, method int, data *C.char, callbackID int, context uns
 			return
 		}
 		if level == 0 {
-			dev.State["on"] = false
+			newState["on"] = false
 		}
 		if level > 0 {
-			dev.State["on"] = true
+			newState["on"] = true
 		}
-		dev.State["brightness"] = float64(level) / 255.0
+		newState["brightness"] = float64(level) / 255.0
 	}
 
-	node.SyncDevice(id)
+	node.UpdateState(id, newState)
 }
 
 //export deviceChangeEvent

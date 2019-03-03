@@ -145,13 +145,10 @@ func (l *Logic) UpdateDevice(dev *devices.Device) {
 }
 func (l *Logic) updateDevice(dev *devices.Device) {
 	if oldDev := l.devices.Get(dev.ID); oldDev != nil {
-		diff := oldDev.State.Diff(dev.State)
-		if len(diff) > 0 {
-			//oldDev.Lock() // TODO check if needed with -race
-			for k, v := range diff {
-				oldDev.State[k] = v
-			}
-			//oldDev.Unlock()
+		if diff := oldDev.State.Diff(dev.State); len(diff) > 0 {
+			oldDev.Lock()
+			oldDev.State.MergeWith(diff)
+			oldDev.Unlock()
 		}
 		return
 	}

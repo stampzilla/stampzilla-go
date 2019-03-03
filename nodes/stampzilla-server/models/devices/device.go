@@ -75,6 +75,54 @@ func (d *Device) SetOnline(v bool) {
 	d.Unlock()
 }
 
+// Equal checks if 2 devices are equal
+func (d *Device) Equal(dev *Device) bool {
+	if !d.State.Equal(dev.State) { // this is most likely to not be equal so we check it first
+		return false
+	}
+	if d.Type != dev.Type {
+		return false
+	}
+	if d.Name != dev.Name {
+		return false
+	}
+	if d.Alias != dev.Alias {
+		return false
+	}
+	if d.Online != dev.Online {
+		return false
+	}
+	if d.Online != dev.Online {
+		return false
+	}
+
+	if !sliceIsEqual(d.Traits, dev.Traits) {
+		return false
+	}
+
+	return true
+}
+
+func sliceIsEqual(a, b []string) bool {
+
+	// If one is nil, the other must also be nil.
+	if (a == nil) != (b == nil) {
+		return false
+	}
+
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
 // Copy copies a device
 func (d *Device) Copy() *Device {
 	d.Lock()

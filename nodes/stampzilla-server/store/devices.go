@@ -9,6 +9,15 @@ func (store *Store) GetDevices() *devices.List {
 }
 
 func (store *Store) AddOrUpdateDevice(dev *devices.Device) {
+	if dev == nil {
+		return
+	}
+
+	oldDev := store.Devices.Get(dev.ID)
+	if oldDev != nil && oldDev.Equal(dev) {
+		return
+	}
+
 	store.Devices.Add(dev)
 	store.Logic.UpdateDevice(dev)
 	store.runCallbacks("devices")
