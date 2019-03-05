@@ -83,12 +83,16 @@ func (ca *CA) Load(name string) error {
 	}
 
 	if name == "ca" {
+		ca.Lock()
 		ca.CATLS = &certTLS
 		ca.CAX509 = certX509
+		ca.Unlock()
 		return nil
 	}
+	ca.Lock()
 	ca.TLS[name] = &certTLS
 	ca.X509[name] = certX509
+	ca.Unlock()
 
 	return nil
 }
@@ -383,12 +387,21 @@ func (ca *CA) WaitForApproval(s pkix.Name, c string, r models.Request) chan bool
 // Dynamic TLS server config
 func (ca *CA) GetCertificate(helo *tls.ClientHelloInfo) (*tls.Certificate, error) {
 	// Dynamicly load or create based on the requested hostname
-	if _, ok := ca.TLS[helo.ServerName]; !ok {
-		err := ca.LoadOrCreate(helo.ServerName)
-		if err != nil {
-			return nil, err
-		}
+
+	ca.Lock()
+	crt, ok := ca.TLS[helo.ServerName]
+	ca.Unlock()
+
+	if ok {
+		return crt, nil
 	}
 
+	err := ca.LoadOrCreate(helo.ServerName)
+	if err != nil {
+		return nil, err
+	}
+
+	ca.Lock()
+	defer ca.Unlock()
 	return ca.TLS[helo.ServerName], nil
 }
