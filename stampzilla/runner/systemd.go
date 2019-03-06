@@ -110,21 +110,40 @@ func (sd *Systemd) Stop(nodes ...string) error {
 // Restart restarts currencly running nodes
 func (sd *Systemd) Restart(nodes ...string) error {
 	conn := sd.dbus()
-	units, err := conn.ListUnitsByPatterns([]string{"active"}, []string{"stampzilla-*"})
+	units, err := conn.ListUnitsByPatterns([]string{"active", "activating", "failed"}, []string{"stampzilla-*"})
 	if err != nil {
 		return err
 	}
 	ch := make(chan string)
-	for _, p := range units {
-		logrus.Info("Stopping ", p.Name)
-		_, err := conn.StopUnit(p.Name, "replace", ch)
+
+	toRestart := []string{}
+
+	if len(nodes) > 0 {
+		// restart requested nodes
+		for _, unit := range units {
+			for _, node := range nodes {
+				if strings.HasPrefix(unit.Name, getUnitName(node)) {
+					toRestart = append(toRestart, unit.Name)
+				}
+			}
+		}
+	} else {
+		// restart all running
+		for _, unit := range units {
+			toRestart = append(toRestart, unit.Name)
+		}
+	}
+
+	for _, unit := range toRestart {
+		logrus.Info("Stopping ", unit)
+		_, err := conn.StopUnit(unit, "replace", ch)
 		if err != nil {
 			return err
 		}
 		<-ch
 
-		logrus.Info("Starting ", p.Name)
-		_, err = conn.StartUnit(p.Name, "replace", ch)
+		logrus.Info("Starting ", unit)
+		_, err = conn.StartUnit(unit, "replace", ch)
 		if err != nil {
 			return err
 		}
