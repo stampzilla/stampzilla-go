@@ -120,8 +120,8 @@ outer:
 			return fmt.Errorf("checksum validation failed")
 		}
 
-		// Move to installation dir
-		dst, err := os.OpenFile(getFilePath(v), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+		// Move to temp file in installation dir
+		dst, err := os.OpenFile(getFilePath(v)+".new", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
 		if err != nil {
 			return err
 		}
@@ -131,7 +131,11 @@ outer:
 			return err
 		}
 
-		//
+		// Do atomic rename to avoid file busy errors
+		err = os.Rename(getFilePath(v)+".new", getFilePath(v))
+		if err != nil {
+			return err
+		}
 
 		for k, n := range expectedToInstall {
 			if strings.HasSuffix(v.GetName(), n+"-"+runtime.GOOS+"-"+runtime.GOARCH) {

@@ -57,7 +57,7 @@ func (sd *Systemd) Start(nodes ...string) error {
 		return nil
 	}
 
-	units, err := conn.ListUnitsByPatterns([]string{"inactive"}, []string{"stampzilla-*"})
+	units, err := conn.ListUnitsByPatterns([]string{"inactive", "failed", "deactivating"}, []string{"stampzilla-*"})
 	if err != nil {
 		return err
 	}
@@ -99,6 +99,32 @@ func (sd *Systemd) Stop(nodes ...string) error {
 		logrus.Info("Stopping ", p.Name)
 		ch := make(chan string)
 		_, err := conn.StopUnit(p.Name, "replace", ch)
+		if err != nil {
+			return err
+		}
+		<-ch
+	}
+	return nil
+}
+
+// Restart restarts currencly running nodes
+func (sd *Systemd) Restart(nodes ...string) error {
+	conn := sd.dbus()
+	units, err := conn.ListUnitsByPatterns([]string{"active"}, []string{"stampzilla-*"})
+	if err != nil {
+		return err
+	}
+	ch := make(chan string)
+	for _, p := range units {
+		logrus.Info("Stopping ", p.Name)
+		_, err := conn.StopUnit(p.Name, "replace", ch)
+		if err != nil {
+			return err
+		}
+		<-ch
+
+		logrus.Info("Starting ", p.Name)
+		_, err = conn.StartUnit(p.Name, "replace", ch)
 		if err != nil {
 			return err
 		}

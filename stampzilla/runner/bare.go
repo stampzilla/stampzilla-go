@@ -17,6 +17,14 @@ type Bare struct {
 
 func (t *Bare) Close() {
 }
+func (t *Bare) Restart(nodes ...string) error {
+	err := t.Stop(nodes...)
+	if err != nil {
+		return err
+	}
+
+	return t.Start(nodes...)
+}
 func (t *Bare) Start(nodes ...string) error {
 
 	cfg := installer.Config{}

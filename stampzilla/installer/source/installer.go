@@ -2,12 +2,15 @@ package source
 
 import (
 	"fmt"
-	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -20,12 +23,6 @@ func NewInstaller() *Installer {
 }
 
 func (t *Installer) Prepare() error {
-	_, err := os.Stat("/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/")
-	if os.IsNotExist(err) {
-		logrus.Info("Found no nodes. Installing stampzilla cli first!")
-		return GoGet("github.com/stampzilla/stampzilla-go/stampzilla", true)
-	}
-
 	return nil
 }
 func (t *Installer) Install(nodes ...string) error {
@@ -35,49 +32,33 @@ func (t *Installer) Update(nodes ...string) error {
 	return build(nodes, true)
 }
 
-func build(n []string, upgrade bool) error {
+func build(n []string, update bool) error {
+	if len(n) == 0 {
+		return fmt.Errorf("you must specify which nodes to build")
+	}
 	// Install only specified nodes
 	for _, name := range n {
 		if !strings.HasPrefix(name, "stampzilla-") {
 			name = "stampzilla-" + name
 		}
-		err := GoGet("github.com/stampzilla/stampzilla-go/nodes/"+name, upgrade)
+
+		if !update {
+			if _, err := os.Stat(filepath.Join("/home", "stampzilla", "go", "bin", name)); err == nil {
+				return fmt.Errorf("%s already installed. use -u to update", name)
+			}
+		}
+
+		err := GoGet("github.com/stampzilla/stampzilla-go/nodes/" + name)
 		if err != nil {
 			return err
 		}
 	}
 
-	if len(n) != 0 {
-		return nil
-	}
-
-	// Install all nodes
-	nodes, err := ioutil.ReadDir("/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/")
-	if err != nil {
-		return err
-	}
-
-	for _, node := range nodes {
-		if !strings.Contains(node.Name(), "stampzilla-") {
-			continue
-		}
-
-		//Skip telldus since it contains C bindings if we dont explicly requests it to install
-		if node.Name() == "stampzilla-telldus" {
-			continue
-		}
-
-		err := GoGet("github.com/stampzilla/stampzilla-go/nodes/"+node.Name(), upgrade)
-		if err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
-func GoGet(url string, update bool) error {
-	var out string
-	logrus.Info("go get " + filepath.Base(url) + "... ")
+func GoGet(url string) error {
+	logrus.Info("building " + filepath.Base(url) + "... ")
 
 	pwd, _ := os.Getwd()
 	defer os.Chdir(pwd)
@@ -88,30 +69,32 @@ func GoGet(url string, update bool) error {
 		return fmt.Errorf("LookPath Error: %s", err.Error())
 	}
 
-	// If we already is stampzilla user no need to sudo!
-	if user, iErr := user.Current(); iErr == nil && user.Username == "stampzilla" {
-		if update {
-			out, err = Run(gobin, "get", "-u", url)
-		} else {
-			out, err = Run(gobin, "get", url)
-		}
-	} else {
-		if update {
-			out, err = Run("sudo", "-E", "-u", "stampzilla", "-H", gobin, "get", "-u", url)
-		} else {
-			out, err = Run("sudo", "-E", "-u", "stampzilla", "-H", gobin, "get", url)
-		}
-	}
-
+	_, err = Run(gobin, "get", "-u", "-d", url)
 	if err != nil {
-		logrus.Error(out)
 		return err
 	}
+	_, err = Run(gobin, getArgs(filepath.Base(url))...)
+	return err
 
-	if out != "" {
-		fmt.Println(out)
+}
+
+func getArgs(binName string) []string {
+	hash, err := Run("git", "--git-dir", filepath.Join("/home", "stampzilla", "go", "src", "github.com", "stampzilla", "stampzilla-go", ".git"), "rev-parse", "--verify", "HEAD")
+	if err != nil {
+		log.Fatal(err)
 	}
-	return nil
+	os.Setenv("TRAVIS_COMMIT", hash)
+
+	m := []string{
+		"build",
+		"-ldflags",
+		"-X github.com/stampzilla/stampzilla-go/pkg/build.Version=" + os.Getenv("TRAVIS_TAG") + ` -X "github.com/stampzilla/stampzilla-go/pkg/build.BuildTime=` + time.Now().Format(time.RFC3339) + `" -X github.com/stampzilla/stampzilla-go/pkg/build.Commit=` + os.Getenv("TRAVIS_COMMIT"),
+		"-o",
+		filepath.Join("/home", "stampzilla", "go", "bin", binName),
+		filepath.Join("/home", "stampzilla", "go", "src", "github.com", "stampzilla", "stampzilla-go", "nodes", binName),
+	}
+	//fmt.Println(strings.Join(m, "\n"))
+	return m
 }
 
 func Run(head string, parts ...string) (string, error) {
@@ -122,15 +105,28 @@ func Run(head string, parts ...string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	cmd := exec.Command(head, parts...)
-	//cmd.Env = []string{"GOPATH=$HOME/go", "PATH=$PATH:$GOPATH/bin"}
+
+	if current, iErr := user.Current(); iErr == nil && current.Username != "stampzilla" {
+		user, err := user.Lookup("stampzilla")
+		if err != nil {
+			return "", err
+		}
+		uid, _ := strconv.Atoi(user.Uid)
+		gid, _ := strconv.Atoi(user.Gid)
+		cmd.SysProcAttr = &syscall.SysProcAttr{}
+		cmd.SysProcAttr.Credential = &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)}
+	}
+
 	cmd.Env = []string{
 		"GOPATH=/home/stampzilla/go",
+		"HOME=/home/stampzilla",
 		"PATH=" + os.Getenv("PATH"),
 	}
 	out, err = cmd.CombinedOutput()
 	if err != nil {
-		return string(out), err
+		return "", fmt.Errorf("error: %s : %s", err, string(out))
 	}
-	return string(out), nil
+	return strings.TrimSpace(string(out)), nil
 }
