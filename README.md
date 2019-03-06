@@ -25,9 +25,8 @@ Update the cli with `stampzilla self-update`
 
 Update nodes with
 ```
-sudo stampzilla stop
 sudo stampzilla install -u
-sudo stampzilla start
+sudo stampzilla restart
 ```
 
 ### Documentation

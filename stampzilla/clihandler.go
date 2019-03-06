@@ -158,11 +158,7 @@ func (t *cliHandler) Restart(c *cli.Context) error {
 	r := getRunner(c)
 	defer r.Close()
 
-	err := r.Stop(c.Args()...)
-	if err != nil {
-		return err
-	}
-	return r.Start(c.Args()...)
+	return r.Restart(c.Args()...)
 }
 func (t *cliHandler) Status(c *cli.Context) error {
 	requireRoot()
@@ -219,6 +215,7 @@ func (t *cliHandler) Log(c *cli.Context) error {
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
+
 func (t *cliHandler) SelfUpdate(c *cli.Context) error {
 	releases := binary.GetReleases()
 	if releases == nil {
