@@ -216,6 +216,9 @@ func (shh *SmartHomeHandler) syncHandler(req *googleassistant.Request) *googleas
 			//TemperatureMaxK: 6500,
 			//},
 		}
+		if dev.Alias != "" {
+			rdev.Name.Name = dev.Alias
+		}
 		resp.Payload.Devices = append(resp.Payload.Devices, rdev)
 
 	}

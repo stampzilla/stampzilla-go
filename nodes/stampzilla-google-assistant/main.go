@@ -76,12 +76,44 @@ func main() {
 
 func onDevices(config *Config, deviceList *devices.List) func(data json.RawMessage) error {
 	return func(data json.RawMessage) error {
-		oldLen := deviceList.Len()
-		err := json.Unmarshal(data, deviceList)
+		list := devices.NewList()
+		err := json.Unmarshal(data, list)
 		if err != nil {
 			return err
 		}
-		if oldLen != deviceList.Len() {
+
+		changes := 0
+		for _, dev := range list.All() {
+
+			old := deviceList.Get(dev.ID)
+			if old == nil {
+				deviceList.Add(dev)
+				changes++
+				continue
+			}
+
+			if old.Name != dev.Name {
+				old.Name = dev.Name
+				changes++
+			}
+			if old.Alias != dev.Alias {
+				old.Alias = dev.Alias
+				changes++
+			}
+		}
+
+		toRemove := []devices.ID{}
+		for _, v := range deviceList.All() {
+			if dev := list.Get(v.ID); dev == nil {
+				toRemove = append(toRemove, dev.ID)
+			}
+		}
+		for _, id := range toRemove {
+			changes++
+			deviceList.Remove(id)
+		}
+
+		if changes > 0 {
 			requestSync(config.APIKey)
 		}
 		return nil
