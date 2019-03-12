@@ -206,6 +206,12 @@ func (d *List) All() DeviceMap {
 	return d.devices
 }
 
+func (d *List) Remove(id ID) {
+	d.Lock()
+	delete(d.devices, id)
+	d.Unlock()
+}
+
 // Copy copies a list of devices
 func (d *List) Copy() *List {
 
