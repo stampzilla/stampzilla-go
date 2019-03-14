@@ -69,6 +69,7 @@ func TestEvaluateRules(t *testing.T) {
 	l := New(savedState, syncer)
 	r := l.AddRule("test")
 	r.Expression_ = `devices["node.id"].on == true`
+	r.Enabled = true
 
 	l.updateDevice(&devices.Device{
 		ID: devices.ID{
@@ -117,6 +118,7 @@ func TestEvaluateRulesCanceledIfNotActive(t *testing.T) {
 	l := New(savedState, syncer)
 	r := l.AddRule("test")
 	r.Expression_ = `devices["node.id"].on == true`
+	r.Enabled = true
 	r.Actions_ = []string{
 		"uuid",
 		"20ms",
@@ -176,6 +178,7 @@ func TestEvaluateRulesWithFor(t *testing.T) {
 	l := New(savedState, syncer)
 	r := l.AddRule("test")
 	r.Expression_ = `devices["node.id"].on == true`
+	r.Enabled = true
 	r.For_ = stypes.Duration(time.Millisecond * 20)
 	r.Actions_ = []string{
 		"uuid",
@@ -228,6 +231,7 @@ func TestEvaluateRulesWithForTimeout(t *testing.T) {
 	l := New(savedState, syncer)
 	r := l.AddRule("test")
 	r.Expression_ = `devices["node.id"].on == true`
+	r.Enabled = true
 	r.For_ = stypes.Duration(time.Millisecond * 40)
 	r.Actions_ = []string{
 		"uuid",
@@ -279,6 +283,7 @@ func TestEvaluateRulesWithForFlapping(t *testing.T) {
 	l := New(savedState, syncer)
 	r := l.AddRule("test")
 	r.Expression_ = `devices["node.id"].on == true`
+	r.Enabled = true
 	r.For_ = stypes.Duration(time.Millisecond * 40)
 	r.Actions_ = []string{
 		"uuid",
