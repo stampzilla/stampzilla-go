@@ -72,10 +72,12 @@ class FormModal extends React.Component {
   render() {
     return (
       <Modal isOpen={this.props.isOpen} toggle={this.props.onClose} wrapClassName="bootstrap-global" className={styles.formModal}>
-        {this.props.title &&
+        {this.props.title
+        && (
         <ModalHeader toggle={this.props.onClose}>
           {this.props.title}
         </ModalHeader>
+        )
         }
         <ModalBody>
           {!this.props.prepend && this.props.children}
@@ -102,7 +104,8 @@ class FormModal extends React.Component {
           {this.props.footer}
           <Button color="primary" disabled={!this.state.isValid || this.props.disabled} onClick={() => this.submitButton.click()}>
             {this.props.submitButton || 'Create'}
-          </Button>{' '}
+          </Button>
+          {' '}
         </ModalFooter>
       </Modal>
     );

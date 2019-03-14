@@ -3,8 +3,8 @@ import { connect } from 'react-redux';
 import { withRouter } from 'react-router';
 
 import { update } from '../ducks/app';
-import Link from '../components/Link';
-import SocketModal from '../components/SocketModal';
+import Link from './Link';
+import SocketModal from './SocketModal';
 
 class App extends Component {
   state = {
@@ -22,8 +22,7 @@ class App extends Component {
         <SocketModal
           visible={socketModal}
           onClose={() => this.setState({ socketModal: false })}
-          onChange={({ hostname, port }) =>
-            dispatch(update({ url: `ws://${hostname}:${port}/ws` }))
+          onChange={({ hostname, port }) => dispatch(update({ url: `ws://${hostname}:${port}/ws` }))
           }
         />
         <nav className="main-header navbar navbar-expand bg-white navbar-light border-bottom">
@@ -96,6 +95,7 @@ class App extends Component {
             <div className="p-4 bg-danger">
               <button
                 className="btn btn-secondary float-right"
+                type="button"
                 style={{ marginTop: '-8px' }}
                 onClick={() => this.setState({ socketModal: true })}
               >

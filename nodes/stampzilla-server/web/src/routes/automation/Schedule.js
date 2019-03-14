@@ -70,9 +70,9 @@ class Automation extends Component {
   componentWillReceiveProps(nextProps) {
     const { schedules, match } = nextProps;
     if (
-      !this.props ||
-      match.params.uuid !== this.props.match.params.uuid ||
-      schedules !== this.props.schedules
+      !this.props
+      || match.params.uuid !== this.props.match.params.uuid
+      || schedules !== this.props.schedules
     ) {
       const schedule = schedules.find(n => n.get('uuid') === match.params.uuid);
       this.setState({
@@ -162,7 +162,9 @@ class Automation extends Component {
             <pre>
               {Object.keys(params).map(key => (
                 <div key={key}>
-                  {key}: <strong>{JSON.stringify(params[key])}</strong>
+                  {key}
+:
+                  <strong>{JSON.stringify(params[key])}</strong>
                 </div>
               ))}
             </pre>

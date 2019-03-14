@@ -35,8 +35,7 @@ class Nodes extends Component {
                 </thead>
                 <tbody>
                   {nodes
-                    .sort((a, b) =>
-                      (a.get('name') || '').localeCompare(b.get('name')))
+                    .sort((a, b) => (a.get('name') || '').localeCompare(b.get('name')))
                     .map(n => (
                       <tr
                         key={n.get('uuid')}
@@ -85,6 +84,7 @@ class Nodes extends Component {
                         </td>
                       </tr>
                     ))
+                    .valueSeq()
                     .toArray()}
                 </tbody>
               </table>

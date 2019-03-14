@@ -1,6 +1,9 @@
 import React, { Component } from 'react';
 import {
-  mdiLightbulb, mdiPower, mdiPulse, mdiVolumeHigh,
+  mdiLightbulb,
+  mdiPower,
+  mdiPulse,
+  mdiVolumeHigh,
 } from '@mdi/js';
 import Form from 'react-jsonschema-form';
 import Icon from '@mdi/react';
@@ -90,7 +93,8 @@ class Device extends Component {
   };
 
   componentWillReceiveProps(props) {
-    if (!this.state.modalIsOpen) {
+    const { modalIsOpen } = this.state;
+    if (!modalIsOpen) {
       this.setState({
         formData: {
           alias: props.device.get('alias'),
@@ -145,9 +149,8 @@ class Device extends Component {
     const { modalIsOpen, isValid, formData } = this.state;
     const { device } = this.props;
 
-    const sortedTraits =
-      device.get('traits') &&
-      device.get('traits').sort((a, b) => {
+    const sortedTraits = device.get('traits')
+      && device.get('traits').sort((a, b) => {
         const prioA = traitPriority.findIndex(trait => trait === a);
         const prioB = traitPriority.findIndex(trait => trait === b);
         if (prioA < 0 || prioB < 0) {
@@ -162,6 +165,7 @@ class Device extends Component {
     const type = device.get('type') || guessType(device);
     const icon = icons[type];
 
+    /* eslint-disable react/no-array-index-key */
     return (
       <div
         className={classnames({
@@ -198,10 +202,10 @@ class Device extends Component {
               onChange={this.onChange(device, primaryTrait)}
             />
           )}
-          {!primaryTrait &&
-            device.get('state').size &&
-            device.get('state').size === 1 &&
-            device
+          {!primaryTrait
+            && device.get('state').size
+            && device.get('state').size === 1
+            && device
               .get('state')
               .map((v, k) => (
                 <div className="d-flex ml-3" key={k}>
@@ -211,11 +215,12 @@ class Device extends Component {
                   </div>
                 </div>
               ))
+              .valueSeq()
               .toArray()}
         </div>
         <div className="d-flex flex-column ml-4">
-          {secondaryTraits &&
-            secondaryTraits.map(trait => (
+          {secondaryTraits
+            && secondaryTraits.map(trait => (
               <div className="d-flex ml-3" key={trait}>
                 <div className="mr-2">{traitNames[trait] || trait}</div>
                 <div className="flex-grow-1 d-flex align-items-center">
@@ -231,10 +236,10 @@ class Device extends Component {
                 </div>
               </div>
             ))}
-          {!primaryTrait &&
-            device.get('state').size &&
-            device.get('state').size > 1 &&
-            device
+          {!primaryTrait
+            && device.get('state').size
+            && device.get('state').size > 1
+            && device
               .get('state')
               .map((v, k) => (
                 <div className="d-flex ml-3" key={k}>
@@ -244,6 +249,7 @@ class Device extends Component {
                   </div>
                 </div>
               ))
+              .valueSeq()
               .toArray()}
         </div>
 

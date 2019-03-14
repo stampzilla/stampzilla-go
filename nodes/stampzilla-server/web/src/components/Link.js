@@ -35,22 +35,25 @@ class Link extends React.Component {
     const active = localTo && activeClass && location.pathname === localTo ? activeClass : null;
 
     return (
-      isLocal ?
-        <RouterLink
-          to={localTo}
-          className={classnames([className, active])}
-          onClick={onClick}
-        >
-          {children}
-        </RouterLink>
-        :
-        <a
-          href={to}
-          className={className}
-          onClick={onClick}
-        >
-          {children}
-        </a>
+      isLocal
+        ? (
+          <RouterLink
+            to={localTo}
+            className={classnames([className, active])}
+            onClick={onClick}
+          >
+            {children}
+          </RouterLink>
+        )
+        : (
+          <a
+            href={to}
+            className={className}
+            onClick={onClick}
+          >
+            {children}
+          </a>
+        )
     );
   }
 }
