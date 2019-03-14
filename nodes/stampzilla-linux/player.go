@@ -106,8 +106,9 @@ func (player *Player) makePlaylist() []string {
 }
 
 func (player *Player) Worker() {
+	logrus.Debugf("Worker %s START", player.Name)
 	defer player.wg.Done()
-	defer logrus.Warnf("Worker %s EXIT", player.Name)
+	defer logrus.Debugf("Worker %s EXIT", player.Name)
 
 	dev := &devices.Device{
 		Name:   "Player " + player.Name,

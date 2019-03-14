@@ -30,6 +30,8 @@ func main() {
 			return changeDpmsState(":"+devID[1], state["on"] == true)
 		case "player":
 			return commandPlayer(devID[1], state["on"] == true)
+		case "audio":
+			return commandVolume(state)
 		}
 
 		return nil
@@ -43,6 +45,7 @@ func main() {
 
 	go startMonitorDpms()
 	go monitorHealth()
+	go monitorVolume()
 
 	n.Wait()
 }
