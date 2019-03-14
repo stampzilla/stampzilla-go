@@ -3,7 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+	"math/rand"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -18,10 +21,11 @@ type Player struct {
 	Config PlayerConfig
 	Name   string
 
-	command chan string
-	ctx     context.Context
-	cancel  func()
-	wg      sync.WaitGroup
+	playlist []string
+	command  chan string
+	ctx      context.Context
+	cancel   func()
+	wg       sync.WaitGroup
 }
 
 type PlayerConfig struct {
@@ -80,6 +84,27 @@ func (player *Player) stop() {
 	player.wg.Wait()
 }
 
+func (player *Player) makePlaylist() []string {
+	playlist := make([]string, 0)
+	files, err := filepath.Glob(player.Config.Dir + "/*.mp3")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if player.Config.Shuffle {
+		r := rand.New(rand.NewSource(time.Now().Unix()))
+		for _, i := range r.Perm(len(files)) {
+			playlist = append(playlist, files[i])
+		}
+	} else {
+		for _, f := range files {
+			playlist = append(playlist, f)
+		}
+	}
+
+	return playlist
+}
+
 func (player *Player) Worker() {
 	defer player.wg.Done()
 	defer logrus.Warnf("Worker %s EXIT", player.Name)
@@ -97,19 +122,36 @@ func (player *Player) Worker() {
 	n.AddOrUpdate(dev)
 
 	for {
-		// Not playing... (wait for shudown or command)
-		select {
-		case <-player.ctx.Done():
-			return
-		case cmd := <-player.command:
-			if cmd != "play" {
-				continue
+		if dev.State["on"] != true {
+			// Not playing... (wait for shudown or command)
+			select {
+			case <-player.ctx.Done():
+				return
+			case cmd := <-player.command:
+				if cmd != "play" {
+					continue
+				}
 			}
 		}
 
-		done, streamer, err := player.playFile("songs/jingle.mp3")
+		if len(player.playlist) == 0 {
+			logrus.Info("Making new playlist")
+			player.playlist = player.makePlaylist()
+		}
+		if len(player.playlist) == 0 {
+			logrus.Warn("Playlist is empty, skipping")
+			dev.State["on"] = false
+			n.AddOrUpdate(dev)
+			continue
+		}
+
+		nextSong := player.playlist[0]
+		player.playlist = player.playlist[1:]
+
+		done, streamer, err := player.playFile(nextSong)
 		if err != nil {
 			logrus.Errorf("Playback failed: %s", err.Error())
+			continue
 		}
 
 		dev.State["on"] = true
@@ -126,10 +168,14 @@ func (player *Player) Worker() {
 				if cmd != "stop" {
 					continue
 				}
-				streamer.Close()
+				if streamer != nil {
+					streamer.Close()
+				}
 			case <-done:
-				dev.State["on"] = false
-				n.AddOrUpdate(dev)
+				if player.Config.Mode == "single" {
+					dev.State["on"] = false
+					n.AddOrUpdate(dev)
+				}
 
 				break L
 			}
