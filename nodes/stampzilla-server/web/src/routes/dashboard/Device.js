@@ -198,7 +198,20 @@ class Device extends Component {
               onChange={this.onChange(device, primaryTrait)}
             />
           )}
-          {!primaryTrait && <span>{JSON.stringify(device.get('state'))}</span>}
+          {!primaryTrait &&
+            device.get('state').size &&
+            device.get('state').size === 1 &&
+            device
+              .get('state')
+              .map((v, k) => (
+                <div className="d-flex ml-3" key={k}>
+                  <div className="mr-2">{k}</div>
+                  <div className="flex-grow-1 text-right">
+                    {JSON.stringify(v)}
+                  </div>
+                </div>
+              ))
+              .toArray()}
         </div>
         <div className="d-flex flex-column ml-4">
           {secondaryTraits &&
@@ -218,6 +231,20 @@ class Device extends Component {
                 </div>
               </div>
             ))}
+          {!primaryTrait &&
+            device.get('state').size &&
+            device.get('state').size > 1 &&
+            device
+              .get('state')
+              .map((v, k) => (
+                <div className="d-flex ml-3" key={k}>
+                  <div className="mr-2">{k}</div>
+                  <div className="flex-grow-1 text-right">
+                    {JSON.stringify(v)}
+                  </div>
+                </div>
+              ))
+              .toArray()}
         </div>
 
         <Modal
