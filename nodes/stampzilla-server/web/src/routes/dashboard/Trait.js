@@ -53,6 +53,7 @@ class Trait extends Component {
             <label htmlFor={`switch-${id}`} className="mb-0" />
           </span> */
       case 'Brightness':
+      case 'Volume':
         return (
           <AlphaPicker
             style={{
@@ -106,7 +107,7 @@ class Trait extends Component {
         );
       }
       default:
-        return null;
+        return <div style={{ textAlign: 'right', flex: 1 }}>{state}</div>;
     }
   }
 

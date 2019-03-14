@@ -1,5 +1,7 @@
 import React, { Component } from 'react';
-import { mdiLightbulb, mdiPower, mdiPulse } from '@mdi/js';
+import {
+  mdiLightbulb, mdiPower, mdiPulse, mdiVolumeHigh,
+} from '@mdi/js';
 import Form from 'react-jsonschema-form';
 import Icon from '@mdi/react';
 import Modal from 'react-modal';
@@ -15,20 +17,23 @@ export const traitPriority = ['OnOff', 'Brightness', 'ColorSetting'];
 
 export const traitNames = {
   Brightness: 'Brightness',
-  OnOff: 'Power',
   ColorSetting: 'Temperature',
+  OnOff: 'Power',
+  Volume: 'Volume',
 };
 
 export const traitStates = {
   Brightness: 'brightness',
-  OnOff: 'on',
   ColorSetting: 'temperature',
+  OnOff: 'on',
+  Volume: 'volume',
 };
 
 const icons = {
   light: mdiLightbulb,
   switch: mdiPower,
   sensor: mdiPulse,
+  audio: mdiVolumeHigh,
 };
 
 const guessType = (device) => {
@@ -38,6 +43,9 @@ const guessType = (device) => {
     return 'sensor';
   }
 
+  if (traits.indexOf('Volume') !== -1) {
+    return 'audio';
+  }
   if (traits.indexOf('Brightness') !== -1) {
     return 'light';
   }
@@ -142,6 +150,9 @@ class Device extends Component {
       device.get('traits').sort((a, b) => {
         const prioA = traitPriority.findIndex(trait => trait === a);
         const prioB = traitPriority.findIndex(trait => trait === b);
+        if (prioA < 0 || prioB < 0) {
+          return prioB - prioA;
+        }
         return prioA - prioB;
       });
 
@@ -180,10 +191,10 @@ class Device extends Component {
             <Trait
               trait={primaryTrait}
               device={device}
-              state={
-                traitStates[primaryTrait] &&
-                device.getIn(['state', traitStates[primaryTrait]])
-              }
+              state={device.getIn([
+                'state',
+                traitStates[primaryTrait] || primaryTrait.toLowerCase(),
+              ])}
               onChange={this.onChange(device, primaryTrait)}
             />
           )}
@@ -198,10 +209,10 @@ class Device extends Component {
                   <Trait
                     trait={trait}
                     device={device}
-                    state={
-                      traitStates[trait] &&
-                      device.getIn(['state', traitStates[trait]])
-                    }
+                    state={device.getIn([
+                      'state',
+                      traitStates[trait] || trait.toLowerCase(),
+                    ])}
                     onChange={this.onChange(device, trait)}
                   />
                 </div>
