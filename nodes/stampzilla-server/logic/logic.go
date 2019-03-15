@@ -158,6 +158,9 @@ func (l *Logic) updateDevice(dev *devices.Device) {
 // EvaluateRules loops over each rule and run evaluation on them
 func (l *Logic) EvaluateRules(ctx context.Context) {
 	for _, rule := range l.Rules {
+		if !rule.Enabled {
+			continue
+		}
 		evaluation := l.evaluateRule(rule)
 		if rule.For_ == 0 {
 			l.runNow(rule, evaluation)
