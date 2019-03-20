@@ -20,6 +20,7 @@ func monitorVolume() {
 			"volume": 0,
 		},
 	}
+	added := false
 
 	for {
 		vol, err := volume.GetVolume()
@@ -34,9 +35,14 @@ func monitorVolume() {
 			return
 		}
 
-		dev.State["on"] = !mute
-		dev.State["volume"] = float64(vol) / 100
-		n.AddOrUpdate(dev)
+		if !added {
+			n.AddOrUpdate(dev)
+		}
+
+		newState := make(devices.State)
+		newState["on"] = !mute
+		newState["volume"] = float64(vol) / 100
+		n.UpdateState(dev.ID.ID, newState)
 		<-time.After(time.Second * 1)
 	}
 }

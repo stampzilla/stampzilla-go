@@ -141,8 +141,9 @@ func (player *Player) Worker() {
 		}
 		if len(player.playlist) == 0 {
 			logrus.Warn("Playlist is empty, skipping")
-			dev.State["on"] = false
-			n.AddOrUpdate(dev)
+			newState := make(devices.State)
+			newState["on"] = false
+			n.UpdateState(dev.ID.ID, newState)
 			continue
 		}
 
@@ -155,8 +156,9 @@ func (player *Player) Worker() {
 			continue
 		}
 
-		dev.State["on"] = true
-		n.AddOrUpdate(dev)
+		newState := make(devices.State)
+		newState["on"] = true
+		n.UpdateState(dev.ID.ID, newState)
 
 		// Playing.. (wait for shutdown, command or playback done)
 	L:
@@ -174,8 +176,9 @@ func (player *Player) Worker() {
 				}
 			case <-done:
 				if player.Config.Mode == "single" {
-					dev.State["on"] = false
-					n.AddOrUpdate(dev)
+					newState := make(devices.State)
+					newState["on"] = false
+					n.UpdateState(dev.ID.ID, newState)
 				}
 
 				break L

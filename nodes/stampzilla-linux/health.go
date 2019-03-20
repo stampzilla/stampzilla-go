@@ -14,6 +14,7 @@ func monitorHealth() {
 		Online: true,
 		State:  devices.State{},
 	}
+	n.AddOrUpdate(dev)
 
 	for {
 		uptime := sigar.Uptime{}
@@ -21,12 +22,13 @@ func monitorHealth() {
 		avg := sigar.LoadAverage{}
 		avg.Get()
 
-		dev.State["uptime"] = uptime.Format()
-		dev.State["load_1"] = avg.One
-		dev.State["load_5"] = avg.Five
-		dev.State["load_15"] = avg.Fifteen
+		newState := make(devices.State)
+		newState["uptime"] = uptime.Format()
+		newState["load_1"] = avg.One
+		newState["load_5"] = avg.Five
+		newState["load_15"] = avg.Fifteen
+		n.UpdateState(dev.ID.ID, newState)
 
-		n.AddOrUpdate(dev)
 		<-time.After(time.Second * 1)
 	}
 }
