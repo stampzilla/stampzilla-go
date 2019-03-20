@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -12,6 +13,12 @@ import (
 )
 
 var dest = "dist"
+
+// Release is read from the RELEASE file and contains options for the build
+type Release struct {
+	Cgo  bool     `json:"cgo"`
+	Arch []string `json:"arch"`
+}
 
 func main() {
 	files, err := ioutil.ReadDir("nodes")
@@ -31,21 +38,33 @@ func main() {
 		}
 
 		log.Println("found RELEASE file", dir.Name())
-		build(path)
+
+		release, _ := loadReleaseFromFile(filepath.Join("nodes", dir.Name(), "RELEASE"))
+		build(path, release)
 	}
 
 	fmt.Println("Building stampzilla cli")
-	build("stampzilla")
+	build("stampzilla", nil)
 }
 
-func build(path string) {
+func build(path string, release *Release) {
 	for _, goos := range []string{"linux"} {
-		for _, goarch := range []string{"arm", "arm64", "amd64"} {
+		arch := []string{"amd64", "arm", "arm64"}
+		if release != nil && len(release.Arch) > 0 {
+			arch = release.Arch
+		}
+
+		for _, goarch := range arch {
 			binName := filepath.Base(fmt.Sprintf("%s-%s-%s", path, goos, goarch))
+			cgo := "0"
+			if release != nil && release.Cgo {
+				cgo = "1"
+			}
+
 			fmt.Printf("building %s...\n", binName)
 			cmd := exec.Command("go", getArgs(path, binName)...)
 			cmd.Env = os.Environ()
-			cmd.Env = append(cmd.Env, "GOOS="+goos, "GOARCH="+goarch, "CGO_ENABLED=0")
+			cmd.Env = append(cmd.Env, "GOOS="+goos, "GOARCH="+goarch, "CGO_ENABLED="+cgo)
 			stdoutStderr, err := cmd.CombinedOutput()
 			if err != nil {
 				log.Println(string(stdoutStderr))
@@ -70,4 +89,19 @@ func getArgs(path, binName string) []string {
 	}
 	m = append(m, filesToBuild...)
 	return m
+}
+
+func loadReleaseFromFile(file string) (*Release, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	var release *Release
+
+	decoder := json.NewDecoder(f)
+	err = decoder.Decode(&release)
+
+	return release, err
 }
