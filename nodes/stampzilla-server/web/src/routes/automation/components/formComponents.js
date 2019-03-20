@@ -339,6 +339,7 @@ export class RuleConditions extends React.Component {
                   </td>
                 </tr>
               ))
+              .valueSeq()
               .toArray()}
           </tbody>
         </table>

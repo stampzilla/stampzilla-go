@@ -92,6 +92,7 @@ class Scene extends React.Component {
     }
     this.onStateChange(states);
   };
+
   onToggleTrait = (device, trait) => (checked) => {
     const states = (this.props && this.props.states) || {};
     if (checked) {
@@ -146,15 +147,13 @@ class Scene extends React.Component {
         </div>
         <div className="devices">
           {useableDevices.map((dev) => {
-            const sortedTraits =
-              dev.get('traits') &&
-              dev.get('traits').sort((a, b) => {
+            const sortedTraits = dev.get('traits')
+              && dev.get('traits').sort((a, b) => {
                 const prioA = traitPriority.findIndex(trait => trait === a);
                 const prioB = traitPriority.findIndex(trait => trait === b);
                 return prioA - prioB;
               });
-            const selected =
-              states && Object.keys(states).indexOf(dev.get('id')) !== -1;
+            const selected = states && Object.keys(states).indexOf(dev.get('id')) !== -1;
 
             return (
               <div
@@ -172,17 +171,17 @@ class Scene extends React.Component {
                   {dev.get('name')}
                 </div>
 
-                {sortedTraits &&
-                  sortedTraits.map(trait => (
+                {sortedTraits
+                  && sortedTraits.map(trait => (
                     <div className="d-flex ml-3 trait" key={trait}>
                       {checkBox({
                         device: dev,
                         trait: traitStates[trait],
                         checked:
-                          states &&
-                          states[dev.get('id')] &&
-                          states[dev.get('id')][traitStates[trait]] !==
-                            undefined,
+                          states
+                          && states[dev.get('id')]
+                          && states[dev.get('id')][traitStates[trait]]
+                            !== undefined,
                         onChange: this.onToggleTrait(dev, trait),
                       })}
                       <div className="mr-2">{traitNames[trait] || trait}</div>
@@ -191,13 +190,13 @@ class Scene extends React.Component {
                           trait={trait}
                           device={dev}
                           state={
-                            states &&
-                            states[dev.get('id')] &&
-                            states[dev.get('id')][traitStates[trait]] !==
-                              undefined
+                            states
+                            && states[dev.get('id')]
+                            && states[dev.get('id')][traitStates[trait]]
+                              !== undefined
                               ? states[dev.get('id')][traitStates[trait]]
-                              : traitStates[trait] &&
-                                dev.getIn(['state', traitStates[trait]])
+                              : traitStates[trait]
+                                && dev.getIn(['state', traitStates[trait]])
                           }
                           onChange={this.onChangeTrait(dev, trait)}
                         />

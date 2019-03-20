@@ -14,7 +14,8 @@ const valueToText = (value, savedstates) => {
   if (value && value.length === 36) {
     return (
       <React.Fragment>
-        <small>Scene</small>{' '}
+        <small>Scene</small>
+        {' '}
         <strong>{savedstates.getIn([value, 'name']) || value}</strong>
       </React.Fragment>
     );
@@ -23,7 +24,9 @@ const valueToText = (value, savedstates) => {
   if (value && value.length > 0) {
     return (
       <React.Fragment>
-        <small>Delay for</small> <strong>{value}</strong>
+        <small>Delay for</small>
+        {' '}
+        <strong>{value}</strong>
       </React.Fragment>
     );
   }
@@ -184,18 +187,41 @@ class SavedStatePicker extends React.Component {
                       className="form-control"
                       placeholder="ex. 2h15m"
                       value={value || ''}
-                      onChange={event =>
-                        this.setState({ value: event.target.value })
+                      onChange={event => this.setState({ value: event.target.value })
                       }
                     />
                     <small className="form-text text-muted">
                       ParseDuration parses a duration string. A duration string
                       is a sequence of decimal numbers, each with optional
-                      fraction and a unit suffix, such as <strong>300ms</strong>
-                      , <strong>1.5h</strong> or <strong>2h45m</strong>. Valid
-                      time units are <strong>n</strong>, <strong>us</strong> (or{' '}
-                      <strong>µs</strong>), <strong>ms</strong>,
-                      <strong>s</strong>, <strong>m</strong>, <strong>h</strong>
+                      fraction and a unit suffix, such as
+                      {' '}
+                      <strong>300ms</strong>
+                      ,
+                      {' '}
+                      <strong>1.5h</strong>
+                      {' '}
+or
+                      {' '}
+                      <strong>2h45m</strong>
+. Valid
+                      time units are
+                      {' '}
+                      <strong>n</strong>
+,
+                      {' '}
+                      <strong>us</strong>
+                      {' '}
+(or
+                      {' '}
+                      <strong>µs</strong>
+),
+                      <strong>ms</strong>
+,
+                      <strong>s</strong>
+,
+                      <strong>m</strong>
+,
+                      <strong>h</strong>
                       .
                     </small>
                   </div>
@@ -251,10 +277,9 @@ class SavedStatePicker extends React.Component {
                       className="form-control"
                       placeholder=""
                       value={(scene && scene.name) || ''}
-                      onChange={event =>
-                        this.setState({
-                          scene: { ...scene, name: event.target.value },
-                        })
+                      onChange={event => this.setState({
+                        scene: { ...scene, name: event.target.value },
+                      })
                       }
                     />
                     <small className="form-text text-muted">

@@ -5,9 +5,9 @@ import { render } from 'react-dom';
 import React from 'react';
 
 import './index.scss';
+import ErrorBoundary from './components/ErrorBoundary';
 import Wrapper from './components/Wrapper';
 import store from './store';
-import ErrorBoundary from './components/ErrorBoundary';
 
 render(
   <Provider store={store}>
@@ -18,15 +18,14 @@ render(
   document.getElementById('app'),
 );
 
+/* eslint-disable no-undef */
 if (NODE_ENV === 'production') {
-  // eslint-disable-line no-undef
   (function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
         .register('service-worker.js', { scope: '/' })
         .then(() => console.log('Service Worker registered successfully.'))
-        .catch(error =>
-          console.log('Service Worker registration failed:', error));
+        .catch(error => console.log('Service Worker registration failed:', error));
     }
   }());
 }

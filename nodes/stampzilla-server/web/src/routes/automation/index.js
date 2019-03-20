@@ -59,8 +59,8 @@ class Automation extends Component {
                   </tr>
                 </thead>
                 <tbody>
-                  {rules &&
-                    rules
+                  {rules
+                    && rules
                       .map(n => (
                         <tr
                           key={n.get('uuid')}
@@ -71,6 +71,7 @@ class Automation extends Component {
                           <td>{n.get('name') || n.get('uuid')}</td>
                         </tr>
                       ))
+                      .valueSeq()
                       .toArray()}
                 </tbody>
               </table>
@@ -95,8 +96,8 @@ class Automation extends Component {
                   </tr>
                 </thead>
                 <tbody>
-                  {schedules &&
-                    schedules
+                  {schedules
+                    && schedules
                       .map(n => (
                         <tr
                           key={n.get('uuid')}

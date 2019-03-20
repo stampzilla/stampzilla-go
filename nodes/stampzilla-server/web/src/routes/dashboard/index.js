@@ -33,8 +33,8 @@ class Nodes extends Component {
             >
               <Card
                 title={
-                  nodes.getIn([nodeId, 'name']) ||
-                  `New node of type ${nodes.getIn([nodeId, 'type'])}`
+                  nodes.getIn([nodeId, 'name'])
+                  || `New node of type ${nodes.getIn([nodeId, 'type'])}`
                 }
                 bodyClassName="p-3"
                 className="mb-0 flex-grow-1"

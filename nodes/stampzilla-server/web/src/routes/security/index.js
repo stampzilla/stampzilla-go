@@ -7,11 +7,10 @@ import Card from '../../components/Card';
 
 const typeOrder = ['ca', 'server', 'client'];
 
-const sortPrio = usages =>
-  usages
-    .map(usage => typeOrder.indexOf(usage))
-    .sort()
-    .first();
+const sortPrio = usages => usages
+  .map(usage => typeOrder.indexOf(usage))
+  .sort()
+  .first();
 
 class Security extends Component {
   onClickNode = uuid => () => {
@@ -56,18 +55,21 @@ class Security extends Component {
                       .map(n => (
                         <tr key={n.get('connection')}>
                           <td>
-                            {n.get('identity').length !== 36 &&
-                              n.get('identity')}
-                            {n.get('identity').length === 36 &&
-                              ((n.getIn(['subject', 'organizational_unit']) &&
-                                n
+                            {n.get('identity').length !== 36
+                              && n.get('identity')}
+                            {n.get('identity').length === 36
+                              && ((n.getIn(['subject', 'organizational_unit'])
+                                && n
                                   .getIn(['subject', 'organizational_unit'])
-                                  .join(' -> ')) ||
-                                n.get('identity'))}
+                                  .join(' -> '))
+                                || n.get('identity'))}
                           </td>
                           <td>
-                            {connections.getIn([n.get('connection'), 'type'])} (
-                            {n.get('type')})
+                            {connections.getIn([n.get('connection'), 'type'])}
+                            {' '}
+(
+                            {n.get('type')}
+)
                           </td>
                           <td>
                             {connections.getIn([
@@ -77,6 +79,7 @@ class Security extends Component {
                           </td>
                           <td className="text-right">
                             <button
+                              type="button"
                               className="btn btn-success"
                               onClick={this.onClickAccept(n.get('connection'))}
                             >
@@ -85,6 +88,7 @@ class Security extends Component {
                           </td>
                         </tr>
                       ))
+                      .valueSeq()
                       .toArray()}
                   </tbody>
                 </table>
@@ -110,29 +114,27 @@ class Security extends Component {
                 <tbody>
                   {certificates
                     .sort(
-                      (a, b) =>
-                        sortPrio(a.get('usage')) - sortPrio(b.get('usage')) ||
-                        a.get('serial').localeCompare(b.get('serial')),
+                      (a, b) => sortPrio(a.get('usage')) - sortPrio(b.get('usage'))
+                        || a.get('serial').localeCompare(b.get('serial')),
                     )
                     .map(n => (
                       <tr key={n.get('serial')}>
                         <td>{n.get('serial')}</td>
                         <td>
-                          {n.get('commonName').length !== 36 &&
-                            n.get('commonName')}
-                          {n.get('commonName').length === 36 &&
-                            ((n.getIn(['subject', 'organizational_unit']) &&
-                              n
+                          {n.get('commonName').length !== 36
+                            && n.get('commonName')}
+                          {n.get('commonName').length === 36
+                            && ((n.getIn(['subject', 'organizational_unit'])
+                              && n
                                 .getIn(['subject', 'organizational_unit'])
-                                .join(' -> ')) ||
-                              n.get('commonName'))}
+                                .join(' -> '))
+                              || n.get('commonName'))}
                         </td>
                         <td>
                           {n
                             .get('usage')
                             .sort(
-                              (a, b) =>
-                                typeOrder.indexOf(a) - typeOrder.indexOf(b),
+                              (a, b) => typeOrder.indexOf(a) - typeOrder.indexOf(b),
                             )
                             .join(', ')}
                         </td>
@@ -144,6 +146,7 @@ class Security extends Component {
                         <td>{n.getIn(['fingerprints', 'sha1'])}</td>
                         <td className="text-right">
                           <button
+                            type="button"
                             className="btn btn-danger"
                             onClick={this.onClickRevoke(n.get('serial'))}
                           >
@@ -152,6 +155,7 @@ class Security extends Component {
                         </td>
                       </tr>
                     ))
+                    .valueSeq()
                     .toArray()}
                 </tbody>
               </table>

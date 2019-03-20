@@ -15,15 +15,17 @@ const Wrapper = (props) => {
   return (
     <React.Fragment>
       <Websocket />
-      {!secure &&
-        <Landing />
+      {!secure
+        && <Landing />
       }
-      {secure &&
+      {secure
+      && (
       <Router>
         <App>
           <Routes />
         </App>
       </Router>
+      )
       }
     </React.Fragment>
   );

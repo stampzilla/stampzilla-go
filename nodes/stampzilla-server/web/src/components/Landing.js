@@ -5,7 +5,7 @@ import Url from 'url';
 import classnames from 'classnames';
 
 import { update } from '../ducks/app';
-import SocketModal from '../components/SocketModal';
+import SocketModal from './SocketModal';
 
 class Landing extends Component {
   state = {
@@ -20,18 +20,17 @@ class Landing extends Component {
         'tlsPort',
       )}/`;
 
-      const check = () =>
-        get(url)
-          .then(() => {
-            const socketUrl = Url.format({
-              protocol: 'wss:',
-              hostname: serverUrl.hostname,
-              port: props.server.get('tlsPort'),
-              pathname: '/ws',
-            });
-            props.dispatch(update({ url: socketUrl }));
-          })
-          .catch(() => {});
+      const check = () => get(url)
+        .then(() => {
+          const socketUrl = Url.format({
+            protocol: 'wss:',
+            hostname: serverUrl.hostname,
+            port: props.server.get('tlsPort'),
+            pathname: '/ws',
+          });
+          props.dispatch(update({ url: socketUrl }));
+        })
+        .catch(() => {});
       clearTimeout(this.checker);
       this.checker = setInterval(check, 1000);
       check();
@@ -63,14 +62,14 @@ class Landing extends Component {
         <SocketModal
           visible={socketModal}
           onClose={() => this.setState({ socketModal: false })}
-          onChange={({ hostname, port }) =>
-            dispatch(update({ url: `ws://${hostname}:${port}/ws` }))
+          onChange={({ hostname, port }) => dispatch(update({ url: `ws://${hostname}:${port}/ws` }))
           }
         />
         {connected === false && (
           <div className="p-4 bg-danger">
             Not connected!
             <button
+              type="button"
               className="btn btn-secondary float-right"
               style={{ marginTop: '-8px' }}
               onClick={() => this.setState({ socketModal: true })}
@@ -89,11 +88,17 @@ class Landing extends Component {
               <h2>{server.get('name') || '-'}</h2>
 
               <pre>
-                Hostname: {url.hostname}
+                Hostname:
+                {' '}
+                {url.hostname}
                 <br />
-                HTTP Port: {server.get('port')}
+                HTTP Port:
+                {' '}
+                {server.get('port')}
                 <br />
-                TLS port: {server.get('tlsPort')}
+                TLS port:
+                {' '}
+                {server.get('tlsPort')}
               </pre>
 
               <a
@@ -109,6 +114,7 @@ class Landing extends Component {
               </a>
 
               <button
+                type="button"
                 className="btn btn-primary mt-4"
                 disabled={!server.get('tlsPort')}
                 onClick={this.onGoSecureClick()}

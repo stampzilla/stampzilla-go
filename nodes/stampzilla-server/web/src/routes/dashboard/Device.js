@@ -1,5 +1,10 @@
 import React, { Component } from 'react';
-import { mdiLightbulb, mdiPower, mdiPulse } from '@mdi/js';
+import {
+  mdiLightbulb,
+  mdiPower,
+  mdiPulse,
+  mdiVolumeHigh,
+} from '@mdi/js';
 import Form from 'react-jsonschema-form';
 import Icon from '@mdi/react';
 import Modal from 'react-modal';
@@ -15,20 +20,23 @@ export const traitPriority = ['OnOff', 'Brightness', 'ColorSetting'];
 
 export const traitNames = {
   Brightness: 'Brightness',
-  OnOff: 'Power',
   ColorSetting: 'Temperature',
+  OnOff: 'Power',
+  Volume: 'Volume',
 };
 
 export const traitStates = {
   Brightness: 'brightness',
-  OnOff: 'on',
   ColorSetting: 'temperature',
+  OnOff: 'on',
+  Volume: 'volume',
 };
 
 const icons = {
   light: mdiLightbulb,
   switch: mdiPower,
   sensor: mdiPulse,
+  audio: mdiVolumeHigh,
 };
 
 const guessType = (device) => {
@@ -38,6 +46,9 @@ const guessType = (device) => {
     return 'sensor';
   }
 
+  if (traits.indexOf('Volume') !== -1) {
+    return 'audio';
+  }
   if (traits.indexOf('Brightness') !== -1) {
     return 'light';
   }
@@ -82,7 +93,8 @@ class Device extends Component {
   };
 
   componentWillReceiveProps(props) {
-    if (!this.state.modalIsOpen) {
+    const { modalIsOpen } = this.state;
+    if (!modalIsOpen) {
       this.setState({
         formData: {
           alias: props.device.get('alias'),
@@ -137,11 +149,13 @@ class Device extends Component {
     const { modalIsOpen, isValid, formData } = this.state;
     const { device } = this.props;
 
-    const sortedTraits =
-      device.get('traits') &&
-      device.get('traits').sort((a, b) => {
+    const sortedTraits = device.get('traits')
+      && device.get('traits').sort((a, b) => {
         const prioA = traitPriority.findIndex(trait => trait === a);
         const prioB = traitPriority.findIndex(trait => trait === b);
+        if (prioA < 0 || prioB < 0) {
+          return prioB - prioA;
+        }
         return prioA - prioB;
       });
 
@@ -151,6 +165,7 @@ class Device extends Component {
     const type = device.get('type') || guessType(device);
     const icon = icons[type];
 
+    /* eslint-disable react/no-array-index-key */
     return (
       <div
         className={classnames({
@@ -180,33 +195,62 @@ class Device extends Component {
             <Trait
               trait={primaryTrait}
               device={device}
-              state={
-                traitStates[primaryTrait] &&
-                device.getIn(['state', traitStates[primaryTrait]])
-              }
+              state={device.getIn([
+                'state',
+                traitStates[primaryTrait] || primaryTrait.toLowerCase(),
+              ])}
               onChange={this.onChange(device, primaryTrait)}
             />
           )}
-          {!primaryTrait && <span>{JSON.stringify(device.get('state'))}</span>}
+          {!primaryTrait
+            && device.get('state').size
+            && device.get('state').size === 1
+            && device
+              .get('state')
+              .map((v, k) => (
+                <div className="d-flex ml-3" key={k}>
+                  <div className="mr-2">{k}</div>
+                  <div className="flex-grow-1 text-right">
+                    {JSON.stringify(v)}
+                  </div>
+                </div>
+              ))
+              .valueSeq()
+              .toArray()}
         </div>
         <div className="d-flex flex-column ml-4">
-          {secondaryTraits &&
-            secondaryTraits.map(trait => (
+          {secondaryTraits
+            && secondaryTraits.map(trait => (
               <div className="d-flex ml-3" key={trait}>
                 <div className="mr-2">{traitNames[trait] || trait}</div>
                 <div className="flex-grow-1 d-flex align-items-center">
                   <Trait
                     trait={trait}
                     device={device}
-                    state={
-                      traitStates[trait] &&
-                      device.getIn(['state', traitStates[trait]])
-                    }
+                    state={device.getIn([
+                      'state',
+                      traitStates[trait] || trait.toLowerCase(),
+                    ])}
                     onChange={this.onChange(device, trait)}
                   />
                 </div>
               </div>
             ))}
+          {!primaryTrait
+            && device.get('state').size
+            && device.get('state').size > 1
+            && device
+              .get('state')
+              .map((v, k) => (
+                <div className="d-flex ml-3" key={k}>
+                  <div className="mr-2">{k}</div>
+                  <div className="flex-grow-1 text-right">
+                    {JSON.stringify(v)}
+                  </div>
+                </div>
+              ))
+              .valueSeq()
+              .toArray()}
         </div>
 
         <Modal

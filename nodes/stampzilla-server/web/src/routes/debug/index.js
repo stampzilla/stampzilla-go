@@ -39,8 +39,8 @@ class Debug extends Component {
                   {connections
                     .sort((a, b) => {
                       if (
-                        a.getIn(['attributes', 'secure']) !==
-                        b.getIn(['attributes', 'secure'])
+                        a.getIn(['attributes', 'secure'])
+                        !== b.getIn(['attributes', 'secure'])
                       ) {
                         return a.getIn(['attributes', 'secure']) ? -1 : 1;
                       }
@@ -77,14 +77,15 @@ class Debug extends Component {
                         <td>{c.get('remoteAddr')}</td>
                         <td>{c.get('type')}</td>
                         <td>
-                          {c.getIn(['attributes', 'subscriptions']) &&
-                            c
+                          {c.getIn(['attributes', 'subscriptions'])
+                            && c
                               .getIn(['attributes', 'subscriptions'])
                               .sort()
                               .join(', ')}
                         </td>
                       </tr>
                     ))
+                    .valueSeq()
                     .toArray()}
                 </tbody>
               </table>

@@ -64,10 +64,12 @@ class Websocket extends Component {
       schedules,
     });
   };
+
   onClose = () => () => {
     this.props.dispatch(disconnected());
     this.subscriptions = {};
   };
+
   onMessage = () => (event) => {
     const { dispatch } = this.props;
     const parsed = JSON.parse(event.data);
