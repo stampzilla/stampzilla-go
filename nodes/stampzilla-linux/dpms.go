@@ -46,6 +46,7 @@ func monitorDpms(screen string) {
 			"on": false,
 		},
 	}
+	added := false
 
 	re := regexp.MustCompile("Monitor is (in )?([^ \n]+)")
 
@@ -61,11 +62,17 @@ func monitorDpms(screen string) {
 			return
 		}
 
+		if !added {
+			n.AddOrUpdate(dev)
+			added = true
+		}
+
 		status := re.FindStringSubmatch(string(out))
 		if len(status) > 2 {
-			dev.State["monitor_status"] = status[2]
-			dev.State["on"] = status[2] == "On"
-			n.AddOrUpdate(dev)
+			newState := make(devices.State)
+			newState["monitor_status"] = status[2]
+			newState["on"] = status[2] == "On"
+			n.UpdateState(dev.ID.ID, newState)
 		}
 		<-time.After(time.Second * 1)
 	}
