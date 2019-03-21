@@ -36,6 +36,11 @@ type PlayerConfig struct {
 }
 
 var players = make(map[string]*Player, 0)
+var sr = beep.SampleRate(44100)
+
+func init() {
+	speaker.Init(sr, sr.N(time.Second/10))
+}
 
 func startPlayers() {
 	for name, config := range config.Players {
@@ -198,9 +203,6 @@ func (player *Player) playFile(file string) (chan struct{}, beep.StreamSeekClose
 	if err != nil {
 		return nil, nil, err
 	}
-
-	sr := beep.SampleRate(44100)
-	speaker.Init(sr, sr.N(time.Second/10))
 
 	resampled := beep.Resample(4, format.SampleRate, sr, streamer)
 

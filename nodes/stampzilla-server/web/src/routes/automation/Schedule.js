@@ -61,8 +61,12 @@ class Automation extends Component {
 
     const { schedules, match } = props;
     const schedule = schedules.find(n => n.get('uuid') === match.params.uuid);
+    const formData = schedule && schedule.toJS();
+    if (formData && formData.actions == null) {
+      formData.actions = [];
+    }
     this.state = {
-      formData: schedule && schedule.toJS(),
+      formData,
       isValid: true,
     };
   }
@@ -75,8 +79,12 @@ class Automation extends Component {
       || schedules !== this.props.schedules
     ) {
       const schedule = schedules.find(n => n.get('uuid') === match.params.uuid);
+      const formData = schedule && schedule.toJS();
+      if (formData && formData.actions == null) {
+        formData.actions = [];
+      }
       this.setState({
-        formData: schedule && schedule.toJS(),
+        formData,
       });
     }
   }
@@ -160,13 +168,14 @@ class Automation extends Component {
             </Card>
 
             <pre>
-              {Object.keys(params).map(key => (
-                <div key={key}>
-                  {key}
+              {params
+                && Object.keys(params).map(key => (
+                  <div key={key}>
+                    {key}
 :
-                  <strong>{JSON.stringify(params[key])}</strong>
-                </div>
-              ))}
+                    <strong>{JSON.stringify(params[key])}</strong>
+                  </div>
+                ))}
             </pre>
           </div>
         </div>
