@@ -61,13 +61,16 @@ class Automation extends Component {
                 <tbody>
                   {rules
                     && rules
+                      .sort((a, b) => a.get('name').localeCompare(b.get('name')))
                       .map(n => (
                         <tr
                           key={n.get('uuid')}
                           style={{ cursor: 'pointer' }}
                           onClick={this.onClickNode(`rule/${n.get('uuid')}`)}
                         >
-                          <td className="text-center">{toStatusBadge(n, rulesState.get(n.get('uuid')))}</td>
+                          <td className="text-center">
+                            {toStatusBadge(n, rulesState.get(n.get('uuid')))}
+                          </td>
                           <td>{n.get('name') || n.get('uuid')}</td>
                         </tr>
                       ))
@@ -91,13 +94,14 @@ class Automation extends Component {
               <table className="table table-striped table-valign-middle">
                 <thead>
                   <tr>
+                    <th style={{ width: 1 }}>Status</th>
                     <th>Name</th>
-                    <th>Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {schedules
                     && schedules
+                      .sort((a, b) => a.get('name').localeCompare(b.get('name')))
                       .map(n => (
                         <tr
                           key={n.get('uuid')}
@@ -106,10 +110,16 @@ class Automation extends Component {
                             `schedule/${n.get('uuid')}`,
                           )}
                         >
+                          <td className="text-center">
+                            {toStatusBadge(
+                              n,
+                              schedulesState.get(n.get('uuid')),
+                            )}
+                          </td>
                           <td>{n.get('name')}</td>
-                          <td>{JSON.stringify(schedulesState.get(n.get('uuid')))}</td>
                         </tr>
                       ))
+                      .valueSeq()
                       .toArray()}
                 </tbody>
               </table>
