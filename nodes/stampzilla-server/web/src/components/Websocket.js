@@ -6,12 +6,14 @@ import Url from 'url';
 import { subscribe as certificates } from '../ducks/certificates';
 import { connected, disconnected, received } from '../ducks/connection';
 import { subscribe as connections } from '../ducks/connections';
+import { subscribe as destinations } from '../ducks/destinations';
 import { subscribe as devices } from '../ducks/devices';
 import { subscribe as nodes } from '../ducks/nodes';
 import { subscribe as requests } from '../ducks/requests';
 import { subscribe as rules } from '../ducks/rules';
 import { subscribe as savedstates } from '../ducks/savedstates';
 import { subscribe as schedules } from '../ducks/schedules';
+import { subscribe as senders } from '../ducks/senders';
 import { update as updateServer } from '../ducks/server';
 
 // Placeholder until we have the write func from the websocket
@@ -56,12 +58,14 @@ class Websocket extends Component {
     this.subscribe({
       certificates,
       connections,
+      destinations,
       devices,
       nodes,
       requests,
       rules,
       savedstates,
       schedules,
+      senders,
     });
   };
 

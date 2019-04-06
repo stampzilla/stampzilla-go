@@ -71,6 +71,10 @@ func BroadcastUpdate(sender websocket.Sender) func(string, *store.Store) error {
 			return send(area, store.GetScheduledTasks())
 		case "server":
 			return send(area, store.GetServerStateAsJson())
+		case "destinations":
+			return send(area, store.GetDestinations())
+		case "senders":
+			return send(area, store.GetSenders())
 		}
 		return nil
 	}
