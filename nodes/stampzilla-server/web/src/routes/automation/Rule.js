@@ -4,6 +4,7 @@ import { connect } from 'react-redux';
 import Form from 'react-jsonschema-form';
 import { fromJS } from 'immutable';
 
+import Editor from './components/editor';
 import { add, save } from '../../ducks/rules';
 import Card from '../../components/Card';
 import SavedStateWidget from './components/SavedStatePicker';
@@ -56,10 +57,8 @@ const schema = fromJS({
   },
 });
 const uiSchema = fromJS({
-  config: {
-    'ui:options': {
-      rows: 15,
-    },
+  expression: {
+    'ui:widget': 'Editor',
   },
   actions: {
     items: {
@@ -185,6 +184,7 @@ class Automation extends Component {
                   widgets={{
                     CheckboxWidget: CustomCheckbox,
                     SavedStateWidget,
+                    Editor,
                   }}
                   fields={{
                     ConnectedRuleConditions,
