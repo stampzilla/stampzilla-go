@@ -24,8 +24,8 @@ if (NODE_ENV === 'production') {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
         .register('service-worker.js', { scope: '/' })
-        .then(() => console.log('Service Worker registered successfully.'))
-        .catch(error => console.log('Service Worker registration failed:', error));
+        .then(() => console.log('Service Worker registered successfully.')) // eslint-disable-line
+        .catch(error => console.log('Service Worker registration failed:', error)); // eslint-disable-line
     }
   }());
 }

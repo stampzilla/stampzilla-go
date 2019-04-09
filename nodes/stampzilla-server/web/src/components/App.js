@@ -67,6 +67,12 @@ class App extends Component {
                   </Link>
                 </li>
                 <li className="nav-item">
+                  <Link to="/alerts" className="nav-link" activeClass="active">
+                    <i className="nav-icon fa fa-bell" />
+                    Alerts
+                  </Link>
+                </li>
+                <li className="nav-item">
                   <Link
                     to="/security"
                     className="nav-link"
