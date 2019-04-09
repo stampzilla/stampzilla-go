@@ -8,10 +8,7 @@ const Card = (props) => {
   return (
     <div className={classnames('card', className)}>
       <div className="card-header no-border">
-        <h3
-          className="card-title"
-          dangerouslySetInnerHTML={{ __html: title }}
-        />
+        <h3 className="card-title">{title}</h3>
         <div className="card-tools">
           {toolbar
             && toolbar.map(tool => (
