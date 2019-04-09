@@ -9,6 +9,7 @@ import Node from './routes/nodes/Node';
 import Nodes from './routes/nodes';
 import Rule from './routes/automation/Rule';
 import Schedule from './routes/automation/Schedule';
+import Alerts from './routes/alerts';
 import Security from './routes/security';
 import { withBoudary } from './components/ErrorBoundary';
 
@@ -26,6 +27,7 @@ const Routes = () => (
     <Route exact path="/aut/schedule/:uuid" component={withBoudary(Schedule)} />
     <Route exact path="/nodes" component={withBoudary(Nodes)} />
     <Route path="/nodes/:uuid" component={withBoudary(Node)} />
+    <Route exact path="/alerts" component={withBoudary(Alerts)} />
     <Route exact path="/security" component={withBoudary(Security)} />
     <Route path="/debug" component={withBoudary(Debug)} />
   </Switch>
