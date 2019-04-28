@@ -1,7 +1,6 @@
 import { Component } from 'react'
 import { connect } from 'react-redux'
 import ReconnectableWebSocket from 'reconnectingwebsocket'
-import Url from 'url'
 
 import { connected, disconnected } from '../ducks/connection'
 import { subscribe as devices } from '../ducks/devices'
@@ -40,9 +39,6 @@ class Websocket extends Component {
 
   onOpen = () => () => {
     this.props.dispatch(connected())
-
-    const url = Url.parse(this.props.url)
-
     this.subscribe({
       devices
     })
@@ -71,7 +67,6 @@ class Websocket extends Component {
   }
 
   setupSocket(props) {
-    console.log(props)
     const { url } = props
     if (this.socket) {
       // this is becuase there is a bug in reconnecting websocket causing it to retry forever

@@ -1,4 +1,4 @@
-import { List, Map } from 'immutable';
+import { Map } from 'immutable';
 import { defineAction } from 'redux-define';
 
 const c = defineAction(
@@ -29,7 +29,6 @@ export function error(err) {
 }
 
 // Reducer
-let idCount = 0;
 export default function reducer(state = defaultState, action) {
   switch (action.type) {
     case c.CONNECTED: {

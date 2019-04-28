@@ -11,14 +11,21 @@ class Home extends React.PureComponent {
     return (
       <div>
         {widgets &&
-          widgets.map(widget => {
+          widgets.map((widget, index) => {
             switch (widget.get('type')) {
               case 'clock':
-                return <Clock />
+                return <Clock key={`clock${index}`} />
               case 'forecast':
-                return <Forecast />
+                return <Forecast key={`forecast${index}`} config={widget} />
               case 'devicelist':
-                return <DeviceList devices={widget.get('devices')} />
+                return (
+                  <DeviceList
+                    key={`devicelist${index}`}
+                    devices={widget.get('devices')}
+                  />
+                )
+              default:
+                return null
             }
           })}
       </div>

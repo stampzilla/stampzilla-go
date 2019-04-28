@@ -50,6 +50,21 @@ func initWebserver() {
 		m.HandleRequest(c.Writer, c.Request)
 	})
 
+	r.GET("/proxy", func(c *gin.Context) {
+		response, err := http.Get(c.Query("url"))
+		if err != nil || response.StatusCode != http.StatusOK {
+			c.Status(http.StatusServiceUnavailable)
+			return
+		}
+
+		reader := response.Body
+		contentLength := response.ContentLength
+		contentType := response.Header.Get("Content-Type")
+		extraHeaders := map[string]string{}
+
+		c.DataFromReader(http.StatusOK, contentLength, contentType, reader, extraHeaders)
+	})
+
 	m.HandleConnect(func(s *melody.Session) {
 		for _, message := range lastMessages {
 			s.Write(message)
