@@ -108,19 +108,70 @@ const unitMap = {
   kelvin: 'K'
 }
 
+const levelToNumber = level => {
+  switch (level) {
+    case 'i.u.': // Ingen uppgift
+      return null
+    case 'i.h.': // Inga halter
+      return 0
+    case 'L': // Låga halter
+      return 1
+    case 'L-M': // Låga-måttliga halter
+      return 2
+    case 'M': // Måttliga halter
+      return 3
+    case 'M-H': // Måttliga-höga halter
+      return 4
+    case 'H': // Höga halter
+      return 5
+    case 'H-H+': // Mycket höga halter
+      return 6
+    default:
+      if (parseInt(level, 10) === level) {
+        return level === 0 ? level : level + 1
+      }
+      console.log('unknown level', level)
+      return 0
+  }
+}
+
+const levelToColor = level => {
+  switch (level) {
+    case null:
+      return null
+    case 0: // Inga halter
+      return null
+    case 1: // Låga halter
+      return 'skyblue'
+    case 2: // Låga-måttliga halter
+      return 'lightgreen'
+    case 3: // Måttliga halter
+      return 'white'
+    case 4: // Måttliga-höga halter
+      return 'yellow'
+    case 5: // Höga halter
+      return 'orange'
+    case 6: // Mycket höga halter
+      return 'red'
+    default:
+      console.log('unknown color', level)
+      return 0
+  }
+}
+
 class Forecast extends React.Component {
   componentDidMount() {
-    const { dispatch } = this.props
+    const { dispatch, config } = this.props
 
     this.forecastInterval = setInterval(
-      () => dispatch(loadForecast()),
+      () => dispatch(loadForecast(config)),
       60 * 60 * 1000
     )
-    dispatch(loadForecast())
+    dispatch(loadForecast(config))
   }
 
   render() {
-    const { forecasts } = this.props
+    const { forecasts, pollen } = this.props
     return (
       <React.Fragment>
         {forecasts &&
@@ -155,6 +206,45 @@ class Forecast extends React.Component {
                       </small>
                     )}
                   </div>
+                  {pollen.get(moment(forecast.from).format('YYYY-MM-DD')) && (
+                    <div className="pollen">
+                      {pollen
+                        .get(moment(forecast.from).format('YYYY-MM-DD'))
+                        .map((values, source) =>
+                          values
+                            .map((data, type) =>
+                              data.set(
+                                'level',
+                                levelToNumber(data.get('value'))
+                              )
+                            )
+                            .map((data, type) =>
+                              data.set('color', levelToColor(data.get('level')))
+                            )
+                        )
+                        .map((values, source) => (
+                          <div>
+                            <div>
+                              <strong>{source}</strong>
+                            </div>
+                            {values
+                              .filter(data => data.get('level') > 0)
+                              .sort((a, b) => b.get('level') - a.get('level'))
+                              .map((data, type) => (
+                                <div
+                                  style={{
+                                    fontSize: 10 + data.get('level') * 8,
+                                    color: data.get('color')
+                                  }}>
+                                  {type}
+                                </div>
+                              ))
+                              .toArray()}
+                          </div>
+                        ))
+                        .toArray()}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -172,6 +262,7 @@ class Forecast extends React.Component {
 
 const mapStateToProps = state => ({
   forecasts: state.getIn(['forecast', 'forecast']),
+  pollen: state.getIn(['forecast', 'pollen']),
   current: state.getIn(['forecast', 'current'])
 })
 

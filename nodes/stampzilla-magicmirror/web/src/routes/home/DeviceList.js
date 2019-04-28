@@ -1,5 +1,4 @@
 import React from 'react'
-import moment from 'moment'
 import { connect } from 'react-redux'
 
 class DeviceList extends React.PureComponent {
@@ -7,7 +6,7 @@ class DeviceList extends React.PureComponent {
     const { devices, state } = this.props
 
     return (
-      <div class="device-list">
+      <div className="device-list">
         {devices.map(device => {
           let value = JSON.stringify(
             state.getIn([device.get('device'), 'state', device.get('state')])
@@ -17,7 +16,6 @@ class DeviceList extends React.PureComponent {
             value *= Math.pow(10, device.get('decimals'))
             value = Math.round(value)
             value /= Math.pow(10, device.get('decimals'))
-            console.log(value)
           }
 
           if (value && device.get('states')) {
@@ -29,7 +27,9 @@ class DeviceList extends React.PureComponent {
           }
 
           return (
-            <div className="device-list-item">
+            <div
+              className="device-list-item"
+              key={`${device.get('device')}${device.get('state')}`}>
               <strong>{value}</strong>
               <small>{device.get('title')}</small>
             </div>

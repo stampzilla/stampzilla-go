@@ -55,6 +55,24 @@ body {
   display: block;
 }
 
+.weathervalues {
+  margin-left: 0.5em;
+}
+
+.pollen {
+  margin-left: 0.5em;
+  font-size: 0.5em;
+  display: flex;
+}
+.pollen > div {
+  margin-right: 0.5em;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.pollen span {
+  font-size: 20px;
+}
+
 /* SUNNY */
 .sunny {
   animation: sunny 15s linear infinite;
@@ -159,8 +177,8 @@ body {
   display: block;
   height: 50px;
   width: 50px;
-  margin-top: 40px;
-  margin-bottom: 40px;
+  margin-top: 50px;
+  margin-bottom: 30px;
   /*margin-left: -60px;*/
   /*position: absolute;*/
   /*left: 80px;*/
