@@ -171,7 +171,7 @@ func (r *Rule) Eval(devices *devices.List, rules map[string]bool) (bool, error) 
 	// after
 	// BenchmarkEval-4   	  100000	     15064 ns/op
 
-	typeProvider := types.NewProvider()
+	typeProvider := types.NewRegistry()
 	if r.checkedExp == nil {
 		// Parse the expression and returns the accumulated errors.
 		src := common.NewTextSource(r.Expression())
@@ -193,18 +193,23 @@ func (r *Rule) Eval(devices *devices.List, rules map[string]bool) (bool, error) 
 	}
 
 	// Interpret the checked expression using the standard overloads.
-	i := interpreter.NewStandardInterpreter(packages.DefaultPackage, typeProvider)
+	i := interpreter.NewStandardInterpreter(packages.DefaultPackage, typeProvider, types.DefaultTypeAdapter)
 	eval, err := i.NewInterpretable(r.checkedExp)
 	if err != nil {
 		return false, err
 	}
 
-	result := eval.Eval(
-		interpreter.NewActivation(
-			map[string]interface{}{
-				"devices": devicesState,
-				"rules":   rules,
-			}))
+	activation, err := interpreter.NewActivation(
+		map[string]interface{}{
+			"devices": devicesState,
+			"rules":   rules,
+		},
+	)
+
+	if err != nil {
+		return false, err
+	}
+	result := eval.Eval(activation)
 
 	if result.Type() != types.BoolType {
 		if result.Type() == types.ErrType {
