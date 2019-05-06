@@ -4,7 +4,7 @@ import { connect } from 'react-redux';
 import Card from '../../components/Card';
 import Device from './Device';
 
-class Nodes extends Component {
+class Dashboard extends Component {
   render() {
     const { devices, nodes } = this.props;
 
@@ -30,6 +30,7 @@ class Nodes extends Component {
                 padding: '10px',
                 display: 'flex',
               }}
+              key={nodeId}
             >
               <Card
                 title={
@@ -38,7 +39,6 @@ class Nodes extends Component {
                 }
                 bodyClassName="p-3"
                 className="mb-0 flex-grow-1"
-                key={nodeId}
               >
                 {devicesByNode[nodeId]
                   .sort((a, b) => a.get('name').localeCompare(b.get('name')))
@@ -62,4 +62,4 @@ const mapToProps = state => ({
   nodes: state.getIn(['nodes', 'list']),
 });
 
-export default connect(mapToProps)(Nodes);
+export default connect(mapToProps)(Dashboard);

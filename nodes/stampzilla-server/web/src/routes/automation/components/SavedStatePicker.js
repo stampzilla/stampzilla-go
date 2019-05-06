@@ -214,7 +214,7 @@ or
 (or
                       {' '}
                       <strong>µs</strong>
-),
+                      ),
                       <strong>ms</strong>
 ,
                       <strong>s</strong>
@@ -222,7 +222,7 @@ or
                       <strong>m</strong>
 ,
                       <strong>h</strong>
-                      .
+.
                     </small>
                   </div>
                 </form>
@@ -329,4 +329,8 @@ const mapStateToProps = state => ({
   savedstates: state.getIn(['savedstates', 'list']),
 });
 
-export default connect(mapStateToProps)(SavedStatePicker);
+export const ConnectedSavedStatePicker = connect(mapStateToProps)(
+  SavedStatePicker,
+);
+const SavedStateWidget = props => <ConnectedSavedStatePicker {...props} />;
+export default SavedStateWidget;
