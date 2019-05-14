@@ -3,36 +3,60 @@ import PropTypes from 'prop-types';
 import { Editor as SlateEditor } from 'slate-react';
 import { Value } from 'slate';
 import { connect } from 'react-redux';
-import { diff } from 'deep-object-diff';
+import classnames from 'classnames';
+
+import styles from './editor.scss';
 
 const mapStateToProps = state => ({
   devices: state.getIn(['devices', 'list']),
   nodes: state.getIn(['nodes', 'list']),
 });
 
+const format = (value) => {
+  switch (typeof value) {
+    case 'boolean':
+      return (
+        <span style={{ color: value ? 'green' : 'red' }}>
+          {JSON.stringify(value)}
+        </span>
+      );
+    case 'number':
+      return <span style={{ color: 'blue' }}>{value}</span>;
+    case 'undefined':
+    case 'null':
+      return <span style={{ color: 'gray' }}>{typeof value}</span>;
+    default:
+      return JSON.stringify(value);
+  }
+};
+
 const DeviceNode = connect(mapStateToProps)((props) => {
   const { devices, nodes } = props;
   const id = props.node.getIn(['data', 'id']);
   const node = nodes.get(id.split('.')[0]);
 
+  const value = devices.getIn([
+    id,
+    'state',
+    props.node.getIn(['data', 'state']),
+  ]);
+
   return (
-    <React.Fragment>
+    <span className={styles.node}>
       <span
         style={{ background: '#ddd', padding: '3px' }}
         {...props.attributes}
       >
-        {(node && node.get('name')) || '-'}
-        {' -> '}
-        {devices.getIn([id, 'name']) || id}
-        {' -> '}
+        {(node && node.get('name')) || node.get('type')}
+        {'/'}
+        {devices.getIn([id, 'alias']) || devices.getIn([id, 'name']) || id}
+        {'/'}
         {props.node.getIn(['data', 'state'])}
       </span>
       <span style={{ background: '#eee', padding: '3px' }}>
-        {JSON.stringify(
-          devices.getIn([id, 'state', props.node.getIn(['data', 'state'])]),
-        )}
+        {format(value)}
       </span>
-    </React.Fragment>
+    </span>
   );
 });
 
@@ -79,20 +103,12 @@ const deserialize = (value) => {
             id: blocks[index + 1],
             state: blocks[index + 2],
           },
-          leaves: [
-            {
-              text: block,
-            },
-          ],
+          text: block,
         };
       }
       return {
         object: 'text',
-        leaves: [
-          {
-            text: block,
-          },
-        ],
+        text: block,
       };
     })
     .filter(Boolean);
@@ -116,6 +132,9 @@ const serialize = (value) => {
               text = text.concat(leaf.get('text'));
             });
           }
+          if (node.get('text')) {
+            text = text.concat(node.get('text'));
+          }
           break;
       }
     });
@@ -124,62 +143,31 @@ const serialize = (value) => {
   return text;
 };
 
+const readFromProps = (props) => {
+  const value = deserialize(props.value || '');
+  return { value };
+};
+
 class Editor extends React.Component {
   editorRef = React.createRef();
 
   constructor(props) {
     super(props);
     this.state = {
-      ...this.readFromProps(props),
+      ...readFromProps(props),
     };
-  }
-
-  componentWillMount() {
-    console.log('will mounted');
-  }
-
-  componentDidMount() {
-    console.log('did mount');
   }
 
   componentWillReceiveProps(props) {
     this.setState({
-      ...this.readFromProps(props),
+      ...readFromProps(props),
     });
-  }
-
-  componentWillUnmount() {
-    console.log('will unmount');
   }
 
   onChange = (data) => {
     const { value } = data;
-    console.log('onChange called', diff(value.toJS(), this.state.value.toJS()));
-
-    this.setState({ value }, () => {
-      const { onChange } = this.props;
-
-      if (onChange) {
-        onChange(serialize(value));
-      }
-    });
+    this.setState({ value });
   };
-
-  readFromProps(props) {
-    const value = deserialize(props.value || '');
-
-    /* if (
-      !this.state
-      || props.value !== (this.state && serialize(this.state.value))
-    ) { */
-    console.log(
-      'comp',
-      props.value === (this.state && serialize(this.state.value)),
-    );
-
-    return { value };
-    // }
-  }
 
   renderNode = (props, editor, next) => {
     const { node } = props;
@@ -205,10 +193,13 @@ class Editor extends React.Component {
 
     return (
       <div
-        className={`checkbox custom-control custom-checkbox ${
-          disabled || readonly ? 'disabled' : ''
-        }`}
+        className={classnames(
+          styles.editor,
+          'form-control',
+          (disabled || readonly) && 'disabled',
+        )}
       >
+        <input type="hidden" value={serialize(this.state.value)} id="editor" />
         <SlateEditor
           value={this.state.value}
           onChange={this.onChange}
@@ -225,7 +216,7 @@ class Editor extends React.Component {
 
 Editor.propTypes = {
   id: PropTypes.string,
-  value: PropTypes.bool,
+  value: PropTypes.string,
   required: PropTypes.bool,
   disabled: PropTypes.bool,
   readonly: PropTypes.bool,

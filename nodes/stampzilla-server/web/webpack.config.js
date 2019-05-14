@@ -36,14 +36,42 @@ module.exports = {
       },
       {
         test: /\.s?css$/,
+        include: [/index\.scss/],
         use: [
           {
             loader: DEV ? 'style-loader' : MiniCssExtractPlugin.loader,
           },
           {
             loader: 'css-loader',
+            query: {
+              modules: false,
+              sourceMap: true,
+              importLoaders: 2,
+              localIdentName: '[name]__[local]___[hash:base64:5]',
+            },
+          },
+          {
+            loader: 'sass-loader',
             options: {
               sourceMap: true,
+            },
+          },
+        ],
+      },
+      {
+        test: /\.s?css$/,
+        exclude: [/index\.scss/],
+        use: [
+          {
+            loader: DEV ? 'style-loader' : MiniCssExtractPlugin.loader,
+          },
+          {
+            loader: 'css-loader',
+            query: {
+              modules: true,
+              sourceMap: true,
+              importLoaders: 2,
+              localIdentName: '[name]__[local]___[hash:base64:5]',
             },
           },
           {

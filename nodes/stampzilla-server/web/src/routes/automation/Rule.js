@@ -118,10 +118,15 @@ class Automation extends Component {
   onSubmit = () => ({ formData }) => {
     const { dispatch } = this.props;
 
+    const postData = {
+      ...formData,
+      expression: this.form.formElement.querySelector('#editor').value,
+    };
+
     if (formData.uuid) {
-      dispatch(save(formData));
+      dispatch(save(postData));
     } else {
-      dispatch(add(formData));
+      dispatch(add(postData));
     }
   };
 
@@ -189,6 +194,9 @@ class Automation extends Component {
                   fields={{
                     ConnectedRuleConditions,
                   }}
+                  ref={(frm) => {
+                    this.form = frm;
+                  }}
                 >
                   <button
                     ref={(btn) => {
@@ -204,7 +212,7 @@ class Automation extends Component {
                   {'Back'}
                 </Button>
                 <Button
-                  color={isModified ? 'primary' : 'secondary'}
+                  color="primary"
                   disabled={!this.state.isValid || this.props.disabled}
                   onClick={() => this.submitButton.click()}
                   className="float-right"
