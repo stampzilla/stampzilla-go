@@ -11,6 +11,7 @@ import Rule from './routes/automation/Rule';
 import Schedule from './routes/automation/Schedule';
 import Alerts from './routes/alerts';
 import Security from './routes/security';
+import Trigger from './routes/alerts/Trigger';
 import { withBoudary } from './components/ErrorBoundary';
 
 const Routes = () => (
@@ -28,6 +29,16 @@ const Routes = () => (
     <Route exact path="/nodes" component={withBoudary(Nodes)} />
     <Route path="/nodes/:uuid" component={withBoudary(Node)} />
     <Route exact path="/alerts" component={withBoudary(Alerts)} />
+    <Route
+      exact
+      path="/alerts/triggers/create"
+      component={withBoudary(Trigger)}
+    />
+    <Route
+      exact
+      path="/alerts/triggers/:uuid"
+      component={withBoudary(Trigger)}
+    />
     <Route exact path="/security" component={withBoudary(Security)} />
     <Route path="/debug" component={withBoudary(Debug)} />
   </Switch>

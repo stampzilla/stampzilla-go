@@ -13,7 +13,7 @@ const toStatusBadge = (n, state) => {
       return <div className="badge badge-danger">Failed</div>;
     }
     if (state.get('active')) {
-      return <div className="badge badge-success">Active</div>;
+      return <div className="badge badge-success">Triggered</div>;
     }
     if (state.get('pending')) {
       return <div className="badge badge-warning">Pending</div>;
@@ -25,10 +25,10 @@ const toStatusBadge = (n, state) => {
   return <div className="badge badge-secondary">Disabled</div>;
 };
 
-class Automation extends Component {
+class Alerts extends Component {
   onClickNode = uuid => () => {
     const { history } = this.props;
-    history.push(`/aut/${uuid}`);
+    history.push(`/alerts/${uuid}`);
   };
 
   render() {
@@ -70,13 +70,15 @@ class Automation extends Component {
                 <tbody>
                   {rules
                     && rules
-                      .filter(() => false) // TODO:
+                      .filter(() => true) // TODO:
                       .sort((a, b) => a.get('name').localeCompare(b.get('name')))
                       .map(n => (
                         <tr
                           key={n.get('uuid')}
                           style={{ cursor: 'pointer' }}
-                          onClick={this.onClickNode(`rule/${n.get('uuid')}`)}
+                          onClick={this.onClickNode(
+                            `triggers/${n.get('uuid')}`,
+                          )}
                         >
                           <td className="text-center">
                             {toStatusBadge(n, rulesState.get(n.get('uuid')))}
@@ -202,4 +204,4 @@ const mapToProps = state => ({
   senders: state.getIn(['senders', 'list']),
 });
 
-export default connect(mapToProps)(Automation);
+export default connect(mapToProps)(Alerts);

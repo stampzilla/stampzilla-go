@@ -10,7 +10,7 @@ import {
   ArrayFieldTemplate,
   CustomCheckbox,
   ObjectFieldTemplate,
-} from './components/formComponents';
+} from '../../components/formComponents';
 
 const schema = {
   type: 'object',
@@ -55,7 +55,7 @@ const uiSchema = {
   },
 };
 
-class Automation extends Component {
+class Schedule extends Component {
   constructor(props) {
     super();
 
@@ -170,4 +170,4 @@ const mapToProps = state => ({
   schedules: state.getIn(['schedules', 'list']),
 });
 
-export default connect(mapToProps)(Automation);
+export default connect(mapToProps)(Schedule);

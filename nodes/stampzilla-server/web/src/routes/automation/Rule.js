@@ -1,19 +1,19 @@
 import React, { Component } from 'react';
 import { Button } from 'reactstrap';
 import { connect } from 'react-redux';
-import Form from 'react-jsonschema-form';
 import { fromJS } from 'immutable';
+import Form from 'react-jsonschema-form';
 
-import Editor from './components/editor';
-import { add, save } from '../../ducks/rules';
-import Card from '../../components/Card';
-import SavedStateWidget from './components/SavedStatePicker';
 import {
   ArrayFieldTemplate,
+  ConnectedRuleConditions,
   CustomCheckbox,
   ObjectFieldTemplate,
-  ConnectedRuleConditions,
-} from './components/formComponents';
+} from '../../components/formComponents';
+import { add, save } from '../../ducks/rules';
+import Card from '../../components/Card';
+import Editor from '../../components/editor';
+import SavedStateWidget from './components/SavedStatePicker';
 
 const schema = fromJS({
   type: 'object',
@@ -81,7 +81,7 @@ const loadFromProps = (props) => {
   return { formData };
 };
 
-class Automation extends Component {
+class Rule extends Component {
   constructor(props) {
     super();
 
@@ -169,7 +169,9 @@ class Automation extends Component {
               </div>
             )}
             <Card
-              title={match.params.uuid ? 'Edit rule ' : 'New rule'}
+              title={(match.params.uuid ? 'Edit rule ' : 'New rule').concat(
+                isModified ? ' (not saved)' : '',
+              )}
               bodyClassName="p-0"
             >
               <div className="card-body">
@@ -244,4 +246,4 @@ const mapToProps = state => ({
   devices: state.getIn(['devices', 'list']),
 });
 
-export default connect(mapToProps)(Automation);
+export default connect(mapToProps)(Rule);
