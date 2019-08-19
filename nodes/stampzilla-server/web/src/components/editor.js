@@ -23,6 +23,7 @@ const format = (value) => {
     case 'number':
       return <span style={{ color: 'blue' }}>{value}</span>;
     case 'undefined':
+      return <span style={{ color: 'orange' }}>{typeof value}</span>;
     case 'null':
       return <span style={{ color: 'gray' }}>{typeof value}</span>;
     default:
@@ -43,17 +44,14 @@ const DeviceNode = connect(mapStateToProps)((props) => {
 
   return (
     <span className={styles.node}>
-      <span
-        style={{ background: '#ddd', padding: '3px' }}
-        {...props.attributes}
-      >
+      <span style={{ padding: '3px' }} {...props.attributes}>
         {(node && node.get('name')) || node.get('type')}
         {'/'}
         {devices.getIn([id, 'alias']) || devices.getIn([id, 'name']) || id}
         {'/'}
         {props.node.getIn(['data', 'state'])}
       </span>
-      <span style={{ background: '#eee', padding: '3px' }}>
+      <span style={{ background: '#fff', padding: '0 3px' }}>
         {format(value)}
       </span>
     </span>
