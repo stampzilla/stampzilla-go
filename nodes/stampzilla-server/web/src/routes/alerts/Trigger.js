@@ -59,7 +59,7 @@ const uiSchema = fromJS({
 
 const loadFromProps = (props) => {
   const { rules, match } = props;
-  const rule = rules.find(n => n.get('uuid') === match.params.uuid);
+  const rule = rules.find((n) => n.get('uuid') === match.params.uuid);
   const formData = rule && rule.toJS();
 
   // if (rule) {
@@ -107,6 +107,7 @@ class Trigger extends Component {
 
     const postData = {
       ...formData,
+      type: 'trigger',
       expression: this.form.formElement.querySelector('#editor').value,
     };
 
@@ -137,7 +138,7 @@ class Trigger extends Component {
 
     const patchedSchema = schema.toJS();
     if (
-      rules.filter(rule => rule.get('uuid') !== match.params.uuid).size === 0
+      rules.filter((rule) => rule.get('uuid') !== match.params.uuid).size === 0
     ) {
       // Hide the conditions part if there is no other rules
       delete patchedSchema.properties.conditions;
@@ -147,7 +148,7 @@ class Trigger extends Component {
     patchedUiSchema.conditions.current = match.params.uuid;
 
     return (
-      <React.Fragment>
+      <>
         <div className="row">
           <div className="col-md-12">
             {state.getIn([match.params.uuid, 'error']) && (
@@ -156,9 +157,10 @@ class Trigger extends Component {
               </div>
             )}
             <Card
-              title={(match.params.uuid ? 'Edit trigger ' : 'New trigger').concat(
-                isModified ? ' (not saved)' : '',
-              )}
+              title={(match.params.uuid
+                ? 'Edit trigger '
+                : 'New trigger'
+              ).concat(isModified ? ' (not saved)' : '')}
               bodyClassName="p-0"
             >
               <div className="card-body">
@@ -211,7 +213,7 @@ class Trigger extends Component {
             </Card>
 
             <pre>
-              {Object.keys(params).map(key => (
+              {Object.keys(params).map((key) => (
                 <div key={key}>
                   {key}
 :
@@ -221,12 +223,12 @@ class Trigger extends Component {
             </pre>
           </div>
         </div>
-      </React.Fragment>
+      </>
     );
   }
 }
 
-const mapToProps = state => ({
+const mapToProps = (state) => ({
   rules: state.getIn(['rules', 'list']),
   state: state.getIn(['rules', 'state']),
   devices: state.getIn(['devices', 'list']),

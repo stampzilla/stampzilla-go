@@ -26,7 +26,7 @@ const toStatusBadge = (n, state) => {
 };
 
 class Alerts extends Component {
-  onClickNode = uuid => () => {
+  onClickNode = (uuid) => () => {
     const { history } = this.props;
     history.push(`/alerts/${uuid}`);
   };
@@ -37,19 +37,19 @@ class Alerts extends Component {
     } = this.props;
 
     return (
-      <React.Fragment>
+      <>
         <div className="row">
           <div className="col-md-12">
             <Card
               title={(
-                <React.Fragment>
+                <>
                   Triggers
                   {' '}
                   <small>
                     (Rules that will create a message and sends it to a
                     destination)
                   </small>
-                </React.Fragment>
+                </>
 )}
               bodyClassName="p-0"
               toolbar={[
@@ -70,9 +70,9 @@ class Alerts extends Component {
                 <tbody>
                   {rules
                     && rules
-                      .filter(() => true) // TODO:
+                      .filter((n) => n.get('type') === 'trigger')
                       .sort((a, b) => a.get('name').localeCompare(b.get('name')))
-                      .map(n => (
+                      .map((n) => (
                         <tr
                           key={n.get('uuid')}
                           style={{ cursor: 'pointer' }}
@@ -100,11 +100,11 @@ class Alerts extends Component {
 
             <Card
               title={(
-                <React.Fragment>
+                <>
                   Destinations
                   {' '}
                   <small>(Groups of addresses and destinations)</small>
-                </React.Fragment>
+                </>
 )}
               bodyClassName="p-0"
               toolbar={[
@@ -125,7 +125,7 @@ class Alerts extends Component {
                   {destinations
                     && destinations
                       .sort((a, b) => a.get('name').localeCompare(b.get('name')))
-                      .map(n => (
+                      .map((n) => (
                         <tr
                           key={n.get('uuid')}
                           style={{ cursor: 'pointer' }}
@@ -149,11 +149,11 @@ class Alerts extends Component {
             </div>
             <Card
               title={(
-                <React.Fragment>
+                <>
                   Senders
                   {' '}
                   <small>(services that can deliver messages)</small>
-                </React.Fragment>
+                </>
 )}
               bodyClassName="p-0"
               toolbar={[
@@ -174,7 +174,7 @@ class Alerts extends Component {
                   {senders
                     && senders
                       .sort((a, b) => a.get('name').localeCompare(b.get('name')))
-                      .map(n => (
+                      .map((n) => (
                         <tr
                           key={n.get('uuid')}
                           style={{ cursor: 'pointer' }}
@@ -192,12 +192,12 @@ class Alerts extends Component {
             </Card>
           </div>
         </div>
-      </React.Fragment>
+      </>
     );
   }
 }
 
-const mapToProps = state => ({
+const mapToProps = (state) => ({
   rules: state.getIn(['rules', 'list']),
   rulesState: state.getIn(['rules', 'state']),
   destinations: state.getIn(['destinations', 'list']),

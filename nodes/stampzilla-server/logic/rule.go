@@ -35,6 +35,7 @@ type Rule struct {
 	Notifications_ notification.Messages `json:"notifications"`
 	Labels_        models.Labels         `json:"labels"`
 	For_           stypes.Duration       `json:"for"`
+	Type_          string                `json:"type"`
 	checkedExp     *exprpb.CheckedExpr
 	sync.RWMutex
 	cancel context.CancelFunc
@@ -102,6 +103,11 @@ func (r *Rule) For() stypes.Duration {
 	r.RLock()
 	defer r.RUnlock()
 	return r.For_
+}
+func (r *Rule) Type() string {
+	r.RLock()
+	defer r.RUnlock()
+	return r.Type_
 }
 func (r *Rule) Stop() {
 	select {

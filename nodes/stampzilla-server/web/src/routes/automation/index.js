@@ -26,7 +26,7 @@ const toStatusBadge = (n, state) => {
 };
 
 class Automation extends Component {
-  onClickNode = uuid => () => {
+  onClickNode = (uuid) => () => {
     const { history } = this.props;
     history.push(`/aut/${uuid}`);
   };
@@ -37,7 +37,7 @@ class Automation extends Component {
     } = this.props;
 
     return (
-      <React.Fragment>
+      <>
         <div className="row">
           <div className="col-md-12">
             <Card
@@ -61,8 +61,9 @@ class Automation extends Component {
                 <tbody>
                   {rules
                     && rules
+                      .filter((n) => n.get('type') === '')
                       .sort((a, b) => a.get('name').localeCompare(b.get('name')))
-                      .map(n => (
+                      .map((n) => (
                         <tr
                           key={n.get('uuid')}
                           style={{ cursor: 'pointer' }}
@@ -102,7 +103,7 @@ class Automation extends Component {
                   {schedules
                     && schedules
                       .sort((a, b) => a.get('name').localeCompare(b.get('name')))
-                      .map(n => (
+                      .map((n) => (
                         <tr
                           key={n.get('uuid')}
                           style={{ cursor: 'pointer' }}
@@ -126,12 +127,12 @@ class Automation extends Component {
             </Card>
           </div>
         </div>
-      </React.Fragment>
+      </>
     );
   }
 }
 
-const mapToProps = state => ({
+const mapToProps = (state) => ({
   rules: state.getIn(['rules', 'list']),
   rulesState: state.getIn(['rules', 'state']),
   schedules: state.getIn(['schedules', 'list']),
