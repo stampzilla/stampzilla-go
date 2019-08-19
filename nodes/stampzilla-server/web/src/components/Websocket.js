@@ -105,10 +105,21 @@ class Websocket extends Component {
       this.socket.close();
     }
 
-    this.socket = new ReconnectableWebSocket(url, ['gui'], {
-      reconnectInterval: 3000,
-      timeoutInterval: 1000,
+    const secureUrl = Url.format({
+      protocol: 'wss:',
+      hostname: window.location.hostname,
+      port: window.location.port,
+      pathname: '/ws',
     });
+
+    this.socket = new ReconnectableWebSocket(
+      window.location.protocol === 'https' ? secureUrl : url,
+      ['gui'],
+      {
+        reconnectInterval: 3000,
+        timeoutInterval: 1000,
+      },
+    );
     writeSocket = this.socket;
     // writeFunc = this.socket.send;
     this.socket.onmessage = this.onMessage();

@@ -6,8 +6,8 @@ const schema = {
   type: 'object',
   required: ['hostname', 'port'],
   properties: {
-    hostname: { type: 'string', title: 'Hostname', default: 'localhost' },
-    port: { type: 'string', title: 'Port', default: '8080' },
+    hostname: { type: 'string', title: 'Hostname', default: location.hostname },
+    port: { type: 'string', title: 'Port', default: location.port },
   },
 };
 
@@ -15,7 +15,7 @@ class SocketModal extends Component {
   onChange = () => ({ formData }) => {
     this.props.onChange(formData);
     this.props.onClose();
-  }
+  };
 
   render = () => {
     const { visible, onClose } = this.props;
@@ -30,7 +30,7 @@ class SocketModal extends Component {
         submitButton="Change"
       />
     );
-  }
+  };
 }
 
 export default SocketModal;

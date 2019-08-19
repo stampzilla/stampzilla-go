@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "webpack --mode production",
-    "dev": "webpack-dev-server --port 8085 --open --mode development --hot",
+    "dev": "webpack-dev-server --port 8085 --host 0.0.0.0 --open --mode development --hot",
     "lint": "eslint src/**",
     "lint-fix": "eslint --fix src/**",
     "analyze": "webpack -p --profile --json > stats.json && webpack-bundle-analyzer stats.json build"
@@ -74,10 +74,10 @@
     "optimize-css-assets-webpack-plugin": "^5.0.1",
     "prop-types": "^15.7.2",
     "react": "^16.8.6",
-    "react-hot-loader": "^4.11.1",
     "react-bootstrap4-modal": "^1.7.2",
     "react-color": "^2.17.3",
     "react-dom": "^16.8.6",
+    "react-hot-loader": "^4.11.1",
     "react-json-editor-ajrm": "^2.5.9",
     "react-json-view": "^1.19.1",
     "react-jsonschema-form": "^1.6.1",

@@ -38,16 +38,17 @@ class Landing extends Component {
   }
 
   onGoSecureClick = () => () => {
-    const { dispatch, server, app } = this.props;
+    const { server, app } = this.props;
     const serverUrl = Url.parse(app.get('url'));
 
     const url = Url.format({
-      protocol: 'wss:',
+      protocol: 'https:',
       hostname: serverUrl.hostname,
       port: server.get('tlsPort'),
-      pathname: '/ws',
+      pathname: '',
     });
-    dispatch(update({ url }));
+
+    window.location.href = url;
   };
 
   render = () => {
