@@ -27,6 +27,7 @@ type Rule struct {
 	Uuid_          string                `json:"uuid"`
 	Operator_      string                `json:"operator"`
 	Active_        bool                  `json:"active"`
+	Pending_       bool                  `json:"pending"`
 	Enabled        bool                  `json:"enabled"`
 	Expression_    string                `json:"expression"`
 	Conditions_    map[string]bool       `json:"conditions"`
@@ -54,6 +55,11 @@ func (r *Rule) Active() bool {
 	r.RLock()
 	defer r.RUnlock()
 	return r.Active_
+}
+func (r *Rule) Pending() bool {
+	r.RLock()
+	defer r.RUnlock()
+	return r.Pending_
 }
 func (r *Rule) Uuid() string {
 	r.RLock()
@@ -85,6 +91,11 @@ func (r *Rule) Notifications() notification.Messages {
 func (r *Rule) SetActive(a bool) {
 	r.Lock()
 	r.Active_ = a
+	r.Unlock()
+}
+func (r *Rule) SetPending(a bool) {
+	r.Lock()
+	r.Pending_ = a
 	r.Unlock()
 }
 func (r *Rule) For() stypes.Duration {
