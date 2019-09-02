@@ -119,6 +119,9 @@ class Alerts extends Component {
                 <thead>
                   <tr>
                     <th>Name</th>
+                    <th>Type</th>
+                    <th>Sender</th>
+                    <th>Destinations</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -134,6 +137,13 @@ class Alerts extends Component {
                           )}
                         >
                           <td>{n.get('name') || n.get('uuid')}</td>
+                          <td>{n.get('type')}</td>
+                          <td>
+                            {(senders
+                              && senders.getIn([n.get('sender'), 'name']))
+                              || n.get('sender')}
+                          </td>
+                          <td>{(n.get('destinations') || []).size}</td>
                         </tr>
                       ))
                       .valueSeq()
@@ -168,6 +178,7 @@ class Alerts extends Component {
                 <thead>
                   <tr>
                     <th>Name</th>
+                    <th>Type</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -178,11 +189,10 @@ class Alerts extends Component {
                         <tr
                           key={n.get('uuid')}
                           style={{ cursor: 'pointer' }}
-                          onClick={this.onClickNode(
-                            `schedule/${n.get('uuid')}`,
-                          )}
+                          onClick={this.onClickNode(`senders/${n.get('uuid')}`)}
                         >
                           <td>{n.get('name')}</td>
+                          <td>{n.get('type')}</td>
                         </tr>
                       ))
                       .valueSeq()

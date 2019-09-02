@@ -9,10 +9,11 @@ func (store *Store) GetSenders() map[string]notification.Sender {
 }
 
 func (store *Store) AddOrUpdateSender(sender notification.Sender) {
-	if sender == nil {
+	if sender.UUID == "" {
 		return
 	}
 
 	store.Senders.Add(sender)
+	store.Senders.Save()
 	store.runCallbacks("senders")
 }

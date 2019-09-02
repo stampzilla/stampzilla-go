@@ -2,6 +2,7 @@ package webserver
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"io"
 	"net/http"
 	"os"
@@ -140,11 +141,31 @@ func (ws *Webserver) handleMessage() func(s *melody.Session, msg []byte) {
 
 		id, _ := s.Get(websocket.KeyID.String())
 		data.FromUUID = id.(string)
-		err = ws.WebsocketHandler.Message(s, data)
-		if err != nil {
-			logrus.Error(err)
-			return
-		}
+
+		go func() {
+			err, resp := ws.WebsocketHandler.Message(s, data)
+
+			// The message contains a request ID, so respond with the result
+			if len(data.Request) > 0 {
+				msg := &models.Message{
+					Type: "success",
+					Body: resp,
+				}
+				if err != nil {
+					msg.Type = "failure"
+					msg.Body, _ = json.Marshal(err.Error())
+				}
+				msg.Request = data.Request
+				err := msg.WriteTo(s)
+				if err != nil {
+					logrus.Error(err)
+				}
+			}
+
+			if err != nil {
+				logrus.Error(err)
+			}
+		}()
 	}
 }
 

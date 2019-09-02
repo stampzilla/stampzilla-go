@@ -24,7 +24,24 @@ const writeFunc = (data) => {
   }
   writeSocket.send(data);
 };
-export const write = msg => writeFunc(JSON.stringify(msg));
+let requestId = 0;
+let activeRequests = [];
+export const write = (msg) => writeFunc(JSON.stringify(msg));
+export const request = (msg) => new Promise((resolve, reject) => {
+  activeRequests.push({
+    id: requestId,
+    resolve,
+    reject,
+  });
+
+  writeFunc(
+    JSON.stringify({
+      ...msg,
+      request: requestId,
+    }),
+  );
+  requestId += 1;
+});
 
 class Websocket extends Component {
   constructor(props) {
@@ -81,11 +98,23 @@ class Websocket extends Component {
     dispatch(received(parsed));
     const subscriptions = this.subscriptions[parsed.type];
     if (subscriptions) {
-      subscriptions.forEach(callback => callback(parsed.body));
+      subscriptions.forEach((callback) => callback(parsed.body));
     }
     switch (parsed.type) {
       case 'server-info': {
         dispatch(updateServer(parsed.body));
+        break;
+      }
+      case 'success': {
+        const req = activeRequests.find((a) => a.id === parsed.request);
+        req.resolve(parsed.body);
+        activeRequests = activeRequests.filter((a) => a.id !== parsed.request);
+        break;
+      }
+      case 'failure': {
+        const req = activeRequests.find((a) => a.id === parsed.request);
+        req.reject(parsed.body);
+        activeRequests = activeRequests.filter((a) => a.id !== parsed.request);
         break;
       }
       default: {
@@ -152,7 +181,7 @@ class Websocket extends Component {
   render = () => null;
 }
 
-const mapToProps = state => ({
+const mapToProps = (state) => ({
   url: state.getIn(['app', 'url']),
 });
 export default connect(mapToProps)(Websocket);

@@ -51,6 +51,8 @@ func New(l *logic.Logic, s *logic.Scheduler, sss *logic.SavedStateStore) *Store 
 		store.AddOrUpdateServer("rules", uuid, state)
 	})
 
+	l.OnTriggerDestination(store.TriggerDestination)
+
 	return store
 }
 
@@ -79,6 +81,14 @@ func (store *Store) Load() error {
 	}
 
 	if err := store.Scheduler.Load(); err != nil {
+		return err
+	}
+
+	if err := store.Destinations.Load(); err != nil {
+		return err
+	}
+
+	if err := store.Senders.Load(); err != nil {
 		return err
 	}
 

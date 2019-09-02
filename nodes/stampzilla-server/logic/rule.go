@@ -36,6 +36,7 @@ type Rule struct {
 	Labels_        models.Labels         `json:"labels"`
 	For_           stypes.Duration       `json:"for"`
 	Type_          string                `json:"type"`
+	Destinations_  []string              `json:"destinations"`
 	checkedExp     *exprpb.CheckedExpr
 	sync.RWMutex
 	cancel context.CancelFunc
@@ -125,7 +126,7 @@ func (r *Rule) Cancel() {
 	r.RUnlock()
 }
 
-func (r *Rule) Run(store *SavedStateStore, sender websocket.Sender) {
+func (r *Rule) Run(store *SavedStateStore, sender websocket.Sender, triggerDestination func(string, string) error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	r.Lock()
@@ -174,6 +175,11 @@ func (r *Rule) Run(store *SavedStateStore, sender websocket.Sender) {
 				continue
 			}
 		}
+	}
+
+	for _, dest := range r.Destinations_ {
+		logrus.Warnf("Send notification to %s", dest)
+		triggerDestination(dest, r.Name())
 	}
 }
 

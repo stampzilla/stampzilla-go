@@ -12,6 +12,7 @@ import (
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/logic"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/notification"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/store"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
 )
@@ -90,13 +91,13 @@ func sliceHas(s []string, val string) bool {
 	return false
 }
 
-func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *models.Message) error {
+func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *models.Message) (error, json.RawMessage) {
 	switch msg.Type {
 	case "accept-request":
 		connection := ""
 		err := json.Unmarshal(msg.Body, &connection)
 		if err != nil {
-			return err
+			return err, nil
 		}
 
 		wsh.Store.AcceptRequest(connection)
@@ -104,7 +105,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		subscribeTo := []string{}
 		err := json.Unmarshal(msg.Body, &subscribeTo)
 		if err != nil {
-			return err
+			return err, nil
 		}
 
 		v, exists := s.Get("subscriptions")
@@ -137,7 +138,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		device := devices.NewDevice()
 		err := json.Unmarshal(msg.Body, device)
 		if err != nil {
-			return err
+			return err, nil
 		}
 
 		logrus.WithFields(logrus.Fields{
@@ -152,7 +153,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		devs := make(devices.DeviceMap)
 		err := json.Unmarshal(msg.Body, &devs)
 		if err != nil {
-			return err
+			return err, nil
 		}
 
 		logrus.WithFields(logrus.Fields{
@@ -170,7 +171,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		node := &models.Node{}
 		err := json.Unmarshal(msg.Body, node)
 		if err != nil {
-			return err
+			return err, nil
 		}
 
 		logrus.WithFields(logrus.Fields{
@@ -181,14 +182,14 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		wsh.Store.AddOrUpdateNode(node)
 		err = wsh.Store.SaveNodes()
 		if err != nil {
-			return err
+			return err, nil
 		}
 		wsh.WebsocketSender.SendToID(node.UUID, "setup", node)
 	case "setup-device":
 		device := &devices.Device{}
 		err := json.Unmarshal(msg.Body, device)
 		if err != nil {
-			return err
+			return err, nil
 		}
 
 		logrus.WithFields(logrus.Fields{
@@ -198,13 +199,13 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 
 		node := wsh.Store.GetNode(device.ID.Node)
 		if node == nil {
-			return fmt.Errorf("Node was not found")
+			return fmt.Errorf("Node was not found"), nil
 		}
 
 		node.SetAlias(device.ID, device.Alias)
 		err = wsh.Store.SaveNode(node)
 		if err != nil {
-			return err
+			return err, nil
 		}
 		BroadcastUpdate(wsh.WebsocketSender)("nodes", wsh.Store)
 
@@ -218,7 +219,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		devs := devices.NewList()
 		err := json.Unmarshal(msg.Body, devs)
 		if err != nil {
-			return err
+			return err, nil
 		}
 
 		logrus.WithFields(logrus.Fields{
@@ -236,7 +237,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		rules := logic.Rules{}
 		err := json.Unmarshal(msg.Body, &rules)
 		if err != nil {
-			return err
+			return err, nil
 		}
 
 		logrus.WithFields(logrus.Fields{
@@ -245,11 +246,89 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		}).Debug("Received new rules")
 
 		wsh.Store.AddOrUpdateRules(rules)
+	case "update-destinations":
+		destinations := map[string]*notification.Destination{}
+		err := json.Unmarshal(msg.Body, &destinations)
+		if err != nil {
+			return err, nil
+		}
+
+		logrus.WithFields(logrus.Fields{
+			"from":         msg.FromUUID,
+			"destinations": destinations,
+		}).Debug("Received new destinations")
+
+		for id, destination := range destinations {
+			destination.UUID = id
+			wsh.Store.AddOrUpdateDestination(destination)
+		}
+	case "trigger-destination":
+		type RequestBody struct {
+			UUID    string `json:"uuid"`
+			Body    string `json:"body"`
+			Release bool   `json:"release"`
+		}
+
+		var req RequestBody
+		err := json.Unmarshal(msg.Body, &req)
+		if err != nil {
+			return err, nil
+		}
+
+		logrus.WithFields(logrus.Fields{
+			"from":        msg.FromUUID,
+			"destination": req.UUID,
+		}).Debug("Received trigger destination")
+
+		if req.Release {
+			return wsh.Store.ReleaseDestination(req.UUID, req.Body), nil
+		}
+		return wsh.Store.TriggerDestination(req.UUID, req.Body), nil
+	case "sender-destinations":
+		type RequestBody struct {
+			UUID string `json:"uuid"`
+		}
+
+		var req RequestBody
+		err := json.Unmarshal(msg.Body, &req)
+		if err != nil {
+			return err, nil
+		}
+
+		logrus.WithFields(logrus.Fields{
+			"from":        msg.FromUUID,
+			"destination": req.UUID,
+		}).Debug("Get sender destinations")
+
+		err, dest := wsh.Store.GetSenderDestinations(req.UUID)
+
+		data, err := json.Marshal(dest)
+		if err != nil {
+			return err, nil
+		}
+
+		return err, data
+	case "update-senders":
+		senders := map[string]notification.Sender{}
+		err := json.Unmarshal(msg.Body, &senders)
+		if err != nil {
+			return err, nil
+		}
+
+		logrus.WithFields(logrus.Fields{
+			"from":    msg.FromUUID,
+			"senders": senders,
+		}).Debug("Received new senders")
+
+		for id, sender := range senders {
+			sender.UUID = id
+			wsh.Store.AddOrUpdateSender(sender)
+		}
 	case "update-schedules":
 		tasks := logic.Tasks{}
 		err := json.Unmarshal(msg.Body, &tasks)
 		if err != nil {
-			return err
+			return err, nil
 		}
 
 		logrus.WithFields(logrus.Fields{
@@ -262,7 +341,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		ss := logic.SavedStates{}
 		err := json.Unmarshal(msg.Body, &ss)
 		if err != nil {
-			return err
+			return err, nil
 		}
 
 		logrus.WithFields(logrus.Fields{
@@ -275,8 +354,11 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		logrus.WithFields(logrus.Fields{
 			"type": msg.Type,
 		}).Warnf("Received unknown message")
+
+		return fmt.Errorf("Unknown request %s", msg.Type), nil
 	}
-	return nil
+
+	return nil, nil
 }
 
 func (wsh *secureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.Request, keys map[string]interface{}) error {

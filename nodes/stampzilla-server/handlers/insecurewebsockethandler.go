@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"encoding/pem"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -30,7 +31,7 @@ func NewInSecureWebsockerHandler(store *store.Store, config *models.Config, ws w
 	}
 }
 
-func (wsh *insecureWebsocketHandler) Message(s interfaces.MelodySession, msg *models.Message) error {
+func (wsh *insecureWebsocketHandler) Message(s interfaces.MelodySession, msg *models.Message) (error, json.RawMessage) {
 
 	// client requested certificate. We must approve manually
 
@@ -60,12 +61,12 @@ func (wsh *insecureWebsocketHandler) Message(s interfaces.MelodySession, msg *mo
 				return
 			}
 		}()
-		return nil
+		return nil, nil
 	}
 
 	logrus.Warn("Unsecure ws sent data: ", msg)
 
-	return nil
+	return fmt.Errorf("Unknown request %s", msg.Type), nil
 }
 
 func (wsh *insecureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.Request, keys map[string]interface{}) error {

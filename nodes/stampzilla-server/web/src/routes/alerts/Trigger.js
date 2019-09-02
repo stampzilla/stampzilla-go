@@ -27,6 +27,16 @@ const schema = fromJS({
       title: 'Enabled',
       description: 'Turn on and off this trigger',
     },
+    destinations: {
+      type: 'array',
+      title: 'Destination',
+      description: 'Where should the notification be sent?',
+      items: {
+        type: 'string',
+        enum: [],
+      },
+      uniqueItems: true,
+    },
     expression: {
       type: 'string',
       title: 'Expression',
@@ -55,6 +65,9 @@ const uiSchema = fromJS({
   conditions: {
     'ui:field': 'ConnectedRuleConditions',
   },
+  destinations: {
+    'ui:widget': 'checkboxes',
+  },
 });
 
 const loadFromProps = (props) => {
@@ -65,7 +78,12 @@ const loadFromProps = (props) => {
   // if (rule) {
   // formData.actions = formData.actions || [];
   // }
-  return { formData };
+  return {
+    formData: {
+      ...formData,
+      destinations: (formData && formData.destinations) || [],
+    },
+  };
 };
 
 class Trigger extends Component {
@@ -116,16 +134,18 @@ class Trigger extends Component {
     } else {
       dispatch(add(postData));
     }
+
+    this.onBackClick()();
   };
 
   onBackClick = () => () => {
     const { history } = this.props;
-    history.push('/aut');
+    history.push('/alerts');
   };
 
   render() {
     const {
-      match, devices, state, rules,
+      match, devices, state, rules, destinations,
     } = this.props;
     const { isModified } = this.state;
 
@@ -143,6 +163,19 @@ class Trigger extends Component {
       // Hide the conditions part if there is no other rules
       delete patchedSchema.properties.conditions;
     }
+
+    destinations
+      .sort((a, b) => a.get('type').localeCompare(b.get('type')))
+      .forEach((dest) => {
+        patchedSchema.properties.destinations.items.enum = [
+          ...(patchedSchema.properties.destinations.items.enum || []),
+          dest.get('uuid'),
+        ];
+        patchedSchema.properties.destinations.items.enumNames = [
+          ...(patchedSchema.properties.destinations.items.enumNames || []),
+          `${dest.get('name')} (${dest.get('type')})`,
+        ];
+      });
 
     const patchedUiSchema = uiSchema.toJS();
     patchedUiSchema.conditions.current = match.params.uuid;
@@ -232,6 +265,7 @@ const mapToProps = (state) => ({
   rules: state.getIn(['rules', 'list']),
   state: state.getIn(['rules', 'state']),
   devices: state.getIn(['devices', 'list']),
+  destinations: state.getIn(['destinations', 'list']),
 });
 
 export default connect(mapToProps)(Trigger);
