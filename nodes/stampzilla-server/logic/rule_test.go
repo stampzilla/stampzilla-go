@@ -113,10 +113,20 @@ func TestRunActions(t *testing.T) {
 			"400ms",
 			"uuid",
 		},
+		Destinations_: []string{
+			"a",
+			"b",
+		},
 	}
 
 	now := time.Now()
-	r.Run(savedState, syncer)
+	cnt := 0
+	triggerDestination := func(string, string) error {
+		cnt = cnt + 1
+		return nil
+	}
+
+	r.Run(savedState, syncer, triggerDestination)
 	if time.Now().Sub(now) < time.Millisecond*200 {
 		t.Error("Expected to sleep in the action for at least 200ms")
 	}
@@ -125,6 +135,7 @@ func TestRunActions(t *testing.T) {
 	assert.Equal(t, false, syncer.Devices.Get(devices.ID{Node: "node", ID: "id"}).State["on"])
 	assert.Equal(t, true, syncer.Devices.Get(devices.ID{Node: "node", ID: "id"}).State["a"])
 	assert.Equal(t, true, syncer.Devices.Get(devices.ID{Node: "node", ID: "id"}).State["b"])
+	assert.Equal(t, 2, cnt)
 }
 
 func TestRunActionsCancelSleep(t *testing.T) {
@@ -140,6 +151,11 @@ func TestRunActionsCancelSleep(t *testing.T) {
 			"100ms",
 			"100ms",
 		},
+		Destinations_: []string{
+			"a",
+			"b",
+			"c",
+		},
 	}
 
 	go func() {
@@ -148,12 +164,19 @@ func TestRunActionsCancelSleep(t *testing.T) {
 	}()
 
 	now := time.Now()
-	r.Run(savedState, syncer)
+	cnt := 0
+	triggerDestination := func(string, string) error {
+		cnt = cnt + 1
+		return nil
+	}
+
+	r.Run(savedState, syncer, triggerDestination)
 	dur := time.Now().Sub(now)
 	if dur < time.Millisecond*110 {
 		t.Error("Expected to sleep in the action for at least 200ms slept: ", dur)
 	}
 	assert.Contains(t, logBuf.String(), "stopping action 1 due to cancel")
+	assert.Equal(t, 0, cnt)
 }
 func BenchmarkEval(b *testing.B) {
 	devs := devices.NewList()
