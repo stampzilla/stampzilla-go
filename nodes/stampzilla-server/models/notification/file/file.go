@@ -72,6 +72,6 @@ func (f *FileSender) notify(trigger bool, filename string, body string) error {
 	return err
 }
 
-func (f *FileSender) Destinations() (error, map[string]string) {
-	return fmt.Errorf("Not implemented"), nil
+func (f *FileSender) Destinations() (map[string]string, error) {
+	return nil, fmt.Errorf("not implemented")
 }

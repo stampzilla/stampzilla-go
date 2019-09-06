@@ -85,6 +85,6 @@ func (wp *WirePusherSender) notify(trigger bool, dest string, body string) error
 	return err
 }
 
-func (wp *WirePusherSender) Destinations() (error, map[string]string) {
-	return fmt.Errorf("Not implemented"), nil
+func (wp *WirePusherSender) Destinations() (map[string]string, error) {
+	return nil, fmt.Errorf("not implemented")
 }

@@ -2,7 +2,7 @@ package webserver
 
 import (
 	"crypto/tls"
-	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -143,18 +143,39 @@ func (ws *Webserver) handleMessage() func(s *melody.Session, msg []byte) {
 		data.FromUUID = id.(string)
 
 		go func() {
-			err, resp := ws.WebsocketHandler.Message(s, data)
+			defer func() {
+				if r := recover(); r != nil {
+					err, ok := r.(error)
+					if !ok {
+						err = fmt.Errorf("%s", r)
+					}
+
+					msg, err := models.NewMessage("failure", err.Error())
+					if err != nil {
+						logrus.Error(err)
+					}
+					msg.Request = data.Request
+					err = msg.WriteTo(s)
+					if err != nil {
+						logrus.Error(err)
+					}
+				}
+			}()
+			resp, err := ws.WebsocketHandler.Message(s, data)
 
 			// The message contains a request ID, so respond with the result
 			if len(data.Request) > 0 {
-				msg := &models.Message{
-					Type: "success",
-					Body: resp,
+				msg, e := models.NewMessage("success", resp)
+				if e != nil {
+					logrus.Error(e)
 				}
 				if err != nil {
-					msg.Type = "failure"
-					msg.Body, _ = json.Marshal(err.Error())
+					msg, e = models.NewMessage("failure", err.Error())
+					if err != nil {
+						logrus.Error(e)
+					}
 				}
+
 				msg.Request = data.Request
 				err := msg.WriteTo(s)
 				if err != nil {

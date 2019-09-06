@@ -91,13 +91,13 @@ func sliceHas(s []string, val string) bool {
 	return false
 }
 
-func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *models.Message) (error, json.RawMessage) {
+func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *models.Message) (json.RawMessage, error) {
 	switch msg.Type {
 	case "accept-request":
 		connection := ""
 		err := json.Unmarshal(msg.Body, &connection)
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
 
 		wsh.Store.AcceptRequest(connection)
@@ -105,7 +105,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		subscribeTo := []string{}
 		err := json.Unmarshal(msg.Body, &subscribeTo)
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
 
 		v, exists := s.Get("subscriptions")
@@ -138,7 +138,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		device := devices.NewDevice()
 		err := json.Unmarshal(msg.Body, device)
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
 
 		logrus.WithFields(logrus.Fields{
@@ -153,7 +153,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		devs := make(devices.DeviceMap)
 		err := json.Unmarshal(msg.Body, &devs)
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
 
 		logrus.WithFields(logrus.Fields{
@@ -171,7 +171,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		node := &models.Node{}
 		err := json.Unmarshal(msg.Body, node)
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
 
 		logrus.WithFields(logrus.Fields{
@@ -182,14 +182,14 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		wsh.Store.AddOrUpdateNode(node)
 		err = wsh.Store.SaveNodes()
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
 		wsh.WebsocketSender.SendToID(node.UUID, "setup", node)
 	case "setup-device":
 		device := &devices.Device{}
 		err := json.Unmarshal(msg.Body, device)
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
 
 		logrus.WithFields(logrus.Fields{
@@ -199,13 +199,13 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 
 		node := wsh.Store.GetNode(device.ID.Node)
 		if node == nil {
-			return fmt.Errorf("Node was not found"), nil
+			return nil, fmt.Errorf("Node was not found")
 		}
 
 		node.SetAlias(device.ID, device.Alias)
 		err = wsh.Store.SaveNode(node)
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
 		BroadcastUpdate(wsh.WebsocketSender)("nodes", wsh.Store)
 
@@ -219,7 +219,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		devs := devices.NewList()
 		err := json.Unmarshal(msg.Body, devs)
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
 
 		logrus.WithFields(logrus.Fields{
@@ -237,7 +237,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		rules := logic.Rules{}
 		err := json.Unmarshal(msg.Body, &rules)
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
 
 		logrus.WithFields(logrus.Fields{
@@ -250,7 +250,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		destinations := map[string]*notification.Destination{}
 		err := json.Unmarshal(msg.Body, &destinations)
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
 
 		logrus.WithFields(logrus.Fields{
@@ -272,7 +272,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		var req RequestBody
 		err := json.Unmarshal(msg.Body, &req)
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
 
 		logrus.WithFields(logrus.Fields{
@@ -281,9 +281,9 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		}).Debug("Received trigger destination")
 
 		if req.Release {
-			return wsh.Store.ReleaseDestination(req.UUID, req.Body), nil
+			return nil, wsh.Store.ReleaseDestination(req.UUID, req.Body)
 		}
-		return wsh.Store.TriggerDestination(req.UUID, req.Body), nil
+		return nil, wsh.Store.TriggerDestination(req.UUID, req.Body)
 	case "sender-destinations":
 		type RequestBody struct {
 			UUID string `json:"uuid"`
@@ -292,7 +292,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		var req RequestBody
 		err := json.Unmarshal(msg.Body, &req)
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
 
 		logrus.WithFields(logrus.Fields{
@@ -300,19 +300,22 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 			"destination": req.UUID,
 		}).Debug("Get sender destinations")
 
-		err, dest := wsh.Store.GetSenderDestinations(req.UUID)
+		dest, err := wsh.Store.GetSenderDestinations(req.UUID)
+		if err != nil {
+			return nil, err
+		}
 
 		data, err := json.Marshal(dest)
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
 
-		return err, data
+		return data, err
 	case "update-senders":
 		senders := map[string]notification.Sender{}
 		err := json.Unmarshal(msg.Body, &senders)
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
 
 		logrus.WithFields(logrus.Fields{
@@ -328,7 +331,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		tasks := logic.Tasks{}
 		err := json.Unmarshal(msg.Body, &tasks)
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
 
 		logrus.WithFields(logrus.Fields{
@@ -341,7 +344,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		ss := logic.SavedStates{}
 		err := json.Unmarshal(msg.Body, &ss)
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
 
 		logrus.WithFields(logrus.Fields{
@@ -355,7 +358,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 			"type": msg.Type,
 		}).Warnf("Received unknown message")
 
-		return fmt.Errorf("Unknown request %s", msg.Type), nil
+		return nil, fmt.Errorf("Unknown request %s", msg.Type)
 	}
 
 	return nil, nil

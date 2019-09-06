@@ -48,6 +48,6 @@ func (es *EmailSender) notify(trigger bool, dest []string, body string) error {
 		es.From, dest, []byte(msg))
 }
 
-func (es *EmailSender) Destinations() (error, map[string]string) {
-	return fmt.Errorf("Not implemented"), nil
+func (es *EmailSender) Destinations() (map[string]string, error) {
+	return nil, fmt.Errorf("not implemented")
 }

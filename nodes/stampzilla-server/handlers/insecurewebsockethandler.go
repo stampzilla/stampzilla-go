@@ -31,13 +31,17 @@ func NewInSecureWebsockerHandler(store *store.Store, config *models.Config, ws w
 	}
 }
 
-func (wsh *insecureWebsocketHandler) Message(s interfaces.MelodySession, msg *models.Message) (error, json.RawMessage) {
+func (wsh *insecureWebsocketHandler) Message(s interfaces.MelodySession, msg *models.Message) (json.RawMessage, error) {
 
 	// client requested certificate. We must approve manually
 
 	if msg.Type == "certificate-signing-request" {
 		var body models.Request
-		json.Unmarshal(msg.Body, &body)
+		err := json.Unmarshal(msg.Body, &body)
+		if err != nil {
+			logrus.Error(err)
+			return nil, nil
+		}
 
 		cert := &strings.Builder{}
 		id, _ := s.Get(websocket.KeyID.String())
@@ -66,7 +70,7 @@ func (wsh *insecureWebsocketHandler) Message(s interfaces.MelodySession, msg *mo
 
 	logrus.Warn("Unsecure ws sent data: ", msg)
 
-	return fmt.Errorf("Unknown request %s", msg.Type), nil
+	return nil, fmt.Errorf("unknown request %s", msg.Type)
 }
 
 func (wsh *insecureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.Request, keys map[string]interface{}) error {
@@ -80,9 +84,7 @@ func (wsh *insecureWebsocketHandler) Connect(s interfaces.MelodySession, r *http
 	if err != nil {
 		return err
 	}
-	msg.WriteTo(s)
-
-	return nil
+	return msg.WriteTo(s)
 }
 
 func (wsh *insecureWebsocketHandler) Disconnect(s interfaces.MelodySession) error {

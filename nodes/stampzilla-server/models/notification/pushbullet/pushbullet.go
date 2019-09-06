@@ -53,13 +53,13 @@ func (pb *PushbulletSender) Trigger(dest []string, body string) error {
 }
 
 func (pb *PushbulletSender) Release(dest []string, body string) error {
-	return fmt.Errorf("Not implemented")
+	return fmt.Errorf("not implemented")
 }
 
-func (pb *PushbulletSender) Destinations() (error, map[string]string) {
+func (pb *PushbulletSender) Destinations() (map[string]string, error) {
 	req, err := http.NewRequest("GET", "https://api.pushbullet.com/v2/devices", nil)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	req.Header.Add("Access-Token", pb.Token)
@@ -68,7 +68,7 @@ func (pb *PushbulletSender) Destinations() (error, map[string]string) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	defer resp.Body.Close()
@@ -98,13 +98,13 @@ func (pb *PushbulletSender) Destinations() (error, map[string]string) {
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	var response = Response{}
 	err = json.Unmarshal(b, &response)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	//spew.Dump(b)
@@ -113,5 +113,5 @@ func (pb *PushbulletSender) Destinations() (error, map[string]string) {
 		dest[dev.Iden] = dev.Nickname
 	}
 
-	return nil, dest
+	return dest, nil
 }

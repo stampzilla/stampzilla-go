@@ -62,6 +62,6 @@ func (ws *WebhookSender) notify(trigger bool, url string, body string) error {
 	return err
 }
 
-func (ws *WebhookSender) Destinations() (error, map[string]string) {
-	return fmt.Errorf("Not implemented"), nil
+func (ws *WebhookSender) Destinations() (map[string]string, error) {
+	return nil, fmt.Errorf("not implemented")
 }

@@ -42,6 +42,14 @@
   version = "v1.1.0"
 
 [[projects]]
+  digest = "1:cc93dd54278f6c0dd4b43588b3cf2c07b09b2a6dd4e2617edf81aa8946054c1e"
+  name = "github.com/gin-contrib/cors"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "5f50d4fb4e0306dcacc6f8e9bea2dcee784dbbdf"
+  version = "v1.3.0"
+
+[[projects]]
   branch = "master"
   digest = "1:4502ebf1d3fff349d694807160ce3a4dea1834729e6cedf7f58f0b385bd8ee58"
   name = "github.com/gin-contrib/gzip"
@@ -91,7 +99,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:da29d08e75fc6ee40643fcd6cca266025d738e9f77a357cdb62bff09b9e26d5b"
+  digest = "1:d42120f32e0fb326ba2b9dc6d29b51d2ffe669d381fe1a1b5ab5fa92570e7fab"
   name = "github.com/google/cel-go"
   packages = [
     "checker",
@@ -111,7 +119,7 @@
     "parser/gen",
   ]
   pruneopts = "UT"
-  revision = "7053dd141c9b8273b272a04502f10b2b4d00a984"
+  revision = "5bd7b8556a1bee8d0c18bae16fa1c189e0a3e714"
 
 [[projects]]
   digest = "1:3a26588bc48b96825977c1b3df964f8fd842cd6860cc26370588d3563433cf11"
@@ -130,16 +138,12 @@
   version = "v1.4.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:14e2169fd9308979db0708469e3a780c83ed784c0e03c1b22c07da297dca5ac8"
-  name = "github.com/hashicorp/go.net"
-  packages = [
-    "internal/iana",
-    "ipv4",
-    "ipv6",
-  ]
+  digest = "1:12301cb9a567a67034af5dbe40b40306a3457c935789817acc7730a19a882263"
+  name = "github.com/jonaz/cron"
+  packages = ["."]
   pruneopts = "UT"
-  revision = "104dcad90073cd8d1e6828b2af19185b60cf3e29"
+  revision = "483223747f6b728cfe1b327fe05b2fa4dd456b27"
+  version = "v1"
 
 [[projects]]
   branch = "master"
@@ -156,14 +160,6 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "582d7afa93c309f589d606e33e3be5a72b596d3b"
-
-[[projects]]
-  branch = "master"
-  digest = "1:f4b9c23065f9592bdfa00591d55d7641c72def8dbac5a25dc21ce4914bb1d9b5"
-  name = "github.com/jonaz/mdns"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "7d17fa691a5ec88ca0609d7a3d2aabf5a43c530d"
 
 [[projects]]
   digest = "1:be97e109f627d3ba8edfef50c9c74f0d0c17cbe3a2e924a8985e4804a894f282"
@@ -195,6 +191,14 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "57fdcb988a5c543893cc61bce354a6e24ab70022"
+
+[[projects]]
+  digest = "1:04c25bbbd6aee780b48b01047696dc6e8b8ffa272d4f68df991e6afad640b9ae"
+  name = "github.com/micro/mdns"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "9cac7778d08d8e30f6aa4b10378002d5146ee568"
+  version = "v0.3.0"
 
 [[projects]]
   digest = "1:478b8f5ee3eac843d206afd9c2c2a7133d0b7da7a65e8f9edbb1ebbf6758bdb0"
@@ -251,6 +255,30 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "566a5f690849162ff53cf98f3c42135389d63f95"
+
+[[projects]]
+  branch = "master"
+  digest = "1:47b5c40b74d778122974828ba26247827a6b21416cdf7ccbe1e88ae18590e156"
+  name = "github.com/stamp/mdns"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "df204ac59ca1a493715557ea0ca60169619efc63"
+
+[[projects]]
+  digest = "1:54a04f7042e1e251c69e4526abbd988616149abb8d7cd3c3a57dcd3ed25677e1"
+  name = "github.com/stampzilla/stampzilla-go"
+  packages = [
+    "nodes/stampzilla-server/interfaces",
+    "nodes/stampzilla-server/models",
+    "nodes/stampzilla-server/models/devices",
+    "pkg/build",
+    "pkg/node",
+    "pkg/types",
+    "pkg/websocket",
+  ]
+  pruneopts = "UT"
+  revision = "06381a9686c0e34a2768fc2293c59e50362b2aef"
+  version = "v2.0.0-rc9"
 
 [[projects]]
   digest = "1:972c2427413d41a1e06ca4897e8528e5a1622894050e2f527b38ddf0f343f759"
@@ -405,6 +433,8 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/davecgh/go-spew/spew",
+    "github.com/gin-contrib/cors",
     "github.com/gin-contrib/gzip",
     "github.com/gin-gonic/gin",
     "github.com/google/cel-go/checker",
@@ -416,15 +446,19 @@
     "github.com/google/cel-go/parser",
     "github.com/google/uuid",
     "github.com/gorilla/websocket",
+    "github.com/jonaz/cron",
     "github.com/jonaz/ginlogrus",
     "github.com/jonaz/gograce",
-    "github.com/jonaz/mdns",
     "github.com/koding/multiconfig",
     "github.com/olahol/melody",
     "github.com/onrik/logrus/filename",
     "github.com/posener/wstest",
     "github.com/rakyll/statik/fs",
     "github.com/sirupsen/logrus",
+    "github.com/stamp/mdns",
+    "github.com/stampzilla/stampzilla-go/pkg/build",
+    "github.com/stampzilla/stampzilla-go/pkg/node",
+    "github.com/stampzilla/stampzilla-go/pkg/types",
     "github.com/stretchr/testify/assert",
     "google.golang.org/genproto/googleapis/api/expr/v1alpha1",
   ]

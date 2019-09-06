@@ -25,7 +25,7 @@ type Sender struct {
 type SenderInterface interface {
 	Trigger([]string, string) error
 	Release([]string, string) error
-	Destinations() (error, map[string]string)
+	Destinations() (map[string]string, error)
 }
 
 func (s Sender) Trigger(dest *Destination, body string) error {
@@ -45,13 +45,13 @@ func (s Sender) Release(dest *Destination, body string) error {
 	return fmt.Errorf("Release - Not implemented")
 }
 
-func (s Sender) Destinations() (error, map[string]string) {
+func (s Sender) Destinations() (map[string]string, error) {
 	sd := NewSender(s.Type, s.Parameters)
 	if sd != nil {
 		return sd.Destinations()
 	}
 
-	return fmt.Errorf("Trigger - Not implemented"), nil
+	return nil, fmt.Errorf("Trigger - Not implemented")
 }
 
 func NewSender(t string, p json.RawMessage) SenderInterface {

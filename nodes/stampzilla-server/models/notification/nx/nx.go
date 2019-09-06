@@ -76,17 +76,17 @@ func (nx *NxSender) notify(trigger bool, dest []string, body string) error {
 	return err
 }
 
-func (nx *NxSender) Destinations() (error, map[string]string) {
+func (nx *NxSender) Destinations() (map[string]string, error) {
 	u, err := url.Parse(nx.Server)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	u.Path = "/ec2/getCamerasEx"
 
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	req.SetBasicAuth(nx.Username, nx.Password)
@@ -94,7 +94,7 @@ func (nx *NxSender) Destinations() (error, map[string]string) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	defer resp.Body.Close()
@@ -149,13 +149,13 @@ func (nx *NxSender) Destinations() (error, map[string]string) {
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	var response = Response{}
 	err = json.Unmarshal(b, &response)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	dest := make(map[string]string)
@@ -163,5 +163,5 @@ func (nx *NxSender) Destinations() (error, map[string]string) {
 		dest[dev.ID] = dev.Name
 	}
 
-	return nil, dest
+	return dest, nil
 }

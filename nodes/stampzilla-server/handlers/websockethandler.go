@@ -9,7 +9,7 @@ import (
 )
 
 type WebsocketHandler interface {
-	Message(s interfaces.MelodySession, msg *models.Message) (error, json.RawMessage)
+	Message(s interfaces.MelodySession, msg *models.Message) (json.RawMessage, error)
 	Connect(s interfaces.MelodySession, r *http.Request, keys map[string]interface{}) error
 	Disconnect(s interfaces.MelodySession) error
 }

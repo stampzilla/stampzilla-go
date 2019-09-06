@@ -3,6 +3,7 @@ package store
 import (
 	"fmt"
 
+	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/notification"
 )
 
@@ -23,19 +24,23 @@ func (store *Store) AddOrUpdateDestination(dest *notification.Destination) {
 	}
 
 	store.Destinations.Add(dest)
-	store.Destinations.Save()
+	err := store.Destinations.Save()
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
 	store.runCallbacks("destinations")
 }
 
 func (store *Store) TriggerDestination(dest string, body string) error {
 	destination := store.Destinations.Get(dest)
 	if destination == nil {
-		return fmt.Errorf("Destination defintion not found")
+		return fmt.Errorf("destination defintion not found")
 	}
 
 	sender, ok := store.Senders.Get(destination.Sender)
 	if !ok {
-		return fmt.Errorf("Sender not found")
+		return fmt.Errorf("sender not found")
 	}
 
 	return sender.Trigger(destination, body)
@@ -44,21 +49,21 @@ func (store *Store) TriggerDestination(dest string, body string) error {
 func (store *Store) ReleaseDestination(dest string, body string) error {
 	destination := store.Destinations.Get(dest)
 	if destination == nil {
-		return fmt.Errorf("Destination defintion not found")
+		return fmt.Errorf("destination defintion not found")
 	}
 
 	sender, ok := store.Senders.Get(destination.Sender)
 	if !ok {
-		return fmt.Errorf("Sender not found")
+		return fmt.Errorf("sender not found")
 	}
 
 	return sender.Release(destination, body)
 }
 
-func (store *Store) GetSenderDestinations(id string) (error, map[string]string) {
+func (store *Store) GetSenderDestinations(id string) (map[string]string, error) {
 	sender, ok := store.Senders.Get(id)
 	if !ok {
-		return fmt.Errorf("Sender not found"), nil
+		return nil, fmt.Errorf("sender not found")
 	}
 
 	return sender.Destinations()
