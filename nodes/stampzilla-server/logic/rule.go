@@ -16,38 +16,30 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/notification"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
 	stypes "github.com/stampzilla/stampzilla-go/pkg/types"
 	exprpb "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 )
 
 type Rule struct {
-	Name_          string                `json:"name"`
-	Uuid_          string                `json:"uuid"`
-	Operator_      string                `json:"operator"`
-	Active_        bool                  `json:"active"`
-	Pending_       bool                  `json:"pending"`
-	Enabled        bool                  `json:"enabled"`
-	Expression_    string                `json:"expression"`
-	Conditions_    map[string]bool       `json:"conditions"`
-	Actions_       []string              `json:"actions"`
-	Notifications_ notification.Messages `json:"notifications"`
-	Labels_        models.Labels         `json:"labels"`
-	For_           stypes.Duration       `json:"for"`
-	Type_          string                `json:"type"`
-	Destinations_  []string              `json:"destinations"`
-	checkedExp     *exprpb.CheckedExpr
+	Name_         string          `json:"name"`
+	Uuid_         string          `json:"uuid"`
+	Active_       bool            `json:"active"`
+	Pending_      bool            `json:"pending"`
+	Enabled       bool            `json:"enabled"`
+	Expression_   string          `json:"expression"`
+	Conditions_   map[string]bool `json:"conditions"`
+	Actions_      []string        `json:"actions"`
+	Labels_       models.Labels   `json:"labels"`
+	For_          stypes.Duration `json:"for"`
+	Type_         string          `json:"type"`
+	Destinations_ []string        `json:"destinations"`
+	checkedExp    *exprpb.CheckedExpr
 	sync.RWMutex
 	cancel context.CancelFunc
 	stop   chan struct{}
 }
 
-func (r *Rule) Operator() string {
-	r.RLock()
-	defer r.RUnlock()
-	return r.Operator_
-}
 func (r *Rule) Expression() string {
 	r.RLock()
 	defer r.RUnlock()
@@ -83,11 +75,6 @@ func (r *Rule) Conditions() map[string]bool {
 	r.RLock()
 	defer r.RUnlock()
 	return r.Conditions_
-}
-func (r *Rule) Notifications() notification.Messages {
-	r.RLock()
-	defer r.RUnlock()
-	return r.Notifications_
 }
 
 func (r *Rule) SetActive(a bool) {

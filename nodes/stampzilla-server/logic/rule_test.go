@@ -11,6 +11,38 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestSetUUID(t *testing.T) {
+	r := &Rule{
+		Uuid_: "a",
+	}
+
+	assert.Equal(t, r.Uuid(), "a")
+
+	r.SetUuid("b")
+
+	assert.Equal(t, r.Uuid(), "b")
+}
+
+func TestConditions(t *testing.T) {
+	c := map[string]bool{
+		"a": true,
+		"b": false,
+	}
+	r := &Rule{
+		Conditions_: c,
+	}
+
+	assert.Equal(t, r.Conditions(), c)
+}
+
+func TestType(t *testing.T) {
+	r := &Rule{
+		Type_: "type1",
+	}
+
+	assert.Equal(t, r.Type(), "type1")
+}
+
 func TestEval(t *testing.T) {
 
 	tests := []struct {

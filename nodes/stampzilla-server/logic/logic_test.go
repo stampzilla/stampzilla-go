@@ -61,16 +61,34 @@ func TestLoadRulesFromFile(t *testing.T) {
 	t.Log(string(jsonData))
 }
 
-func TestEvaluateRules(t *testing.T) {
-
+func TestGetSetRules(t *testing.T) {
 	syncer := NewMockSender()
-
 	savedState := NewSavedStateStore()
 	l := New(savedState, syncer)
+
+	rules := Rules{
+		"rule1": &Rule{},
+		"rule2": &Rule{},
+	}
+	cnt := 0
+	go func() {
+		<-l.c
+		cnt++
+	}()
+	l.SetRules(rules)
+
+	assert.Equal(t, l.GetRules(), rules)
+	assert.Equal(t, cnt, 1)
+}
+
+func TestEvaluateRules(t *testing.T) {
+	syncer := NewMockSender()
+	savedState := NewSavedStateStore()
+	l := New(savedState, syncer)
+
 	r := l.AddRule("test")
 	r.Expression_ = `devices["node.id"].on == true`
 	r.Enabled = true
-
 	l.updateDevice(&devices.Device{
 		ID: devices.ID{
 			Node: "node",
@@ -85,7 +103,9 @@ func TestEvaluateRules(t *testing.T) {
 
 	assert.Equal(t, true, l.Rules[r.Uuid()].Active())
 
-	l.updateDevice(&devices.Device{
+	ctx, cancel := context.WithCancel(context.Background())
+	l.Start(ctx)
+	l.UpdateDevice(&devices.Device{
 		ID: devices.ID{
 			Node: "node",
 			ID:   "id",
@@ -94,8 +114,39 @@ func TestEvaluateRules(t *testing.T) {
 			"on": false,
 		},
 	})
-	l.EvaluateRules(context.Background())
+	//l.EvaluateRules(context.Background())
 	assert.Equal(t, false, l.Rules[r.Uuid()].Active())
+	cancel()
+}
+
+func TestEvaluateBrokenRules(t *testing.T) {
+	syncer := NewMockSender()
+	savedState := NewSavedStateStore()
+	l := New(savedState, syncer)
+
+	r := l.AddRule("test")
+	r.Expression_ = `devices["node.id"].on =a= true`
+	r.Enabled = true
+	l.updateDevice(&devices.Device{
+		ID: devices.ID{
+			Node: "node",
+			ID:   "id",
+		},
+		State: devices.State{
+			"on": true,
+		},
+	})
+
+	gotError := false
+	l.OnReportState(func(id string, state devices.State) {
+		if state["error"].(string) != "" {
+			gotError = true
+		}
+	})
+	l.EvaluateRules(context.Background())
+
+	assert.Equal(t, false, l.Rules[r.Uuid()].Active())
+	assert.Equal(t, true, gotError)
 }
 
 func TestEvaluateRulesCanceledIfNotActive(t *testing.T) {
