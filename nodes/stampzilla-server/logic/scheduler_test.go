@@ -10,6 +10,9 @@ import (
 )
 
 func TestSchedulerRunTask(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping scheduler test in short mode")
+	}
 
 	syncer := NewMockSender()
 

@@ -114,9 +114,10 @@ func TestEvaluateRules(t *testing.T) {
 			"on": false,
 		},
 	})
+	cancel()
+	l.Wait()
 	//l.EvaluateRules(context.Background())
 	assert.Equal(t, false, l.Rules[r.Uuid()].Active())
-	cancel()
 }
 
 func TestEvaluateBrokenRules(t *testing.T) {

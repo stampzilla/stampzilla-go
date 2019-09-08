@@ -142,7 +142,7 @@ func TestRunActions(t *testing.T) {
 
 	r := &Rule{
 		Actions_: []string{
-			"400ms",
+			"50ms",
 			"uuid",
 		},
 		Destinations_: []string{
@@ -159,8 +159,8 @@ func TestRunActions(t *testing.T) {
 	}
 
 	r.Run(savedState, syncer, triggerDestination)
-	if time.Now().Sub(now) < time.Millisecond*200 {
-		t.Error("Expected to sleep in the action for at least 200ms")
+	if time.Now().Sub(now) < time.Millisecond*25 {
+		t.Error("Expected to sleep in the action for at least 25ms")
 	}
 
 	//t.Log(store.Devices.Get("node", "id"))
