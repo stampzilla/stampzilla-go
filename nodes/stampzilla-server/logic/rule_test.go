@@ -86,7 +86,7 @@ func TestEval(t *testing.T) {
 			},
 			Expression:  `rules["rule"] == true `,
 			Expected:    false,
-			ExpectedErr: fmt.Errorf("no such key: <nil>"),
+			ExpectedErr: fmt.Errorf("no such key: rule"),
 		},
 	}
 

@@ -86,7 +86,6 @@ func sliceHas(s []string, val string) bool {
 		if v == val {
 			return true
 		}
-
 	}
 	return false
 }

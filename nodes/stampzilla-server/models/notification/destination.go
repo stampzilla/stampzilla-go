@@ -98,16 +98,16 @@ func (d *Destinations) Remove(uuid string) {
 }
 
 // Save saves the rules to rules.json
-func (s *Destinations) Save() error {
+func (d *Destinations) Save() error {
 	configFile, err := os.Create("destinations.json")
 	if err != nil {
 		return fmt.Errorf("destinations: error saving destinations: %s", err.Error())
 	}
 	encoder := json.NewEncoder(configFile)
 	encoder.SetIndent("", "\t")
-	s.Lock()
-	defer s.Unlock()
-	err = encoder.Encode(s.destinations)
+	d.Lock()
+	defer d.Unlock()
+	err = encoder.Encode(d.destinations)
 	if err != nil {
 		return fmt.Errorf("destinations: error saving destinations: %s", err.Error())
 	}
@@ -115,7 +115,7 @@ func (s *Destinations) Save() error {
 }
 
 //Load loads the rules from rules.json
-func (s *Destinations) Load() error {
+func (d *Destinations) Load() error {
 	logrus.Debug("destinations: loading rules from destinations.json")
 	configFile, err := os.Open("destinations.json")
 	if err != nil {
@@ -126,14 +126,12 @@ func (s *Destinations) Load() error {
 		return fmt.Errorf("destinations: error loading destinations.json: %s", err.Error())
 	}
 
-	s.Lock()
-	defer s.Unlock()
+	d.Lock()
+	defer d.Unlock()
 	jsonParser := json.NewDecoder(configFile)
-	if err = jsonParser.Decode(&s.destinations); err != nil {
+	if err = jsonParser.Decode(&d.destinations); err != nil {
 		return fmt.Errorf("logic: error loading rules.json: %s", err.Error())
 	}
-
-	//TODO loop over rules and generate UUIDs if needed. If it was needed save the rules again
 
 	return nil
 }

@@ -145,9 +145,15 @@ func (ws *Webserver) handleMessage() func(s *melody.Session, msg []byte) {
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {
+
 					err, ok := r.(error)
 					if !ok {
 						err = fmt.Errorf("%s", r)
+					}
+
+					if len(data.Request) == 0 {
+						logrus.Error(err)
+						return
 					}
 
 					msg, err := models.NewMessage("failure", err.Error())

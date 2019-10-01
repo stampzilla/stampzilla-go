@@ -120,8 +120,6 @@ func (s *Senders) Load() error {
 		return fmt.Errorf("logic: error loading rules.json: %s", err.Error())
 	}
 
-	//TODO loop over rules and generate UUIDs if needed. If it was needed save the rules again
-
 	return nil
 }
 

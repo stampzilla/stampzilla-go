@@ -124,7 +124,6 @@ func TestNodeToServerDevices(t *testing.T) {
 	//Make sure node and server has the correct device key which is unique with nodeuuid + device id
 	assert.Contains(t, main.Store.Devices.All(), devices.ID{Node: node.UUID, ID: "1"})
 	assert.Contains(t, node.Devices.All(), devices.ID{Node: node.UUID, ID: "1"})
-
 }
 
 func TestNodeToServerSubscribeDevices(t *testing.T) {
