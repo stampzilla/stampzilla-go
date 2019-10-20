@@ -195,6 +195,12 @@ func (tunnel *tunnel) decodeKNX(msg knx.GroupEvent) error {
 			value = new(dpt.DPT_9004) //2 bytes floating point
 		case "humidity":
 			value = new(dpt.DPT_9001) //2 bytes floating point
+		case "co2":
+			value = new(dpt.DPT_9001) //2 bytes floating point
+		case "voc":
+			value = new(dpt.DPT_9001) //2 bytes floating point
+		case "dewPoint":
+			value = new(dpt.DPT_9001) //2 bytes floating point
 		}
 
 		if dptv, ok := value.(dpt.DatapointValue); ok {

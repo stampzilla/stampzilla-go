@@ -47,11 +47,23 @@ func setupSensor(node *node.Node, tunnel *tunnel, sensor sensor) {
 	if sensor.Motion != "" {
 		tunnel.AddLink(sensor.Motion, "motion", "bool", dev)
 	}
+	if sensor.MotionTrue != "" {
+		tunnel.AddLink(sensor.Motion, "motionTrue", "bool", dev)
+	}
 	if sensor.Lux != "" {
 		tunnel.AddLink(sensor.Lux, "lux", "lux", dev)
 	}
 	if sensor.Humidity != "" {
 		tunnel.AddLink(sensor.Humidity, "humidity", "humidity", dev)
+	}
+	if sensor.Co2 != "" {
+		tunnel.AddLink(sensor.Co2, "co2", "co2", dev)
+	}
+	if sensor.Voc != "" {
+		tunnel.AddLink(sensor.Voc, "voc", "voc", dev)
+	}
+	if sensor.DewPoint != "" {
+		tunnel.AddLink(sensor.DewPoint, "dewpoint", "dewPoint", dev)
 	}
 
 	node.AddOrUpdate(dev)

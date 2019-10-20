@@ -31,9 +31,14 @@ type light struct {
 type sensor struct {
 	ID          string `json:"id"`
 	Motion      string `json:"motion"`
+	MotionTrue  string `json:"motionTrue"`
 	Lux         string `json:"lux"`
 	Temperature string `json:"temperature"`
 	Humidity    string `json:"humidity"`
+	Co2         string `json:"co2"`
+	Voc         string `json:"voc"`
+	AirPressure string `json:"airPressure"`
+	DewPoint    string `json:"dewPoint"`
 }
 
 func (light *light) Switch(tunnel *tunnel, target bool) error {
