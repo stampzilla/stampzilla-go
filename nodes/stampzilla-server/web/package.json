@@ -88,6 +88,7 @@
     "react-router-dom": "^5.1.2",
     "react-switch": "^5.0.1",
     "reactstrap": "^8.1.1",
+    "reconnecting-websocket": "^4.2.0",
     "reconnectingwebsocket": "^1.0.0",
     "redux": "^4.0.4",
     "redux-define": "^1.1.1",

@@ -58,6 +58,52 @@
 @import "~admin-lte/dist/css/adminlte";
 @import "~bootstrap/scss/bootstrap";
 
+html,
+body {
+  height: 100% !important;
+  margin: 0;
+  padding: 0;
+}
+
+.wrapper {
+  height: 100%;
+}
+
+.landing-container {
+  background: url(images/gloomy-forest-background.jpg) fixed no-repeat;
+  background-position: center center;
+  background-size: cover;
+  height: 100%;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  .background {
+    background: inherit;
+    padding: 30px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+
+    .content {
+      position: inherit;
+    }
+
+    &::before {
+      background: inherit;
+      content: "";
+      position: absolute;
+      top: -25px;
+      left: -25px;
+      bottom: -25px;
+      right: -25px;
+      box-shadow: inset 0 0 0 200px rgba(255, 255, 255, 0.2);
+      filter: blur(10px);
+    }
+  }
+}
+
 //.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active {
 //background: $primary;
 //}
@@ -234,15 +280,14 @@ $switch-transition: 0.2s all !default;
   }
 }
 
-
 .field-description {
-     font-size: .8em;
-     color: $gray-500;
-     margin-bottom: 0.5rem;
+  font-size: 0.8em;
+  color: $gray-500;
+  margin-bottom: 0.5rem;
 }
 
 .error-table {
-    th {
-        text-align: left;
-    }
+  th {
+    text-align: left;
+  }
 }

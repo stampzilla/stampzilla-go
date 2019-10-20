@@ -1,10 +1,15 @@
 import { Component } from 'react';
 import { connect } from 'react-redux';
-import ReconnectableWebSocket from 'reconnectingwebsocket';
+import ReconnectingWebSocket from 'reconnecting-websocket';
 import Url from 'url';
 
 import { subscribe as certificates } from '../ducks/certificates';
-import { connected, disconnected, received } from '../ducks/connection';
+import {
+  connected,
+  disconnected,
+  received,
+  connecting,
+} from '../ducks/connection';
 import { subscribe as connections } from '../ducks/connections';
 import { subscribe as destinations } from '../ducks/destinations';
 import { subscribe as devices } from '../ducks/devices';
@@ -66,10 +71,10 @@ class Websocket extends Component {
     }
   }
 
-  onOpen = () => () => {
-    this.props.dispatch(connected());
-
+  onOpen = () => {
     const url = Url.parse(this.props.url);
+    this.props.dispatch(connected(url.port));
+
     if (url.protocol === 'wss:') {
       this.props.dispatch(updateServer({ secure: true }));
     }
@@ -89,19 +94,25 @@ class Websocket extends Component {
     });
   };
 
-  onClose = () => () => {
-    this.props.dispatch(disconnected());
+  onClose = (err) => {
+    let retrying = true;
+    if (err.code === 4001) {
+      this.socket.close();
+      retrying = false;
+    }
+
+    this.props.dispatch(disconnected(err.code, err.reason, retrying));
     this.subscriptions = {};
   };
 
-  onMessage = () => (event) => {
+  onMessage = (event) => {
     const { dispatch } = this.props;
     const parsed = JSON.parse(event.data);
 
     dispatch(received(parsed));
     const subscriptions = this.subscriptions[parsed.type];
     if (subscriptions) {
-      subscriptions.forEach((callback) => callback(parsed.body));
+      subscriptions.forEach(callback => callback(parsed.body));
     }
     switch (parsed.type) {
       case 'server-info': {
@@ -118,6 +129,8 @@ class Websocket extends Component {
         const req = activeRequests.find((a) => a.id === parsed.request);
         req.reject(parsed.body);
         activeRequests = activeRequests.filter((a) => a.id !== parsed.request);
+      case 'ready': {
+        this.onOpen();
         break;
       }
       default: {
@@ -152,12 +165,16 @@ class Websocket extends Component {
         timeoutInterval: 1000,
       },
     );
+
+    const parsedUrl = Url.parse(url);
+    props.dispatch(connecting(parsedUrl.port));
+
     writeSocket = this.socket;
     // writeFunc = this.socket.send;
-    this.socket.onmessage = this.onMessage();
-    this.socket.onopen = this.onOpen();
-    this.socket.onerror = this.onClose();
-    this.socket.onclose = this.onClose();
+    this.socket.onmessage = this.onMessage;
+    // this.socket.onopen = this.onOpen;
+    this.socket.onerror = this.onClose;
+    this.socket.onclose = this.onClose;
   }
 
   subscribe = (ducks) => {
@@ -184,7 +201,7 @@ class Websocket extends Component {
   render = () => null;
 }
 
-const mapToProps = (state) => ({
+const mapToProps = state => ({
   url: state.getIn(['app', 'url']),
 });
 export default connect(mapToProps)(Websocket);

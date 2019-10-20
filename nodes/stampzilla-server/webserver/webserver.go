@@ -11,6 +11,8 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/jonaz/ginlogrus"
@@ -46,16 +48,32 @@ func (ws *Webserver) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	ws.router.ServeHTTP(w, req)
 }
 
-func (ws *Webserver) Init() *gin.Engine {
+func (ws *Webserver) Init(requireAuth bool) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 
 	r := gin.New()
 	r.Use(gzip.Gzip(gzip.DefaultCompression))
 
-	ws.initMelody()
+	ws.initMelody(requireAuth)
 
 	r.Use(ginlogrus.New(logrus.StandardLogger()))
-	r.Use(cors.Default())
+	r.Use(cors.New(cors.Config{
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"},
+		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		AllowOriginFunc: func(origin string) bool {
+			return true
+		},
+		MaxAge: 12 * time.Hour,
+	}))
+
+	if requireAuth {
+		store := cookie.NewStore([]byte("secret")) // TODO: fix a generated secret
+		r.Use(sessions.Sessions("stampzilla-session", store))
+		r.POST("/login", ws.handleLogin())
+		r.GET("/logout", ws.handleLogout())
+	}
 
 	statikFS, err := fs.New()
 	if err == nil { // we only service GUI if statik files can be found
@@ -78,7 +96,7 @@ func (ws *Webserver) Init() *gin.Engine {
 func (ws *Webserver) Start(addr string, tlsConfig *tls.Config) chan struct{} {
 	server, done := gograce.NewServerWithTimeout(10 * time.Second)
 
-	server.Handler = ws.Init()
+	server.Handler = ws.Init(tlsConfig != nil)
 	server.Addr = addr
 
 	go func() {
@@ -94,10 +112,10 @@ func (ws *Webserver) Start(addr string, tlsConfig *tls.Config) chan struct{} {
 	return done
 }
 
-func (ws *Webserver) initMelody() {
+func (ws *Webserver) initMelody(requireAuth bool) {
 	// Setup melody
 	ws.Melody.Upgrader.CheckOrigin = func(r *http.Request) bool { return true }
-	ws.Melody.HandleConnect(ws.handleConnect())
+	ws.Melody.HandleConnect(ws.handleConnect(requireAuth))
 	ws.Melody.HandleMessage(ws.handleMessage())
 	ws.Melody.HandleDisconnect(ws.handleDisconnect())
 }
@@ -109,8 +127,30 @@ func cspMiddleware() gin.HandlerFunc {
 	}
 }
 
-func (ws *Webserver) handleConnect() func(s *melody.Session) {
+func (ws *Webserver) handleConnect(requireAuth bool) func(s *melody.Session) {
 	return func(s *melody.Session) {
+		msg, err := models.NewMessage("server-info", models.ServerInfo{
+			Name:    ws.Config.Name,
+			UUID:    ws.Config.UUID,
+			TLSPort: ws.Config.TLSPort,
+			Port:    ws.Config.Port,
+		})
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
+		msg.WriteTo(s)
+
+		// Require an identity, if we are on the secure socket
+		_, ok := s.Keys["identity"]
+		if requireAuth && !ok {
+			// Websockets are not allowed to relay any http status codes to the client script.
+			// https://www.w3.org/TR/websockets/#feedback-from-the-protocol
+			// So to signal the webgui that the user is unauthorized we have to use exit codes above 4000.
+			// Error codes above 4000-49999 are reserved for private use.
+			s.CloseWithMsg(melody.FormatCloseMessage(4001, "unauthorized"))
+		}
+
 		proto, _ := s.Get(websocket.KeyProtocol.String())
 		id, _ := s.Get(websocket.KeyID.String())
 
@@ -120,11 +160,18 @@ func (ws *Webserver) handleConnect() func(s *melody.Session) {
 			Attributes: s.Keys,
 		})
 
-		err := ws.WebsocketHandler.Connect(s, s.Request, s.Keys)
+		err = ws.WebsocketHandler.Connect(s, s.Request, s.Keys)
 		if err != nil {
 			logrus.Error(err)
 			return
 		}
+
+		msg, err = models.NewMessage("ready", nil)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
+		msg.WriteTo(s)
 	}
 }
 
@@ -225,32 +272,37 @@ func (ws *Webserver) handleWs(m *melody.Melody) func(c *gin.Context) {
 		keys := make(map[string]interface{})
 		uuid := uuid.New().String()
 
+		// Try to identify the client
 		if c.Request.TLS != nil {
 			keys["secure"] = true
 
 			certs := c.Request.TLS.PeerCertificates
 			if len(certs) > 0 {
 				keys["identity"] = certs[0].Subject.CommonName
+
+				// Only accept X- headers from clients with a certificate
+				if c.Request.Header.Get("X-UUID") != "" {
+					uuid = c.Request.Header.Get("X-UUID")
+				}
+				keys["type"] = c.Request.Header.Get("X-TYPE")
+			} else {
+				// Check the cookie session
+				session := sessions.Default(c)
+				if session.Get("username") != nil {
+					keys["identity"] = session.Get("username")
+				}
 			}
 		}
 
 		// Accept the requested protocol if known
-		knownProtocols := []string{
-			"node",
-			"gui",
-			"metrics",
+		knownProtocols := map[string]bool{
+			"node":    true,
+			"gui":     true,
+			"metrics": true,
 		}
 		proto := c.Request.Header.Get("Sec-WebSocket-Protocol")
 
-		allowed := false
-		for _, v := range knownProtocols {
-			if proto == v {
-				allowed = true
-				break
-			}
-		}
-
-		if !allowed {
+		if !knownProtocols[proto] {
 			logrus.Errorf("webserver: protocol \"%s\" not allowed", proto)
 			c.AbortWithStatus(http.StatusForbidden)
 			return
@@ -260,11 +312,6 @@ func (ws *Webserver) handleWs(m *melody.Melody) func(c *gin.Context) {
 			c.Writer.Header().Set("Sec-WebSocket-Protocol", proto)
 			keys[websocket.KeyProtocol.String()] = proto
 		}
-
-		if c.Request.Header.Get("X-UUID") != "" {
-			uuid = c.Request.Header.Get("X-UUID")
-		}
-		keys["type"] = c.Request.Header.Get("X-TYPE")
 
 		if ws.Store.Connection(uuid) != nil {
 			logrus.Errorf("Connection with same UUID already exists: %s", uuid)
@@ -278,5 +325,23 @@ func (ws *Webserver) handleWs(m *melody.Melody) func(c *gin.Context) {
 			logrus.Errorf("webserver: %s", err.Error())
 			return
 		}
+	}
+}
+
+func (ws *Webserver) handleLogin() func(c *gin.Context) {
+	return func(c *gin.Context) {
+		session := sessions.Default(c)
+		session.Set("username", c.PostForm("username"))
+		session.Save()
+		c.JSON(200, gin.H{})
+	}
+}
+
+func (ws *Webserver) handleLogout() func(c *gin.Context) {
+	return func(c *gin.Context) {
+		session := sessions.Default(c)
+		session.Clear()
+		session.Save()
+		c.JSON(200, gin.H{})
 	}
 }
