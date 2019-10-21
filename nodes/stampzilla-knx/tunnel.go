@@ -170,13 +170,10 @@ func (tunnel *tunnel) triggerRead(ga string) {
 func (tunnel *tunnel) decodeKNX(msg knx.GroupEvent) error {
 	tunnel.RLock()
 	defer tunnel.RUnlock()
-
-	tunnel.RLock()
 	links, ok := tunnel.Groups[msg.Destination.String()]
 	if !ok {
 		return fmt.Errorf("No link was found for: %s", msg.Destination.String())
 	}
-	tunnel.RUnlock()
 
 	for _, gl := range links {
 		logrus.WithFields(logrus.Fields{
@@ -190,6 +187,8 @@ func (tunnel *tunnel) decodeKNX(msg knx.GroupEvent) error {
 		switch gl.Type {
 		case "bool":
 			value = new(dpt.DPT_1001)
+		case "procentage":
+			value = new(dpt.DPT_5001)
 		case "temperature":
 			value = new(dpt.DPT_9001) //2 bytes floating point
 		case "lux":
@@ -204,7 +203,14 @@ func (tunnel *tunnel) decodeKNX(msg knx.GroupEvent) error {
 				return fmt.Errorf("Failed to unpack: %s", err.Error())
 			}
 
-			gl.Device.State[gl.Name] = dptv
+			switch v := value.(type) {
+			case *dpt.DPT_5001:
+				gl.Device.State[gl.Name] = math.Floor(float64(*v)) / 100
+			case *dpt.DPT_1001:
+				gl.Device.State[gl.Name] = bool(*v)
+			default:
+				gl.Device.State[gl.Name] = dptv
+			}
 			gl.Device.Online = true
 
 			//If temperature and relative humidity is known, calculate absolute humidity
@@ -227,7 +233,6 @@ func (tunnel *tunnel) decodeKNX(msg knx.GroupEvent) error {
 				ah := (6.112 * math.Exp((17.67*t)/(t+243.5)) * rh * mw) / (273.15 + t*r) // in grams/m^3
 				logrus.Warnf("Got temp %s (%#v) and humid %s (%#v) %#v -> %f", st, dt, srh, dh, gl.Device.State, ah)
 			}
-
 			tunnel.Node.AddOrUpdate(gl.Device)
 		} else {
 			return fmt.Errorf("Unsupported type: %s", gl.Type)

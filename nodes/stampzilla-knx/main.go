@@ -118,6 +118,11 @@ func updatedConfig(node *node.Node, tunnel *tunnel, config *config) func(data js
 			setupSensor(node, tunnel, sensor)
 		}
 
+		for _, dev := range node.Devices.All() {
+			dev.Online = tunnel.Connected
+		}
+		node.SyncDevices()
+
 		return nil
 	}
 }

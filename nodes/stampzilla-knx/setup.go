@@ -29,7 +29,7 @@ func setupLight(node *node.Node, tunnel *tunnel, light light) {
 	}
 
 	if light.StateBrightness != "" {
-		tunnel.AddLink(light.StateBrightness, "brightness", "level", dev)
+		tunnel.AddLink(light.StateBrightness, "brightness", "procentage", dev)
 	}
 
 	node.AddOrUpdate(dev)
