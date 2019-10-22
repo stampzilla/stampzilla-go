@@ -54,7 +54,6 @@ func TestCopyDevice(t *testing.T) {
 	assert.Len(t, newD.State, 1)
 	assert.Len(t, d.Traits, 2)
 	assert.Len(t, d.State, 2)
-
 }
 
 func TestCopyDevices(t *testing.T) {
@@ -119,10 +118,8 @@ func TestJSONMarshalDevices(t *testing.T) {
 
 	assert.Contains(t, string(b), `"node.devid": {`)
 	assert.NoError(t, err)
-
 }
 func TestJSONUnMarshalDevices(t *testing.T) {
-
 	j := `{
 	"node.devid": {
 		"type": "type",
@@ -144,7 +141,6 @@ func TestJSONUnMarshalDevices(t *testing.T) {
 	assert.Equal(t, "devid", d.Get(ID{ID: "devid", Node: "node"}).ID.ID)
 	assert.Equal(t, "node", d.Get(ID{ID: "devid", Node: "node"}).ID.Node)
 	assert.Len(t, d.All(), 1)
-
 }
 
 func TestNewIDFromString(t *testing.T) {
@@ -152,11 +148,9 @@ func TestNewIDFromString(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "1", id.ID)
 	assert.Equal(t, "asdf", id.Node)
-
 }
 
 func TestDeviceEqual(t *testing.T) {
-
 	dev1 := testDevice("1")
 	dev2 := testDevice("1")
 	eq := dev1.Equal(dev2)
@@ -184,5 +178,4 @@ func TestDeviceEqual(t *testing.T) {
 	dev2.State["newkey"] = false
 	eq = dev1.Equal(dev2)
 	assert.Equal(t, false, eq)
-
 }

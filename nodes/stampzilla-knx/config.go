@@ -11,14 +11,27 @@ import (
 
 type config struct {
 	Gateway gateway  `json:"gateway"`
-	Lights  []light  `json:"lights"`
+	Lights  lights   `json:"lights"`
 	Sensors []sensor `json:"sensors"`
 	sync.Mutex
+}
+
+func (c *config) GetLight(id string) *light {
+	c.Lock()
+	defer c.Unlock()
+	for _, v := range c.Lights {
+		if v.ID == id {
+			return &v
+		}
+	}
+	return nil
 }
 
 type gateway struct {
 	Address string `json:"address"`
 }
+
+type lights []light
 
 type light struct {
 	ID                string `json:"id"`
@@ -43,7 +56,7 @@ type sensor struct {
 
 func (light *light) Switch(tunnel *tunnel, target bool) error {
 	if !tunnel.Connected {
-		return fmt.Errorf("Not connected to KNX gateway")
+		return fmt.Errorf("not connected to KNX gateway")
 	}
 	addr, err := cemi.NewGroupAddrString(light.ControlSwitch)
 	if err != nil {
@@ -60,7 +73,7 @@ func (light *light) Switch(tunnel *tunnel, target bool) error {
 
 func (light *light) Brightness(tunnel *tunnel, target float64) error {
 	if !tunnel.Connected {
-		return fmt.Errorf("Not connected to KNX gateway")
+		return fmt.Errorf("not connected to KNX gateway")
 	}
 	addr, err := cemi.NewGroupAddrString(light.ControlBrightness)
 	if err != nil {

@@ -85,8 +85,8 @@ func (tunnel *tunnel) Connect(address string) error {
 	}
 
 	// Start using the new one
+	tunnel.wg.Add(1)
 	go func() {
-		tunnel.wg.Add(1)
 		tunnel.Address = address
 		tunnel.Client = &client
 		tunnel.onConnect()
@@ -125,7 +125,7 @@ func (tunnel *tunnel) onConnect() {
 	tunnel.Connected = true
 	// Trigger a read on each group address that we monitor
 	tunnel.RLock()
-	for ga, _ := range tunnel.Groups {
+	for ga := range tunnel.Groups {
 		tunnel.triggerRead(ga)
 	}
 	tunnel.RUnlock()
@@ -172,7 +172,7 @@ func (tunnel *tunnel) decodeKNX(msg knx.GroupEvent) error {
 	links, ok := tunnel.Groups[msg.Destination.String()]
 	tunnel.RUnlock()
 	if !ok {
-		return fmt.Errorf("No link was found for: %s", msg.Destination.String())
+		return fmt.Errorf("no link was found for: %s", msg.Destination.String())
 	}
 
 	for _, gl := range links {
@@ -206,7 +206,7 @@ func (tunnel *tunnel) decodeKNX(msg knx.GroupEvent) error {
 		if dptv, ok := value.(dpt.DatapointValue); ok {
 			err = dptv.Unpack(msg.Data)
 			if err != nil {
-				return fmt.Errorf("Failed to unpack: %s", err.Error())
+				return fmt.Errorf("failed to unpack: %s", err.Error())
 			}
 
 			switch v := value.(type) {
@@ -241,7 +241,7 @@ func (tunnel *tunnel) decodeKNX(msg knx.GroupEvent) error {
 			}
 			tunnel.Node.AddOrUpdate(gl.Device)
 		} else {
-			return fmt.Errorf("Unsupported type: %s", gl.Type)
+			return fmt.Errorf("unsupported type: %s", gl.Type)
 		}
 	}
 	return nil

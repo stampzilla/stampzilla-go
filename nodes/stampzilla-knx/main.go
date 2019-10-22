@@ -35,44 +35,21 @@ func main() {
 
 		switch id[0] {
 		case "light":
-			config.Lock()
-			defer config.Unlock()
 
-			for _, light := range config.Lights {
-				if light.ID != id[1] {
-					continue
+			light := config.GetLight(id[1])
+			state.Bool("on", func(on bool) {
+				err := light.Switch(tunnel, on)
+				if err != nil {
+					logrus.Error()
 				}
-
-				for stateKey, newState := range state {
-					switch stateKey {
-					case "on":
-						diff, value, err := boolDiff(newState, device.State[stateKey])
-						if err != nil {
-							return err
-						}
-
-						if diff {
-							err := light.Switch(tunnel, value)
-							if err != nil {
-								return err
-							}
-						}
-					case "brightness":
-						diff, value, err := scalingDiff(newState, device.State[stateKey])
-						if err != nil {
-							return err
-						}
-
-						if diff {
-							err := light.Brightness(tunnel, value*100)
-							if err != nil {
-								return err
-							}
-						}
-					}
-
+			})
+			state.Float("brightness", func(v float64) {
+				err := light.Brightness(tunnel, v*100)
+				if err != nil {
+					logrus.Error()
 				}
-			}
+			})
+
 		default:
 			return fmt.Errorf("Unknown device type \"%s\"", id[0])
 		}

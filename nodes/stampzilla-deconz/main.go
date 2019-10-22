@@ -47,7 +47,6 @@ func main() {
 	})
 
 	node.OnRequestStateChange(func(state devices.State, device *devices.Device) error {
-
 		//fmt.Printf("onstate req %v\n", state)
 		lightState := make(devices.State)
 		state.Float("brightness", func(v float64) {
@@ -77,7 +76,7 @@ func main() {
 		})
 
 		if len(lightState) == 0 {
-			return fmt.Errorf("Found no known config in state-change request")
+			return fmt.Errorf("found no known config in state-change request")
 		}
 		u := fmt.Sprintf("lights/%s/state", device.ID.ID)
 		err := api.PutData(u, &lightState)
@@ -85,7 +84,6 @@ func main() {
 			logrus.Error(err)
 		}
 		return nodelib.ErrSkipSync
-
 	})
 
 	err = node.Connect()
@@ -108,9 +106,8 @@ type WsEvent struct {
 	Config   devices.State `json:"config"`
 }
 
-//Get ID returns different IDs if its a light or sensor. This is because a single sensor device can be devided in multiple sensors in the API
+//Get ID returns different IDs if its a light or sensor. This is because a single sensor device can be divided in multiple sensors in the API
 func (we *WsEvent) GetID() string {
-
 	if we.Resource == "sensors" {
 		// take first part of uniqueid 00:15:8d:00:02:55:82:0f-01-0402 which is the mac address
 		return strings.SplitN(we.UniqueID, "-", 2)[0]
@@ -141,7 +138,6 @@ func reader(ctx context.Context, node *node.Node, api *API) {
 					syncSensors(node, api)
 				case "lights":
 					syncLights(node, api)
-
 				}
 				continue
 			}
@@ -285,7 +281,6 @@ func updatedConfig(changed chan struct{}, api *API) func(data json.RawMessage) e
 */
 
 func syncLights(node *node.Node, api *API) error {
-
 	lights, err := api.Lights()
 	if err != nil {
 		return err
@@ -293,7 +288,6 @@ func syncLights(node *node.Node, api *API) error {
 
 	change := 0
 	for id, light := range lights {
-
 		dev := node.GetDevice(id)
 		if dev == nil {
 			newDev := light.GenerateDevice(id)
@@ -312,7 +306,6 @@ func syncLights(node *node.Node, api *API) error {
 	return nil
 }
 func syncSensors(node *node.Node, api *API) error {
-
 	sensors, err := api.Sensors()
 	if err != nil {
 		return err
@@ -320,7 +313,6 @@ func syncSensors(node *node.Node, api *API) error {
 
 	change := 0
 	for _, sensor := range sensors {
-
 		if sensor.Modelid == "PHDL00" {
 			continue // Skip default daylight "virtual/fake" sensor
 		}
@@ -343,7 +335,6 @@ func syncSensors(node *node.Node, api *API) error {
 }
 
 func getWsPort(api *API) string {
-
 	type config struct {
 		Websocketport int
 	}
