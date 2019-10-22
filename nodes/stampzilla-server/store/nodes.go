@@ -30,7 +30,6 @@ func (store *Store) AddOrUpdateNode(node *models.Node) {
 	if _, ok := store.Nodes[node.UUID]; !ok {
 		store.Nodes[node.UUID] = node
 	} else {
-
 		if node.Version != "" {
 			store.Nodes[node.UUID].Version = node.Version
 		}
@@ -44,7 +43,6 @@ func (store *Store) AddOrUpdateNode(node *models.Node) {
 			logrus.Info("Setting config to: ", string(node.Config))
 			store.Nodes[node.UUID].Config = node.Config
 		}
-
 	}
 
 	store.Unlock()

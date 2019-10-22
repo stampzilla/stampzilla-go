@@ -31,7 +31,6 @@ func queryMDNS() (string, string) {
 				return
 			default:
 				mdns.Lookup("_stampzilla._tcp", entriesCh)
-
 			}
 		}
 	}()

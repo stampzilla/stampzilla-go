@@ -41,7 +41,6 @@ type Light struct {
 }
 
 func LightToDeviceState(lightState, state devices.State) bool {
-
 	changes := 0
 	lightState.Float("bri", func(f float64) {
 		if f != state["brightness"] {
@@ -70,7 +69,6 @@ func LightToDeviceState(lightState, state devices.State) bool {
 }
 
 func (l Light) GenerateDevice(id string) *devices.Device {
-
 	online := false
 	l.State.Bool("reachable", func(v bool) { online = v })
 	state := devices.State{}

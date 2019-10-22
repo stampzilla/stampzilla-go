@@ -132,7 +132,6 @@ func (n *Node) WriteMessage(msgType string, data interface{}) error {
 
 // WaitForMessage is a helper method to wait for a specific message type
 func (n *Node) WaitForMessage(msgType string, dst interface{}) error {
-
 	for data := range n.Client.Read() {
 		msg, err := models.ParseMessage(data)
 		if err != nil {
@@ -222,7 +221,6 @@ func (n *Node) fetchCertificate() error {
 
 // Connect starts the node and makes connection to the server. Normally discovered using mdns but can be configured aswell.
 func (n *Node) Connect() error {
-
 	if n.Config.Host == "" {
 		ip, port := queryMDNS()
 		n.Config.Host = ip
@@ -240,7 +238,7 @@ func (n *Node) Connect() error {
 		}
 	}
 
-	//If we have certificate we can connect to TLS immedietly
+	//If we have certificate we can connect to TLS immediately
 	tlsConfig := &tls.Config{
 		Certificates: []tls.Certificate{*n.TLS},
 		RootCAs:      n.CA,
@@ -405,7 +403,7 @@ func (n *Node) generateCSR() ([]byte, error) {
 	return d, nil
 }
 
-// On sets up a callback that is run when a message recieved with type what
+// On sets up a callback that is run when a message received with type what
 func (n *Node) On(what string, cb OnFunc) {
 	n.mutex.Lock()
 	n.callbacks[what] = append(n.callbacks[what], cb)
@@ -423,7 +421,7 @@ func (n *Node) getCallbacks() map[string][]OnFunc {
 	return cbs
 }
 
-//OnConfig is run when node recieves updated configuration from the server
+//OnConfig is run when node receives updated configuration from the server
 func (n *Node) OnConfig(cb OnFunc) {
 	n.On("setup", func(data json.RawMessage) error {
 		conf := &models.Node{}
@@ -440,7 +438,7 @@ func (n *Node) OnConfig(cb OnFunc) {
 	})
 }
 
-// WaitForFirstConfig blocks until we recieve the first config from server
+// WaitForFirstConfig blocks until we receive the first config from server
 func (n *Node) WaitForFirstConfig() func() error {
 	var once sync.Once
 	waitForConfig := make(chan struct{})
@@ -462,7 +460,7 @@ func (n *Node) WaitForFirstConfig() func() error {
 	}
 }
 
-// OnShutdown registeres a callback that is run before the server shuts down
+// OnShutdown registers a callback that is run before the server shuts down
 func (n *Node) OnShutdown(cb func()) {
 	n.shutdown = append(n.shutdown, cb)
 }
@@ -548,7 +546,6 @@ func (n *Node) syncWorker() {
 				break outer
 			case <-max.C:
 				break outer
-
 			}
 		}
 
