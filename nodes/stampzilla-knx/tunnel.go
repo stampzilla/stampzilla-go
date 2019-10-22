@@ -169,8 +169,8 @@ func (tunnel *tunnel) triggerRead(ga string) {
 
 func (tunnel *tunnel) decodeKNX(msg knx.GroupEvent) error {
 	tunnel.RLock()
-	defer tunnel.RUnlock()
 	links, ok := tunnel.Groups[msg.Destination.String()]
+	tunnel.RUnlock()
 	if !ok {
 		return fmt.Errorf("No link was found for: %s", msg.Destination.String())
 	}

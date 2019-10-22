@@ -16,13 +16,13 @@ func main() {
 	tunnel := newTunnel(node)
 	tunnel.OnConnect = func() {
 		for _, dev := range node.Devices.All() {
-			dev.Online = true
+			dev.SetOnline(true)
 		}
 		node.SyncDevices()
 	}
 	tunnel.OnDisconnect = func() {
 		for _, dev := range node.Devices.All() {
-			dev.Online = false
+			dev.SetOnline(false)
 		}
 		node.SyncDevices()
 	}
@@ -119,7 +119,7 @@ func updatedConfig(node *node.Node, tunnel *tunnel, config *config) func(data js
 		}
 
 		for _, dev := range node.Devices.All() {
-			dev.Online = tunnel.Connected
+			dev.SetOnline(tunnel.Connected)
 		}
 		node.SyncDevices()
 
