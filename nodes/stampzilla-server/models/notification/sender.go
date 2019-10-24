@@ -85,10 +85,10 @@ func NewSenders() *Senders {
 }
 
 // Save saves the rules to rules.json
-func (s *Senders) Save() error {
-	configFile, err := os.Create("senders.json")
+func (s *Senders) Save(filename string) error {
+	configFile, err := os.Create(filename)
 	if err != nil {
-		return fmt.Errorf("senders: error saving senders: %s", err.Error())
+		return fmt.Errorf("senders: error saving %s: %s", filename, err.Error())
 	}
 	encoder := json.NewEncoder(configFile)
 	encoder.SetIndent("", "\t")
@@ -96,28 +96,28 @@ func (s *Senders) Save() error {
 	defer s.Unlock()
 	err = encoder.Encode(s.senders)
 	if err != nil {
-		return fmt.Errorf("senders: error saving senders: %s", err.Error())
+		return fmt.Errorf("senders: error encoding %s: %s", filename, err.Error())
 	}
 	return nil
 }
 
 //Load loads the rules from rules.json
-func (s *Senders) Load() error {
-	logrus.Debug("senders: loading rules from senders.json")
-	configFile, err := os.Open("senders.json")
+func (s *Senders) Load(filename string) error {
+	logrus.Debugf("senders: loading from %s", filename)
+	configFile, err := os.Open(filename)
 	if err != nil {
 		if os.IsNotExist(err) {
 			logrus.Warn(err)
 			return nil // We dont want to error our if the file does not exist when we start the server
 		}
-		return fmt.Errorf("senders: error loading senders.json: %s", err.Error())
+		return fmt.Errorf("senders: error loading %s: %s", filename, err.Error())
 	}
 
 	s.Lock()
 	defer s.Unlock()
 	jsonParser := json.NewDecoder(configFile)
 	if err = jsonParser.Decode(&s.senders); err != nil {
-		return fmt.Errorf("logic: error loading rules.json: %s", err.Error())
+		return fmt.Errorf("logic: error loading %s: %s", filename, err.Error())
 	}
 
 	return nil

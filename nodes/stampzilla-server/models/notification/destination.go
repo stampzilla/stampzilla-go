@@ -98,10 +98,10 @@ func (d *Destinations) Remove(uuid string) {
 }
 
 // Save saves the rules to rules.json
-func (d *Destinations) Save() error {
-	configFile, err := os.Create("destinations.json")
+func (d *Destinations) Save(filename string) error {
+	configFile, err := os.Create(filename)
 	if err != nil {
-		return fmt.Errorf("destinations: error saving destinations: %s", err.Error())
+		return fmt.Errorf("destinations: error saving %s: %s", filename, err.Error())
 	}
 	encoder := json.NewEncoder(configFile)
 	encoder.SetIndent("", "\t")
@@ -109,28 +109,28 @@ func (d *Destinations) Save() error {
 	defer d.Unlock()
 	err = encoder.Encode(d.destinations)
 	if err != nil {
-		return fmt.Errorf("destinations: error saving destinations: %s", err.Error())
+		return fmt.Errorf("destinations: error encoding %s: %s", filename, err.Error())
 	}
 	return nil
 }
 
 //Load loads the rules from rules.json
-func (d *Destinations) Load() error {
-	logrus.Debug("destinations: loading rules from destinations.json")
-	configFile, err := os.Open("destinations.json")
+func (d *Destinations) Load(filename string) error {
+	logrus.Debugf("destinations: loading rules from %s", filename)
+	configFile, err := os.Open(filename)
 	if err != nil {
 		if os.IsNotExist(err) {
 			logrus.Warn(err)
 			return nil // We dont want to error our if the file does not exist when we start the server
 		}
-		return fmt.Errorf("destinations: error loading destinations.json: %s", err.Error())
+		return fmt.Errorf("destinations: error loading %s: %s", filename, err.Error())
 	}
 
 	d.Lock()
 	defer d.Unlock()
 	jsonParser := json.NewDecoder(configFile)
 	if err = jsonParser.Decode(&d.destinations); err != nil {
-		return fmt.Errorf("logic: error loading rules.json: %s", err.Error())
+		return fmt.Errorf("destinations: error parsing %s: %s", filename, err.Error())
 	}
 
 	return nil
