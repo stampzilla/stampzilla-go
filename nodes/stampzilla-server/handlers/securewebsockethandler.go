@@ -357,7 +357,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 			"type": msg.Type,
 		}).Warnf("Received unknown message")
 
-		return nil, fmt.Errorf("Unknown request %s", msg.Type)
+		return nil, fmt.Errorf("unknown request: %s", msg.Type)
 	}
 
 	return nil, nil

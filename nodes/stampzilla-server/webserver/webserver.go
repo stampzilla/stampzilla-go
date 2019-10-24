@@ -34,7 +34,6 @@ type Webserver struct {
 }
 
 func New(s *store.Store, conf *models.Config, wsh handlers.WebsocketHandler, m *melody.Melody) *Webserver {
-
 	return &Webserver{
 		Store:            s,
 		Config:           conf,
@@ -77,7 +76,6 @@ func (ws *Webserver) Init() *gin.Engine {
 	return r
 }
 func (ws *Webserver) Start(addr string, tlsConfig *tls.Config) chan struct{} {
-
 	server, done := gograce.NewServerWithTimeout(10 * time.Second)
 
 	server.Handler = ws.Init()
@@ -127,7 +125,6 @@ func (ws *Webserver) handleConnect() func(s *melody.Session) {
 			logrus.Error(err)
 			return
 		}
-
 	}
 }
 
@@ -145,7 +142,6 @@ func (ws *Webserver) handleMessage() func(s *melody.Session, msg []byte) {
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {
-
 					err, ok := r.(error)
 					if !ok {
 						err = fmt.Errorf("%s", r)
