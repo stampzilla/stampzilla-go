@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/RangelReale/osin v1.0.1
+	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/cloudfoundry/gosigar v1.1.0
 	github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f
 	github.com/davecgh/go-spew v1.1.1
@@ -14,6 +15,7 @@ require (
 	github.com/gin-contrib/cors v1.3.0
 	github.com/gin-contrib/gzip v0.0.1
 	github.com/gin-gonic/gin v1.4.0
+	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/goburrow/modbus v0.1.0
 	github.com/goburrow/serial v0.1.0 // indirect
 	github.com/godbus/dbus v5.0.0+incompatible // indirect
@@ -35,11 +37,14 @@ require (
 	github.com/micro/mdns v0.3.0
 	github.com/olahol/melody v0.0.0-20180227134253-7bd65910e5ab
 	github.com/onrik/logrus v0.4.1
+	github.com/onsi/ginkgo v1.10.2 // indirect
+	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/pborman/uuid v1.2.0 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/posener/wstest v0.0.0-20180217133618-28272a7ea048
 	github.com/rakyll/statik v0.1.6
 	github.com/shirou/gopsutil v2.19.9+incompatible
+	github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4 // indirect
 	github.com/sirupsen/logrus v1.4.2
 	github.com/stamp/hid v0.0.0-20190105143849-bc55d7d13ce1
 	github.com/stamp/mdns v0.0.0-20190125083120-df204ac59ca1
@@ -48,7 +53,7 @@ require (
 	github.com/stretchr/testify v1.3.0
 	github.com/tarm/goserial v0.0.0-20151007205400-b3440c3c6355 // indirect
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07 // indirect
-	github.com/ugorji/go v1.1.7
+	github.com/ugorji/go/codec v1.1.7 // indirect
 	github.com/urfave/cli v1.22.1
 	github.com/vapourismo/knx-go v0.0.0-20190917200938-c1313fa7e9ca
 	google.golang.org/genproto v0.0.0-20190927181202-20e1ac93f88c
