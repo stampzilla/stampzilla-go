@@ -35,7 +35,7 @@ func setupWebsocketTest(t *testing.T) (*servermain.Main, *node.Node, func()) {
 	insecureURL := strings.Split(strings.TrimPrefix(insecure.URL, "http://"), ":")
 	secureURL := strings.Split(strings.TrimPrefix(secure.URL, "https://"), ":")
 
-	// Server will tell the node its TLS port after successfull certificate request
+	// Server will tell the node its TLS port after successful certificate request
 	main.Config.TLSPort = secureURL[1]
 
 	os.Setenv("STAMPZILLA_HOST", insecureURL[0])

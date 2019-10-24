@@ -84,5 +84,4 @@ func (c *Config) createMultiConfig() *multiconfig.DefaultLoader {
 	d.Loader = loader
 	d.Validator = multiconfig.MultiValidator(&multiconfig.RequiredValidator{})
 	return d
-
 }

@@ -32,7 +32,6 @@ func NewInSecureWebsockerHandler(store *store.Store, config *models.Config, ws w
 }
 
 func (wsh *insecureWebsocketHandler) Message(s interfaces.MelodySession, msg *models.Message) (json.RawMessage, error) {
-
 	// client requested certificate. We must approve manually
 
 	if msg.Type == "certificate-signing-request" {

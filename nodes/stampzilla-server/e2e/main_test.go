@@ -15,7 +15,6 @@ import (
 )
 
 func TestDownloadCA(t *testing.T) {
-
 	main, cleanup := setupServer(t)
 	defer cleanup()
 	w := makeRequest(t, main.HTTPServer, "GET", "http://localhost/ca.crt", nil)
@@ -29,7 +28,6 @@ func TestDownloadCA(t *testing.T) {
 }
 
 func TestInsecureWebsocket(t *testing.T) {
-
 	main, cleanup := setupServer(t)
 	defer cleanup()
 
@@ -168,4 +166,45 @@ func TestNodeToServerSubscribeDevices(t *testing.T) {
 	})
 
 	assert.Contains(t, deviceSubscriptionData, `{"on":false}`)
+}
+
+func TestUpdateDestinations(t *testing.T) {
+	main, cleanup := setupServer(t)
+	defer cleanup()
+
+	b := []byte(`{
+"type": "update-destinations",
+  "body": {
+	"0285d687-5782-4fd1-8d1d-3dc6568e08e9": {
+	  "uuid": "0285d687-5782-4fd1-8d1d-3dc6568e08e9",
+	  "name": "Pushbullet - stamps webl\u00e4sare",
+	  "type": "pushbullet",
+	  "labels": null,
+	  "sender": "f4bb5dc9-0919-4c8c-911a-7595cf906bee",
+	  "destinations": [
+		"ujvGicKJKREsjAiVsKnSTs",
+		"ujvGicKJKREsjz7O3P0Jl6"
+	  ]
+	}
+  }
+}
+	`)
+
+	d := wstest.NewDialer(main.TLSServer)
+	d.Subprotocols = []string{"node"}
+	c, _, err := d.Dial("ws://example.org/ws", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.WriteMessage(websocket.TextMessage, b)
+
+	// wait for one destination
+	waitFor(t, 1*time.Second, "connections should be zero after connection close", func() bool {
+		return len(main.Store.GetDestinations()) == 1
+	})
+
+	c.Close()
+
+	assert.Equal(t, "0285d687-5782-4fd1-8d1d-3dc6568e08e9", main.Store.Destinations.Get("0285d687-5782-4fd1-8d1d-3dc6568e08e9").UUID)
+	assert.Len(t, main.Store.Destinations.Get("0285d687-5782-4fd1-8d1d-3dc6568e08e9").Destinations, 2)
 }

@@ -21,7 +21,6 @@ func New(parameters json.RawMessage) *PushbulletSender {
 }
 
 func (pb *PushbulletSender) Trigger(dest []string, body string) error {
-
 	values := map[string]string{
 		"type":        "note",
 		"body":        body,
