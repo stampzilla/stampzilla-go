@@ -11,10 +11,11 @@ type WirePusherSender struct {
 	Title  string `json:"title"`
 	Type   string `json:"type"`
 	Action string `json:"action"`
+	url    string
 }
 
 func New(parameters json.RawMessage) *WirePusherSender {
-	wp := &WirePusherSender{}
+	wp := &WirePusherSender{url: "https://wirepusher.com/send"}
 
 	json.Unmarshal(parameters, wp)
 
@@ -46,7 +47,7 @@ func (wp *WirePusherSender) Release(dest []string, body string) error {
 }
 
 func (wp *WirePusherSender) notify(trigger bool, dest string, body string) error {
-	u, err := url.Parse("https://wirepusher.com/send")
+	u, err := url.Parse(wp.url)
 	if err != nil {
 		return err
 	}
