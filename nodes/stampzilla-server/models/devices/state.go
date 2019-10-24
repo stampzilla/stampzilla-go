@@ -61,7 +61,6 @@ func (ds State) Diff(right State) State {
 		if ok && v != rv {
 			diff[k] = rv
 		}
-
 	}
 
 	for k, v := range right {

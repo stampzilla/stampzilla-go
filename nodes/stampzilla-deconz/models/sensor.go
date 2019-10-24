@@ -46,14 +46,13 @@ type Sensor struct {
 	ID               string        `json:"id"`
 }
 
-//Get ID returns different IDs if its a light or sensor. This is because a single sensor device can be devided in multiple sensors in the API
+//Get ID returns different IDs if its a light or sensor. This is because a single sensor device can be divided in multiple sensors in the API
 func (s *Sensor) GetID() string {
 	// take first part of uniqueid 00:15:8d:00:02:55:82:0f-01-0402 which is the mac address
 	return strings.SplitN(s.UniqueID, "-", 2)[0]
 }
 
 func (s Sensor) GenerateDevice() *devices.Device {
-
 	online := false
 	s.Config.Bool("reachable", func(v bool) { online = v })
 	state := devices.State{}

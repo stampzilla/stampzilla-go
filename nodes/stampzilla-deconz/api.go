@@ -52,7 +52,6 @@ func createUser() {
 	if err != nil {
 		logrus.Error(err)
 	}
-
 }
 
 type API struct {
@@ -75,7 +74,6 @@ func NewAPI(key string, config *Config) *API {
 // GET /api/<apikey>/lights
 
 func (a *API) do(method, path string, body io.Reader, v interface{}) error {
-
 	u := fmt.Sprintf("http://%s:%s/api/%s/%s", a.Config.IP, a.Config.Port, a.Key, path)
 	req, err := http.NewRequest(method, u, body)
 	if err != nil {
@@ -127,7 +125,6 @@ func (a *API) PutData(path string, v interface{}) error {
 }
 
 func (a *API) Lights() (models.Lights, error) {
-
 	lights := models.NewLights()
 	err := a.Get("lights", &lights)
 	return lights, err

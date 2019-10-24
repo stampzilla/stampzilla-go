@@ -47,7 +47,6 @@ func (id *ID) UnmarshalText(text []byte) error {
 	id.Node = tmp[0]
 	id.ID = tmp[1]
 	return nil
-
 }
 
 type Device struct {
@@ -104,7 +103,6 @@ func (d *Device) Equal(dev *Device) bool {
 }
 
 func sliceIsEqual(a, b []string) bool {
-
 	// If one is nil, the other must also be nil.
 	if (a == nil) != (b == nil) {
 		return false
@@ -214,7 +212,6 @@ func (d *List) Remove(id ID) {
 
 // Copy copies a list of devices
 func (d *List) Copy() *List {
-
 	newD := &List{
 		devices: make(DeviceMap),
 	}
@@ -247,7 +244,6 @@ func (d *List) UnmarshalJSON(b []byte) error {
 
 // Flatten can be used for metrics export and logic rules
 func (d *List) Flatten() map[string]interface{} {
-
 	devmap := make(map[string]interface{})
 	for k, v := range d.All() {
 		v.Lock()

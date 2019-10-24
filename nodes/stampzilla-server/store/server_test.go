@@ -9,7 +9,6 @@ import (
 )
 
 func TestAddOrUpdateServer(t *testing.T) {
-
 	store := &Store{
 		Server: make(map[string]map[string]devices.State),
 	}
