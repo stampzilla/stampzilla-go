@@ -37,6 +37,7 @@ require (
 	github.com/onrik/logrus v0.4.1
 	github.com/pborman/uuid v1.2.0 // indirect
 	github.com/pkg/errors v0.8.1
+	github.com/posener/wstest v0.0.0-20180217133618-28272a7ea048
 	github.com/rakyll/statik v0.1.6
 	github.com/shirou/gopsutil v2.19.9+incompatible
 	github.com/sirupsen/logrus v1.4.2
@@ -44,10 +45,11 @@ require (
 	github.com/stamp/mdns v0.0.0-20190125083120-df204ac59ca1
 	github.com/stampzilla/gocast v0.0.0-20190221121651-0a779e5bbe32
 	github.com/stampzilla/gozwave v0.0.0-20190221183844-576012815e01
+	github.com/stretchr/testify v1.3.0
 	github.com/tarm/goserial v0.0.0-20151007205400-b3440c3c6355 // indirect
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07 // indirect
 	github.com/ugorji/go v1.1.7
-	github.com/urfave/cli v1.22.1 // indirect
+	github.com/urfave/cli v1.22.1
 	github.com/vapourismo/knx-go v0.0.0-20190917200938-c1313fa7e9ca
 	google.golang.org/genproto v0.0.0-20190927181202-20e1ac93f88c
 	gopkg.in/yaml.v2 v2.2.3 // indirect

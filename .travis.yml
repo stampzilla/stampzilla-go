@@ -17,7 +17,7 @@ after_success:
 - bash <(curl -s https://codecov.io/bash)
 
 before_deploy:
-  - go run build.go
+  - env GO111MODULE=on go run build.go
   - cd dist && sha512sum * > checksum
 
 deploy:
