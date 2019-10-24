@@ -24,7 +24,7 @@ func (store *Store) AddOrUpdateDestination(dest *notification.Destination) {
 	}
 
 	store.Destinations.Add(dest)
-	err := store.Destinations.Save()
+	err := store.Destinations.Save("destinations.json")
 	if err != nil {
 		logrus.Error(err)
 		return

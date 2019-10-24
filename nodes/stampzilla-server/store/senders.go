@@ -14,6 +14,6 @@ func (store *Store) AddOrUpdateSender(sender notification.Sender) {
 	}
 
 	store.Senders.Add(sender)
-	store.Senders.Save()
+	store.Senders.Save("senders.json")
 	store.runCallbacks("senders")
 }

@@ -84,11 +84,11 @@ func (store *Store) Load() error {
 		return err
 	}
 
-	if err := store.Destinations.Load(); err != nil {
+	if err := store.Destinations.Load("destinations.json"); err != nil {
 		return err
 	}
 
-	if err := store.Senders.Load(); err != nil {
+	if err := store.Senders.Load("senders.json"); err != nil {
 		return err
 	}
 

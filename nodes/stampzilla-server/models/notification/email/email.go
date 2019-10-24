@@ -13,10 +13,11 @@ type EmailSender struct {
 	Port     int    `json:"port"`
 	From     string `json:"from"`
 	Password string `json:"password"`
+	send     func(string, smtp.Auth, string, []string, []byte) error
 }
 
 func New(parameters json.RawMessage) *EmailSender {
-	es := &EmailSender{}
+	es := &EmailSender{send: smtp.SendMail}
 
 	json.Unmarshal(parameters, es)
 
@@ -43,7 +44,7 @@ func (es *EmailSender) notify(trigger bool, dest []string, body string) error {
 
 	spew.Dump(smtp.PlainAuth("", es.From, es.Password, es.Server))
 
-	return smtp.SendMail(fmt.Sprintf("%s:%d", es.Server, es.Port),
+	return es.send(fmt.Sprintf("%s:%d", es.Server, es.Port),
 		smtp.PlainAuth("", es.From, es.Password, es.Server),
 		es.From, dest, []byte(msg))
 }
