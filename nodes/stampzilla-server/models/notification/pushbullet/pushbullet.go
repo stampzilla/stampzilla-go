@@ -9,11 +9,14 @@ import (
 )
 
 type PushbulletSender struct {
-	Token string `json:"token"`
+	Token  string `json:"token"`
+	server string
 }
 
 func New(parameters json.RawMessage) *PushbulletSender {
-	pb := &PushbulletSender{}
+	pb := &PushbulletSender{
+		server: "https://api.pushbullet.com",
+	}
 
 	json.Unmarshal(parameters, pb)
 
@@ -29,7 +32,7 @@ func (pb *PushbulletSender) Trigger(dest []string, body string) error {
 	}
 	postBody, _ := json.Marshal(values)
 
-	req, err := http.NewRequest("POST", "https://api.pushbullet.com/v2/pushes", bytes.NewBuffer(postBody))
+	req, err := http.NewRequest("POST", pb.server+"/v2/pushes", bytes.NewBuffer(postBody))
 	if err != nil {
 		return err
 	}
@@ -56,7 +59,7 @@ func (pb *PushbulletSender) Release(dest []string, body string) error {
 }
 
 func (pb *PushbulletSender) Destinations() (map[string]string, error) {
-	req, err := http.NewRequest("GET", "https://api.pushbullet.com/v2/devices", nil)
+	req, err := http.NewRequest("GET", pb.server+"/v2/devices", nil)
 	if err != nil {
 		return nil, err
 	}
