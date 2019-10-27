@@ -12,11 +12,11 @@
   },
   "devDependencies": {
     "prettier": "1.17.0",
-    "react-scripts": "3.0.0",
+    "react-scripts": "^3.2.0",
     "terser": "^3.17.0"
   },
   "dependencies": {
-    "axios": "^0.18.0",
+    "axios": "^0.19.0",
     "connected-react-router": "6.4.0",
     "moment": "^2.24.0",
     "react": "16.8.6",
@@ -34,6 +34,9 @@
     "sanitize.css": "8.0.0",
     "serve": "11.0.0",
     "yr.no-forecast": "^2.1.0"
+  },
+  "resolutions": {
+    "request": "^2.88.0"
   },
   "browserslist": [
     ">0.2%",
