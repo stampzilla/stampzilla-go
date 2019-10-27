@@ -35,6 +35,9 @@
     "serve": "11.0.0",
     "yr.no-forecast": "^2.1.0"
   },
+  "resolutions": {
+    "request": "^2.88.0"
+  },
   "browserslist": [
     ">0.2%",
     "not dead",
