@@ -53,10 +53,11 @@ type Rules map[string]*Rule
 
 // Logic is the main struct
 type Logic struct {
-	StateStore    *SavedStateStore
-	Rules         map[string]*Rule
-	devices       *devices.List
-	onReportState func(string, devices.State)
+	StateStore           *SavedStateStore
+	Rules                map[string]*Rule
+	devices              *devices.List
+	onReportState        func(string, devices.State)
+	onTriggerDestination func(string, string) error
 	//ActionProgressChan chan ActionProgress
 	sync.RWMutex
 	sync.WaitGroup
@@ -77,11 +78,12 @@ func New(sss *SavedStateStore, websocketSender websocket.Sender) *Logic {
 	l := &Logic{
 		devices: devices.NewList(),
 		//ActionProgressChan: make(chan ActionProgress, 100),
-		Rules:           make(map[string]*Rule),
-		StateStore:      sss,
-		onReportState:   func(string, devices.State) {},
-		c:               make(chan func()),
-		WebsocketSender: websocketSender,
+		Rules:                make(map[string]*Rule),
+		StateStore:           sss,
+		onReportState:        func(string, devices.State) {},
+		onTriggerDestination: func(string, string) error { return nil },
+		c:                    make(chan func()),
+		WebsocketSender:      websocketSender,
 	}
 	return l
 }
@@ -114,6 +116,10 @@ func (l *Logic) SetRules(rules Rules) {
 
 func (l *Logic) OnReportState(callback func(string, devices.State)) {
 	l.onReportState = callback
+}
+
+func (l *Logic) OnTriggerDestination(callback func(string, string) error) {
+	l.onTriggerDestination = callback
 }
 
 // Start starts the logic worker
@@ -177,9 +183,11 @@ func (l *Logic) runFor(ctx context.Context, rule *Rule, evaluation bool) {
 		rule.stop = make(chan struct{})
 	}
 
-	if evaluation == rule.Active() {
+	if evaluation == rule.Pending() {
 		return
 	}
+
+	rule.SetPending(evaluation)
 
 	if evaluation {
 		rule.Stop()
@@ -210,7 +218,7 @@ func (l *Logic) runFor(ctx context.Context, rule *Rule, evaluation bool) {
 				"active":  true,
 			})
 			rule.SetActive(true)
-			rule.Run(l.StateStore, l.WebsocketSender)
+			rule.Run(l.StateStore, l.WebsocketSender, l.onTriggerDestination)
 		}()
 		return
 	}
@@ -232,7 +240,7 @@ func (l *Logic) runNow(rule *Rule, evaluation bool) {
 			l.Add(1)
 			go func() {
 				logrus.Info("Rule: ", rule.Name(), " (", rule.Uuid(), ") - running actions")
-				rule.Run(l.StateStore, l.WebsocketSender)
+				rule.Run(l.StateStore, l.WebsocketSender, l.onTriggerDestination)
 				l.Done()
 			}()
 		} else {

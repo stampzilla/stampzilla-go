@@ -7,3 +7,5 @@ web/dist
 rules.json
 savedstate.json
 schedule.json
+senders.json
+destinations.json

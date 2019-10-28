@@ -2,6 +2,7 @@ package webserver
 
 import (
 	"crypto/tls"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -33,7 +34,6 @@ type Webserver struct {
 }
 
 func New(s *store.Store, conf *models.Config, wsh handlers.WebsocketHandler, m *melody.Melody) *Webserver {
-
 	return &Webserver{
 		Store:            s,
 		Config:           conf,
@@ -76,7 +76,6 @@ func (ws *Webserver) Init() *gin.Engine {
 	return r
 }
 func (ws *Webserver) Start(addr string, tlsConfig *tls.Config) chan struct{} {
-
 	server, done := gograce.NewServerWithTimeout(10 * time.Second)
 
 	server.Handler = ws.Init()
@@ -126,7 +125,6 @@ func (ws *Webserver) handleConnect() func(s *melody.Session) {
 			logrus.Error(err)
 			return
 		}
-
 	}
 }
 
@@ -140,11 +138,57 @@ func (ws *Webserver) handleMessage() func(s *melody.Session, msg []byte) {
 
 		id, _ := s.Get(websocket.KeyID.String())
 		data.FromUUID = id.(string)
-		err = ws.WebsocketHandler.Message(s, data)
-		if err != nil {
-			logrus.Error(err)
-			return
-		}
+
+		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					err, ok := r.(error)
+					if !ok {
+						err = fmt.Errorf("%s", r)
+					}
+
+					if len(data.Request) == 0 {
+						logrus.Error(err)
+						return
+					}
+
+					msg, err := models.NewMessage("failure", err.Error())
+					if err != nil {
+						logrus.Error(err)
+					}
+					msg.Request = data.Request
+					err = msg.WriteTo(s)
+					if err != nil {
+						logrus.Error(err)
+					}
+				}
+			}()
+			resp, err := ws.WebsocketHandler.Message(s, data)
+
+			// The message contains a request ID, so respond with the result
+			if len(data.Request) > 0 {
+				msg, e := models.NewMessage("success", resp)
+				if e != nil {
+					logrus.Error(e)
+				}
+				if err != nil {
+					msg, e = models.NewMessage("failure", err.Error())
+					if err != nil {
+						logrus.Error(e)
+					}
+				}
+
+				msg.Request = data.Request
+				err := msg.WriteTo(s)
+				if err != nil {
+					logrus.Error(err)
+				}
+			}
+
+			if err != nil {
+				logrus.Error(err)
+			}
+		}()
 	}
 }
 

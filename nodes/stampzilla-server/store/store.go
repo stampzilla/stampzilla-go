@@ -7,6 +7,7 @@ import (
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/logic"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/notification"
 )
 
 type Nodes map[string]*models.Node
@@ -24,6 +25,9 @@ type Store struct {
 	Requests     []Request
 	Server       map[string]map[string]devices.State
 
+	Destinations *notification.Destinations
+	Senders      *notification.Senders
+
 	onUpdate []UpdateCallback
 	sync.RWMutex
 }
@@ -39,11 +43,15 @@ func New(l *logic.Logic, s *logic.Scheduler, sss *logic.SavedStateStore) *Store 
 		Certificates: make([]Certificate, 0),
 		Requests:     make([]Request, 0),
 		Server:       make(map[string]map[string]devices.State),
+		Destinations: notification.NewDestinations(),
+		Senders:      notification.NewSenders(),
 	}
 
 	l.OnReportState(func(uuid string, state devices.State) {
 		store.AddOrUpdateServer("rules", uuid, state)
 	})
+
+	l.OnTriggerDestination(store.TriggerDestination)
 
 	return store
 }
@@ -73,6 +81,14 @@ func (store *Store) Load() error {
 	}
 
 	if err := store.Scheduler.Load(); err != nil {
+		return err
+	}
+
+	if err := store.Destinations.Load("destinations.json"); err != nil {
+		return err
+	}
+
+	if err := store.Senders.Load("senders.json"); err != nil {
 		return err
 	}
 

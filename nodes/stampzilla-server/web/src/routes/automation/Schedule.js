@@ -10,7 +10,7 @@ import {
   ArrayFieldTemplate,
   CustomCheckbox,
   ObjectFieldTemplate,
-} from './components/formComponents';
+} from '../../components/formComponents';
 
 const schema = {
   type: 'object',
@@ -55,7 +55,7 @@ const uiSchema = {
   },
 };
 
-class Automation extends Component {
+class Schedule extends Component {
   constructor(props) {
     super();
 
@@ -111,14 +111,7 @@ class Automation extends Component {
   };
 
   render() {
-    const { match, devices } = this.props;
-
-    const params = devices.reduce((acc, dev) => {
-      (dev.get('state') || []).forEach((value, key) => {
-        acc[`devices["${dev.get('id')}"].${key}`] = value;
-      });
-      return acc;
-    }, {});
+    const { match } = this.props;
 
     return (
       <React.Fragment>
@@ -166,17 +159,6 @@ class Automation extends Component {
                 </Button>
               </div>
             </Card>
-
-            <pre>
-              {params
-                && Object.keys(params).map(key => (
-                  <div key={key}>
-                    {key}
-:
-                    <strong>{JSON.stringify(params[key])}</strong>
-                  </div>
-                ))}
-            </pre>
           </div>
         </div>
       </React.Fragment>
@@ -186,7 +168,6 @@ class Automation extends Component {
 
 const mapToProps = state => ({
   schedules: state.getIn(['schedules', 'list']),
-  devices: state.getIn(['devices', 'list']),
 });
 
-export default connect(mapToProps)(Automation);
+export default connect(mapToProps)(Schedule);

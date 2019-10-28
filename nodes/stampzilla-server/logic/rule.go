@@ -14,6 +14,7 @@ import (
 	"github.com/google/cel-go/interpreter"
 	"github.com/google/cel-go/parser"
 	"github.com/sirupsen/logrus"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
 	stypes "github.com/stampzilla/stampzilla-go/pkg/types"
@@ -21,27 +22,24 @@ import (
 )
 
 type Rule struct {
-	Name_       string          `json:"name"`
-	Uuid_       string          `json:"uuid"`
-	Operator_   string          `json:"operator"`
-	Active_     bool            `json:"active"`
-	Enabled     bool            `json:"enabled"`
-	Expression_ string          `json:"expression"`
-	Conditions_ map[string]bool `json:"conditions"`
-	Actions_    []string        `json:"actions"`
-	Labels_     []string        `json:"labels"`
-	For_        stypes.Duration `json:"for"`
-	checkedExp  *exprpb.CheckedExpr
+	Name_         string          `json:"name"`
+	Uuid_         string          `json:"uuid"`
+	Active_       bool            `json:"active"`
+	Pending_      bool            `json:"pending"`
+	Enabled       bool            `json:"enabled"`
+	Expression_   string          `json:"expression"`
+	Conditions_   map[string]bool `json:"conditions"`
+	Actions_      []string        `json:"actions"`
+	Labels_       models.Labels   `json:"labels"`
+	For_          stypes.Duration `json:"for"`
+	Type_         string          `json:"type"`
+	Destinations_ []string        `json:"destinations"`
+	checkedExp    *exprpb.CheckedExpr
 	sync.RWMutex
 	cancel context.CancelFunc
 	stop   chan struct{}
 }
 
-func (r *Rule) Operator() string {
-	r.RLock()
-	defer r.RUnlock()
-	return r.Operator_
-}
 func (r *Rule) Expression() string {
 	r.RLock()
 	defer r.RUnlock()
@@ -51,6 +49,11 @@ func (r *Rule) Active() bool {
 	r.RLock()
 	defer r.RUnlock()
 	return r.Active_
+}
+func (r *Rule) Pending() bool {
+	r.RLock()
+	defer r.RUnlock()
+	return r.Pending_
 }
 func (r *Rule) Uuid() string {
 	r.RLock()
@@ -79,10 +82,20 @@ func (r *Rule) SetActive(a bool) {
 	r.Active_ = a
 	r.Unlock()
 }
+func (r *Rule) SetPending(a bool) {
+	r.Lock()
+	r.Pending_ = a
+	r.Unlock()
+}
 func (r *Rule) For() stypes.Duration {
 	r.RLock()
 	defer r.RUnlock()
 	return r.For_
+}
+func (r *Rule) Type() string {
+	r.RLock()
+	defer r.RUnlock()
+	return r.Type_
 }
 func (r *Rule) Stop() {
 	select {
@@ -100,7 +113,7 @@ func (r *Rule) Cancel() {
 	r.RUnlock()
 }
 
-func (r *Rule) Run(store *SavedStateStore, sender websocket.Sender) {
+func (r *Rule) Run(store *SavedStateStore, sender websocket.Sender, triggerDestination func(string, string) error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	r.Lock()
@@ -149,6 +162,11 @@ func (r *Rule) Run(store *SavedStateStore, sender websocket.Sender) {
 				continue
 			}
 		}
+	}
+
+	for _, dest := range r.Destinations_ {
+		logrus.Warnf("Send notification to %s", dest)
+		triggerDestination(dest, r.Name())
 	}
 }
 

@@ -11,6 +11,38 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestSetUUID(t *testing.T) {
+	r := &Rule{
+		Uuid_: "a",
+	}
+
+	assert.Equal(t, r.Uuid(), "a")
+
+	r.SetUuid("b")
+
+	assert.Equal(t, r.Uuid(), "b")
+}
+
+func TestConditions(t *testing.T) {
+	c := map[string]bool{
+		"a": true,
+		"b": false,
+	}
+	r := &Rule{
+		Conditions_: c,
+	}
+
+	assert.Equal(t, r.Conditions(), c)
+}
+
+func TestType(t *testing.T) {
+	r := &Rule{
+		Type_: "type1",
+	}
+
+	assert.Equal(t, r.Type(), "type1")
+}
+
 func TestEval(t *testing.T) {
 
 	tests := []struct {
@@ -110,21 +142,32 @@ func TestRunActions(t *testing.T) {
 
 	r := &Rule{
 		Actions_: []string{
-			"400ms",
+			"50ms",
 			"uuid",
+		},
+		Destinations_: []string{
+			"a",
+			"b",
 		},
 	}
 
 	now := time.Now()
-	r.Run(savedState, syncer)
-	if time.Now().Sub(now) < time.Millisecond*200 {
-		t.Error("Expected to sleep in the action for at least 200ms")
+	cnt := 0
+	triggerDestination := func(string, string) error {
+		cnt = cnt + 1
+		return nil
+	}
+
+	r.Run(savedState, syncer, triggerDestination)
+	if time.Now().Sub(now) < time.Millisecond*25 {
+		t.Error("Expected to sleep in the action for at least 25ms")
 	}
 
 	//t.Log(store.Devices.Get("node", "id"))
 	assert.Equal(t, false, syncer.Devices.Get(devices.ID{Node: "node", ID: "id"}).State["on"])
 	assert.Equal(t, true, syncer.Devices.Get(devices.ID{Node: "node", ID: "id"}).State["a"])
 	assert.Equal(t, true, syncer.Devices.Get(devices.ID{Node: "node", ID: "id"}).State["b"])
+	assert.Equal(t, 2, cnt)
 }
 
 func TestRunActionsCancelSleep(t *testing.T) {
@@ -140,6 +183,11 @@ func TestRunActionsCancelSleep(t *testing.T) {
 			"100ms",
 			"100ms",
 		},
+		Destinations_: []string{
+			"a",
+			"b",
+			"c",
+		},
 	}
 
 	go func() {
@@ -148,12 +196,19 @@ func TestRunActionsCancelSleep(t *testing.T) {
 	}()
 
 	now := time.Now()
-	r.Run(savedState, syncer)
+	cnt := 0
+	triggerDestination := func(string, string) error {
+		cnt = cnt + 1
+		return nil
+	}
+
+	r.Run(savedState, syncer, triggerDestination)
 	dur := time.Now().Sub(now)
 	if dur < time.Millisecond*110 {
 		t.Error("Expected to sleep in the action for at least 200ms slept: ", dur)
 	}
 	assert.Contains(t, logBuf.String(), "stopping action 1 due to cancel")
+	assert.Equal(t, 0, cnt)
 }
 func BenchmarkEval(b *testing.B) {
 	devs := devices.NewList()

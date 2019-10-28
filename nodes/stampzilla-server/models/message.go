@@ -9,9 +9,10 @@ import (
 )
 
 type Message struct {
-	FromUUID string          `json:"fromUUID"`
+	FromUUID string          `json:"fromUUID,omitempty"`
 	Type     string          `json:"type"`
-	Body     json.RawMessage `json:"body"`
+	Body     json.RawMessage `json:"body,omitempty"`
+	Request  json.RawMessage `json:"request,omitempty"`
 }
 
 func NewMessage(t string, body interface{}) (*Message, error) {

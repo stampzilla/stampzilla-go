@@ -1,18 +1,19 @@
 import React, { Component } from 'react';
 import { Button } from 'reactstrap';
 import { connect } from 'react-redux';
-import Form from 'react-jsonschema-form';
 import { fromJS } from 'immutable';
+import Form from 'react-jsonschema-form';
 
-import { add, save } from '../../ducks/rules';
-import Card from '../../components/Card';
-import SavedStateWidget from './components/SavedStatePicker';
 import {
   ArrayFieldTemplate,
+  ConnectedRuleConditions,
   CustomCheckbox,
   ObjectFieldTemplate,
-  ConnectedRuleConditions,
-} from './components/formComponents';
+} from '../../components/formComponents';
+import { add, save } from '../../ducks/rules';
+import Card from '../../components/Card';
+import Editor from '../../components/editor';
+import SavedStateWidget from './components/SavedStatePicker';
 
 const schema = fromJS({
   type: 'object',
@@ -56,10 +57,8 @@ const schema = fromJS({
   },
 });
 const uiSchema = fromJS({
-  config: {
-    'ui:options': {
-      rows: 15,
-    },
+  expression: {
+    'ui:widget': 'Editor',
   },
   actions: {
     items: {
@@ -82,7 +81,7 @@ const loadFromProps = (props) => {
   return { formData };
 };
 
-class Automation extends Component {
+class Rule extends Component {
   constructor(props) {
     super();
 
@@ -119,10 +118,15 @@ class Automation extends Component {
   onSubmit = () => ({ formData }) => {
     const { dispatch } = this.props;
 
+    const postData = {
+      ...formData,
+      expression: this.form.formElement.querySelector('#editor').value,
+    };
+
     if (formData.uuid) {
-      dispatch(save(formData));
+      dispatch(save(postData));
     } else {
-      dispatch(add(formData));
+      dispatch(add(postData));
     }
   };
 
@@ -165,7 +169,9 @@ class Automation extends Component {
               </div>
             )}
             <Card
-              title={match.params.uuid ? 'Edit rule ' : 'New rule'}
+              title={(match.params.uuid ? 'Edit rule ' : 'New rule').concat(
+                isModified ? ' (not saved)' : '',
+              )}
               bodyClassName="p-0"
             >
               <div className="card-body">
@@ -185,9 +191,13 @@ class Automation extends Component {
                   widgets={{
                     CheckboxWidget: CustomCheckbox,
                     SavedStateWidget,
+                    Editor,
                   }}
                   fields={{
                     ConnectedRuleConditions,
+                  }}
+                  ref={(frm) => {
+                    this.form = frm;
                   }}
                 >
                   <button
@@ -204,7 +214,7 @@ class Automation extends Component {
                   {'Back'}
                 </Button>
                 <Button
-                  color={isModified ? 'primary' : 'secondary'}
+                  color="primary"
                   disabled={!this.state.isValid || this.props.disabled}
                   onClick={() => this.submitButton.click()}
                   className="float-right"
@@ -236,4 +246,4 @@ const mapToProps = state => ({
   devices: state.getIn(['devices', 'list']),
 });
 
-export default connect(mapToProps)(Automation);
+export default connect(mapToProps)(Rule);
