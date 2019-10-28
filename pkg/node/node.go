@@ -558,7 +558,6 @@ func (n *Node) syncWorker() {
 		err := n.WriteMessage("update-devices", devs)
 		if err != nil {
 			logrus.Error(err)
-			return
 		}
 	}
 }
