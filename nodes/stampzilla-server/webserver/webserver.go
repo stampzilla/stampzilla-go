@@ -142,13 +142,14 @@ func (ws *Webserver) handleConnect(requireAuth bool) func(s *melody.Session) {
 		msg.WriteTo(s)
 
 		// Require an identity, if we are on the secure socket
-		_, ok := s.Keys["identity"]
+		secure, ok := s.Keys["secure"]
 		if requireAuth && !ok {
 			// Websockets are not allowed to relay any http status codes to the client script.
 			// https://www.w3.org/TR/websockets/#feedback-from-the-protocol
 			// So to signal the webgui that the user is unauthorized we have to use exit codes above 4000.
 			// Error codes above 4000-49999 are reserved for private use.
 			s.CloseWithMsg(melody.FormatCloseMessage(4001, "unauthorized"))
+			return
 		}
 
 		proto, _ := s.Get(websocket.KeyProtocol.String())
@@ -163,10 +164,13 @@ func (ws *Webserver) handleConnect(requireAuth bool) func(s *melody.Session) {
 		err = ws.WebsocketHandler.Connect(s, s.Request, s.Keys)
 		if err != nil {
 			logrus.Error(err)
+			s.CloseWithMsg(melody.FormatCloseMessage(5000, "internal error"))
 			return
 		}
 
-		msg, err = models.NewMessage("ready", nil)
+		s.Set("ready", true)
+
+		msg, err = models.NewMessage("ready", secure)
 		if err != nil {
 			logrus.Error(err)
 			return
@@ -185,6 +189,12 @@ func (ws *Webserver) handleMessage() func(s *melody.Session, msg []byte) {
 
 		id, _ := s.Get(websocket.KeyID.String())
 		data.FromUUID = id.(string)
+
+		ready, ok := s.Get("ready")
+		if !ok || !ready.(bool) {
+			logrus.Warnf("ignored incoming '%s' message (not ready) from %s", data.Type, data.FromUUID)
+			return
+		}
 
 		go func() {
 			defer func() {
@@ -274,11 +284,10 @@ func (ws *Webserver) handleWs(m *melody.Melody) func(c *gin.Context) {
 
 		// Try to identify the client
 		if c.Request.TLS != nil {
-			keys["secure"] = true
-
 			certs := c.Request.TLS.PeerCertificates
 			if len(certs) > 0 {
 				keys["identity"] = certs[0].Subject.CommonName
+				keys["secure"] = "cert"
 
 				// Only accept X- headers from clients with a certificate
 				if c.Request.Header.Get("X-UUID") != "" {
@@ -290,6 +299,7 @@ func (ws *Webserver) handleWs(m *melody.Melody) func(c *gin.Context) {
 				session := sessions.Default(c)
 				if session.Get("username") != nil {
 					keys["identity"] = session.Get("username")
+					keys["secure"] = "session"
 				}
 			}
 		}

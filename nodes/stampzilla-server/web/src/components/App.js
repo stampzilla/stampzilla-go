@@ -1,19 +1,40 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { withRouter } from 'react-router';
+import { get } from 'axios';
+import Url from 'url';
 
 import { update } from '../ducks/app';
 import Link from './Link';
 import SocketModal from './SocketModal';
 
 class App extends Component {
-  state = {
-    socketModal: false,
+  constructor(props) {
+    super(props);
+    this.state = {
+      socketModal: false,
+    };
+  }
+
+  onLogout = () => {
+    const { app, server } = this.props;
+
+    const serverUrl = Url.parse(app.get('url'));
+    const u = `https://${serverUrl.hostname}:${server.get('tlsPort')}/logout`;
+
+    get(u, { withCredentials: true })
+      .then(() => {
+        this.props.dispatch(update({ url: '' }));
+        this.props.dispatch(update({ url: app.get('url') }));
+      })
+      .catch((error) => {
+        console.log('error', error);
+      });
   };
 
   render = () => {
     const {
-      children, connected, dispatch, requests,
+      children, connected, dispatch, requests, method,
     } = this.props;
     const { socketModal } = this.state;
 
@@ -90,12 +111,27 @@ class App extends Component {
                     )}
                   </Link>
                 </li>
+
                 <li className="nav-item mt-4">
                   <Link to="/debug" className="nav-link" activeClass="active">
                     <i className="nav-icon fa fa-terminal" />
                     Debug
                   </Link>
                 </li>
+
+                {method === 'session' && 
+                <li className="nav-item mt-4">
+                  <div
+                    className="nav-link"
+                    onClick={this.onLogout}
+                    role="button"
+                    tabIndex="-1"
+                  >
+                    <i className="nav-icon fa fa-sign-out" />
+                    Logout
+                  </div>
+                </li>
+                }
               </ul>
             </nav>
           </div>
@@ -138,7 +174,10 @@ class App extends Component {
 
 const mapToProps = (state) => ({
   connected: state.getIn(['connection', 'connected']),
+  method: state.getIn(['connection', 'method']),
   requests: state.getIn(['requests', 'list']),
+  app: state.getIn(['app']),
+  server: state.getIn(['server']),
 });
 
 export default withRouter(connect(mapToProps)(App));

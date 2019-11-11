@@ -62,7 +62,7 @@ func New(l *logic.Logic, s *logic.Scheduler, sss *logic.SavedStateStore) *Store 
 func (store *Store) runCallbacks(area string) {
 	for _, callback := range store.onUpdate {
 		if err := callback(area, store); err != nil {
-			logrus.Error("store: ", err)
+			logrus.Error("store callback: ", err)
 		}
 	}
 }

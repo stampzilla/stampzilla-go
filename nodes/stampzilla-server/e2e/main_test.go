@@ -192,6 +192,9 @@ func TestSecureUpdateDestinations(t *testing.T) {
 
 	d := wstest.NewDialer(main.TLSServer)
 	d.Subprotocols = []string{"node"}
+
+	login(t, main, d)
+
 	c, _, err := d.Dial("ws://example.org/ws", nil)
 	if err != nil {
 		t.Fatal(err)

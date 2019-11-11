@@ -376,11 +376,12 @@ func (wsh *secureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.R
 		n := wsh.Store.GetNode(id.(string))
 		if n == nil {
 			// New node, register the new node
-			t, _ := s.Get("type")
 			n = &models.Node{
 				UUID:       id.(string),
-				Type:       t.(string),
 				Connected_: true,
+			}
+			if t, ok := s.Get("type"); ok {
+				n.Type = t.(string)
 			}
 			wsh.Store.AddOrUpdateNode(n)
 		}

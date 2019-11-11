@@ -71,9 +71,9 @@ class Websocket extends Component {
     }
   }
 
-  onOpen = () => {
+  onOpen = (method) => {
     const url = Url.parse(this.props.url);
-    this.props.dispatch(connected(url.port));
+    this.props.dispatch(connected(url.port, method));
 
     if (url.protocol === 'wss:') {
       this.props.dispatch(updateServer({ secure: true }));
@@ -119,6 +119,10 @@ class Websocket extends Component {
         dispatch(updateServer(parsed.body));
         break;
       }
+      case 'ready': {
+        this.onOpen(parsed.body);
+        break;
+      }
       case 'success': {
         const req = activeRequests.find((a) => a.id === parsed.request);
         req.resolve(parsed.body);
@@ -129,9 +133,6 @@ class Websocket extends Component {
         const req = activeRequests.find((a) => a.id === parsed.request);
         req.reject(parsed.body);
         activeRequests = activeRequests.filter((a) => a.id !== parsed.request);
-      case 'ready': {
-        this.onOpen();
-        break;
       }
       default: {
         // Nothing

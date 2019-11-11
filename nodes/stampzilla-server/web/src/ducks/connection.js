@@ -12,6 +12,7 @@ const c = defineAction('connection', [
 const defaultState = Map({
   trying: false,
   connected: null,
+  method: null,
   port: 0,
   code: 0,
   reason: '',
@@ -23,8 +24,8 @@ const defaultState = Map({
 export function connecting(port) {
   return { type: c.CONNECTING, port };
 }
-export function connected(port) {
-  return { type: c.CONNECTED, port };
+export function connected(port, method) {
+  return { type: c.CONNECTED, port, method };
 }
 
 export function disconnected(code, reason, retrying) {
@@ -59,6 +60,7 @@ export default function reducer(state = defaultState, action) {
       return state
         .set('error', null)
         .set('connected', true)
+        .set('method', action.method)
         .set('code', 0)
         .set('port', action.port)
         .set('reason', '');
@@ -66,6 +68,7 @@ export default function reducer(state = defaultState, action) {
     case c.DISCONNECTED: {
       return state
         .set('connected', false)
+        .set('method', null)
         .set('code', action.code)
         .set('connecting', action.retrying)
         .set('reason', action.reason);
