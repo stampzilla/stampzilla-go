@@ -65,7 +65,6 @@ func TestEqual(t *testing.T) {
 	}
 
 	assert.False(t, d1.Equal(d3))
-
 }
 
 func TestAddDestination(t *testing.T) {

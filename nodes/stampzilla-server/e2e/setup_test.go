@@ -1,27 +1,20 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"io"
 	"io/ioutil"
 	"log"
-	"mime/multipart"
 	"net/http"
-	"net/http/cookiejar"
 	"net/http/httptest"
-	"net/url"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/gorilla/websocket"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/servermain"
 	"github.com/stampzilla/stampzilla-go/pkg/node"
-	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/publicsuffix"
 )
 
 func makeRequest(t *testing.T, handler http.Handler, method, url string, body io.Reader) *httptest.ResponseRecorder {
@@ -115,39 +108,4 @@ func acceptCertificateRequest(t *testing.T, main *servermain.Main) {
 		r := main.Store.GetRequests()
 		main.Store.AcceptRequest(r[0].Connection)
 	}()
-}
-
-func login(t *testing.T, main *servermain.Main, d *websocket.Dialer) {
-	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var body bytes.Buffer
-	mp := multipart.NewWriter(&body)
-	username, err := mp.CreateFormField("username")
-	assert.NoError(t, err)
-	_, err = io.Copy(username, strings.NewReader("test-user"))
-	assert.NoError(t, err)
-	password, err := mp.CreateFormField("password")
-	assert.NoError(t, err)
-	_, err = io.Copy(password, strings.NewReader("test-pass"))
-	assert.NoError(t, err)
-	mp.Close()
-
-	req := httptest.NewRequest("POST", "http://example.org/login", &body)
-	req.Header.Set("Content-Type", mp.FormDataContentType())
-
-	w := httptest.NewRecorder()
-
-	main.TLSServer.ServeHTTP(w, req)
-
-	assert.Equal(t, 200, w.Code)
-
-	resp := w.Result()
-	url, err := url.Parse("http://example.org/login")
-	assert.NoError(t, err)
-
-	jar.SetCookies(url, resp.Cookies())
-	d.Jar = jar
 }

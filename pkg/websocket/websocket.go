@@ -34,6 +34,7 @@ type Websocket interface {
 	Read() <-chan []byte
 	// WriteJSON writes interface{} encoded as JSON to our connection
 	WriteJSON(v interface{}) error
+	WriteMessage(messageType int, data []byte) error
 	SetTLSConfig(c *tls.Config)
 }
 
@@ -108,7 +109,6 @@ func (ws *websocketClient) ConnectContext(ctx context.Context, addr string, head
 // ConnectWithRetry tries to connect and blocks until connected.
 // if disconnected because an error tries to reconnect again every 5th second
 func (ws *websocketClient) ConnectWithRetry(parentCtx context.Context, addr string, headers http.Header) {
-
 	ctx, cancel := context.WithCancel(parentCtx)
 	ws.wg.Add(1)
 	go func() {
@@ -152,6 +152,19 @@ func (ws *websocketClient) Wait() {
 
 func (ws *websocketClient) Read() <-chan []byte {
 	return ws.read
+}
+
+func (ws *websocketClient) WriteMessage(messageType int, data []byte) error {
+	errCh := make(chan error, 1)
+	select {
+	case ws.write <- func() {
+		err := ws.conn.WriteMessage(messageType, data)
+		errCh <- err
+	}:
+	case <-time.After(time.Millisecond * 10):
+		errCh <- fmt.Errorf("websocket: no one listening on write channel")
+	}
+	return <-errCh
 }
 
 // WriteJSON writes interface{} encoded as JSON to our connection

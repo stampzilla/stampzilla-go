@@ -40,7 +40,6 @@ func (mss *mockSender) SendToID(to string, msgType string, data interface{}) err
 	return nil
 }
 func (mss *mockSender) SendToProtocol(to string, msgType string, data interface{}) error {
-
 	return nil
 }
 func (mss *mockSender) BroadcastWithFilter(msgType string, data interface{}, fn func(*melody.Session) bool) error {
@@ -48,7 +47,6 @@ func (mss *mockSender) BroadcastWithFilter(msgType string, data interface{}, fn 
 }
 
 func TestLoadRulesFromFile(t *testing.T) {
-
 	syncer := NewMockSender()
 	savedState := NewSavedStateStore()
 	l := New(savedState, syncer)
@@ -151,7 +149,6 @@ func TestEvaluateBrokenRules(t *testing.T) {
 }
 
 func TestEvaluateRulesCanceledIfNotActive(t *testing.T) {
-
 	logrus.SetLevel(logrus.DebugLevel)
 	syncer := NewMockSender()
 
@@ -160,7 +157,7 @@ func TestEvaluateRulesCanceledIfNotActive(t *testing.T) {
 		Name: "testname",
 		UUID: "uuid",
 		State: map[devices.ID]devices.State{
-			devices.ID{Node: "node", ID: "id"}: devices.State{
+			{Node: "node", ID: "id"}: {
 				"on": false,
 				"a":  true,
 				"b":  true,
@@ -210,7 +207,6 @@ func TestEvaluateRulesCanceledIfNotActive(t *testing.T) {
 }
 
 func TestEvaluateRulesWithFor(t *testing.T) {
-
 	logrus.SetLevel(logrus.DebugLevel)
 	syncer := NewMockSender()
 
@@ -220,7 +216,7 @@ func TestEvaluateRulesWithFor(t *testing.T) {
 		Name: "testname",
 		UUID: "uuid",
 		State: map[devices.ID]devices.State{
-			devID: devices.State{
+			devID: {
 				"on": false,
 				"a":  true,
 				"b":  true,
@@ -265,7 +261,6 @@ func TestEvaluateRulesWithFor(t *testing.T) {
 
 // TestEvaluateRulesWithForTimeout asserts that we do not run the rule if it goes inactive before the "for" timeout.
 func TestEvaluateRulesWithForTimeout(t *testing.T) {
-
 	logrus.SetLevel(logrus.DebugLevel)
 	syncer := NewMockSender()
 
@@ -275,7 +270,7 @@ func TestEvaluateRulesWithForTimeout(t *testing.T) {
 		Name: "testname",
 		UUID: "uuid",
 		State: map[devices.ID]devices.State{
-			devID: devices.State{
+			devID: {
 				"on": false,
 			},
 		},
@@ -316,7 +311,6 @@ func TestEvaluateRulesWithForTimeout(t *testing.T) {
 
 // TestEvaluateRulesWithForFlapping asserts that we do not run the rule if it goes inactive before the "for" timeout even it it goes true again multiple times during the for.
 func TestEvaluateRulesWithForFlapping(t *testing.T) {
-
 	logrus.SetFormatter(&logrus.TextFormatter{TimestampFormat: time.RFC3339Nano, FullTimestamp: true})
 	logrus.SetLevel(logrus.DebugLevel)
 	syncer := NewMockSender()
@@ -327,7 +321,7 @@ func TestEvaluateRulesWithForFlapping(t *testing.T) {
 		Name: "testname",
 		UUID: "uuid",
 		State: map[devices.ID]devices.State{
-			devID: devices.State{
+			devID: {
 				"on": false,
 			},
 		},

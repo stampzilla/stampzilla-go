@@ -80,7 +80,6 @@ func (l *List) Load() error {
 	configFile, err := os.Open("persons.json")
 	if err != nil {
 		if os.IsNotExist(err) {
-
 			// Add the default person, if the person list is empty
 			person := PersonWithPassword{
 				Person: Person{

@@ -166,7 +166,6 @@ func (s *Scheduler) syncTaskDependencies() {
 		}
 		s.ScheduleTask(task)
 	}
-
 }
 
 func (s *Scheduler) ScheduleTask(t *Task) {

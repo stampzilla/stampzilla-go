@@ -21,7 +21,7 @@ func TestSchedulerRunTask(t *testing.T) {
 		Name: "testname",
 		UUID: "uuid",
 		State: map[devices.ID]devices.State{
-			devices.ID{"node", "id1"}: devices.State{
+			{"node", "id1"}: {
 				"a": 1,
 			},
 		},
@@ -30,7 +30,7 @@ func TestSchedulerRunTask(t *testing.T) {
 		Name: "testname",
 		UUID: "uuid2",
 		State: map[devices.ID]devices.State{
-			devices.ID{"node", "id2"}: devices.State{
+			{"node", "id2"}: {
 				"a": 2,
 			},
 		},

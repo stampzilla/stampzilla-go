@@ -148,6 +148,7 @@ func (ws *Webserver) handleConnect(requireAuth bool) func(s *melody.Session) {
 			// https://www.w3.org/TR/websockets/#feedback-from-the-protocol
 			// So to signal the webgui that the user is unauthorized we have to use exit codes above 4000.
 			// Error codes above 4000-49999 are reserved for private use.
+			logrus.Warn("4001 unauthorized")
 			s.CloseWithMsg(melody.FormatCloseMessage(4001, "unauthorized"))
 			return
 		}
@@ -342,8 +343,11 @@ func (ws *Webserver) handleLogin() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		session := sessions.Default(c)
 		session.Set("username", c.PostForm("username"))
-		session.Save()
-		c.JSON(200, gin.H{})
+		err := session.Save()
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			return
+		}
 	}
 }
 
@@ -351,7 +355,10 @@ func (ws *Webserver) handleLogout() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		session := sessions.Default(c)
 		session.Clear()
-		session.Save()
-		c.JSON(200, gin.H{})
+		err := session.Save()
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			return
+		}
 	}
 }
