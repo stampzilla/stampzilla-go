@@ -224,6 +224,12 @@ func TestSecureUnknownRequest(t *testing.T) {
 			"body": ""
 		}
 	`)
+	node.On("failure", func(data json.RawMessage) error {
+		fmt.Println("data is", string(data))
+		assert.Equal(t, `"unknown request: unknown-request"`, string(data))
+		atomic.AddUint64(&cnt, 1)
+		return nil
+	})
 
 	waitFor(t, 1*time.Second, "connections should be 1", func() bool {
 		return len(main.Store.GetConnections()) == 1
@@ -232,13 +238,6 @@ func TestSecureUnknownRequest(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	node.On("failure", func(data json.RawMessage) error {
-		fmt.Println("data is", string(data))
-		assert.Equal(t, `"unknown request: unknown-request"`, string(data))
-		atomic.AddUint64(&cnt, 1)
-		return nil
-	})
 
 	waitFor(t, 1*time.Second, "we should have got 1 failure callback", func() bool {
 		return cnt > 0
