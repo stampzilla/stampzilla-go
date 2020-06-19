@@ -8,7 +8,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/coreos/go-systemd/dbus"
+	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/dustin/go-humanize"
 	"github.com/shirou/gopsutil/process"
 	"github.com/sirupsen/logrus"

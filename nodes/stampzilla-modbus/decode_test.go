@@ -7,7 +7,6 @@ import (
 )
 
 func TestDecode(t *testing.T) {
-
 	data1 := []byte{0xff, 0xff} // -0.1
 	data2 := []byte{0xff, 0xfa} // -0.6
 	data3 := []byte{0x00, 0x3c} // 6
@@ -17,5 +16,4 @@ func TestDecode(t *testing.T) {
 	assert.Equal(t, -0.6, decode(data2)/10)
 	assert.Equal(t, 6.0, decode(data3)/10)
 	assert.Equal(t, 0.2, decode(data4)/10)
-
 }

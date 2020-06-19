@@ -88,7 +88,6 @@ func onRequestStateChange(node *node.Node) func(state devices.State, device *dev
 
 		return nil
 	}
-
 }
 
 func updatedConfig(node *node.Node) func(data json.RawMessage) error {
@@ -138,7 +137,6 @@ func checkDuplicateSenderIds() {
 }
 
 func setupEnoceanCommunication(ctx context.Context, node *node.Node) error {
-
 	enoceanSend = make(chan goenocean.Encoder, 100)
 	recv := make(chan goenocean.Packet, 100)
 	err := goenocean.Serial("/dev/ttyUSB0", enoceanSend, recv)
@@ -147,7 +145,7 @@ func setupEnoceanCommunication(ctx context.Context, node *node.Node) error {
 	}
 
 	getIDBase()
-	go reciever(ctx, node, recv)
+	go receiver(ctx, node, recv)
 	return nil
 }
 
@@ -158,7 +156,7 @@ func getIDBase() {
 	enoceanSend <- p
 }
 
-func reciever(ctx context.Context, node *node.Node, recv chan goenocean.Packet) {
+func receiver(ctx context.Context, node *node.Node, recv chan goenocean.Packet) {
 	for {
 		select {
 		case p := <-recv:
@@ -177,7 +175,6 @@ func reciever(ctx context.Context, node *node.Node, recv chan goenocean.Packet) 
 }
 
 func incomingPacket(node *node.Node, p goenocean.Packet) {
-
 	var d *Device
 	if d = globalState.Device(p.SenderId()); d == nil {
 		//Add unknown device
@@ -210,5 +207,4 @@ func incomingPacket(node *node.Node, p goenocean.Packet) {
 	}
 
 	//fmt.Println("Unknown packet")
-
 }

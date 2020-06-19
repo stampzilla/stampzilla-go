@@ -78,7 +78,6 @@ func (d *Device) HasSingleRecvEEP(eep string) bool {
 		if v == eep {
 			return true
 		}
-
 	}
 	return false
 }
@@ -121,7 +120,6 @@ func (d *Device) SetId(senderId [4]byte) {
 	d.Lock()
 	defer d.Unlock()
 	d.SenderId = hex.EncodeToString(senderId[0:4])
-
 }
 
 func (d *Device) SetPowerW(pwr int64) {

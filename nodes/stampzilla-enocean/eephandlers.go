@@ -105,7 +105,6 @@ func (h *handlerEepf60201) Process(d *Device, t goenocean.Telegram) {
 		//d.State = "OFF"
 		//}
 		//}
-
 	}
 }
 
@@ -177,7 +176,6 @@ func (h *handlerEepa53808) Learn(d *Device) {
 	p1.SetCommand(2)
 	fmt.Printf("Sending learn simple: % x\n", p1.Encode())
 	enoceanSend <- p1
-
 }
 
 //Handler for profile a53808eltako
@@ -254,7 +252,6 @@ func (h *handlerEepa53808eltako) Learn(d *Device) {
 	p1.SetCommand(2)
 	fmt.Printf("Sending learn simple: % x\n", p1.Encode())
 	enoceanSend <- p1
-
 }
 
 //Handler for profile a51201
@@ -291,5 +288,4 @@ func (h *handlerEepd20109) Process(d *Device, t goenocean.Telegram) {
 			d.SetOn(false)
 		}
 	}
-
 }

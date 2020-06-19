@@ -35,7 +35,7 @@ func (store *Store) AddOrUpdateDestination(dest *notification.Destination) {
 func (store *Store) TriggerDestination(dest string, body string) error {
 	destination := store.Destinations.Get(dest)
 	if destination == nil {
-		return fmt.Errorf("destination defintion not found")
+		return fmt.Errorf("destination definition not found")
 	}
 
 	sender, ok := store.Senders.Get(destination.Sender)
@@ -49,7 +49,7 @@ func (store *Store) TriggerDestination(dest string, body string) error {
 func (store *Store) ReleaseDestination(dest string, body string) error {
 	destination := store.Destinations.Get(dest)
 	if destination == nil {
-		return fmt.Errorf("destination defintion not found")
+		return fmt.Errorf("destination definition not found")
 	}
 
 	sender, ok := store.Senders.Get(destination.Sender)
