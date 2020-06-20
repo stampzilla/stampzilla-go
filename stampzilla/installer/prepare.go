@@ -1,7 +1,6 @@
 package installer
 
 func Prepare() error {
-
 	// Make sure our infrastructure is correct
 	//// Create required user and folders
 	CreateUser("stampzilla")

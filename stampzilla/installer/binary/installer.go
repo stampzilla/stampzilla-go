@@ -28,7 +28,7 @@ func (t *Installer) Prepare() error {
 }
 func (t *Installer) Install(nodes ...string) error {
 	if len(nodes) == 0 {
-		return fmt.Errorf("Please specifiy which nodes you like to install. (ex 'stampzilla install server example')")
+		return fmt.Errorf("Please specify which nodes you like to install. (ex 'stampzilla install server example')")
 	}
 	return download(nodes, func(a github.ReleaseAsset) bool {
 		_, err := os.Stat(getFilePath(a))
@@ -55,7 +55,7 @@ func download(nodes []string, cb ...func(github.ReleaseAsset) bool) error {
 	releases := GetReleases()
 
 	if len(releases) < 1 {
-		return fmt.Errorf("No available releses found")
+		return fmt.Errorf("No available releases found")
 	}
 
 	checksums := getChecksums(releases[0].Assets)

@@ -35,7 +35,6 @@ func main() {
 				Usage: "system has systemd",
 			},
 		}
-
 	}
 	app.Flags = append(app.Flags, cli.BoolFlag{
 		Name:  "debug",
@@ -90,7 +89,7 @@ func main() {
 		},
 		{
 			Name:   "list",
-			Usage:  "Lists avilable releases",
+			Usage:  "Lists available releases",
 			Action: addDebug(cliHandler.List),
 		},
 		{
@@ -134,7 +133,6 @@ func main() {
 	if err != nil {
 		logrus.Error(err)
 	}
-
 }
 
 func addDebug(in func(c *cli.Context) error) func(c *cli.Context) error {

@@ -40,7 +40,6 @@ func (sd *Systemd) dbus() *dbus.Conn {
 }
 
 func (sd *Systemd) Start(nodes ...string) error {
-
 	conn := sd.dbus()
 
 	if len(nodes) > 0 {

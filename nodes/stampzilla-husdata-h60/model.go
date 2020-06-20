@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
 )
 
@@ -107,10 +105,6 @@ func (hp HeatPump) State() devices.State {
 	state["PoolTempSetpoint"] = float64(hp.PoolTempSetpoint) / 10.0
 	state["CollectedPulsesMeter1"] = hp.CollectedPulsesMeter1
 	state["CollectedPulsesMeter2"] = hp.CollectedPulsesMeter2
-
-	for k, v := range state {
-		fmt.Printf("%s is type %T\n", k, v)
-	}
 
 	return state
 }

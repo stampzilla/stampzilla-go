@@ -35,7 +35,6 @@ func NewProcess(name, configDir string) *Process {
 }
 
 func (p *Process) Start() {
-
 	if pid := p.Pidfile.Read(); pid != 0 {
 		fmt.Println("Found pid file, checking if pid exists")
 
