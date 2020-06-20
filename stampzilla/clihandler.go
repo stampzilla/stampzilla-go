@@ -299,7 +299,6 @@ func getRunner(c *cli.Context) runner.Runner {
 	}
 	logrus.Debug("systemd disabled")
 	return &runner.Bare{}
-
 }
 
 func requireRoot() { // {{{

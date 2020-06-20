@@ -11,7 +11,7 @@ import (
 	"github.com/stampzilla/stampzilla-go/pkg/node"
 )
 
-// Config holds the influxdb connection details
+// Config holds the influxdb connection details.
 type Config struct {
 	Host     string
 	Port     string
@@ -59,7 +59,7 @@ func onDevices(deviceChan chan func()) func(data json.RawMessage) error {
 			device := d
 			deviceChan <- func() {
 				//check if state is different
-				state := make(devices.State)
+				var state devices.State
 				if prevDev := deviceList.Get(device.ID); prevDev != nil {
 					state = prevDev.State.Diff(device.State)
 					prevDev.State.MergeWith(device.State)
@@ -146,7 +146,7 @@ func updatedConfig(stop chan struct{}, deviceChan chan func()) func(data json.Ra
 	}
 }
 
-// InitClient makes a new influx db client
+// InitClient makes a new influx db client.
 func InitClient() (client.Client, error) {
 	return client.NewHTTPClient(client.HTTPConfig{
 		Addr:     fmt.Sprintf("http://%s:%s", config.Host, config.Port),
@@ -156,6 +156,16 @@ func InitClient() (client.Client, error) {
 }
 
 func write(tags map[string]string, fields map[string]interface{}) error {
+	for k, v := range fields {
+		if v, ok := v.(bool); ok {
+			if v {
+				fields[k] = 1
+			} else {
+				fields[k] = 0
+			}
+		}
+	}
+
 	// Create a new point batch
 	bp, err := client.NewBatchPoints(client.BatchPointsConfig{
 		Database:  config.Database,

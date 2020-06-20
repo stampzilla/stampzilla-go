@@ -75,7 +75,6 @@ func GoGet(url string) error {
 	}
 	_, err = Run(gobin, getArgs(filepath.Base(url))...)
 	return err
-
 }
 
 func getArgs(binName string) []string {

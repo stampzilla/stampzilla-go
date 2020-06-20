@@ -7,7 +7,6 @@ import (
 )
 
 func GetReleases() []*github.RepositoryRelease {
-
 	client := github.NewClient(nil)
 	ctx := context.Background()
 	releases, _, err := client.Repositories.ListReleases(ctx, "stampzilla", "stampzilla-go", &github.ListOptions{})

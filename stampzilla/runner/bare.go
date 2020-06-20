@@ -26,7 +26,6 @@ func (t *Bare) Restart(nodes ...string) error {
 	return t.Start(nodes...)
 }
 func (t *Bare) Start(nodes ...string) error {
-
 	cfg := installer.Config{}
 	cfg.ReadConfigFromFile("/etc/stampzilla/nodes.conf")
 	installer.CreateDirAsUser("/var/log/stampzilla", "stampzilla")
@@ -45,7 +44,6 @@ func (t *Bare) Start(nodes ...string) error {
 }
 
 func (t *Bare) Stop(nodes ...string) error {
-
 	if len(nodes) > 0 {
 		for _, node := range nodes {
 			process := installer.NewProcess(node, "")
@@ -128,7 +126,6 @@ func (b *Bare) getRunningProcesses() []*installer.Process {
 					process = p1
 					break
 				}
-
 			}
 
 			if process == nil {
