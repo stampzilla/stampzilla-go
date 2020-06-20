@@ -6,7 +6,8 @@ require (
 	github.com/RangelReale/osin v1.0.1
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/cloudfoundry/gosigar v1.1.0
-	github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f
+	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
+	github.com/coreos/go-systemd/v22 v22.1.0
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dustin/go-humanize v1.0.0
@@ -16,12 +17,14 @@ require (
 	github.com/gin-contrib/cors v1.3.0
 	github.com/gin-contrib/gzip v0.0.1
 	github.com/gin-contrib/sse v0.1.0 // indirect
-	github.com/gin-gonic/gin v1.4.0
+	github.com/gin-gonic/gin v1.6.3
 	github.com/go-ole/go-ole v1.2.4 // indirect
+	github.com/go-playground/validator/v10 v10.3.0 // indirect
 	github.com/goburrow/modbus v0.1.0
 	github.com/goburrow/serial v0.1.0 // indirect
-	github.com/godbus/dbus v5.0.3+incompatible // indirect
+	github.com/godbus/dbus v4.1.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.1 // indirect
+	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/google/cel-go v0.3.2
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-querystring v1.0.0 // indirect
@@ -31,14 +34,12 @@ require (
 	github.com/itchyny/volume-go v0.0.0
 	github.com/jonaz/astrotime v0.0.0-20150127084258-5d2b676e5047 // indirect
 	github.com/jonaz/cron v0.0.0-20190121203350-e9ab53dd31db
-	github.com/jonaz/ginlogrus v0.0.0-20191003061925-e99fa8b4915c
+	github.com/jonaz/ginlogrus v0.0.0-20191118094232-2f4da50f5dd6
 	github.com/jonaz/goenocean v0.0.0-20190218201525-96fde8f44745
 	github.com/jonaz/gograce v0.0.0-20170710084154-582d7afa93c3
-	github.com/json-iterator/go v1.1.7 // indirect
+	github.com/json-iterator/go v1.1.10 // indirect
 	github.com/koding/multiconfig v0.0.0-20171124222453-69c27309b2d7
-	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/llgcode/draw2d v0.0.0-20190810100245-79e59b6b8fbc
-	github.com/mattn/go-isatty v0.0.10 // indirect
 	github.com/micro/mdns v0.3.0
 	github.com/olahol/melody v0.0.0-20180227134253-7bd65910e5ab
 	github.com/onrik/logrus v0.4.1
@@ -50,22 +51,18 @@ require (
 	github.com/rakyll/statik v0.1.6
 	github.com/shirou/gopsutil v2.19.9+incompatible
 	github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4 // indirect
-	github.com/sirupsen/logrus v1.4.2
+	github.com/sirupsen/logrus v1.6.0
 	github.com/stamp/hid v0.0.0-20190105143849-bc55d7d13ce1
 	github.com/stamp/mdns v0.0.0-20190125083120-df204ac59ca1
 	github.com/stampzilla/gocast v0.0.0-20190221121651-0a779e5bbe32
 	github.com/stampzilla/gozwave v0.0.0-20190221183844-576012815e01
-	github.com/stretchr/testify v1.3.0
+	github.com/stretchr/testify v1.4.0
 	github.com/tarm/goserial v0.0.0-20151007205400-b3440c3c6355 // indirect
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07 // indirect
 	github.com/urfave/cli v1.22.1
 	github.com/vapourismo/knx-go v0.0.0-20190917200938-c1313fa7e9ca
-	golang.org/x/sys v0.0.0-20191024172528-b4ff53e7a1cb // indirect
-	google.golang.org/genproto v0.0.0-20191009194640-548a555dbc03
-	gopkg.in/yaml.v2 v2.2.4 // indirect
-)
-
-replace (
-	github.com/godbus/dbus => github.com/godbus/dbus/v5 v5.0.3
-	github.com/ugorji/go => github.com/ugorji/go/codec v1.1.7
+	golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1 // indirect
+	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
+	google.golang.org/protobuf v1.24.0 // indirect
+	gopkg.in/yaml.v2 v2.3.0 // indirect
 )

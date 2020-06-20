@@ -110,7 +110,6 @@ func updatedConfig(config *Config) func(data json.RawMessage) error {
 
 func fetchRegisters(registers Registers, connection *Modbus) {
 	for _, v := range registers {
-
 		data, err := connection.ReadInputRegister(v.Id)
 		if err != nil {
 			/*

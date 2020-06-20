@@ -9,7 +9,6 @@ func NewConfig() *Config {
 	return &Config{
 		Registers: make(Registers),
 	}
-
 }
 
 type Register struct {
