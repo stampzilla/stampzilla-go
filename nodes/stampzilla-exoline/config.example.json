@@ -1,0 +1,31 @@
+{
+    "interval": "30s",
+    "host": "192.168.13.57:26486",
+    "variables": [
+        {
+            "name": "ExtractAir",
+            "address": "040800",
+            "type": "float"
+        },
+        {
+            "name": "OutdoorAir",
+            "address": "0404ec",
+            "type": "float"
+        },
+        {
+            "name": "ExhaustAir",
+            "address": "3b0095",
+            "type": "float"
+        },
+        {
+            "name": "SupplyAir",
+            "address": "3902fa",
+            "type": "float"
+        },
+        {
+            "name": "SetSupplyAir",
+            "address": "040008",
+            "type": "float"
+        }
+    ]
+}
