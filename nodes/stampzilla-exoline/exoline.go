@@ -48,9 +48,9 @@ func read(buf *bufio.Reader) ([]byte, error) {
 	// handle escape byte
 	indexesToFlip := []int{}
 	n := 0
-	for k, v := range msg {
+	for _, v := range msg {
 		if v == 0x1b {
-			indexesToFlip = append(indexesToFlip, k)
+			indexesToFlip = append(indexesToFlip, n)
 			continue
 		}
 		msg[n] = v
