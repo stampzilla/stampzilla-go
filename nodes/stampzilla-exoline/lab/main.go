@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/binary"
 	"flag"
@@ -10,6 +11,7 @@ import (
 	"log"
 	"math"
 	"net"
+	"os"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -33,13 +35,21 @@ func getTemps(buf *bufio.Reader, w io.Writer) {
 }
 
 func main() {
-	/*
-		// test read escape 0x1b
-		test := bytes.NewBuffer([]byte{0x3d, 0x5, 0x0, 0xcd, 0xcc, 0x4c, 0x1b, 0xc1, 0x76, 0x3e})
-		buff := bufio.NewReader(test)
-		read(buff)
-		os.Exit(0)
-	*/
+	// test read escape 0x1b
+	test := bytes.NewBuffer([]byte{0x3d, 0x5, 0x0, 0xf5, 0x1b, 0xe4, 0xaf, 0x41, 0x5, 0x3e})
+	buff := bufio.NewReader(test)
+	read(buff)
+	os.Exit(0)
+	data := []byte{0x3d, 0x5, 0x0, 0xff, 0x1b, 0x41, 0x92, 0x3e}
+	value := data[3 : len(data)-2]
+	if len(value) == 3 {
+		value = append(value, 0)
+		copy(value[1:], value)
+		value[0] = 0x00
+	}
+
+	fmt.Println(decode(value))
+	os.Exit(0)
 
 	var dialer net.Dialer
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
@@ -134,15 +144,19 @@ func read(buf *bufio.Reader) {
 	}
 
 	// handle escape byte
-	indexesToDelete := []int{}
-	for k, v := range msg {
+	indexesToFlip := []int{}
+	n := 0
+	for _, v := range msg {
 		if v == 0x1b {
-			msg[k+1] ^= 0xff
-			indexesToDelete = append(indexesToDelete, k)
+			indexesToFlip = append(indexesToFlip, n)
+			continue
 		}
+		msg[n] = v
+		n++
 	}
-	for _, v := range indexesToDelete {
-		msg = append(msg[:v], msg[v+1:]...)
+	msg = msg[:n]
+	for _, v := range indexesToFlip {
+		msg[v] ^= 0xff
 	}
 
 	fmt.Printf("hex:")

@@ -54,22 +54,29 @@ func main() {
 
 	ticker := time.NewTicker(dur)
 	logrus.Infof("Config OK. starting fetch loop for %s", dur)
+
+	// first sync once when we start
+	sync(config, node, dev)
 	for {
 		select {
 		case <-ticker.C:
-			state, err := fetch(config)
-			if err != nil {
-				logrus.Errorf("error fetching data: %s", err)
-				continue
-			}
+			sync(config, node, dev)
 
-			node.UpdateState(dev.ID.ID, state)
 		case <-node.Stopped():
 			ticker.Stop()
 			log.Println("Stopping exoline node")
 			return
 		}
 	}
+}
+
+func sync(config *Config, node *node.Node, dev *devices.Device) {
+	state, err := fetch(config)
+	if err != nil {
+		logrus.Errorf("error fetching data: %s", err)
+		return
+	}
+	node.UpdateState(dev.ID.ID, state)
 }
 
 func updatedConfig(config *Config) func(data json.RawMessage) error {
