@@ -65,7 +65,9 @@ func main() {
 				continue
 			}
 
-			node.UpdateState(dev.ID.ID, heatPump.State())
+			if heatPump.RadiatorForward != 0 { // handle when we get invalid data sometimes. Dont log that
+				node.UpdateState(dev.ID.ID, heatPump.State())
+			}
 		case <-node.Stopped():
 			ticker.Stop()
 			log.Println("Stopping husdata-h60 node")
