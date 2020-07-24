@@ -10,6 +10,7 @@ import (
 
 type State struct {
 	Devices map[string]*Device
+	TTY     string
 	sync.Mutex
 }
 

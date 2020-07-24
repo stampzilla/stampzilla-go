@@ -94,7 +94,7 @@ func updatedConfig(node *node.Node) func(data json.RawMessage) error {
 	return func(data json.RawMessage) error {
 		logrus.Debug("Received config from server:", string(data))
 
-		err := json.Unmarshal(data, &globalState.Devices)
+		err := json.Unmarshal(data, &globalState)
 		if err != nil {
 			return err
 		}
@@ -139,7 +139,7 @@ func checkDuplicateSenderIds() {
 func setupEnoceanCommunication(ctx context.Context, node *node.Node) error {
 	enoceanSend = make(chan goenocean.Encoder, 100)
 	recv := make(chan goenocean.Packet, 100)
-	err := goenocean.Serial("/dev/ttyUSB0", enoceanSend, recv)
+	err := goenocean.Serial(globalState.TTY, enoceanSend, recv)
 	if err != nil {
 		return err
 	}
