@@ -7,6 +7,7 @@ import connections from './connections';
 import destinations from './destinations';
 import devices from './devices';
 import nodes from './nodes';
+import persons from './persons';
 import requests from './requests';
 import rules from './rules';
 import savedstates from './savedstates';
@@ -22,6 +23,7 @@ const rootReducer = combineReducers({
   destinations,
   devices,
   nodes,
+  persons,
   requests,
   rules,
   savedstates,

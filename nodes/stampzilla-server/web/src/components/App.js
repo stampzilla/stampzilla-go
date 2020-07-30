@@ -18,12 +18,11 @@ class App extends Component {
     const { socketModal } = this.state;
 
     return (
-      <React.Fragment>
+      <>
         <SocketModal
           visible={socketModal}
           onClose={() => this.setState({ socketModal: false })}
-          onChange={({ hostname, port }) => dispatch(update({ url: `ws://${hostname}:${port}/ws` }))
-          }
+          onChange={({ hostname, port }) => dispatch(update({ url: `ws://${hostname}:${port}/ws` }))}
         />
         <nav className="main-header navbar navbar-expand bg-white navbar-light border-bottom">
           <ul className="navbar-nav">
@@ -58,6 +57,12 @@ class App extends Component {
                   <Link to="/aut" className="nav-link" activeClass="active">
                     <i className="nav-icon fa fa-magic" />
                     Automation
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link to="/persons" className="nav-link" activeClass="active">
+                    <i className="nav-icon fa fa-user" />
+                    Persons
                   </Link>
                 </li>
                 <li className="nav-item">
@@ -126,12 +131,12 @@ class App extends Component {
         </div>
 
         <aside className="control-sidebar control-sidebar-dark" />
-      </React.Fragment>
+      </>
     );
   };
 }
 
-const mapToProps = state => ({
+const mapToProps = (state) => ({
   connected: state.getIn(['connection', 'connected']),
   requests: state.getIn(['requests', 'list']),
 });

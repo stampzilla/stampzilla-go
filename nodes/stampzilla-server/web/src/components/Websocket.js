@@ -9,6 +9,7 @@ import { subscribe as connections } from '../ducks/connections';
 import { subscribe as destinations } from '../ducks/destinations';
 import { subscribe as devices } from '../ducks/devices';
 import { subscribe as nodes } from '../ducks/nodes';
+import { subscribe as persons } from '../ducks/persons';
 import { subscribe as requests } from '../ducks/requests';
 import { subscribe as rules } from '../ducks/rules';
 import { subscribe as savedstates } from '../ducks/savedstates';
@@ -24,6 +25,7 @@ const writeFunc = (data) => {
   }
   writeSocket.send(data);
 };
+
 let requestId = 0;
 let activeRequests = [];
 export const write = (msg) => writeFunc(JSON.stringify(msg));
@@ -78,6 +80,7 @@ class Websocket extends Component {
       destinations,
       devices,
       nodes,
+      persons,
       requests,
       rules,
       savedstates,

@@ -76,6 +76,8 @@ func BroadcastUpdate(sender websocket.Sender) func(string, *store.Store) error {
 			return send(area, store.GetDestinations())
 		case "senders":
 			return send(area, store.GetSenders())
+		case "persons":
+			return send(area, store.GetPersons())
 		}
 		return nil
 	}
