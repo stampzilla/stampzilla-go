@@ -1,6 +1,11 @@
 package store
 
-import "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/persons"
+import (
+	"fmt"
+
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/persons"
+	"golang.org/x/crypto/bcrypt"
+)
 
 func (store *Store) GetPersons() persons.PersonMap {
 	store.RLock()
@@ -26,4 +31,20 @@ func (store *Store) AddOrUpdatePerson(p *persons.PersonWithPassword) {
 	store.Persons.Add(p)
 
 	store.runCallbacks("persons")
+}
+
+func (store *Store) ValidateLogin(email, password string) (*persons.Person, error) {
+	store.RLock()
+	defer store.RUnlock()
+
+	p := store.Persons.GetByEmailWithPassowrd(email)
+	if p == nil {
+		return nil, fmt.Errorf("wrong username or password")
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(p.Password), []byte(password)); err != nil {
+		return nil, fmt.Errorf("wrong username or password")
+	}
+
+	return &p.Person, nil
 }

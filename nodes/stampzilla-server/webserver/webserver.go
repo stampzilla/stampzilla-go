@@ -299,7 +299,8 @@ func (ws *Webserver) handleWs(m *melody.Melody) func(c *gin.Context) {
 				// Check the cookie session
 				session := sessions.Default(c)
 				if session.Get("username") != nil {
-					keys["identity"] = session.Get("username")
+					keys["identity"] = session.Get("id")
+					keys["username"] = session.Get("username")
 					keys["secure"] = "session"
 				}
 			}
@@ -341,9 +342,17 @@ func (ws *Webserver) handleWs(m *melody.Melody) func(c *gin.Context) {
 
 func (ws *Webserver) handleLogin() func(c *gin.Context) {
 	return func(c *gin.Context) {
+		user, err := ws.Store.ValidateLogin(c.PostForm("username"), c.PostForm("password"))
+		if err != nil {
+			c.String(http.StatusUnauthorized, err.Error())
+			return
+		}
+
 		session := sessions.Default(c)
 		session.Set("username", c.PostForm("username"))
-		err := session.Save()
+		session.Set("id", user.UUID)
+
+		err = session.Save()
 		if err != nil {
 			c.String(http.StatusInternalServerError, err.Error())
 			return

@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type PersonMapWithPassword map[string]*PersonWithPassword
@@ -58,6 +59,19 @@ func (l *List) Get(id string) *Person {
 	return &p.Person
 }
 
+// GetByEmail returns a person
+func (l *List) GetByEmailWithPassowrd(email string) *PersonWithPassword {
+	l.RLock()
+	defer l.RUnlock()
+
+	for _, p := range l.persons {
+		if p.Email == email {
+			return p
+		}
+	}
+	return nil
+}
+
 func (l *List) Save() error {
 	configFile, err := os.Create("persons.json")
 	if err != nil {
@@ -81,13 +95,18 @@ func (l *List) Load() error {
 	if err != nil {
 		if os.IsNotExist(err) {
 			// Add the default person, if the person list is empty
+
+			hash, err := bcrypt.GenerateFromPassword([]byte("admin"), bcrypt.DefaultCost)
+			if err != nil {
+				return fmt.Errorf("failed to generate password hash: %s", err)
+			}
 			person := PersonWithPassword{
 				Person: Person{
 					UUID:  uuid.New().String(),
 					Name:  "J. Random",
 					Email: "admin",
 				},
-				Password: "admin",
+				Password: string(hash),
 			}
 			l.Add(&person)
 			l.Save()
