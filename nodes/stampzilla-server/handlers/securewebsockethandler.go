@@ -13,6 +13,7 @@ import (
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/notification"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/persons"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/store"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
 )
@@ -247,6 +248,23 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		}).Debug("Received new rules")
 
 		wsh.Store.AddOrUpdateRules(rules)
+	case "update-persons":
+		persons := map[string]persons.PersonWithPasswords{}
+		err := json.Unmarshal(msg.Body, &persons)
+		if err != nil {
+			return nil, err
+		}
+
+		logrus.WithFields(logrus.Fields{
+			"from":    msg.FromUUID,
+			"persons": persons,
+		}).Debug("Received new persons")
+
+		err = wsh.Store.AddOrUpdatePersons(persons)
+
+		if err != nil {
+			return nil, err
+		}
 	case "update-destinations":
 		destinations := map[string]*notification.Destination{}
 		err := json.Unmarshal(msg.Body, &destinations)

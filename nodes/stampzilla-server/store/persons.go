@@ -19,18 +19,49 @@ func (store *Store) GetPerson(uuid string) *persons.Person {
 	return store.Persons.Get(uuid)
 }
 
-func (store *Store) AddOrUpdatePerson(p *persons.PersonWithPassword) {
+func (store *Store) AddOrUpdatePerson(p persons.PersonWithPasswords) error {
 	store.Lock()
 	store.Unlock()
 
 	a := store.Persons.Get(p.UUID)
 	if a != nil && a.Equal(p) {
-		return
+		return nil
 	}
 
-	store.Persons.Add(p)
+	err := store.Persons.Add(p)
+	if err != nil {
+		return err
+	}
 
+	store.Persons.Save()
 	store.runCallbacks("persons")
+
+	return nil
+}
+
+func (store *Store) AddOrUpdatePersons(persons map[string]persons.PersonWithPasswords) error {
+	store.RLock()
+	previous := store.Persons.All()
+	store.RUnlock()
+
+	for id, person := range persons {
+		person.UUID = id
+		err := store.AddOrUpdatePerson(person)
+		if err != nil {
+			return err
+		}
+
+		delete(previous, id)
+	}
+
+	for uuid, _ := range previous {
+		err := store.Persons.Delete(uuid)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (store *Store) ValidateLogin(email, password string) (*persons.Person, error) {

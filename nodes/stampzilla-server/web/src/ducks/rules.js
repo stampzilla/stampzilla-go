@@ -2,10 +2,13 @@ import { Map, fromJS } from 'immutable';
 import { defineAction } from 'redux-define';
 import makeUUID from 'uuid/v4';
 
-const c = defineAction(
-  'rules',
-  ['ADD', 'SAVE', 'UPDATE', 'UPDATE_STATE'],
-);
+const c = defineAction('rules', [
+  'ADD',
+  'SAVE',
+  'REMOVE',
+  'UPDATE',
+  'UPDATE_STATE',
+]);
 
 const defaultState = Map({
   list: Map(),
@@ -19,6 +22,9 @@ export function add(rule) {
 export function save(rule) {
   return { type: c.SAVE, rule };
 }
+export function remove(uuid) {
+  return { type: c.REMOVE, uuid };
+}
 export function update(rules) {
   return { type: c.UPDATE, rules };
 }
@@ -29,7 +35,7 @@ export function updateState(rules) {
 // Subscribe to channels and register the action for the packages
 export function subscribe(dispatch) {
   return {
-    rules: rules => dispatch(update(rules)),
+    rules: (rules) => dispatch(update(rules)),
     server: ({ rules }) => rules && dispatch(updateState(rules)),
   };
 }
@@ -42,21 +48,21 @@ export default function reducer(state = defaultState, action) {
         ...action.rule,
         uuid: makeUUID(),
       };
-      return state
-        .setIn(['list', rule.uuid], fromJS(rule));
+      return state.setIn(['list', rule.uuid], fromJS(rule));
     }
     case c.SAVE: {
-      return state
-        .mergeIn(['list', action.rule.uuid], fromJS(action.rule));
+      return state.mergeIn(['list', action.rule.uuid], fromJS(action.rule));
+    }
+    case c.REMOVE: {
+      return state.deleteIn(['list', action.uuid]);
     }
     case c.UPDATE: {
-      return state
-        .set('list', fromJS(action.rules));
+      return state.set('list', fromJS(action.rules));
     }
     case c.UPDATE_STATE: {
-      return state
-        .set('state', fromJS(action.rules));
+      return state.set('state', fromJS(action.rules));
     }
-    default: return state;
+    default:
+      return state;
   }
 }

@@ -3,16 +3,20 @@ import Immutable from 'immutable';
 import ReduxThunk from 'redux-thunk';
 import persistState from 'redux-localstorage';
 
+import destinations from './middlewares/destinations';
+import persons from './middlewares/persons';
 import rootReducer from './ducks';
 import rules from './middlewares/rules';
-import senders from './middlewares/senders';
-import destinations from './middlewares/destinations';
-import schedules from './middlewares/schedules';
 import savedstates from './middlewares/savedstates';
+import schedules from './middlewares/schedules';
+import senders from './middlewares/senders';
+import toast from './middlewares/toast';
 
 const middleware = [
+  toast,
   ReduxThunk,
   rules,
+  persons,
   destinations,
   senders,
   schedules,

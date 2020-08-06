@@ -24,12 +24,24 @@ class Persons extends Component {
       <>
         <div className="row">
           <div className="col-md-12">
-            <Card title="Persons" bodyClassName="p-0">
+            <Card
+              title="Persons and users"
+              bodyClassName="p-0"
+              toolbar={[
+                {
+                  icon: 'fa fa-plus',
+                  className: 'btn-secondary',
+                  onClick: this.onClickPerson('create'),
+                },
+              ]}
+            >
               <table className="table table-striped table-valign-middle">
                 <thead>
                   <tr>
                     <th>Name</th>
                     <th>Identity</th>
+                    <th>Can login</th>
+                    <th>Is admin</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -45,6 +57,8 @@ class Persons extends Component {
                         <td>
                           <small>{n.get('uuid')}</small>
                         </td>
+                        <td>{n.get('allow_login') ? 'true' : 'false'}</td>
+                        <td>{n.get('is_admin') ? 'true' : 'false'}</td>
                       </tr>
                     ))
                     .valueSeq()

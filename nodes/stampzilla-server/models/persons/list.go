@@ -26,10 +26,23 @@ func NewList() List {
 }
 
 // Add adds a person to the list
-func (l *List) Add(p *PersonWithPassword) {
+func (l *List) Add(p PersonWithPasswords) error {
 	l.Lock()
-	l.persons[p.UUID] = p
-	l.Unlock()
+	defer l.Unlock()
+
+	if previous, ok := l.persons[p.UUID]; ok {
+		// Keep the stored password
+		p.Password = previous.Password
+	}
+
+	err := p.UpdatePassword()
+	if err != nil {
+		return err
+	}
+
+	l.persons[p.UUID] = &p.PersonWithPassword
+
+	return nil
 }
 
 // All get all persons
@@ -57,6 +70,15 @@ func (l *List) Get(id string) *Person {
 		return nil
 	}
 	return &p.Person
+}
+
+// Get returns a person
+func (l *List) Delete(id string) error {
+	l.Lock()
+	defer l.Unlock()
+
+	delete(l.persons, id)
+	return nil
 }
 
 // GetByEmail returns a person
@@ -100,15 +122,17 @@ func (l *List) Load() error {
 			if err != nil {
 				return fmt.Errorf("failed to generate password hash: %s", err)
 			}
-			person := PersonWithPassword{
-				Person: Person{
-					UUID:  uuid.New().String(),
-					Name:  "J. Random",
-					Email: "admin",
+			person := PersonWithPasswords{
+				PersonWithPassword: PersonWithPassword{
+					Person: Person{
+						UUID:  uuid.New().String(),
+						Name:  "J. Random",
+						Email: "admin",
+					},
+					Password: string(hash),
 				},
-				Password: string(hash),
 			}
-			l.Add(&person)
+			l.Add(person)
 			l.Save()
 
 			logrus.Warn(err)

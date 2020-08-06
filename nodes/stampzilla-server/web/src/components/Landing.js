@@ -28,13 +28,13 @@ class Landing extends Component {
           .then(() => {
             this.setState({ tlsOk: true });
             clearTimeout(this.checker);
-            // const socketUrl = Url.format({
-            // protocol: 'wss:',
-            // hostname: serverUrl.hostname,
-            // port: props.server.get('tlsPort'),
-            // pathname: '/ws',
-            // });
-            // props.dispatch(update({ url: socketUrl }));
+            const socketUrl = Url.format({
+              protocol: 'wss:',
+              hostname: serverUrl.hostname,
+              port: props.server.get('tlsPort'),
+              pathname: '/ws',
+            });
+            props.dispatch(update({ url: socketUrl }));
           })
           .catch(() => {
             this.setState({ tlsOk: false });
@@ -47,17 +47,25 @@ class Landing extends Component {
   }
 
   onGoSecureClick = () => () => {
-    const { server, app } = this.props;
+    const { server, app, dispatch } = this.props;
     const serverUrl = Url.parse(app.get('url'));
 
-    const url = Url.format({
-      protocol: 'wss',
+    // const url = Url.format({
+    // protocol: 'https',
+    // hostname: serverUrl.hostname,
+    // port: server.get('tlsPort'),
+    // pathname: '',
+    // });
+
+    // window.location.href = url;
+
+    const socketUrl = Url.format({
+      protocol: 'wss:',
       hostname: serverUrl.hostname,
       port: server.get('tlsPort'),
-      pathname: '',
+      pathname: '/ws',
     });
-
-    window.location.href = url;
+    dispatch(update({ url: socketUrl }));
   };
 
   render = () => {
@@ -78,22 +86,21 @@ class Landing extends Component {
         <SocketModal
           visible={socketModal}
           onClose={() => this.setState({ socketModal: false })}
-          onChange={({ hostname, p }) => dispatch(update({ url: `ws://${hostname}:${p}/ws` }))
-          }
+          onChange={({ hostname, port }) => dispatch(update({ url: `ws://${hostname}:${port}/ws` }))}
         />
         <div className="background">
           <div className="content d-flex flex-column justify-content-center align-items-center">
-            <h1>stampzilla-go</h1>
+            <h1>{server.get('name') || 'stampzilla-go'}</h1>
             {connected !== true && (
               <div>
                 {connecting && (
-                  <React.Fragment>
+                  <>
                     Trying to connect to
                     {' '}
                     {app.get('url')}
                     ...
                     <i className="fa fa-refresh fa-spin fa-fw" />
-                  </React.Fragment>
+                  </>
                 )}
                 <button
                   type="button"
@@ -107,9 +114,7 @@ class Landing extends Component {
             )}
 
             {server.get('port') && (
-              <React.Fragment>
-                <h2>{server.get('name') || '-'}</h2>
-
+              <>
                 <pre>
                   Hostname:
                   {' '}
@@ -123,7 +128,7 @@ class Landing extends Component {
                       {' '}
                       <i className="fa fa-check" />
                       {' '}
-(connected)
+                      (connected)
                     </span>
                   )}
                   <br />
@@ -135,28 +140,37 @@ class Landing extends Component {
                       {' '}
                       <i className="fa fa-check" />
                       {' '}
-(connected)
+                      (connected)
+                    </span>
+                  )}
+                  {server.get('tlsPort') !== port && connected && tlsOk && (
+                    <span className="text-warning">
+                      {' '}
+                      <i className="fa fa-check" />
+                      {' '}
+                      (certificate accepted)
                     </span>
                   )}
                   {!connected
                     && tlsOk
                     && server.get('tlsPort') === port
                     && disconnectionCode === 4001 && (
-                      <span className="text-danger">
+                      <span className="text-success">
                         {' '}
-                        <i className="fa fa-times" />
+                        <i className="fa fa-check" />
                         {' '}
-(unauthorized)
+                        (not logged in)
                       </span>
                   )}
                 </pre>
-              </React.Fragment>
+              </>
             )}
 
             {!connected
               && server.get('tlsPort') === port
               && disconnectionCode === 4001 && (
                 <Login
+                  error={this.state.error}
                   onSubmit={(username, password) => {
                     const serverUrl = Url.parse(app.get('url'));
                     const u = `https://${serverUrl.hostname}:${server.get(
@@ -167,19 +181,27 @@ class Landing extends Component {
                     formData.append('username', username);
                     formData.append('password', password);
                     post(u, formData, { withCredentials: true })
-                      .then((response) => {
+                      .then(() => {
                         this.props.dispatch(update({ url: '' }));
                         this.props.dispatch(update({ url: app.get('url') }));
                       })
                       .catch((error) => {
                         console.log('error', error);
+                        if (error.response) {
+                          this.setState({
+                            error: {
+                              status: error.response.status,
+                              message: error.response.data,
+                            },
+                          });
+                        }
                       });
                   }}
                 />
             )}
 
             {connected && (
-              <React.Fragment>
+              <>
                 <a
                   href={`http://${window.location.hostname}:${server.get(
                     'port',
@@ -200,7 +222,7 @@ class Landing extends Component {
                 >
                   Go secure
                 </button>
-              </React.Fragment>
+              </>
             )}
           </div>
         </div>
@@ -209,7 +231,7 @@ class Landing extends Component {
   };
 }
 
-const mapToProps = state => ({
+const mapToProps = (state) => ({
   connected: state.getIn(['connection', 'connected']),
   connecting: state.getIn(['connection', 'connecting']),
   port: state.getIn(['connection', 'port']),
