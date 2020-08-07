@@ -38,6 +38,10 @@ const schema = {
             allow_login: {
               enum: [true],
             },
+            username: {
+              type: 'string',
+              title: 'Username',
+            },
             new_password: {
               type: 'string',
               title: 'Password',
@@ -57,6 +61,7 @@ const uiSchema = {
     'name',
     'email',
     'allow_login',
+    'username',
     'new_password',
     'repeat_password',
     '*',

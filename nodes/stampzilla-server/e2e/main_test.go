@@ -177,8 +177,12 @@ func TestSecureUpdateDestinations(t *testing.T) {
 	defer cleanup()
 	acceptCertificateRequest(t, main)
 
+	node.Protocol = "gui"
+
 	err := node.Connect()
 	assert.NoError(t, err)
+
+	addAdminPerson(t, main, node)
 
 	b := []byte(`{
 "type": "update-destinations",

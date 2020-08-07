@@ -39,7 +39,7 @@ class Login extends Component {
     return (
       <form onSubmit={this.onSubmit}>
         <div className="form-group">
-          <label htmlFor="username">Email</label>
+          <label htmlFor="username">Username</label>
           <input
             type="text"
             className={classnames('form-control', error && 'is-invalid')}

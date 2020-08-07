@@ -79,6 +79,7 @@ func (wsh *insecureWebsocketHandler) Connect(s interfaces.MelodySession, r *http
 		UUID:    wsh.Config.UUID,
 		TLSPort: wsh.Config.TLSPort,
 		Port:    wsh.Config.Port,
+		Init:    wsh.Store.CountAdmins() < 1,
 	})
 	if err != nil {
 		return err

@@ -30,7 +30,10 @@ export function connected(port, method) {
 
 export function disconnected(code, reason, retrying) {
   return (dispatch, getState) => {
-    if (getState().getIn(['connection', 'connected']) !== false) {
+    if (
+      getState().getIn(['connection', 'connected']) !== false
+      || (code && getState().getIn(['connection', 'code']) !== code)
+    ) {
       dispatch({
         type: c.DISCONNECTED,
         code,

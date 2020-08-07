@@ -11,6 +11,7 @@ import (
 type Person struct {
 	UUID       string `json:"uuid"`
 	Name       string `json:"name"`
+	Username   string `json:"username"`
 	Email      string `json:"email"`
 	AllowLogin bool   `json:"allow_login"`
 	IsAdmin    bool   `json:"is_admin"`
@@ -37,6 +38,9 @@ func (a Person) Equal(b PersonWithPasswords) bool {
 		return false
 	}
 	if a.Name != b.Name {
+		return false
+	}
+	if a.Username != b.Username {
 		return false
 	}
 	if a.Email != b.Email {
@@ -78,6 +82,14 @@ func (a *PersonWithPasswords) UpdatePassword() error {
 
 	a.NewPassword = ""
 	a.RepeatPassword = ""
+
+	return nil
+}
+
+func (p *PersonWithPassword) CheckPassword(password string) error {
+	if err := bcrypt.CompareHashAndPassword([]byte(p.Password), []byte(password)); err != nil {
+		return fmt.Errorf("wrong username or password")
+	}
 
 	return nil
 }

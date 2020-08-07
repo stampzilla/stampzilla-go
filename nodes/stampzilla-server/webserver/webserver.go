@@ -1,6 +1,7 @@
 package webserver
 
 import (
+	"crypto/rand"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -48,6 +49,8 @@ func (ws *Webserver) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	ws.router.ServeHTTP(w, req)
 }
 
+var sessionCookieKey = generateRandomKey(32)
+
 func (ws *Webserver) Init(requireAuth bool) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 
@@ -69,7 +72,7 @@ func (ws *Webserver) Init(requireAuth bool) *gin.Engine {
 	}))
 
 	if requireAuth {
-		store := cookie.NewStore([]byte("secret")) // TODO: fix a generated secret
+		store := cookie.NewStore(sessionCookieKey)
 		r.Use(sessions.Sessions("stampzilla-session", store))
 		r.POST("/login", ws.handleLogin())
 		r.GET("/logout", ws.handleLogout())
@@ -308,9 +311,8 @@ func (ws *Webserver) handleWs(m *melody.Melody) func(c *gin.Context) {
 
 		// Accept the requested protocol if known
 		knownProtocols := map[string]bool{
-			"node":    true,
-			"gui":     true,
-			"metrics": true,
+			"node": true,
+			"gui":  true,
 		}
 		proto := c.Request.Header.Get("Sec-WebSocket-Protocol")
 
@@ -348,8 +350,14 @@ func (ws *Webserver) handleLogin() func(c *gin.Context) {
 			return
 		}
 
+		if !user.AllowLogin {
+			c.String(http.StatusUnauthorized, "not allowed to login")
+			return
+		}
+
 		session := sessions.Default(c)
 		session.Set("username", c.PostForm("username"))
+		session.Set("is_admin", user.IsAdmin)
 		session.Set("id", user.UUID)
 
 		err = session.Save()
@@ -370,4 +378,12 @@ func (ws *Webserver) handleLogout() func(c *gin.Context) {
 			return
 		}
 	}
+}
+
+func generateRandomKey(length int) []byte {
+	k := make([]byte, length)
+	if _, err := io.ReadFull(rand.Reader, k); err != nil {
+		return nil
+	}
+	return k
 }

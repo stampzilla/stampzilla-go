@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/persons"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func (store *Store) GetPersons() persons.PersonMap {
@@ -19,6 +18,22 @@ func (store *Store) GetPerson(uuid string) *persons.Person {
 	return store.Persons.Get(uuid)
 }
 
+func (store *Store) CountAdmins() int {
+	store.RLock()
+	defer store.RUnlock()
+
+	persons := store.Persons.All()
+	cnt := 0
+
+	for _, p := range persons {
+		if p.IsAdmin {
+			cnt = cnt + 1
+		}
+	}
+
+	return cnt
+}
+
 func (store *Store) AddOrUpdatePerson(p persons.PersonWithPasswords) error {
 	store.Lock()
 	store.Unlock()
@@ -26,6 +41,11 @@ func (store *Store) AddOrUpdatePerson(p persons.PersonWithPasswords) error {
 	a := store.Persons.Get(p.UUID)
 	if a != nil && a.Equal(p) {
 		return nil
+	}
+
+	// Demotion of an admin, check that it is at least one admin left
+	if a.IsAdmin && !p.IsAdmin && store.CountAdmins() == 1 {
+		return fmt.Errorf("not allowed to remove the last admin")
 	}
 
 	err := store.Persons.Add(p)
@@ -64,16 +84,21 @@ func (store *Store) AddOrUpdatePersons(persons map[string]persons.PersonWithPass
 	return nil
 }
 
-func (store *Store) ValidateLogin(email, password string) (*persons.Person, error) {
+func (store *Store) ValidateLogin(username, password string) (*persons.Person, error) {
 	store.RLock()
 	defer store.RUnlock()
 
-	p := store.Persons.GetByEmailWithPassowrd(email)
+	if len(username) < 1 {
+		return nil, fmt.Errorf("no username provided")
+	}
+
+	p := store.Persons.GetByUsernameWithPassowrd(username)
 	if p == nil {
 		return nil, fmt.Errorf("wrong username or password")
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(p.Password), []byte(password)); err != nil {
+	err := p.CheckPassword(password)
+	if err != nil {
 		return nil, fmt.Errorf("wrong username or password")
 	}
 

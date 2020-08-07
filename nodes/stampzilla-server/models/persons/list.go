@@ -6,9 +6,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type PersonMapWithPassword map[string]*PersonWithPassword
@@ -82,12 +80,12 @@ func (l *List) Delete(id string) error {
 }
 
 // GetByEmail returns a person
-func (l *List) GetByEmailWithPassowrd(email string) *PersonWithPassword {
+func (l *List) GetByUsernameWithPassowrd(username string) *PersonWithPassword {
 	l.RLock()
 	defer l.RUnlock()
 
 	for _, p := range l.persons {
-		if p.Email == email {
+		if p.Username == username {
 			return p
 		}
 	}
@@ -116,25 +114,6 @@ func (l *List) Load() error {
 	configFile, err := os.Open("persons.json")
 	if err != nil {
 		if os.IsNotExist(err) {
-			// Add the default person, if the person list is empty
-
-			hash, err := bcrypt.GenerateFromPassword([]byte("admin"), bcrypt.DefaultCost)
-			if err != nil {
-				return fmt.Errorf("failed to generate password hash: %s", err)
-			}
-			person := PersonWithPasswords{
-				PersonWithPassword: PersonWithPassword{
-					Person: Person{
-						UUID:  uuid.New().String(),
-						Name:  "J. Random",
-						Email: "admin",
-					},
-					Password: string(hash),
-				},
-			}
-			l.Add(person)
-			l.Save()
-
 			logrus.Warn(err)
 			return nil // We dont want to error our if the file does not exist when we start the server
 		}

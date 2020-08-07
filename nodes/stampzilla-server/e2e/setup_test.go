@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/persons"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/servermain"
 	"github.com/stampzilla/stampzilla-go/pkg/node"
 )
@@ -108,4 +109,17 @@ func acceptCertificateRequest(t *testing.T, main *servermain.Main) {
 		r := main.Store.GetRequests()
 		main.Store.AcceptRequest(r[0].Connection)
 	}()
+}
+
+func addAdminPerson(t *testing.T, main *servermain.Main, node *node.Node) {
+	p := persons.PersonWithPasswords{
+		PersonWithPassword: persons.PersonWithPassword{
+			Person: persons.Person{
+				UUID:    node.UUID,
+				IsAdmin: true,
+			},
+		},
+	}
+
+	main.Store.AddOrUpdatePerson(p)
 }
