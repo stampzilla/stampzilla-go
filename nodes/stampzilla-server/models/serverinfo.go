@@ -6,4 +6,5 @@ type ServerInfo struct {
 	TLSPort string `json:"tlsPort"`
 	Port    string `json:"port"`
 	Init    bool   `json:"init"`
+	Login   bool   `json:"login"`
 }

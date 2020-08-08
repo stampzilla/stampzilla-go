@@ -147,6 +147,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		case "node":
 			n := wsh.Store.GetNode(identity)
 			if n == nil {
+				s.CloseWithMsg(melody.FormatCloseMessage(4001, "unauthorized"))
 				return nil, fmt.Errorf("node not found for connection identity")
 			}
 
@@ -154,6 +155,7 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		case "gui":
 			p := wsh.Store.GetPerson(identity)
 			if p == nil {
+				s.CloseWithMsg(melody.FormatCloseMessage(4001, "unauthorized"))
 				return nil, fmt.Errorf("user not found for connection identity")
 			}
 

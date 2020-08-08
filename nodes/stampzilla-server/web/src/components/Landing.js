@@ -7,6 +7,7 @@ import classnames from 'classnames';
 import { update } from '../ducks/app';
 import SocketModal from './SocketModal';
 import Login from './Login';
+import Register from './Register';
 
 class Landing extends Component {
   state = {
@@ -77,6 +78,7 @@ class Landing extends Component {
       app,
       disconnectionCode,
       port,
+      init,
     } = this.props;
     const { socketModal, tlsOk } = this.state;
     const url = Url.parse(app.get('url'));
@@ -169,35 +171,91 @@ class Landing extends Component {
             {!connected
               && server.get('tlsPort') === port
               && disconnectionCode === 4001 && (
-                <Login
-                  error={this.state.error}
-                  onSubmit={(username, password) => {
-                    const serverUrl = Url.parse(app.get('url'));
-                    const u = `https://${serverUrl.hostname}:${server.get(
-                      'tlsPort',
-                    )}/login`;
+                <>
+                  {!server.get('login') && (
+                    <div className="alert alert-warning">
+                      Only client certificates are accepted as login when
+                      connecting from the internet
+                    </div>
+                  )}
 
-                    const formData = new FormData();
-                    formData.append('username', username);
-                    formData.append('password', password);
-                    post(u, formData, { withCredentials: true })
-                      .then(() => {
-                        this.props.dispatch(update({ url: '' }));
-                        this.props.dispatch(update({ url: app.get('url') }));
-                      })
-                      .catch((error) => {
-                        console.log('error', error);
-                        if (error.response) {
-                          this.setState({
-                            error: {
-                              status: error.response.status,
-                              message: error.response.data,
-                            },
+                  {server.get('login') && !server.get('init') && (
+                    <Login
+                      error={this.state.error}
+                      onSubmit={(username, password) => {
+                        const serverUrl = Url.parse(app.get('url'));
+                        const u = `https://${serverUrl.hostname}:${server.get(
+                          'tlsPort',
+                        )}/login`;
+
+                        const formData = new FormData();
+                        formData.append('username', username);
+                        formData.append('password', password);
+                        post(u, formData, { withCredentials: true })
+                          .then(() => {
+                            this.props.dispatch(update({ url: '' }));
+                            this.props.dispatch(
+                              update({ url: app.get('url') }),
+                            );
+                          })
+                          .catch((error) => {
+                            if (error.response) {
+                              this.setState({
+                                error: {
+                                  status: error.response.status,
+                                  message: error.response.data,
+                                },
+                              });
+                            }
                           });
-                        }
-                      });
-                  }}
-                />
+                      }}
+                    />
+                  )}
+
+                  {server.get('login') && server.get('init') && (
+                    <>
+                      <div
+                        className="alert alert-info"
+                        style={{ width: '300px' }}
+                      >
+                        No admin account is registerd for this server. Create a
+                        new admin account in the form below. You can later
+                        update this information in the &quot;Persons /
+                        Users&quot; menu.
+                      </div>
+                      <Register
+                        error={this.state.error}
+                        onSubmit={(username, password) => {
+                          const serverUrl = Url.parse(app.get('url'));
+                          const u = `https://${serverUrl.hostname}:${server.get(
+                            'tlsPort',
+                          )}/register`;
+
+                          const formData = new FormData();
+                          formData.append('username', username);
+                          formData.append('password', password);
+                          post(u, formData, { withCredentials: true })
+                            .then(() => {
+                              this.props.dispatch(update({ url: '' }));
+                              this.props.dispatch(
+                                update({ url: app.get('url') }),
+                              );
+                            })
+                            .catch((error) => {
+                              if (error.response) {
+                                this.setState({
+                                  error: {
+                                    status: error.response.status,
+                                    message: error.response.data,
+                                  },
+                                });
+                              }
+                            });
+                        }}
+                      />
+                    </>
+                  )}
+                </>
             )}
 
             {connected && (

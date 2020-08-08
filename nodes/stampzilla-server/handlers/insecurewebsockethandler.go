@@ -9,6 +9,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/ca"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/helpers"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/interfaces"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/store"
@@ -80,6 +81,7 @@ func (wsh *insecureWebsocketHandler) Connect(s interfaces.MelodySession, r *http
 		TLSPort: wsh.Config.TLSPort,
 		Port:    wsh.Config.Port,
 		Init:    wsh.Store.CountAdmins() < 1,
+		Login:   helpers.IsPrivateIP(r.RemoteAddr),
 	})
 	if err != nil {
 		return err

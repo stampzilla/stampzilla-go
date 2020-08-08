@@ -17,7 +17,11 @@ class Link extends React.Component {
     const { to } = this.props;
     if (to && typeof window !== 'undefined') {
       const url = Url.parse(to);
-      if (window.location.hostname === url.hostname || !url.hostname || !url.hostname.length) {
+      if (
+        window.location.hostname === url.hostname
+        || !url.hostname
+        || !url.hostname.length
+      ) {
         this.setState({
           isLocal: true,
           localTo: to.replace('www.', '').replace(window.location.origin, ''),
@@ -29,31 +33,34 @@ class Link extends React.Component {
 
   render() {
     const {
-      to, className, children, location, activeClass, onClick,
+      to,
+      className,
+      children,
+      location,
+      activeClass,
+      onClick,
+      exact,
     } = this.props;
     const { isLocal, localTo } = this.state;
-    const active = localTo && activeClass && location.pathname === localTo ? activeClass : null;
+    const active = localTo
+      && activeClass
+      && ((location.pathname.substring(0, localTo.length) === localTo && !exact)
+        || (location.pathname === localTo && exact))
+      ? activeClass
+      : null;
 
-    return (
-      isLocal
-        ? (
-          <RouterLink
-            to={localTo}
-            className={classnames([className, active])}
-            onClick={onClick}
-          >
-            {children}
-          </RouterLink>
-        )
-        : (
-          <a
-            href={to}
-            className={className}
-            onClick={onClick}
-          >
-            {children}
-          </a>
-        )
+    return isLocal ? (
+      <RouterLink
+        to={localTo}
+        className={classnames([className, active])}
+        onClick={onClick}
+      >
+        {children}
+      </RouterLink>
+    ) : (
+      <a href={to} className={className} onClick={onClick}>
+        {children}
+      </a>
     );
   }
 }

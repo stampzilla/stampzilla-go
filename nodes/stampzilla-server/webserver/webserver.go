@@ -22,7 +22,9 @@ import (
 	"github.com/rakyll/statik/fs"
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/handlers"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/helpers"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/persons"
 
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/store"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
@@ -45,11 +47,11 @@ func New(s *store.Store, conf *models.Config, wsh handlers.WebsocketHandler, m *
 	}
 }
 
+var sessionCookieKey = generateRandomKey(32)
+
 func (ws *Webserver) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	ws.router.ServeHTTP(w, req)
 }
-
-var sessionCookieKey = generateRandomKey(32)
 
 func (ws *Webserver) Init(requireAuth bool) *gin.Engine {
 	gin.SetMode(gin.TestMode)
@@ -75,6 +77,7 @@ func (ws *Webserver) Init(requireAuth bool) *gin.Engine {
 		store := cookie.NewStore(sessionCookieKey)
 		r.Use(sessions.Sessions("stampzilla-session", store))
 		r.POST("/login", ws.handleLogin())
+		r.POST("/register", ws.handleRegister())
 		r.GET("/logout", ws.handleLogout())
 	}
 
@@ -137,6 +140,8 @@ func (ws *Webserver) handleConnect(requireAuth bool) func(s *melody.Session) {
 			UUID:    ws.Config.UUID,
 			TLSPort: ws.Config.TLSPort,
 			Port:    ws.Config.Port,
+			Init:    ws.Store.CountAdmins() < 1,
+			Login:   helpers.IsPrivateIP(s.Request.RemoteAddr),
 		})
 		if err != nil {
 			logrus.Error(err)
@@ -151,6 +156,7 @@ func (ws *Webserver) handleConnect(requireAuth bool) func(s *melody.Session) {
 			// https://www.w3.org/TR/websockets/#feedback-from-the-protocol
 			// So to signal the webgui that the user is unauthorized we have to use exit codes above 4000.
 			// Error codes above 4000-49999 are reserved for private use.
+			s.CloseWithMsg(melody.FormatCloseMessage(4001, "unauthorized"))
 			logrus.Warn("4001 unauthorized")
 			s.CloseWithMsg(melody.FormatCloseMessage(4001, "unauthorized"))
 			return
@@ -163,6 +169,7 @@ func (ws *Webserver) handleConnect(requireAuth bool) func(s *melody.Session) {
 			Type:       proto.(string),
 			RemoteAddr: s.Request.RemoteAddr,
 			Attributes: s.Keys,
+			Session:    s,
 		})
 
 		err = ws.WebsocketHandler.Connect(s, s.Request, s.Keys)
@@ -298,8 +305,8 @@ func (ws *Webserver) handleWs(m *melody.Melody) func(c *gin.Context) {
 					uuid = c.Request.Header.Get("X-UUID")
 				}
 				keys["type"] = c.Request.Header.Get("X-TYPE")
-			} else {
-				// Check the cookie session
+			} else if helpers.IsPrivateIP(c.Request.RemoteAddr) {
+				// Check the cookie session, only allowed in with local access
 				session := sessions.Default(c)
 				if session.Get("username") != nil {
 					keys["identity"] = session.Get("id")
@@ -344,6 +351,12 @@ func (ws *Webserver) handleWs(m *melody.Melody) func(c *gin.Context) {
 
 func (ws *Webserver) handleLogin() func(c *gin.Context) {
 	return func(c *gin.Context) {
+		// Only allowed with local addresses
+		if !helpers.IsPrivateIP(c.Request.RemoteAddr) {
+			c.AbortWithStatus(403)
+			return
+		}
+
 		user, err := ws.Store.ValidateLogin(c.PostForm("username"), c.PostForm("password"))
 		if err != nil {
 			c.String(http.StatusUnauthorized, err.Error())
@@ -355,12 +368,89 @@ func (ws *Webserver) handleLogin() func(c *gin.Context) {
 			return
 		}
 
-		session := sessions.Default(c)
-		session.Set("username", c.PostForm("username"))
-		session.Set("is_admin", user.IsAdmin)
-		session.Set("id", user.UUID)
+		err = ws.login(c, user)
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
+}
 
-		err = session.Save()
+func (ws *Webserver) login(c *gin.Context, user *persons.Person) error {
+	session := sessions.Default(c)
+	session.Set("username", user.Username)
+	session.Set("is_admin", user.IsAdmin)
+	session.Set("id", user.UUID)
+
+	return session.Save()
+}
+
+func (ws *Webserver) Logout(uuid string) error {
+	logrus.Error("Logout user ", uuid)
+	connections := ws.Store.GetConnections()
+	for _, c := range connections {
+		for k, v := range c.Attributes {
+			if k == "identity" && v == uuid {
+				c.Session.CloseWithMsg(melody.FormatCloseMessage(4001, "unauthorized"))
+			}
+		}
+	}
+	return nil
+}
+
+func (ws *Webserver) handleRegister() func(c *gin.Context) {
+	return func(c *gin.Context) {
+		// Only allowed with local addresses
+		if !helpers.IsPrivateIP(c.Request.RemoteAddr) {
+			c.AbortWithStatus(403)
+			return
+		}
+
+		// Only allow register if no admin exists
+		if ws.Store.CountAdmins() > 0 {
+			c.AbortWithStatus(403)
+			return
+		}
+
+		if len(c.PostForm("username")) < 1 {
+			c.String(http.StatusBadRequest, "username is to short, min 1 character")
+			c.Abort()
+			return
+		}
+
+		if len(c.PostForm("password")) < 8 {
+			c.String(http.StatusBadRequest, "password is to short, min 8 characters")
+			c.Abort()
+			return
+		}
+
+		user := persons.PersonWithPasswords{
+			NewPassword:    c.PostForm("password"),
+			RepeatPassword: c.PostForm("password"),
+			PersonWithPassword: persons.PersonWithPassword{
+				Person: persons.Person{
+					UUID:       uuid.New().String(),
+					Name:       c.PostForm("username"),
+					Username:   c.PostForm("username"),
+					IsAdmin:    true,
+					AllowLogin: true,
+				},
+			},
+		}
+
+		err := user.UpdatePassword()
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		err = ws.Store.AddOrUpdatePerson(user)
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		err = ws.login(c, &user.Person)
 		if err != nil {
 			c.String(http.StatusInternalServerError, err.Error())
 			return

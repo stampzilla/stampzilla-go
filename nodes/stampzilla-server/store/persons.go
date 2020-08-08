@@ -3,6 +3,7 @@ package store
 import (
 	"fmt"
 
+	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/persons"
 )
 
@@ -44,7 +45,7 @@ func (store *Store) AddOrUpdatePerson(p persons.PersonWithPasswords) error {
 	}
 
 	// Demotion of an admin, check that it is at least one admin left
-	if a.IsAdmin && !p.IsAdmin && store.CountAdmins() == 1 {
+	if a != nil && a.IsAdmin && !p.IsAdmin && store.CountAdmins() == 1 {
 		return fmt.Errorf("not allowed to remove the last admin")
 	}
 
@@ -55,6 +56,15 @@ func (store *Store) AddOrUpdatePerson(p persons.PersonWithPasswords) error {
 
 	store.Persons.Save()
 	store.runCallbacks("persons")
+
+	// Logout the demoted user from our server
+	if a != nil && a.IsAdmin && !p.IsAdmin {
+		for _, callback := range store.onUserDemote {
+			if err := callback(p.UUID); err != nil {
+				logrus.Error("store user demote callback: ", err)
+			}
+		}
+	}
 
 	return nil
 }
@@ -74,11 +84,27 @@ func (store *Store) AddOrUpdatePersons(persons map[string]persons.PersonWithPass
 		delete(previous, id)
 	}
 
-	for uuid, _ := range previous {
-		err := store.Persons.Delete(uuid)
-		if err != nil {
-			return err
+	if len(previous) > 0 {
+		for uuid, person := range previous {
+			if person.IsAdmin && store.CountAdmins() == 1 {
+				return fmt.Errorf("not allowed to remove the last admin")
+			}
+
+			err := store.Persons.Delete(uuid)
+			if err != nil {
+				return err
+			}
+
+			// Logout the deleted user from our server
+			for _, callback := range store.onUserDemote {
+				if err := callback(uuid); err != nil {
+					logrus.Error("store user demote callback: ", err)
+				}
+			}
 		}
+
+		store.Persons.Save()
+		store.runCallbacks("persons")
 	}
 
 	return nil

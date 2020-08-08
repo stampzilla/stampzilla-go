@@ -1,39 +1,41 @@
-import React, { Component } from "react";
-import { connect } from "react-redux";
-import { withRouter } from "react-router";
-import { get } from "axios";
-import Url from "url";
+import React, { Component } from 'react';
+import { connect } from 'react-redux';
+import { withRouter } from 'react-router';
+import { get } from 'axios';
+import Url from 'url';
 
-import { update } from "../ducks/app";
-import Link from "./Link";
-import SocketModal from "./SocketModal";
+import { update } from '../ducks/app';
+import Link from './Link';
+import SocketModal from './SocketModal';
 
 class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      socketModal: false
+      socketModal: false,
     };
   }
 
   onLogout = () => {
     const { app, server } = this.props;
 
-    const serverUrl = Url.parse(app.get("url"));
-    const u = `https://${serverUrl.hostname}:${server.get("tlsPort")}/logout`;
+    const serverUrl = Url.parse(app.get('url'));
+    const u = `https://${serverUrl.hostname}:${server.get('tlsPort')}/logout`;
 
     get(u, { withCredentials: true })
       .then(() => {
-        this.props.dispatch(update({ url: "" }));
-        this.props.dispatch(update({ url: app.get("url") }));
+        this.props.dispatch(update({ url: '' }));
+        this.props.dispatch(update({ url: app.get('url') }));
       })
-      .catch(error => {
-        console.log("error", error);
+      .catch((error) => {
+        console.log('error', error);
       });
   };
 
   render = () => {
-    const { children, connected, dispatch, requests, method } = this.props;
+    const {
+      children, connected, dispatch, requests, method,
+    } = this.props;
     const { socketModal } = this.state;
 
     return (
@@ -41,9 +43,7 @@ class App extends Component {
         <SocketModal
           visible={socketModal}
           onClose={() => this.setState({ socketModal: false })}
-          onChange={({ hostname, port }) =>
-            dispatch(update({ url: `ws://${hostname}:${port}/ws` }))
-          }
+          onChange={({ hostname, port }) => dispatch(update({ url: `ws://${hostname}:${port}/ws` }))}
         />
         <nav className="main-header navbar navbar-expand bg-white navbar-light border-bottom">
           <ul className="navbar-nav">
@@ -69,7 +69,7 @@ class App extends Component {
                 data-accordion="false"
               >
                 <li className="nav-item">
-                  <Link to="/" className="nav-link" activeClass="active">
+                  <Link to="/" exact className="nav-link" activeClass="active">
                     <i className="nav-icon fa fa-tachometer" />
                     Dashboard
                   </Link>
@@ -119,7 +119,7 @@ class App extends Component {
                   </Link>
                 </li>
 
-                {method === "session" && (
+                {method === 'session' && (
                   <li className="nav-item mt-4">
                     <div
                       className="nav-link"
@@ -143,7 +143,7 @@ class App extends Component {
               <button
                 className="btn btn-secondary float-right"
                 type="button"
-                style={{ marginTop: "-8px" }}
+                style={{ marginTop: '-8px' }}
                 onClick={() => this.setState({ socketModal: true })}
               >
                 Change socket url
@@ -155,7 +155,7 @@ class App extends Component {
             <div className="container-fluid">
               <div className="row mb-2">
                 <div className="col-sm-6">
-                  <h1 className="m-0 text-dark" style={{ display: "none" }}>
+                  <h1 className="m-0 text-dark" style={{ display: 'none' }}>
                     Debug
                   </h1>
                 </div>
@@ -172,12 +172,12 @@ class App extends Component {
   };
 }
 
-const mapToProps = state => ({
-  connected: state.getIn(["connection", "connected"]),
-  method: state.getIn(["connection", "method"]),
-  requests: state.getIn(["requests", "list"]),
-  app: state.getIn(["app"]),
-  server: state.getIn(["server"])
+const mapToProps = (state) => ({
+  connected: state.getIn(['connection', 'connected']),
+  method: state.getIn(['connection', 'method']),
+  requests: state.getIn(['requests', 'list']),
+  app: state.getIn(['app']),
+  server: state.getIn(['server']),
 });
 
 export default withRouter(connect(mapToProps)(App));

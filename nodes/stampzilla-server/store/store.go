@@ -14,6 +14,7 @@ import (
 type Nodes map[string]*models.Node
 type Connections map[string]*models.Connection
 type UpdateCallback func(string, *Store) error
+type UserDemoteCallback func(string) error
 
 type Store struct {
 	Nodes        Nodes
@@ -30,7 +31,8 @@ type Store struct {
 	Destinations *notification.Destinations
 	Senders      *notification.Senders
 
-	onUpdate []UpdateCallback
+	onUpdate     []UpdateCallback
+	onUserDemote []UserDemoteCallback
 	sync.RWMutex
 }
 
@@ -70,6 +72,12 @@ func (store *Store) runCallbacks(area string) {
 func (store *Store) OnUpdate(callback UpdateCallback) {
 	store.Lock()
 	store.onUpdate = append(store.onUpdate, callback)
+	store.Unlock()
+}
+
+func (store *Store) OnUserDemote(callback UserDemoteCallback) {
+	store.Lock()
+	store.onUserDemote = append(store.onUserDemote, callback)
 	store.Unlock()
 }
 

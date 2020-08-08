@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/smtp"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 type EmailSender struct {
@@ -41,8 +39,6 @@ func (es *EmailSender) notify(trigger bool, dest []string, body string) error {
 	msg := "From: " + es.From + "\n" +
 		"Subject: stampzilla - " + event + "\n\n" +
 		body
-
-	spew.Dump(smtp.PlainAuth("", es.From, es.Password, es.Server))
 
 	return es.send(fmt.Sprintf("%s:%d", es.Server, es.Port),
 		smtp.PlainAuth("", es.From, es.Password, es.Server),
