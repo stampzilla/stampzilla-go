@@ -188,8 +188,9 @@ func (ws *Webserver) handleConnect(requireAuth bool) func(s *melody.Session) {
 		s.Set("ready", true)
 
 		// Send ready message to the client
-		readyInfo := models.ReadyInfo{
-			Method: secure.(string),
+		readyInfo := models.ReadyInfo{}
+		if secure != nil {
+			readyInfo.Method = secure.(string)
 		}
 
 		if i, exists := s.Get("identity"); exists {
