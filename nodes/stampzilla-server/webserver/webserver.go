@@ -21,6 +21,7 @@ import (
 	"github.com/olahol/melody"
 	"github.com/rakyll/statik/fs"
 	"github.com/sirupsen/logrus"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/ca"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/handlers"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/helpers"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
@@ -36,14 +37,16 @@ type Webserver struct {
 	Config           *models.Config
 	WebsocketHandler handlers.WebsocketHandler
 	router           http.Handler
+	CA               *ca.CA
 }
 
-func New(s *store.Store, conf *models.Config, wsh handlers.WebsocketHandler, m *melody.Melody) *Webserver {
+func New(s *store.Store, conf *models.Config, wsh handlers.WebsocketHandler, m *melody.Melody, ca *ca.CA) *Webserver {
 	return &Webserver{
 		Store:            s,
 		Config:           conf,
 		WebsocketHandler: wsh,
 		Melody:           m,
+		CA:               ca,
 	}
 }
 
@@ -78,6 +81,7 @@ func (ws *Webserver) Init(requireAuth bool) *gin.Engine {
 		r.Use(sessions.Sessions("stampzilla-session", store))
 		r.POST("/login", ws.handleLogin())
 		r.POST("/register", ws.handleRegister())
+		r.GET("/cert", ws.handleDownloadCert())
 		r.GET("/logout", ws.handleLogout())
 	}
 
@@ -165,6 +169,7 @@ func (ws *Webserver) handleConnect(requireAuth bool) func(s *melody.Session) {
 		proto, _ := s.Get(websocket.KeyProtocol.String())
 		id, _ := s.Get(websocket.KeyID.String())
 
+		// Add the connection to our list of connections
 		ws.Store.AddOrUpdateConnection(id.(string), &models.Connection{
 			Type:       proto.(string),
 			RemoteAddr: s.Request.RemoteAddr,
@@ -179,9 +184,20 @@ func (ws *Webserver) handleConnect(requireAuth bool) func(s *melody.Session) {
 			return
 		}
 
+		// Mark the websocket as ready
 		s.Set("ready", true)
 
-		msg, err = models.NewMessage("ready", secure)
+		// Send ready message to the client
+		readyInfo := models.ReadyInfo{
+			Method: secure.(string),
+		}
+
+		if i, exists := s.Get("identity"); exists {
+			// Try to add info about the logged in user
+			readyInfo.User = ws.Store.GetPerson(i.(string))
+		}
+
+		msg, err = models.NewMessage("ready", readyInfo)
 		if err != nil {
 			logrus.Error(err)
 			return
@@ -285,6 +301,43 @@ func (ws *Webserver) handleDownloadCA() func(c *gin.Context) {
 		defer file.Close()
 
 		io.Copy(c.Writer, file)
+	}
+}
+
+func (ws *Webserver) handleDownloadCert() func(c *gin.Context) {
+	return func(c *gin.Context) {
+		// Only allowed with local addresses
+		if !helpers.IsPrivateIP(c.Request.RemoteAddr) {
+			c.AbortWithError(403, fmt.Errorf("only local access is allowed"))
+			return
+		}
+
+		// Find the session (cookies)
+		session := sessions.Default(c)
+		if session.Get("id") == nil {
+			c.AbortWithError(403, fmt.Errorf("no session"))
+			return
+		}
+
+		// Find the user and check that we are allowed to login
+		user := ws.Store.GetPerson(session.Get("id").(string))
+		if user == nil || !user.AllowLogin {
+			c.AbortWithError(403, fmt.Errorf("user not accepted"))
+			return
+		}
+
+		// Get the client certificate
+		cert, err := ws.CA.GetUserCertificate(user.UUID)
+		if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+
+		header := c.Writer.Header()
+		header["Content-Type"] = []string{"application/x-pkcs12"}
+		header["Content-Disposition"] = []string{"attachment; filename= stampzilla-client-cert-" + user.Username + ".p12"}
+
+		c.Writer.Write(cert)
 	}
 }
 

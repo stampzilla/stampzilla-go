@@ -18,14 +18,17 @@ const defaultState = Map({
   reason: '',
   error: null,
   messages: List(),
+  user: null,
 });
 
 // Actions
 export function connecting(port) {
   return { type: c.CONNECTING, port };
 }
-export function connected(port, method) {
-  return { type: c.CONNECTED, port, method };
+export function connected(port, method, user) {
+  return {
+    type: c.CONNECTED, port, method, user,
+  };
 }
 
 export function disconnected(code, reason, retrying) {
@@ -64,6 +67,7 @@ export default function reducer(state = defaultState, action) {
         .set('error', null)
         .set('connected', true)
         .set('method', action.method)
+        .set('user', action.user)
         .set('code', 0)
         .set('port', action.port)
         .set('reason', '');
@@ -72,6 +76,7 @@ export default function reducer(state = defaultState, action) {
       return state
         .set('connected', false)
         .set('method', null)
+        .set('user', null)
         .set('code', action.code)
         .set('connecting', action.retrying)
         .set('reason', action.reason);

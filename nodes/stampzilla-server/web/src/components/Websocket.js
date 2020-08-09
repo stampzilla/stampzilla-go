@@ -71,9 +71,9 @@ class Websocket extends Component {
     }
   }
 
-  onOpen = (method) => {
+  onOpen = ({ method, user }) => {
     const url = Url.parse(this.props.url);
-    this.props.dispatch(connected(url.port, method));
+    this.props.dispatch(connected(url.port, method, user));
 
     if (url.protocol === 'wss:') {
       this.props.dispatch(updateServer({ secure: true }));

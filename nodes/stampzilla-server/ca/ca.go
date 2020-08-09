@@ -25,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/store"
+	pkcs12 "software.sslmate.com/src/go-pkcs12"
 )
 
 const storagePath = "certificates"
@@ -65,7 +66,7 @@ func (ca *CA) LoadOrCreate(name string) error {
 	if name == "ca" {
 		return ca.CreateCA()
 	}
-	return ca.CreateCertificate(name)
+	return ca.CreateServerCertificate(name)
 }
 
 func (ca *CA) Load(name string) error {
@@ -145,10 +146,10 @@ func bigIntHash(n *big.Int) []byte {
 	return h.Sum(nil)
 }
 
-func (ca *CA) CreateCertificate(name string) error {
+func (ca *CA) CreateServerCertificate(name string) error {
 	hostname, err := os.Hostname()
 	if err != nil {
-		return nil
+		return err
 	}
 
 	recipe := &x509.Certificate{
@@ -237,6 +238,60 @@ func (ca *CA) CreateCertificateFromRequest(wr io.Writer, c string, r models.Requ
 	ca.Store.UpdateCertificates(ca.GetCertificates())
 
 	return pem.Encode(wr, &pem.Block{Type: "CERTIFICATE", Bytes: certBytes})
+}
+
+func (ca *CA) CreateClientCertificate(uuid string) ([]byte, error) {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, err
+	}
+
+	recipe := &x509.Certificate{
+		SerialNumber: ca.GetNextSerial(),
+		Issuer:       ca.CAX509.Subject,
+		Subject: pkix.Name{
+			Organization:       []string{"stampzilla-go"},
+			OrganizationalUnit: []string{hostname},
+			CommonName:         uuid,
+		},
+		NotBefore:   time.Now(),
+		NotAfter:    time.Now().AddDate(10, 0, 0), // 10 years
+		KeyUsage:    x509.KeyUsageDigitalSignature,
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+	}
+
+	// Generate keys
+	priv, _ := rsa.GenerateKey(rand.Reader, 2048) // key size
+	certBytes, err := x509.CreateCertificate(rand.Reader, recipe, ca.CAX509, &priv.PublicKey, ca.CATLS.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	// Save the issued certificate to file
+	certOut, err := os.Create(path.Join(storagePath, recipe.Subject.CommonName+".crt"))
+	if err != nil {
+		return nil, err
+	}
+	err = pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: certBytes})
+	if err != nil {
+		return nil, err
+	}
+	certOut.Close()
+	logrus.Info("Wrote " + recipe.Subject.CommonName + ".crt\n")
+
+	ca.Store.UpdateCertificates(ca.GetCertificates())
+
+	certX509, err := x509.ParseCertificate(certBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	password := ""
+	caCerts := []*x509.Certificate{
+		ca.CAX509,
+	}
+
+	return pkcs12.Encode(rand.Reader, priv, certX509, caCerts, password)
 }
 
 func (ca *CA) ExportToDisk(name string, certBytes []byte, privateKey *rsa.PrivateKey) error {
@@ -385,7 +440,7 @@ func (ca *CA) WaitForApproval(s pkix.Name, c string, r models.Request) chan bool
 }
 
 // Dynamic TLS server config
-func (ca *CA) GetCertificate(helo *tls.ClientHelloInfo) (*tls.Certificate, error) {
+func (ca *CA) GetServerCertificate(helo *tls.ClientHelloInfo) (*tls.Certificate, error) {
 	// Dynamicly load or create based on the requested hostname
 
 	ca.Lock()
@@ -404,4 +459,14 @@ func (ca *CA) GetCertificate(helo *tls.ClientHelloInfo) (*tls.Certificate, error
 	ca.Lock()
 	defer ca.Unlock()
 	return ca.TLS[helo.ServerName], nil
+}
+
+func (ca *CA) GetUserCertificate(uuid string) ([]byte, error) {
+
+	cert, err := ca.CreateClientCertificate(uuid)
+	if err != nil {
+		return nil, err
+	}
+
+	return cert, nil
 }
