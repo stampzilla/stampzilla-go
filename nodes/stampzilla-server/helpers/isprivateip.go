@@ -3,7 +3,7 @@ package helpers
 import (
 	"fmt"
 	"net"
-	"strings"
+	"net/url"
 )
 
 var privateIPBlocks []*net.IPNet
@@ -29,12 +29,12 @@ func init() {
 }
 
 func IsPrivateIP(ipStr string) bool {
-	sep := strings.LastIndex(ipStr, ":")
-	if sep == -1 {
-		return true
+	u, err := url.Parse("http://" + ipStr)
+	if err != nil {
+		return false
 	}
 
-	ip := net.ParseIP(ipStr[:sep])
+	ip := net.ParseIP(u.Hostname())
 
 	if ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
 		return true
