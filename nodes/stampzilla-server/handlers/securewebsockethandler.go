@@ -8,6 +8,7 @@ import (
 	"github.com/olahol/melody"
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/ca"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/cloud"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/interfaces"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/logic"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
@@ -21,15 +22,17 @@ import (
 type secureWebsocketHandler struct {
 	CA              *ca.CA
 	Store           *store.Store
+	Cloud           *cloud.Connection
 	Config          *models.Config
 	WebsocketSender websocket.Sender
 }
 
 // NewSecureWebsockerHandler is the constructor
-func NewSecureWebsockerHandler(store *store.Store, config *models.Config, ws websocket.Sender, ca *ca.CA) WebsocketHandler {
+func NewSecureWebsockerHandler(store *store.Store, config *models.Config, ws websocket.Sender, ca *ca.CA, cloud *cloud.Connection) WebsocketHandler {
 	return &secureWebsocketHandler{
 		CA:              ca,
 		Store:           store,
+		Cloud:           cloud,
 		Config:          config,
 		WebsocketSender: ws,
 	}
@@ -79,6 +82,8 @@ func BroadcastUpdate(sender websocket.Sender) func(string, *store.Store) error {
 			return send(area, store.GetSenders())
 		case "persons":
 			return send(area, store.GetPersons())
+		case "cloud":
+			return send(area, store.GetCloud())
 		}
 		return nil
 	}
@@ -430,6 +435,19 @@ func (wsh *secureWebsocketHandler) MessageFromUser(s interfaces.MelodySession, m
 		}).Debug("Received new savedstates")
 
 		wsh.Store.AddOrUpdateSavedStates(ss)
+	case "cloud-connect":
+		cc := models.CloudConfig{}
+		err := json.Unmarshal(msg.Body, &cc)
+		if err != nil {
+			return nil, err
+		}
+
+		logrus.WithFields(logrus.Fields{
+			"from":         msg.FromUUID,
+			"cloud config": cc,
+		}).Debug("Received new cloud config")
+
+		return nil, wsh.Cloud.Connect(cc)
 	default:
 		logrus.WithFields(logrus.Fields{
 			"type":   msg.Type,

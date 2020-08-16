@@ -15,6 +15,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stamp/mdns"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/ca"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/cloud"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/handlers"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/logic"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
@@ -123,6 +124,9 @@ func (m *Main) Init() {
 	if err = m.Store.Load(); err != nil {
 		log.Fatalf("Failed to load state from disk: %s", err)
 	}
+
+	cloud := cloud.New(m.Store, m.Config, m.CA)
+
 	m.HTTPServer = webserver.New(
 		m.Store,
 		m.Config,
@@ -133,7 +137,7 @@ func (m *Main) Init() {
 	m.TLSServer = webserver.New(
 		m.Store,
 		m.Config,
-		handlers.NewSecureWebsockerHandler(m.Store, m.Config, secureSender, m.CA),
+		handlers.NewSecureWebsockerHandler(m.Store, m.Config, secureSender, m.CA, cloud),
 		secureMelody,
 		m.CA,
 	)

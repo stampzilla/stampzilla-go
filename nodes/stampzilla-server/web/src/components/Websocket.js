@@ -10,6 +10,7 @@ import {
   received,
   connecting,
 } from '../ducks/connection';
+import { subscribe as cloud } from '../ducks/cloud';
 import { subscribe as connections } from '../ducks/connections';
 import { subscribe as destinations } from '../ducks/destinations';
 import { subscribe as devices } from '../ducks/devices';
@@ -80,6 +81,7 @@ class Websocket extends Component {
     }
 
     this.subscribe({
+      cloud,
       certificates,
       connections,
       destinations,

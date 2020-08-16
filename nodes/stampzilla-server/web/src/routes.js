@@ -5,6 +5,7 @@ import React from 'react';
 import Automation from './routes/automation';
 import Dashboard from './routes/dashboard';
 import Debug from './routes/debug';
+import Cloud from './routes/cloud';
 import Persons from './routes/persons';
 import Person from './routes/persons/Person';
 import Nodes from './routes/nodes';
@@ -62,6 +63,7 @@ const Routes = () => (
     />
     <Route exact path="/alerts/senders/:uuid" component={withBoudary(Sender)} />
     <Route exact path="/security" component={withBoudary(Security)} />
+    <Route path="/cloud" component={withBoudary(Cloud)} />
     <Route path="/debug" component={withBoudary(Debug)} />
   </Switch>
 );

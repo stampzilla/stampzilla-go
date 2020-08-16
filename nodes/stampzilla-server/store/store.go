@@ -28,6 +28,8 @@ type Store struct {
 	Server       map[string]map[string]devices.State
 	Persons      persons.List
 
+	Cloud models.Cloud
+
 	Destinations *notification.Destinations
 	Senders      *notification.Senders
 
@@ -105,6 +107,10 @@ func (store *Store) Load() error {
 	}
 
 	if err := store.Persons.Load(); err != nil {
+		return err
+	}
+
+	if err := store.Cloud.Load(); err != nil {
 		return err
 	}
 
