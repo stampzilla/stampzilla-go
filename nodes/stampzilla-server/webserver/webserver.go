@@ -258,7 +258,7 @@ func (ws *Webserver) handleMessage() func(s *melody.Session, msg []byte) {
 				}
 				if err != nil {
 					msg, e = models.NewMessage("failure", err.Error())
-					if err != nil {
+					if e != nil {
 						logrus.Error(e)
 					}
 				}

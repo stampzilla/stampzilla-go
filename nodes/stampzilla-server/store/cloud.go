@@ -11,6 +11,13 @@ func (store *Store) GetCloud() models.Cloud {
 }
 
 func (store *Store) UpdateCloudConfig(config models.CloudConfig) {
+	store.RLock()
+	if store.Cloud.Config.Equal(config) {
+		store.RUnlock()
+		return
+	}
+	store.RUnlock()
+
 	store.Lock()
 	store.Cloud.Config = config
 	store.Cloud.Save()
@@ -20,6 +27,13 @@ func (store *Store) UpdateCloudConfig(config models.CloudConfig) {
 }
 
 func (store *Store) UpdateCloudState(state models.CloudState) {
+	store.RLock()
+	if store.Cloud.State.Equal(state) {
+		store.RUnlock()
+		return
+	}
+	store.RUnlock()
+
 	store.Lock()
 	store.Cloud.State = state
 	store.Unlock()

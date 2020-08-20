@@ -23,10 +23,38 @@ type CloudConfig struct {
 	Instance string `json:"instance"`
 }
 
+func (a CloudConfig) Equal(b CloudConfig) bool {
+	if a.Enable != b.Enable {
+		return false
+	}
+	if a.Server != b.Server {
+		return false
+	}
+	if a.Instance != b.Instance {
+		return false
+	}
+
+	return true
+}
+
 type CloudState struct {
 	Secure    bool   `json:"secure"`
 	Connected bool   `json:"connected"`
 	Error     string `json:"error"`
+}
+
+func (a CloudState) Equal(b CloudState) bool {
+	if a.Secure != b.Secure {
+		return false
+	}
+	if a.Connected != b.Connected {
+		return false
+	}
+	if a.Error != b.Error {
+		return false
+	}
+
+	return true
 }
 
 func (c *Cloud) Save() error {

@@ -310,6 +310,7 @@ func (c *Connection) worker(conn net.Conn) (err error) {
 			err = c.tlsWorker(conn)
 			return err
 		default:
+
 			logrus.WithFields(logrus.Fields{
 				"server": conn.RemoteAddr().String(),
 				"type":   msg.Type,
@@ -337,21 +338,68 @@ func (c *Connection) tlsWorker(unenc_conn net.Conn) error {
 	for {
 		d := json.NewDecoder(conn)
 
-		var msg models.Message
+		msg := &models.Message{}
 
-		err := d.Decode(&msg)
+		err := d.Decode(msg)
 		if err != nil {
 			return err
 		}
 
-		switch msg.Type {
-		default:
-			logrus.WithFields(logrus.Fields{
-				"server": conn.RemoteAddr().String(),
-				"type":   msg.Type,
-			}).Warn("TLS: Received unknown message type from cloud")
+		c.processRequest(msg, conn)
+	}
+}
+
+func (c *Connection) processRequest(req *models.Message, conn *tls.Conn) {
+	defer func() {
+		if r := recover(); r != nil {
+			err, ok := r.(error)
+			if !ok {
+				err = fmt.Errorf("%s", r)
+			}
+
+			if len(req.Request) == 0 {
+				logrus.Error(err)
+				return
+			}
+
+			resp, err := models.NewMessage("failure", err.Error())
+			if err != nil {
+				logrus.Error(err)
+			}
+			resp.Request = req.Request
+			_, err = resp.WriteToWriter(conn)
+			if err != nil {
+				logrus.Error(err)
+			}
+		}
+	}()
+
+	data, err := c.MessageFromCloud(req, nil) // TODO: Add the authorized user
+
+	// The message contains a request ID, so respond with the result
+	if len(req.Request) > 0 {
+		resp, e := models.NewMessage("success", data)
+		if e != nil {
+			logrus.Error(e)
+		}
+		if err != nil {
+			resp, e = models.NewMessage("failure", err.Error())
+			if e != nil {
+				logrus.Error(e)
+			}
+		}
+
+		resp.Request = req.Request
+		_, err := resp.WriteToWriter(conn)
+		if err != nil {
+			logrus.Error(err)
 		}
 	}
+
+	if err != nil {
+		logrus.Error(err)
+	}
+
 }
 
 func (c *Connection) connected() bool {
