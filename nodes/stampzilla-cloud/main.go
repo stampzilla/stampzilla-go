@@ -191,7 +191,6 @@ func handleTLSConnection(config *tls.Config, unenc_conn net.Conn) (err error) {
 				logrus.Error(err)
 				return
 			}
-			logrus.Info("TLS PING, sent")
 		}
 	}()
 
