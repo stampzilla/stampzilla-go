@@ -3,6 +3,8 @@ package models
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/url"
 	"os"
 	"sync"
 
@@ -63,4 +65,13 @@ func (c *Cloud) Load() error {
 	}
 
 	return nil
+}
+
+type ForwardedRequest struct {
+	Method     string      `json:"method"`
+	URL        *url.URL    `json:"url"`
+	Header     http.Header `json:"header"`
+	Body       []byte      `json:"body"`
+	Form       url.Values  `json:"form"`
+	RemoteAddr string      `json:"remote_addr"`
 }

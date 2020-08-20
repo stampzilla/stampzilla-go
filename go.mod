@@ -5,11 +5,13 @@ go 1.13
 require (
 	github.com/RangelReale/osin v1.0.1
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
+	github.com/aubelsb2/oauth2-logger-proxy v0.0.0-20200707002746-2eff97503ced // indirect
 	github.com/cloudfoundry/gosigar v1.1.0
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
 	github.com/coreos/go-systemd/v22 v22.1.0
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/dustin/go-humanize v1.0.0
 	github.com/faiface/beep v1.0.1
 	github.com/fatih/camelcase v1.0.0 // indirect
@@ -18,8 +20,11 @@ require (
 	github.com/gin-contrib/gzip v0.0.1
 	github.com/gin-contrib/sessions v0.0.3
 	github.com/gin-gonic/gin v1.6.3
+	github.com/go-oauth2/oauth2 v3.9.2+incompatible
+	github.com/go-oauth2/oauth2/v4 v4.1.2
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/go-playground/validator/v10 v10.3.0 // indirect
+	github.com/go-session/session v3.1.2+incompatible
 	github.com/goburrow/modbus v0.1.0
 	github.com/goburrow/serial v0.1.0 // indirect
 	github.com/godbus/dbus v4.1.0+incompatible // indirect
@@ -29,7 +34,7 @@ require (
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/google/uuid v1.1.1
-	github.com/gorilla/websocket v1.4.1
+	github.com/gorilla/websocket v1.4.2
 	github.com/influxdata/influxdb1-client v0.0.0-20190809212627-fc22c7df067e
 	github.com/itchyny/volume-go v0.0.0
 	github.com/jonaz/astrotime v0.0.0-20150127084258-5d2b676e5047 // indirect
@@ -43,8 +48,6 @@ require (
 	github.com/micro/mdns v0.3.0
 	github.com/olahol/melody v0.0.0-20180227134253-7bd65910e5ab
 	github.com/onrik/logrus v0.4.1
-	github.com/onsi/ginkgo v1.10.2 // indirect
-	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/pborman/uuid v1.2.0 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/posener/wstest v0.0.0-20180217133618-28272a7ea048
@@ -56,15 +59,16 @@ require (
 	github.com/stamp/mdns v0.0.0-20190125083120-df204ac59ca1
 	github.com/stampzilla/gocast v0.0.0-20190221121651-0a779e5bbe32
 	github.com/stampzilla/gozwave v0.0.0-20190221183844-576012815e01
-	github.com/stretchr/testify v1.4.0
+	github.com/stretchr/testify v1.6.1
 	github.com/tarm/goserial v0.0.0-20151007205400-b3440c3c6355 // indirect
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07 // indirect
 	github.com/urfave/cli v1.22.1
 	github.com/vapourismo/knx-go v0.0.0-20190917200938-c1313fa7e9ca
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
-	golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1 // indirect
+	golang.org/x/net v0.0.0-20200813134508-3edf25e44fcc // indirect
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
-	google.golang.org/protobuf v1.24.0 // indirect
+	google.golang.org/protobuf v1.25.0 // indirect
+	gopkg.in/oauth2.v3 v3.12.0
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 	software.sslmate.com/src/go-pkcs12 v0.0.0-20200619203921-c9ed90bd32dc
 )

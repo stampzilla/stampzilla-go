@@ -8,11 +8,11 @@ import (
 	"crypto/x509/pkix"
 	"encoding/json"
 	"encoding/pem"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
 	"os"
-	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/google/uuid"
@@ -22,10 +22,20 @@ import (
 )
 
 func main() {
+	err := os.MkdirAll("./certs", 0700)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
 	filenameHook := filename.NewHook()
 	logrus.AddHook(filenameHook)
 
-	listener, _ := net.Listen("tcp", "127.0.0.1:1337")
+	pool := NewPool()
+	go pool.Start()
+	webserver := NewWebserver(pool)
+	go webserver.Start()
+
+	listener, _ := net.Listen("tcp", "0.0.0.0:1337")
 
 	for {
 		conn, err := listener.Accept()
@@ -33,12 +43,13 @@ func main() {
 			log.Printf("server: accept: %s", err)
 			break
 		}
-		go handleConnection(conn)
+		go handleConnection(conn, pool, webserver)
 	}
 }
 
-func handleConnection(conn net.Conn) (err error) {
+func handleConnection(conn net.Conn, pool *Pool, webserver *Webserver) (err error) {
 	log.Printf("server: accepted from %s", conn.RemoteAddr())
+	defer conn.Close()
 	defer log.Printf("server: closed from %s", conn.RemoteAddr())
 
 	var instance models.ServerInfo
@@ -95,7 +106,7 @@ func handleConnection(conn net.Conn) (err error) {
 				}
 				resp.WriteToWriter(conn)
 
-				handleTLSConnection(config, conn)
+				handleTLSConnection(config, conn, instance, pool, webserver)
 			}
 		case "approved-certificate-signing-request":
 			var cert string
@@ -104,7 +115,7 @@ func handleConnection(conn net.Conn) (err error) {
 				logrus.Error(err)
 				return err
 			}
-			err = ioutil.WriteFile(instance.UUID+".crt", []byte(cert), 0644)
+			err = ioutil.WriteFile("./certs/"+instance.UUID+".crt", []byte(cert), 0644)
 			if err != nil {
 				logrus.Error(err)
 				return err
@@ -116,7 +127,7 @@ func handleConnection(conn net.Conn) (err error) {
 				logrus.Error(err)
 				return err
 			}
-			err = ioutil.WriteFile(instance.UUID+"-ca.crt", []byte(cert), 0644)
+			err = ioutil.WriteFile("./certs/"+instance.UUID+"-ca.crt", []byte(cert), 0644)
 			if err != nil {
 				logrus.Error(err)
 				return err
@@ -137,22 +148,21 @@ func handleConnection(conn net.Conn) (err error) {
 			}
 			resp.WriteToWriter(conn)
 
-			handleTLSConnection(config, conn)
+			handleTLSConnection(config, conn, instance, pool, webserver)
 		}
 	}
-	//conn.Close()
 }
 
 func loadCerts(id string) (config *tls.Config, err error) {
 	var cert tls.Certificate
-	cert, err = tls.LoadX509KeyPair("./"+id+".crt", "./"+id+".key")
+	cert, err = tls.LoadX509KeyPair("./certs/"+id+".crt", "./certs/"+id+".key")
 	if err != nil {
 		return nil, err
 	}
 
 	CA_Pool := x509.NewCertPool()
 	var rawCaCert []byte
-	rawCaCert, err = ioutil.ReadFile("./" + id + "-ca.crt")
+	rawCaCert, err = ioutil.ReadFile("./certs/" + id + "-ca.crt")
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +175,7 @@ func loadCerts(id string) (config *tls.Config, err error) {
 	}, nil
 }
 
-func handleTLSConnection(config *tls.Config, unenc_conn net.Conn) (err error) {
+func handleTLSConnection(config *tls.Config, unenc_conn net.Conn, instance models.ServerInfo, pool *Pool, webserver *Webserver) (err error) {
 	logrus.Info("Upgrade to TLS")
 	conn := tls.Client(unenc_conn, config)
 	err = conn.Handshake()
@@ -175,24 +185,28 @@ func handleTLSConnection(config *tls.Config, unenc_conn net.Conn) (err error) {
 	}
 	logrus.Info("TLS ACTIVE")
 
-	go func() {
-		for {
-			<-time.After(time.Second)
+	client := &Client{
+		Name: instance.Name,
+		ID:   instance.UUID,
+		Conn: conn,
+		Pool: pool,
 
-			logrus.Info("TLS PING")
-			var resp *models.Message
-			resp, err = models.NewMessage("tls ping", nil)
-			if err != nil {
-				logrus.Error(err)
-				return
-			}
-			_, err = resp.WriteToWriter(conn)
-			if err != nil {
-				logrus.Error(err)
-				return
-			}
-			logrus.Info("TLS PING, sent")
-		}
+		requests: make(map[int]chan models.Message),
+	}
+
+	if i, _ := pool.GetByID(instance.UUID); i != nil {
+		conn.Close()
+		return fmt.Errorf("id already connected")
+	}
+
+	if i, _ := pool.GetByInstance(instance.Name); i != nil {
+		conn.Close()
+		return fmt.Errorf("instance already connected")
+	}
+
+	pool.Register <- client
+	defer func() {
+		pool.Unregister <- client
 	}()
 
 	for {
@@ -206,8 +220,13 @@ func handleTLSConnection(config *tls.Config, unenc_conn net.Conn) (err error) {
 		}
 
 		switch msg.Type {
+		case "success":
+			webserver.HandleResponse(msg, client)
+		case "failure":
+			webserver.HandleResponse(msg, client)
+		default:
+			spew.Dump("RECEIVED TLS", msg)
 		}
-		spew.Dump("RECEIVED TLS", msg)
 	}
 }
 
@@ -235,7 +254,7 @@ func generateCSR(id string) ([]byte, error) {
 }
 
 func loadOrGenerateKey(id string) (*rsa.PrivateKey, error) {
-	data, err := ioutil.ReadFile(id + ".key")
+	data, err := ioutil.ReadFile("./certs/" + id + ".key")
 	if err != nil {
 		if os.IsNotExist(err) {
 			return generateKey(id)
@@ -248,7 +267,7 @@ func loadOrGenerateKey(id string) (*rsa.PrivateKey, error) {
 
 func generateKey(id string) (*rsa.PrivateKey, error) {
 	priv, _ := rsa.GenerateKey(rand.Reader, 2048)
-	keyOut, err := os.OpenFile(id+".key", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	keyOut, err := os.OpenFile("./certs/"+id+".key", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return nil, err
 	}
