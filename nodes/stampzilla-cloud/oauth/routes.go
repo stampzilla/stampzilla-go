@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gin-gonic/gin"
 	"github.com/go-oauth2/oauth2/v4/server"
 	"github.com/go-session/session"
@@ -41,7 +40,6 @@ func AddRoutes(r *gin.Engine, srv *server.Server) {
 	})
 
 	r.POST("/token", func(c *gin.Context) {
-		spew.Dump(c.Request)
 		srv.HandleTokenRequest(c.Writer, c.Request)
 	})
 }

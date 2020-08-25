@@ -83,10 +83,14 @@ func (w *Webserver) HandleResponse(resp models.Message, c *Client) {
 			go func() {
 				ch <- resp
 			}()
+			return
 		}
 	}
 
 	logrus.Error("Got unexpected message")
+
+	//spew.Dump(resp)
+	//spew.Dump(c.requests)
 }
 
 func mustValidateToken(p *server.Server, c *gin.Context) *oauth.Authorization {

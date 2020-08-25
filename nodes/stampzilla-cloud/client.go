@@ -1,16 +1,21 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"net/http/httputil"
 	"strconv"
 	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
 )
 
@@ -27,22 +32,16 @@ type Client struct {
 }
 
 func (cl *Client) ForwardRequest(service string, c *gin.Context) {
-	defer c.Request.Body.Close()
-	body, err := ioutil.ReadAll(c.Request.Body)
+	dump, err := httputil.DumpRequest(c.Request, true)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
-	c.Request.ParseForm()
-
 	var m *models.Message
 	m, err = models.NewMessage("forwarded-request", models.ForwardedRequest{
-		Method:     c.Request.Method,
-		URL:        c.Request.URL,
-		Header:     c.Request.Header,
-		Body:       body,
-		Form:       c.Request.Form,
+		Dump:       dump,
+		Service:    service,
 		RemoteAddr: c.Request.RemoteAddr,
 	})
 	if err != nil {
@@ -66,7 +65,37 @@ func (cl *Client) ForwardRequest(service string, c *gin.Context) {
 		case "failure":
 			c.AbortWithError(http.StatusInternalServerError, fmt.Errorf(string(resp.Body)))
 		case "success":
-			c.Writer.Write(resp.Body)
+			var body string
+			err := json.Unmarshal(resp.Body, &body)
+			if err != nil {
+				logrus.Error(err)
+				return
+			}
+
+			raw, err := base64.StdEncoding.DecodeString(body)
+			if err != nil {
+				logrus.Error(err)
+				return
+			}
+
+			b := bytes.NewBuffer(raw)
+			rd := bufio.NewReader(b)
+			resp, err := http.ReadResponse(rd, c.Request)
+			if err != nil {
+				logrus.Error(err)
+				return
+			}
+
+			for k, v := range resp.Header {
+				for _, v2 := range v {
+					c.Writer.Header().Add(k, v2)
+				}
+			}
+			c.Writer.WriteHeader(resp.StatusCode)
+			io.Copy(c.Writer, resp.Body)
+
+			//c.Writer.Header()["Content-Type"] = []string{"application/json"}
+			//c.Writer.Write(resp.Body)
 		}
 	case <-time.After(time.Second * 10):
 		c.AbortWithError(http.StatusInternalServerError, fmt.Errorf("timeout"))
