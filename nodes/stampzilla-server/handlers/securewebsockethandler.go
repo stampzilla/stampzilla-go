@@ -132,6 +132,24 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		}
 
 		wsh.Store.ConnectionChanged()
+	case "state-change":
+		devs := devices.NewList()
+		err := json.Unmarshal(msg.Body, devs)
+		if err != nil {
+			return nil, err
+		}
+
+		logrus.WithFields(logrus.Fields{
+			"from":    msg.FromUUID,
+			"devices": devs,
+		}).Debug("Received state change request")
+
+		for node, devices := range devs.StateGroupedByNode() {
+			logrus.WithFields(logrus.Fields{
+				"to": node,
+			}).Debug("Send state change request to node")
+			wsh.WebsocketSender.SendToID(node, "state-change", devices)
+		}
 
 	// If not a common message type, then it its probably a client specific one
 	default:
@@ -172,73 +190,12 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 }
 
 func (wsh *secureWebsocketHandler) MessageFromNode(s interfaces.MelodySession, msg *models.Message, n *models.Node) (json.RawMessage, error) {
+	if msg.Type == "success" || msg.Type == "failure" {
+		wsh.WebsocketSender.Response(msg)
+		return nil, nil
+	}
+
 	switch msg.Type {
-	case "setup-node":
-		node := &models.Node{}
-		err := json.Unmarshal(msg.Body, node)
-		if err != nil {
-			return nil, err
-		}
-
-		logrus.WithFields(logrus.Fields{
-			"from":   msg.FromUUID,
-			"config": node,
-		}).Debug("Received new node configuration")
-
-		wsh.Store.AddOrUpdateNode(node)
-		err = wsh.Store.SaveNodes()
-		if err != nil {
-			return nil, err
-		}
-		wsh.WebsocketSender.SendToID(node.UUID, "setup", node)
-
-	case "setup-device":
-		device := &devices.Device{}
-		err := json.Unmarshal(msg.Body, device)
-		if err != nil {
-			return nil, err
-		}
-
-		logrus.WithFields(logrus.Fields{
-			"from":   msg.FromUUID,
-			"config": device,
-		}).Debug("Received new device configuration")
-
-		node := wsh.Store.GetNode(device.ID.Node)
-		if node == nil {
-			return nil, fmt.Errorf("Node was not found")
-		}
-
-		node.SetAlias(device.ID, device.Alias)
-		err = wsh.Store.SaveNode(node)
-		if err != nil {
-			return nil, err
-		}
-		BroadcastUpdate(wsh.WebsocketSender)("nodes", wsh.Store)
-
-		dev := wsh.Store.GetDevices().Get(device.ID)
-		dev.Lock()
-		dev.Alias = device.Alias
-		dev.Unlock()
-		BroadcastUpdate(wsh.WebsocketSender)("devices", wsh.Store)
-	case "state-change":
-		devs := devices.NewList()
-		err := json.Unmarshal(msg.Body, devs)
-		if err != nil {
-			return nil, err
-		}
-
-		logrus.WithFields(logrus.Fields{
-			"from":    msg.FromUUID,
-			"devices": devs,
-		}).Debug("Received state change request")
-
-		for node, devices := range devs.StateGroupedByNode() {
-			logrus.WithFields(logrus.Fields{
-				"to": node,
-			}).Debug("Send state change request to node")
-			wsh.WebsocketSender.SendToID(node, "state-change", devices)
-		}
 	case "update-device":
 		device := devices.NewDevice()
 		err := json.Unmarshal(msg.Body, device)
@@ -278,7 +235,7 @@ func (wsh *secureWebsocketHandler) MessageFromNode(s interfaces.MelodySession, m
 			"source": "node",
 		}).Warnf("Received unknown message")
 
-		return nil, fmt.Errorf("unknown request: %s", msg.Type)
+		return nil, fmt.Errorf("unknown request from node: %s", msg.Type)
 	}
 
 	return nil, nil
@@ -290,6 +247,56 @@ func (wsh *secureWebsocketHandler) MessageFromUser(s interfaces.MelodySession, m
 	}
 
 	switch msg.Type {
+	case "setup-node":
+		node := &models.Node{}
+		err := json.Unmarshal(msg.Body, node)
+		if err != nil {
+			return nil, err
+		}
+
+		logrus.WithFields(logrus.Fields{
+			"from":   msg.FromUUID,
+			"config": node,
+		}).Debug("Received new node configuration")
+
+		wsh.Store.AddOrUpdateNode(node)
+		err = wsh.Store.SaveNodes()
+		if err != nil {
+			return nil, err
+		}
+		wsh.WebsocketSender.SendToID(node.UUID, "setup", node)
+	case "setup-device":
+		device := &devices.Device{}
+		err := json.Unmarshal(msg.Body, device)
+		if err != nil {
+			return nil, err
+		}
+
+		logrus.WithFields(logrus.Fields{
+			"from":   msg.FromUUID,
+			"config": device,
+		}).Debug("Received new device configuration")
+
+		node := wsh.Store.GetNode(device.ID.Node)
+		if node == nil {
+			return nil, fmt.Errorf("Node was not found")
+		}
+
+		node.SetAlias(device.ID, device.Alias)
+		node.SetLabels(device.ID, device.Labels)
+		err = wsh.Store.SaveNode(node)
+		if err != nil {
+			return nil, err
+		}
+		BroadcastUpdate(wsh.WebsocketSender)("nodes", wsh.Store)
+
+		dev := wsh.Store.GetDevices().Get(device.ID)
+		dev.Lock()
+		dev.Alias = device.Alias
+		dev.Labels = device.Labels
+		dev.Unlock()
+		BroadcastUpdate(wsh.WebsocketSender)("devices", wsh.Store)
+
 	case "accept-request":
 		connection := ""
 		err := json.Unmarshal(msg.Body, &connection)
@@ -454,7 +461,7 @@ func (wsh *secureWebsocketHandler) MessageFromUser(s interfaces.MelodySession, m
 			"source": "user",
 		}).Warnf("Received unknown message")
 
-		return nil, fmt.Errorf("unknown request: %s", msg.Type)
+		return nil, fmt.Errorf("unknown request from user: %s", msg.Type)
 	}
 
 	return nil, nil

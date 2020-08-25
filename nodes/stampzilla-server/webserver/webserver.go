@@ -251,7 +251,7 @@ func (ws *Webserver) handleMessage() func(s *melody.Session, msg []byte) {
 			resp, err := ws.WebsocketHandler.Message(s, data)
 
 			// The message contains a request ID, so respond with the result
-			if len(data.Request) > 0 {
+			if len(data.Request) > 0 && data.Type != "success" && data.Type != "failure" {
 				msg, e := models.NewMessage("success", resp)
 				if e != nil {
 					logrus.Error(e)

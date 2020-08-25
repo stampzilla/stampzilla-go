@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 var privateIPBlocks []*net.IPNet
@@ -28,13 +30,19 @@ func init() {
 	}
 }
 
-func IsPrivateIP(ipStr string) bool {
+func IsPrivateIP(ipStr string) (res bool) {
 	sep := strings.LastIndex(ipStr, ":")
 	if sep == -1 {
 		return true
 	}
 
 	ip := net.ParseIP(ipStr[:sep])
+
+	defer func() {
+		if !res {
+			logrus.Warnf("Rejected request from %s", ip.String())
+		}
+	}()
 
 	if ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
 		return true

@@ -3,11 +3,7 @@ package main
 import (
 	"encoding/json"
 	"math"
-	"net/http"
 
-	"github.com/RangelReale/osin"
-	"github.com/davecgh/go-spew/spew"
-	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-google-assistant/googleassistant"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
@@ -27,61 +23,6 @@ func NewSmartHomeHandler(node *node.Node, deviceList *devices.List) *SmartHomeHa
 		deviceList: deviceList,
 	}
 
-}
-
-func (shh *SmartHomeHandler) smartHomeActionHandler(oauth2server *osin.Server) func(c *gin.Context) {
-	return func(c *gin.Context) {
-		var err error
-		auth := osin.CheckBearerAuth(c.Request)
-		if auth == nil {
-			logrus.Error("CheckBearerAuth error")
-			c.AbortWithStatus(http.StatusUnauthorized)
-			return
-		}
-
-		accessToken, err := oauth2server.Storage.LoadAccess(auth.Code)
-		if err != nil || accessToken == nil {
-			logrus.Errorf("LoadAccess error: %#v", err)
-			c.AbortWithStatus(http.StatusUnauthorized)
-			return
-		}
-
-		if accessToken.IsExpired() {
-			logrus.Errorf("Accesstoken %s expired at: %s", accessToken.AccessToken, accessToken.ExpireAt())
-			c.AbortWithStatus(http.StatusUnauthorized)
-			return
-		}
-
-		dec := json.NewDecoder(c.Request.Body)
-		defer c.Request.Body.Close()
-
-		//body, err := ioutil.ReadAll(c.Request.Body)
-		//if err != nil {
-		//logrus.Error(err)
-		//return
-		//}
-		//logrus.Info(string(body))
-
-		r := &googleassistant.Request{}
-
-		err = dec.Decode(r)
-		if err != nil {
-			logrus.Error(err)
-			return
-		}
-
-		logrus.Info("Intent: ", r.Inputs.Intent())
-		logrus.Debug("Request:", spew.Sdump(r))
-		switch r.Inputs.Intent() {
-		case googleassistant.SyncIntent:
-			c.JSON(http.StatusOK, shh.syncHandler(r))
-		case googleassistant.ExecuteIntent:
-			c.JSON(http.StatusOK, shh.executeHandler(r))
-		case googleassistant.QueryIntent:
-			c.JSON(http.StatusOK, shh.queryHandler(r))
-
-		}
-	}
 }
 
 func (shh *SmartHomeHandler) executeHandler(req *googleassistant.Request) *googleassistant.Response {
@@ -125,7 +66,8 @@ func (shh *SmartHomeHandler) executeHandler(req *googleassistant.Request) *googl
 					deviceOffline.IDs = append(deviceOffline.IDs, googleDev.ID)
 					continue
 				}
-				if v.Command == googleassistant.CommandOnOff {
+				switch v.Command {
+				case googleassistant.CommandOnOff:
 					if v.Params.On {
 						logrus.Infof("Turning device %s (%s) on ", dev.Name, dev.ID)
 						dev.State["on"] = true
@@ -136,8 +78,8 @@ func (shh *SmartHomeHandler) executeHandler(req *googleassistant.Request) *googl
 						dev.State["on"] = false
 					}
 					affectedDevs[devID] = dev
-				}
-				if v.Command == googleassistant.CommandBrightnessAbsolute {
+
+				case googleassistant.CommandBrightnessAbsolute:
 					bri := v.Params.Brightness
 					logrus.Infof("Dimming device %s (%s) to %d", dev.Name, dev.ID, bri)
 					dev.State["brightness"] = float64(bri) / 100.0
@@ -153,6 +95,25 @@ func (shh *SmartHomeHandler) executeHandler(req *googleassistant.Request) *googl
 					lvlCmd := levelCommands[bri]
 					lvlCmd.IDs = append(lvlCmd.IDs, googleDev.ID)
 					levelCommands[bri] = lvlCmd
+				case googleassistant.CommandColorAbsolute:
+					colortemp := v.Params.Color.Temperature
+					logrus.Infof("Setting device colortemperature %s (%s) to %d", dev.Name, dev.ID, colortemp)
+					dev.State["temperature"] = float64(colortemp)
+					affectedDevs[devID] = dev
+					if _, ok := levelCommands[colortemp]; !ok {
+						levelCommands[colortemp] = googleassistant.ResponseCommand{
+							States: googleassistant.ResponseStates{
+								//Color: colortemp,
+							},
+							Status: "SUCCESS",
+						}
+					}
+					lvlCmd := levelCommands[colortemp]
+					lvlCmd.IDs = append(lvlCmd.IDs, googleDev.ID)
+					levelCommands[colortemp] = lvlCmd
+
+				default:
+					logrus.Warnf("Unkown command '%s'", v.Command)
 				}
 			}
 		}
@@ -177,23 +138,29 @@ func (shh *SmartHomeHandler) executeHandler(req *googleassistant.Request) *googl
 	return resp
 }
 
-func (shh *SmartHomeHandler) syncHandler(req *googleassistant.Request) *googleassistant.Response {
+func (shh *SmartHomeHandler) syncHandler(nodeID string, req *googleassistant.Request) *googleassistant.Response {
 
 	resp := &googleassistant.Response{}
 	resp.RequestID = req.RequestID
-	resp.Payload.AgentUserID = "agentuserid"
+	resp.Payload.AgentUserID = nodeID
 
 	for _, dev := range shh.deviceList.All() {
-
-		skip := true
+		traits := []string{}
+		attributes := googleassistant.DeviceAttributes{}
 		for _, v := range dev.Traits {
-			if v == "OnOff" || v == "Brightness" {
-				skip = false
-				break
+			switch v {
+			case "OnOff":
+				traits = append(traits, "action.devices.traits.OnOff")
+			case "Brightness":
+				traits = append(traits, "action.devices.traits.Brightness")
+			case "ColorSetting":
+				traits = append(traits, "action.devices.traits.ColorTemperature")
+				attributes.TemperatureMinK = 2000
+				attributes.TemperatureMaxK = 6500
 			}
 		}
 
-		if skip {
+		if len(traits) == 0 {
 			continue
 		}
 
@@ -204,17 +171,8 @@ func (shh *SmartHomeHandler) syncHandler(req *googleassistant.Request) *googleas
 				Name: dev.Name,
 			},
 			WillReportState: false,
-			Traits: []string{
-				"action.devices.traits.OnOff",
-				"action.devices.traits.Brightness",
-				//"action.devices.traits.ColorTemperature",
-				//"action.devices.traits.ColorSpectrum",
-			},
-			//Attributes: googleassistant.DeviceAttributes{
-			//ColorModel:      "RGB",
-			//TemperatureMinK: 2000,
-			//TemperatureMaxK: 6500,
-			//},
+			Traits:          traits,
+			Attributes:      attributes,
 		}
 		if dev.Alias != "" {
 			rdev.Name.Name = dev.Alias

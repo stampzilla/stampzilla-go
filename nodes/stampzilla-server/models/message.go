@@ -67,5 +67,5 @@ func (m *Message) Encode() ([]byte, error) {
 	return msg, err
 }
 func (m *Message) String() string {
-	return fmt.Sprintf("Type: %s Body: %s", m.Type, string(m.Body))
+	return fmt.Sprintf("Type: %s Body: %s Request: 0x%x", m.Type, string(m.Body), m.Request)
 }

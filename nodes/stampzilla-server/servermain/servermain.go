@@ -125,7 +125,7 @@ func (m *Main) Init() {
 		log.Fatalf("Failed to load state from disk: %s", err)
 	}
 
-	cloud := cloud.New(m.Store, m.Config, m.CA)
+	cloud := cloud.New(m.Store, m.Config, m.CA, secureSender)
 
 	m.HTTPServer = webserver.New(
 		m.Store,

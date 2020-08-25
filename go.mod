@@ -15,7 +15,6 @@ require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/faiface/beep v1.0.1
 	github.com/fatih/camelcase v1.0.0 // indirect
-	github.com/fatih/structs v1.1.0 // indirect
 	github.com/gin-contrib/cors v1.3.0
 	github.com/gin-contrib/gzip v0.0.1
 	github.com/gin-contrib/sessions v0.0.3
@@ -29,10 +28,8 @@ require (
 	github.com/goburrow/serial v0.1.0 // indirect
 	github.com/godbus/dbus v4.1.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.1 // indirect
-	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/google/cel-go v0.3.2
 	github.com/google/go-github v17.0.0+incompatible
-	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/websocket v1.4.2
 	github.com/influxdata/influxdb1-client v0.0.0-20190809212627-fc22c7df067e
@@ -69,6 +66,5 @@ require (
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/oauth2.v3 v3.12.0
-	gopkg.in/yaml.v2 v2.3.0 // indirect
 	software.sslmate.com/src/go-pkcs12 v0.0.0-20200619203921-c9ed90bd32dc
 )

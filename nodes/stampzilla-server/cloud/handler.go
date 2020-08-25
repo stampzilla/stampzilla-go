@@ -3,6 +3,7 @@ package cloud
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
@@ -11,6 +12,23 @@ import (
 
 func (c *Connection) MessageFromCloud(msg *models.Message, p *persons.Person) (json.RawMessage, error) {
 	switch msg.Type {
+	case "forwarded-request":
+		fwd, err := models.ParseForwardedRequest(msg.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		logrus.WithFields(logrus.Fields{
+			"from":    fwd.RemoteAddr,
+			"service": fwd.Service,
+		}).Debug("Received forwared request from cloud")
+
+		node := c.store.GetNodeOfType(fwd.Service)
+		if node == nil {
+			return nil, fmt.Errorf("no such service")
+		}
+
+		return c.sender.Request(node.UUID, "cloud-request", fwd, time.Second*10)
 	default:
 		logrus.WithFields(logrus.Fields{
 			"server": c.conn.RemoteAddr().String(),

@@ -13,6 +13,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/http/httputil"
 	"os"
 	"os/signal"
 	"sync"
@@ -28,7 +29,9 @@ import (
 )
 
 // OnFunc is used in all the callbacks
-type OnFunc func(json.RawMessage) error
+type OnFunc func(body json.RawMessage) error
+type OnCloudRequestFunc func(req *http.Request) (*http.Response, error)
+type callbackFunc func(body json.RawMessage, requestID json.RawMessage) error
 
 // Node is the main struct
 type Node struct {
@@ -44,7 +47,7 @@ type Node struct {
 	X509       *x509.Certificate
 	TLS        *tls.Certificate
 	CA         *x509.CertPool
-	callbacks  map[string][]OnFunc
+	callbacks  map[string][]callbackFunc
 	Devices    *devices.List
 	shutdown   []func()
 	stop       chan struct{}
@@ -68,7 +71,7 @@ func NewWithClient(client websocket.Websocket) *Node {
 	return &Node{
 		Client:     client,
 		wg:         &sync.WaitGroup{},
-		callbacks:  make(map[string][]OnFunc),
+		callbacks:  make(map[string][]callbackFunc),
 		Devices:    devices.NewList(),
 		stop:       make(chan struct{}),
 		sendUpdate: make(chan devices.ID),
@@ -127,6 +130,25 @@ func (n *Node) WriteMessage(msgType string, data interface{}) error {
 	if err != nil {
 		return err
 	}
+	return n.Client.WriteJSON(msg)
+}
+func (n *Node) WriteResponse(msgType string, data interface{}, request json.RawMessage) error {
+	msg, err := models.NewMessage(msgType, data)
+	logrus.WithFields(logrus.Fields{
+		"type": msgType,
+		"body": data,
+	}).Tracef("Send to server")
+	if err != nil {
+		return err
+	}
+
+	msg.Request = request
+
+	logrus.WithFields(logrus.Fields{
+		"type":    msg.Type,
+		"request": msg.Request,
+	}).Debug("Wrote response")
+
 	return n.Client.WriteJSON(msg)
 }
 
@@ -298,7 +320,7 @@ func (n *Node) reader(ctx context.Context) {
 			}
 			cbs := n.getCallbacks()
 			for _, cb := range cbs[msg.Type] {
-				err := cb(msg.Body)
+				err := cb(msg.Body, msg.Request)
 				if err != nil {
 					logrus.Error(err)
 					continue
@@ -406,13 +428,78 @@ func (n *Node) generateCSR() ([]byte, error) {
 // On sets up a callback that is run when a message received with type what
 func (n *Node) On(what string, cb OnFunc) {
 	n.mutex.Lock()
-	n.callbacks[what] = append(n.callbacks[what], cb)
+	n.callbacks[what] = append(n.callbacks[what], func(raw json.RawMessage, req json.RawMessage) error {
+		return cb(raw)
+	})
 	n.mutex.Unlock()
 	n.Subscribe(what)
 }
 
-func (n *Node) getCallbacks() map[string][]OnFunc {
-	cbs := make(map[string][]OnFunc)
+func (n *Node) OnCloudRequest(cb OnCloudRequestFunc) {
+	n.mutex.Lock()
+	n.callbacks["cloud-request"] = append(n.callbacks["cloud-request"], func(raw json.RawMessage, reqID json.RawMessage) error {
+		msg, err := models.ParseForwardedRequest(raw)
+		if err != nil {
+			return err
+		}
+
+		req, err := msg.ParseRequest()
+		if err != nil {
+			return err
+		}
+
+		defer func() {
+			if r := recover(); r != nil {
+				err, ok := r.(error)
+				if !ok {
+					err = fmt.Errorf("%s", r)
+				}
+
+				if len(reqID) == 0 {
+					logrus.Error(err)
+					return
+				}
+
+				err = n.WriteResponse("failure", err.Error(), reqID)
+				if err != nil {
+					logrus.Error(err)
+				}
+			}
+		}()
+
+		resp, err := cb(req)
+
+		dump, err := httputil.DumpResponse(resp, true)
+		if err != nil {
+			return err
+		}
+
+		// The message contains a request ID, so respond with the result
+		if len(reqID) > 0 {
+			if err != nil {
+				err := n.WriteResponse("failure", err.Error(), reqID)
+				if err != nil {
+					logrus.Error(err)
+				}
+			} else {
+				err := n.WriteResponse("success", dump, reqID)
+				if err != nil {
+					logrus.Error(err)
+				}
+			}
+		}
+
+		if err != nil {
+			logrus.Error(err)
+		}
+		return err
+	})
+	n.mutex.Unlock()
+	n.Subscribe("cloud-request")
+}
+
+func (n *Node) getCallbacks() map[string][]callbackFunc {
+	cbs := make(map[string][]callbackFunc)
 	n.mutex.Lock()
 	for k, v := range n.callbacks {
 		cbs[k] = v
@@ -599,4 +686,13 @@ func (n *Node) SyncDevice(id string) {
 //Subscribe subscribes to a topic in the server
 func (n *Node) Subscribe(what ...string) error {
 	return n.WriteMessage("subscribe", what)
+}
+
+func (n *Node) SendThruCloud(service string, req *http.Request) (*http.Response, error) {
+	err := n.WriteMessage("cloud-request", req)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
 }

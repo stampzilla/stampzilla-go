@@ -18,6 +18,7 @@ import (
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/ca"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/store"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
 )
 
 type Connection struct {
@@ -25,6 +26,7 @@ type Connection struct {
 	config    *models.Config
 	ca        *ca.CA
 	tlsConfig *tls.Config
+	sender    websocket.Sender
 
 	conn          net.Conn
 	_connected    bool
@@ -34,7 +36,7 @@ type Connection struct {
 	sync.RWMutex
 }
 
-func New(store *store.Store, config *models.Config, ca *ca.CA) *Connection {
+func New(store *store.Store, config *models.Config, ca *ca.CA, sender websocket.Sender) *Connection {
 	caCert, err := ioutil.ReadFile(path.Join("certificates", "ca.crt"))
 	if err != nil {
 		log.Fatal(err)
@@ -53,6 +55,7 @@ func New(store *store.Store, config *models.Config, ca *ca.CA) *Connection {
 			ClientCAs:  caCertPool,
 			ClientAuth: tls.RequireAndVerifyClientCert,
 		},
+		sender: sender,
 	}
 
 	cl := store.GetCloud()

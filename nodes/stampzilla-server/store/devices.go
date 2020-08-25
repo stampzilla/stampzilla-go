@@ -1,6 +1,10 @@
 package store
 
-import "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
+import (
+	"reflect"
+
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
+)
 
 func (store *Store) GetDevices() *devices.List {
 	store.RLock()
@@ -25,6 +29,13 @@ func (store *Store) AddOrUpdateDevice(dev *devices.Device) {
 	if alias != dev.Alias {
 		dev.Lock()
 		dev.Alias = alias
+		dev.Unlock()
+	}
+
+	labels := node.Labels(dev.ID)
+	if !reflect.DeepEqual(labels, dev.Labels) {
+		dev.Lock()
+		dev.Labels = labels
 		dev.Unlock()
 	}
 
