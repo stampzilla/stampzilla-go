@@ -20,15 +20,57 @@ import (
 )
 
 type Client struct {
-	Name string
-	ID   string
-	Conn *tls.Conn
-	Pool *Pool
+	Name     string
+	Instance string
+	ID       string
+	Phrase   string
+	Conn     *tls.Conn
+	Pool     *Pool
 
 	requestID int
 	requests  map[int]chan models.Message
 
 	sync.RWMutex
+}
+
+func (cl *Client) Disconnect() {
+	cl.Conn.Close()
+}
+func (cl *Client) Authorize(username, password string) (userID string, err error) {
+	var m *models.Message
+	m, err = models.NewMessage("authorize-request", models.AuthorizeRequest{
+		Username: username,
+		Password: password,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	ch := make(chan models.Message)
+
+	cl.Lock()
+	m.Request = json.RawMessage(strconv.Itoa(cl.requestID))
+	cl.requests[cl.requestID] = ch
+	cl.requestID++
+	cl.Unlock()
+
+	m.WriteToWriter(cl.Conn)
+
+	select {
+	case resp := <-ch:
+		switch resp.Type {
+		case "failure":
+			return "", fmt.Errorf(string(resp.Body))
+		case "success":
+			var clientID string
+			err := json.Unmarshal(resp.Body, &clientID)
+			return clientID, err
+		}
+	case <-time.After(time.Second * 10):
+		return "", fmt.Errorf("timeout")
+	}
+
+	return "", fmt.Errorf("should never happen")
 }
 
 func (cl *Client) ForwardRequest(service string, c *gin.Context) {

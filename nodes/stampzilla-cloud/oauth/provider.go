@@ -1,7 +1,7 @@
 package oauth
 
 import (
-	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/go-oauth2/oauth2/v4/errors"
@@ -9,13 +9,12 @@ import (
 	"github.com/go-oauth2/oauth2/v4/models"
 	"github.com/go-oauth2/oauth2/v4/server"
 	"github.com/go-oauth2/oauth2/v4/store"
-	"github.com/go-session/session"
 	"github.com/sirupsen/logrus"
 )
 
 type Authorization struct {
 	UserID   string `json:"u"`
-	Instance string `json:"i"`
+	ClientID string `json:"c"`
 }
 
 func New() *server.Server {
@@ -35,6 +34,11 @@ func New() *server.Server {
 		ID:     "postman",
 		Secret: "postman",
 		Domain: "https://oauth.pstmn.io/v1/callback",
+	})
+	clientStore.Set("debug", &models.Client{
+		ID:     "debug",
+		Secret: "debug",
+		Domain: "https://oauthdebugger.com/debug",
 	})
 	manager.MapClientStorage(clientStore)
 
@@ -57,39 +61,10 @@ func New() *server.Server {
 }
 
 func userAuthorizeHandler(w http.ResponseWriter, r *http.Request) (userID string, err error) {
-	store, err := session.Start(r.Context(), w, r)
-	if err != nil {
-		return
+	auth := r.Context().Value("authorization")
+	if auth == nil {
+		return "", fmt.Errorf("authorization is missing")
 	}
 
-	instance, ok := store.Get("instance")
-	uid, ok2 := store.Get("user_id")
-	if !ok || !ok2 {
-		// Store authorization parameters in the session
-		if r.Form == nil {
-			r.ParseForm()
-		}
-
-		store.Set("ReturnUri", r.Form)
-		store.Save()
-
-		// Redirect to the login page
-		w.Header().Set("Location", "/login")
-		w.WriteHeader(http.StatusFound)
-		return
-	}
-
-	/* LOGOUT the user each time
-	store.Delete("user_id")
-	store.Save()
-	*/
-
-	authorization := &Authorization{
-		UserID:   uid.(string),
-		Instance: instance.(string),
-	}
-
-	encoded, err := json.Marshal(authorization)
-
-	return string(encoded), err
+	return string(auth.([]uint8)), nil
 }

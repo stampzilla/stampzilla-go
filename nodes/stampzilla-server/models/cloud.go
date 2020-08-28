@@ -96,6 +96,11 @@ func (c *Cloud) Load() error {
 	return nil
 }
 
+type AuthorizeRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
 type ForwardedRequest struct {
 	Dump       []byte `json:"dump"`
 	Service    string `json:"service"`

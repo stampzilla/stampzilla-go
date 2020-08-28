@@ -30,15 +30,22 @@ func (pool *Pool) Start() {
 		select {
 		case client := <-pool.Register:
 			pool.Lock()
+			// Dont accept new connections that use the same client ID
+			if _, ok := pool.byID[client.ID]; ok {
+				pool.Unlock()
+				go client.Disconnect()
+				break
+			}
+
 			pool.byID[client.ID] = client
-			pool.byInstance[client.Name] = client
+			pool.byInstance[client.Instance] = client
 			pool.Unlock()
 			logrus.Info("Size of Connection Pool: ", len(pool.byID))
 			break
 		case client := <-pool.Unregister:
 			pool.Lock()
 			delete(pool.byID, client.ID)
-			delete(pool.byInstance, client.Name)
+			delete(pool.byInstance, client.Instance)
 			pool.Unlock()
 			logrus.Info("Size of Connection Pool: ", len(pool.byID))
 			break

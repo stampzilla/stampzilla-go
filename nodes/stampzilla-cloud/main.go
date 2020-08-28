@@ -14,7 +14,6 @@ import (
 	"net"
 	"os"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/google/uuid"
 	"github.com/onrik/logrus/filename"
 	"github.com/sirupsen/logrus"
@@ -65,7 +64,6 @@ func handleConnection(conn net.Conn, pool *Pool, webserver *Webserver) (err erro
 			return err
 		}
 
-		spew.Dump("RECEIVED", msg)
 		switch msg.Type {
 		case "instance":
 			err = json.Unmarshal(msg.Body, &instance)
@@ -186,13 +184,22 @@ func handleTLSConnection(config *tls.Config, unenc_conn net.Conn, instance model
 	logrus.Info("TLS ACTIVE")
 
 	client := &Client{
-		Name: instance.Name,
-		ID:   instance.UUID,
-		Conn: conn,
-		Pool: pool,
+		ID:       instance.UUID,
+		Name:     instance.Name,
+		Instance: instance.Instance,
+		Phrase:   instance.Phrase,
+		Conn:     conn,
+		Pool:     pool,
 
 		requests: make(map[int]chan models.Message),
 	}
+
+	logrus.WithFields(logrus.Fields{
+		"uuid":     instance.UUID,
+		"name":     instance.Name,
+		"instance": instance.Instance,
+		"phrase":   instance.Phrase,
+	}).Info("Client connected")
 
 	if i, _ := pool.GetByID(instance.UUID); i != nil {
 		conn.Close()
@@ -207,6 +214,11 @@ func handleTLSConnection(config *tls.Config, unenc_conn net.Conn, instance model
 	pool.Register <- client
 	defer func() {
 		pool.Unregister <- client
+		logrus.WithFields(logrus.Fields{
+			"uuid":     instance.UUID,
+			"name":     instance.Name,
+			"instance": instance.Instance,
+		}).Info("Client disconnected")
 	}()
 
 	for {
@@ -224,8 +236,6 @@ func handleTLSConnection(config *tls.Config, unenc_conn net.Conn, instance model
 			webserver.HandleResponse(msg, client)
 		case "failure":
 			webserver.HandleResponse(msg, client)
-		default:
-			spew.Dump("RECEIVED TLS", msg)
 		}
 	}
 }

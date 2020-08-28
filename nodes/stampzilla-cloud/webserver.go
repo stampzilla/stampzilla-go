@@ -2,13 +2,17 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"hash/fnv"
 	"net/http"
 	"os"
 	"strconv"
 
+	"github.com/foolin/goview/supports/ginview"
 	"github.com/gin-gonic/gin"
 	"github.com/go-oauth2/oauth2/v4/server"
 	"github.com/sirupsen/logrus"
+	"github.com/tyler-smith/go-bip39/wordlists"
 	"golang.org/x/crypto/acme/autocert"
 
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-cloud/oauth"
@@ -23,6 +27,7 @@ func NewWebserver(pool *Pool) *Webserver {
 	os.MkdirAll("./certs/acme", 0700)
 
 	r := gin.Default()
+	r.HTMLRender = ginview.Default()
 	r.Use(func(c *gin.Context) {
 		c.Next()
 
@@ -31,8 +36,58 @@ func NewWebserver(pool *Pool) *Webserver {
 		}
 	})
 
+	verifyUser := func(instance, username, password string) (*oauth.Authorization, error) {
+		i, err := pool.GetByInstance(instance)
+		if err != nil {
+			return nil, fmt.Errorf("invalid credentials")
+		}
+
+		userID, err := i.Authorize(username, password)
+
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"instance": instance,
+				"username": username,
+				"error":    err,
+			}).Info("Failed to authorize user")
+			return nil, fmt.Errorf("invalid credentials")
+		}
+
+		return &oauth.Authorization{
+			ClientID: i.ID,
+			UserID:   userID,
+		}, nil
+	}
+
 	provider := oauth.New()
-	oauth.AddRoutes(r, provider)
+	oauth.AddRoutes(r, provider, verifyUser)
+
+	r.GET("robots.txt", func(c *gin.Context) {
+		c.File("views/robots.txt")
+	})
+
+	r.GET("/identify/:instance", func(c *gin.Context) {
+		i, err := pool.GetByInstance(c.Param("instance"))
+		if err != nil {
+			// If the instance is missing, just answer with a word from a wordlist
+			wordlist := wordlists.English
+
+			h := fnv.New32a()
+			h.Write([]byte(c.Param("instance")))
+			word := int(h.Sum32()) % len(wordlist)
+
+			c.JSON(200, gin.H{
+				"name":   wordlist[word],
+				"phrase": "",
+			})
+			return
+		}
+
+		c.JSON(200, gin.H{
+			"name":   i.Name,
+			"phrase": i.Phrase,
+		})
+	})
 
 	r.Any("/webhook/:service", func(c *gin.Context) {
 		a := mustValidateToken(provider, c)
@@ -40,7 +95,7 @@ func NewWebserver(pool *Pool) *Webserver {
 			return
 		}
 
-		i, err := pool.GetByInstance(a.Instance)
+		i, err := pool.GetByID(a.ClientID)
 		if err != nil {
 			c.AbortWithError(http.StatusInternalServerError, err)
 			return
