@@ -25,8 +25,10 @@ var config = &Config{}
 
 var influxClient client.Client
 
-var nodesList = make(map[string]models.Node)
-var deviceList = devices.NewList()
+var (
+	nodesList  = make(map[string]string)
+	deviceList = devices.NewList()
+)
 
 func main() {
 	node := node.New("metrics-influxdb")
@@ -37,7 +39,6 @@ func main() {
 	node.On("nodes", onNodes(queue))
 	node.On("devices", onDevices(queue))
 	err := node.Connect()
-
 	if err != nil {
 		logrus.Error(err)
 		return
@@ -64,10 +65,13 @@ func onNodes(queueChan chan func()) func(data json.RawMessage) error {
 		}
 
 		for _, n := range nodes {
-			node := n
+			// Only select what we need in order to avoid copying locks on the Node type.
+			nodeName := n.Name
+			nodeType := n.Type
+			nodeUUID := n.UUID
 			queueChan <- func() {
-				logrus.Info("update node %s (%s)", node.UUID, node.Name)
-				nodesList[node.UUID] = node
+				logrus.Infof("update node %s (%s)", nodeUUID, nodeName)
+				nodesList[nodeUUID] = nodeType
 			}
 		}
 		return err
@@ -85,7 +89,7 @@ func onDevices(queueChan chan func()) func(data json.RawMessage) error {
 		for _, d := range devs {
 			device := d
 			queueChan <- func() {
-				//check if state is different
+				// check if state is different
 				var state devices.State
 				if prevDev := deviceList.Get(device.ID); prevDev != nil {
 					state = prevDev.State.Diff(device.State)
@@ -102,16 +106,6 @@ func onDevices(queueChan chan func()) func(data json.RawMessage) error {
 				}
 
 				if len(state) > 0 {
-					node, ok := nodesList[device.ID.Node];
-					if !ok  {
-						logrus.WithFields(logrus.Fields{
-							"node": device.ID.Node,
-							"device": device.Name,
-							"state": state,
-						}).Errorf("failed to log value, unknown node id")
-						return
-					}
-
 					tags := map[string]string{
 						"node-uuid": device.ID.Node,
 						"name":      device.Name,
@@ -119,27 +113,38 @@ func onDevices(queueChan chan func()) func(data json.RawMessage) error {
 						"id":        device.ID.ID,
 						"type":      device.Type,
 					}
-					err = write(node.Type, tags, state)
+
+					appendNodeTypeOnTags(tags, device.ID.Node)
+
+					err = write(tags, state)
 					if err != nil {
 						logrus.WithFields(logrus.Fields{
-							"node": device.ID.Node,
+							"node":   device.ID.Node,
 							"device": device.Name,
-							"state": state,
-							"err": err,
+							"state":  state,
+							"err":    err,
 						}).Error("error writing to influx")
 						return
 					}
 
 					logrus.WithFields(logrus.Fields{
-						"node": device.ID.Node,
+						"node":   device.ID.Node,
 						"device": device.Name,
-						"state": state,
+						"state":  state,
 					}).Infof("logged device values")
 				}
 			}
 		}
 		return err
 	}
+}
+
+func appendNodeTypeOnTags(tags map[string]string, uuid string) {
+	nodeType, ok := nodesList[uuid]
+	if !ok {
+		return
+	}
+	tags["node-type"] = nodeType
 }
 
 func worker(stop chan struct{}, queueChan chan func()) {
@@ -203,7 +208,7 @@ func InitClient() (client.Client, error) {
 	})
 }
 
-func write(name string, tags map[string]string, fields map[string]interface{}) error {
+func write(tags map[string]string, fields map[string]interface{}) error {
 	for k, v := range fields {
 		if v, ok := v.(bool); ok {
 			if v {
@@ -233,7 +238,7 @@ func write(name string, tags map[string]string, fields map[string]interface{}) e
 		return err
 	}
 
-	pt, err := client.NewPoint(name, tags, fields, time.Now())
+	pt, err := client.NewPoint("device", tags, fields, time.Now())
 	if err != nil {
 		return err
 	}
