@@ -36,7 +36,6 @@ func main() {
 		return
 	}
 
-	//connection := basenode.Connect()
 	dev := &devices.Device{
 		Name:   "heatpump",
 		Type:   "sensor",

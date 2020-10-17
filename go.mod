@@ -13,6 +13,7 @@ require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/faiface/beep v1.0.1
 	github.com/fatih/camelcase v1.0.0 // indirect
+	github.com/fatih/color v1.9.0
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/gin-contrib/cors v1.3.0
 	github.com/gin-contrib/gzip v0.0.1
@@ -58,7 +59,7 @@ require (
 	github.com/stampzilla/gozwave v0.0.0-20190221183844-576012815e01
 	github.com/stretchr/testify v1.4.0
 	github.com/tarm/goserial v0.0.0-20151007205400-b3440c3c6355 // indirect
-	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07 // indirect
+	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 	github.com/urfave/cli v1.22.1
 	github.com/vapourismo/knx-go v0.0.0-20190917200938-c1313fa7e9ca
 	golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1 // indirect
