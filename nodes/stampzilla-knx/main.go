@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -56,8 +57,9 @@ func main() {
 		return nil
 	})
 
+	ctx, shutdown := context.WithCancel(context.Background())
 	node.OnShutdown(func() {
-		tunnel.Close()
+		shutdown()
 	})
 
 	err := node.Connect()
@@ -66,13 +68,15 @@ func main() {
 		return
 	}
 
+	tunnel.Start(ctx)
+
 	logrus.SetFormatter(&logrus.TextFormatter{
 		ForceColors: true,
 	})
 	logrus.SetReportCaller(false)
 
+	tunnel.Wait()
 	node.Wait()
-	node.Client.Wait()
 }
 
 func updatedConfig(node *node.Node, tunnel *tunnel, config *config) func(data json.RawMessage) error {
@@ -84,7 +88,7 @@ func updatedConfig(node *node.Node, tunnel *tunnel, config *config) func(data js
 			return err
 		}
 
-		go tunnel.SetAddress(config.Gateway.Address)
+		tunnel.SetAddress(config.Gateway.Address)
 
 		tunnel.ClearAllLinks()
 		for _, light := range config.Lights {
@@ -94,11 +98,6 @@ func updatedConfig(node *node.Node, tunnel *tunnel, config *config) func(data js
 		for _, sensor := range config.Sensors {
 			setupSensor(node, tunnel, sensor)
 		}
-
-		for _, dev := range node.Devices.All() {
-			dev.SetOnline(tunnel.Connected)
-		}
-		node.SyncDevices()
 
 		return nil
 	}

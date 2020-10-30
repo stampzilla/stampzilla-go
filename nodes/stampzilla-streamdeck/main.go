@@ -24,10 +24,12 @@ type appState struct {
 	sync.Mutex
 }
 
-var previous = devices.NewList()
-var app = &appState{
-	render: make(chan struct{}),
-}
+var (
+	previous = devices.NewList()
+	app      = &appState{
+		render: make(chan struct{}),
+	}
+)
 
 func main() {
 	node := node.New("streamdeck")
@@ -99,11 +101,11 @@ func onDevices(data json.RawMessage) error {
 	triggerRender := false
 
 	for _, device := range devs.All() {
-		//check if state is different
-		//logrus.Info("state", device.State)
+		// check if state is different
+		// logrus.Info("state", device.State)
 		state := make(devices.State)
 		if prevDev := previous.Get(device.ID); prevDev != nil {
-			//logrus.Info("prevState", prevDev.State)
+			// logrus.Info("prevState", prevDev.State)
 			state = prevDev.State.Diff(device.State)
 		} else {
 			state = device.State
@@ -204,7 +206,7 @@ func (app *appState) worker() {
 			}
 		}
 
-		//drawFactionToKey(decks[0], factionImage, 0)
+		// drawFactionToKey(decks[0], factionImage, 0)
 
 		//decks[0].OnKeyDown(func(key int, state bool) {
 		//fmt.Printf("Key %d pressed\n", key)

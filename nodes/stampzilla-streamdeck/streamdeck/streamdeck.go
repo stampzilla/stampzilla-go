@@ -8,16 +8,22 @@ import (
 	"github.com/stamp/hid"
 )
 
-var NUM_KEYS = 15
-var ICON_SIZE = 72
+var (
+	NUM_KEYS  = 15
+	ICON_SIZE = 72
+)
 
-var NUM_FIRST_PAGE_PIXELS = 2583
-var NUM_SECOND_PAGE_PIXELS = 2601
+var (
+	NUM_FIRST_PAGE_PIXELS  = 2583
+	NUM_SECOND_PAGE_PIXELS = 2601
+)
 
 var reset = []byte{0x0B, 0x63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
-var brightnessBytes = []byte{0x05, 0x55, 0xAA, 0xD1, 0x01, 0, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+var brightnessBytes = []byte{
+	0x05, 0x55, 0xAA, 0xD1, 0x01, 0, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+}
 
 var streamDeck *hid.Device
 
@@ -94,12 +100,15 @@ func (deck *StreamDeck) WriteImageToKey(image *image.RGBA, key int) {
 func (deck *StreamDeck) OnKeyDown(callback func(button int, state bool)) {
 	deck.on("down", callback)
 }
+
 func (deck *StreamDeck) OnKeyUp(callback func(button int, state bool)) {
 	deck.on("up", callback)
 }
+
 func (deck *StreamDeck) OnKeyChange(callback func(button int, state bool)) {
 	deck.on("change", callback)
 }
+
 func (deck *StreamDeck) on(event string, callback func(button int, state bool)) {
 	deck.callbacks[event] = append(deck.callbacks[event], callback)
 }

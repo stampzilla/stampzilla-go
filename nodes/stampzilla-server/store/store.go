@@ -10,9 +10,11 @@ import (
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/notification"
 )
 
-type Nodes map[string]*models.Node
-type Connections map[string]*models.Connection
-type UpdateCallback func(string, *Store) error
+type (
+	Nodes          map[string]*models.Node
+	Connections    map[string]*models.Connection
+	UpdateCallback func(string, *Store) error
+)
 
 type Store struct {
 	Nodes        Nodes

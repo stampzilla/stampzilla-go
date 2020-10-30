@@ -55,7 +55,7 @@ type sensor struct {
 }
 
 func (light *light) Switch(tunnel *tunnel, target bool) error {
-	if !tunnel.Connected {
+	if !tunnel.Connected() {
 		return fmt.Errorf("not connected to KNX gateway")
 	}
 	addr, err := cemi.NewGroupAddrString(light.ControlSwitch)
@@ -68,11 +68,11 @@ func (light *light) Switch(tunnel *tunnel, target bool) error {
 		Destination: addr,
 		Data:        dpt.DPT_1001(target).Pack(),
 	}
-	return tunnel.Client.Send(cmd)
+	return tunnel.Send(cmd)
 }
 
 func (light *light) Brightness(tunnel *tunnel, target float64) error {
-	if !tunnel.Connected {
+	if !tunnel.Connected() {
 		return fmt.Errorf("not connected to KNX gateway")
 	}
 	addr, err := cemi.NewGroupAddrString(light.ControlBrightness)
@@ -85,5 +85,5 @@ func (light *light) Brightness(tunnel *tunnel, target float64) error {
 		Destination: addr,
 		Data:        dpt.DPT_5001(float32(target)).Pack(),
 	}
-	return tunnel.Client.Send(cmd)
+	return tunnel.Send(cmd)
 }
