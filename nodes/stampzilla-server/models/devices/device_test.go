@@ -11,7 +11,7 @@ import (
 func testDevice(id string) *Device {
 	return &Device{
 		Type: "type",
-		//Node:   "node",
+		// Node:   "node",
 		ID: ID{
 			ID:   id,
 			Node: "node",
@@ -31,7 +31,7 @@ func TestCopyDevice(t *testing.T) {
 	newD := d.Copy()
 
 	d.Type = "0"
-	//d.Node = "0"
+	// d.Node = "0"
 	d.ID = ID{
 		ID:   "0",
 		Node: "0",
@@ -100,7 +100,7 @@ func TestStateDiff(t *testing.T) {
 	}
 	diff := ds1.Diff(ds2)
 	assert.Len(t, diff, 2)
-	//spew.Dump(diff)
+	// spew.Dump(diff)
 	assert.Equal(t, false, diff["on"])
 	assert.Equal(t, 10, diff["asdf"])
 	assert.Equal(t, nil, diff["temperature"])
@@ -119,6 +119,7 @@ func TestJSONMarshalDevices(t *testing.T) {
 	assert.Contains(t, string(b), `"node.devid": {`)
 	assert.NoError(t, err)
 }
+
 func TestJSONUnMarshalDevices(t *testing.T) {
 	j := `{
 	"node.devid": {

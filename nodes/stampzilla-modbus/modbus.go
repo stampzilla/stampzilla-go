@@ -20,7 +20,7 @@ func (m *Modbus) Connect() error {
 	handler.StopBits = 2
 	handler.SlaveId = 1
 	handler.Timeout = 5 * time.Second
-	//handler.Logger = log.New(os.Stdout, "test: ", log.LstdFlags)
+	// handler.Logger = log.New(os.Stdout, "test: ", log.LstdFlags)
 	m.handler = handler
 	if err := handler.Connect(); err != nil {
 		return err
@@ -29,9 +29,11 @@ func (m *Modbus) Connect() error {
 	m.client = modbus.NewClient(handler)
 	return nil
 }
+
 func (m *Modbus) Close() error {
 	return m.handler.Close()
 }
+
 func (m *Modbus) ReadInputRegister(address uint16) ([]byte, error) {
 	return m.client.ReadInputRegisters(address-1, 1)
 }

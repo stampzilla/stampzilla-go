@@ -12,7 +12,7 @@ import (
 	"github.com/stampzilla/stampzilla-go/pkg/node"
 )
 
-// MAIN - This is run when the init function is done
+// MAIN - This is run when the init function is done.
 func main() {
 	node := node.New("modbus")
 	config := NewConfig()
@@ -64,10 +64,10 @@ func main() {
 	results, _ = modbusConnection.ReadInputRegister(101)
 	log.Println("100 REG_FAN_SPEED_LEVEL: ", results)
 
-	//connection := basenode.Connect()
+	// connection := basenode.Connect()
 	dev := &devices.Device{
 		Name:   "modbusDevice",
-		Type:   "sensor", //TODO if we add modbus write support we need to have another type
+		Type:   "sensor", // TODO if we add modbus write support we need to have another type
 		ID:     devices.ID{ID: "1"},
 		Online: true,
 		Traits: []string{},
@@ -76,7 +76,7 @@ func main() {
 
 	node.AddOrUpdate(dev)
 
-	//node.SetState(registers)
+	// node.SetState(registers)
 
 	// This worker recives all incomming commands
 	ticker := time.NewTicker(30 * time.Second)
