@@ -11,10 +11,12 @@ import (
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/persons"
 )
 
-type Nodes map[string]*models.Node
-type Connections map[string]*models.Connection
-type UpdateCallback func(string, *Store) error
-type UserDemoteCallback func(string) error
+type (
+	Nodes              map[string]*models.Node
+	Connections        map[string]*models.Connection
+	UpdateCallback     func(string, *Store) error
+	UserDemoteCallback func(string) error
+)
 
 type Store struct {
 	Nodes        Nodes

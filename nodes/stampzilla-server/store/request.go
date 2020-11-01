@@ -21,7 +21,7 @@ type RequestSubject struct {
 	StreetAddress      []string      `json:"street_address,omitempty"`
 	PostalCode         []string      `json:"postal_code,omitempty"`
 	Names              []interface{} `json:"names,omitempty"`
-	//ExtraNames         []interface{} `json:"extra_names,omitempty"`
+	// ExtraNames         []interface{} `json:"extra_names,omitempty"`
 }
 
 func (store *Store) GetRequests() []Request {

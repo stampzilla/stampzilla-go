@@ -34,6 +34,7 @@ func setupLight(node *node.Node, tunnel *tunnel, light light) {
 
 	node.AddOrUpdate(dev)
 }
+
 func setupSensor(node *node.Node, tunnel *tunnel, sensor sensor) {
 	dev := &devices.Device{
 		Name:  sensor.ID,

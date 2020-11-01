@@ -39,7 +39,7 @@ type OnFunc func(body json.RawMessage) error
 type OnCloudRequestFunc func(req *http.Request) (*http.Response, error)
 type callbackFunc func(body json.RawMessage, requestID json.RawMessage) error
 
-// Node is the main struct
+// Node is the main struct.
 type Node struct {
 	UUID     string
 	Type     string
@@ -47,7 +47,7 @@ type Node struct {
 	Protocol string
 
 	Client websocket.Websocket
-	//DisconnectClient context.CancelFunc
+	// DisconnectClient context.CancelFunc
 	wg         *sync.WaitGroup
 	Config     *models.Config
 	X509       *x509.Certificate
@@ -64,7 +64,7 @@ type Node struct {
 	mutex sync.Mutex
 }
 
-// New returns a new Node
+// New returns a new Node.
 func New(t string) *Node {
 	client := websocket.New()
 	node := NewWithClient(client)
@@ -75,7 +75,7 @@ func New(t string) *Node {
 	return node
 }
 
-// NewWithClient returns a new Node with a custom websocket client
+// NewWithClient returns a new Node with a custom websocket client.
 func NewWithClient(client websocket.Websocket) *Node {
 	return &Node{
 		Client:     client,
@@ -88,17 +88,17 @@ func NewWithClient(client websocket.Websocket) *Node {
 	}
 }
 
-// Stop will shutdown the node similar to a SIGTERM
+// Stop will shutdown the node similar to a SIGTERM.
 func (n *Node) Stop() {
 	close(n.stop)
 }
 
-// Stopped is closed when the node is stopped by n.Stop or os signal
+// Stopped is closed when the node is stopped by n.Stop or os signal.
 func (n *Node) Stopped() <-chan struct{} {
 	return n.stop
 }
 
-// Wait for node to be done after shutdown
+// Wait for node to be done after shutdown.
 func (n *Node) Wait() {
 	n.Client.Wait()
 	n.wg.Wait()
@@ -108,7 +108,7 @@ func (n *Node) setup() {
 	logrus.SetReportCaller(true)
 	logrus.SetFormatter(&logrus.TextFormatter{TimestampFormat: time.RFC3339Nano, FullTimestamp: true})
 
-	//Make sure we have a config
+	// Make sure we have a config
 	n.Config = &models.Config{}
 	n.Config.MustLoad()
 
@@ -127,10 +127,10 @@ func (n *Node) setup() {
 		logrus.SetLevel(lvl)
 	}
 
-	//n.Config.Save("config.json")
+	// n.Config.Save("config.json")
 }
 
-// WriteMessage writes a message to the server over websocket client
+// WriteMessage writes a message to the server over websocket client.
 func (n *Node) WriteMessage(msgType string, data interface{}) error {
 	msg, err := models.NewMessage(msgType, data)
 	if err != nil {
@@ -211,7 +211,7 @@ func (n *Node) WriteResponse(msgType string, data interface{}, request json.RawM
 	return n.Client.WriteJSON(msg)
 }
 
-// WaitForMessage is a helper method to wait for a specific message type
+// WaitForMessage is a helper method to wait for a specific message type.
 func (n *Node) WaitForMessage(msgType string, dst interface{}) error {
 	for data := range n.Client.Read() {
 		msg, err := models.ParseMessage(data)
@@ -310,7 +310,6 @@ func (n *Node) Connect() error {
 
 	// Load our signed certificate and get our UUID
 	err := n.loadCertificateKeyPair("crt")
-
 	if err != nil {
 		logrus.Error("Error trying to load certificate: ", err)
 		err = n.fetchCertificate()
@@ -319,7 +318,7 @@ func (n *Node) Connect() error {
 		}
 	}
 
-	//If we have certificate we can connect to TLS immediately
+	// If we have certificate we can connect to TLS immediately
 	tlsConfig := &tls.Config{
 		Certificates: []tls.Certificate{*n.TLS},
 		RootCAs:      n.CA,
@@ -509,7 +508,7 @@ func (n *Node) generateCSR() ([]byte, error) {
 	return d, nil
 }
 
-// On sets up a callback that is run when a message received with type what
+// On sets up a callback that is run when a message received with type what.
 func (n *Node) On(what string, cb OnFunc) {
 	n.mutex.Lock()
 	n.callbacks[what] = append(n.callbacks[what], func(raw json.RawMessage, req json.RawMessage) error {
@@ -592,7 +591,7 @@ func (n *Node) getCallbacks() map[string][]callbackFunc {
 	return cbs
 }
 
-//OnConfig is run when node receives updated configuration from the server
+// OnConfig is run when node receives updated configuration from the server.
 func (n *Node) OnConfig(cb OnFunc) {
 	n.On("setup", func(data json.RawMessage) error {
 		conf := &models.Node{}
@@ -609,7 +608,7 @@ func (n *Node) OnConfig(cb OnFunc) {
 	})
 }
 
-// WaitForFirstConfig blocks until we receive the first config from server
+// WaitForFirstConfig blocks until we receive the first config from server.
 func (n *Node) WaitForFirstConfig() func() error {
 	var once sync.Once
 	waitForConfig := make(chan struct{})
@@ -631,15 +630,15 @@ func (n *Node) WaitForFirstConfig() func() error {
 	}
 }
 
-// OnShutdown registers a callback that is run before the server shuts down
+// OnShutdown registers a callback that is run before the server shuts down.
 func (n *Node) OnShutdown(cb func()) {
 	n.shutdown = append(n.shutdown, cb)
 }
 
-// OnRequestStateChange is run if we get a state-change request from the server to update our devices (for example we are requested to turn on a light)
+// OnRequestStateChange is run if we get a state-change request from the server to update our devices (for example we are requested to turn on a light).
 func (n *Node) OnRequestStateChange(cb func(state devices.State, device *devices.Device) error) {
 	n.On("state-change", func(data json.RawMessage) error {
-		//devs := devices.NewList()
+		// devs := devices.NewList()
 		devs := make(map[devices.ID]devices.State)
 		err := json.Unmarshal(data, &devs)
 		if err != nil {
@@ -654,8 +653,8 @@ func (n *Node) OnRequestStateChange(cb func(state devices.State, device *devices
 			for s, newState := range state {
 				oldState := oldDev.State[s]
 				if newState != oldState {
-					//fmt.Printf("oldstate %T %#v\n", oldState, newState)
-					//fmt.Printf("newState %T %#v\n", newState, newState)
+					// fmt.Printf("oldstate %T %#v\n", oldState, newState)
+					// fmt.Printf("newState %T %#v\n", newState, newState)
 					stateChange[s] = newState
 					foundChange = true
 				}
@@ -695,12 +694,14 @@ var ErrSkipSync = fmt.Errorf("skipping device sync after RequestStateChange")
 
 // AddOrUpdate adds or updates a device in our local device store and notifies the server about the new state of the device.
 func (n *Node) AddOrUpdate(d *devices.Device) {
+	d.Lock()
 	d.ID.Node = n.UUID
+	d.Unlock()
 	n.Devices.Add(d)
 	n.sendUpdate <- d.ID
 }
 
-// syncWorker is a debouncer to send multiple devices to the server if we change many rapidly
+// syncWorker is a debouncer to send multiple devices to the server if we change many rapidly.
 func (n *Node) syncWorker() {
 	for {
 		que := make([]devices.ID, 0)
@@ -737,7 +738,7 @@ func (n *Node) GetDevice(id string) *devices.Device {
 	return n.Devices.Get(devices.ID{Node: n.UUID, ID: id})
 }
 
-// UpdateState updates the new state on the node if if differs and sends update to server if there was a diff
+// UpdateState updates the new state on the node if if differs and sends update to server if there was a diff.
 func (n *Node) UpdateState(id string, newState devices.State) {
 	device := n.GetDevice(id)
 
@@ -757,17 +758,17 @@ func (n *Node) UpdateState(id string, newState devices.State) {
 	}
 }
 
-//SyncDevices notifies the server about the state of all our known devices.
+// SyncDevices notifies the server about the state of all our known devices.
 func (n *Node) SyncDevices() error {
 	return n.WriteMessage("update-devices", n.Devices)
 }
 
-// SyncDevice sync single device
+// SyncDevice sync single device.
 func (n *Node) SyncDevice(id string) {
 	n.sendUpdate <- devices.ID{ID: id}
 }
 
-//Subscribe subscribes to a topic in the server
+// Subscribe subscribes to a topic in the server.
 func (n *Node) Subscribe(what ...string) error {
 	return n.WriteMessage("subscribe", what)
 }

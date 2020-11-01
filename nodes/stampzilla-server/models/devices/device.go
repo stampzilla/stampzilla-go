@@ -13,7 +13,7 @@ type ID struct {
 	ID   string
 }
 
-// ErrWrongIDFormat is returned if the new ID is not in the correct format
+// ErrWrongIDFormat is returned if the new ID is not in the correct format.
 var ErrWrongIDFormat = fmt.Errorf("wrong ID format. Expected nodeuuid.deviceid")
 
 func NewIDFromString(id string) (ID, error) {
@@ -35,6 +35,7 @@ func (id ID) IsZero() bool {
 func (id ID) Bytes() []byte {
 	return []byte(strings.Join([]string{id.Node, id.ID}, "."))
 }
+
 func (id ID) MarshalText() (text []byte, err error) {
 	text = id.Bytes()
 	return
@@ -64,21 +65,27 @@ type Device struct {
 	sync.RWMutex
 }
 
-//NewDevice initializes a new device with needed maps
+// NewDevice initializes a new device with needed maps.
 func NewDevice() *Device {
 	return &Device{
 		State: make(State),
 	}
 }
 
-//SetOnline set online state
+// SetOnline set online state.
 func (d *Device) SetOnline(v bool) {
 	d.Lock()
 	d.Online = v
 	d.Unlock()
 }
 
-// Equal checks if 2 devices are equal
+func (d *Device) MarshalJSON() ([]byte, error) {
+	d.RLock()
+	defer d.RUnlock()
+	return json.Marshal(Device(*d))
+}
+
+// Equal checks if 2 devices are equal.
 func (d *Device) Equal(dev *Device) bool {
 	if !d.State.Equal(dev.State) { // this is most likely to not be equal so we check it first
 		return false
@@ -126,7 +133,7 @@ func sliceIsEqual(a, b []string) bool {
 	return true
 }
 
-// Copy copies a device
+// Copy copies a device.
 func (d *Device) Copy() *Device {
 	d.Lock()
 	newTraits := make([]string, len(d.Traits))
@@ -136,7 +143,7 @@ func (d *Device) Copy() *Device {
 
 	newD := &Device{
 		Type: d.Type,
-		//Node: d.Node,
+		// Node: d.Node,
 		ID: ID{
 			ID:   d.ID.ID,
 			Node: d.ID.Node,
@@ -179,14 +186,14 @@ func (d *List) Len() int {
 	return len(d.devices)
 }
 
-// Add adds a device to the list
+// Add adds a device to the list.
 func (d *List) Add(dev *Device) {
 	d.Lock()
 	d.devices[dev.ID] = dev
 	d.Unlock()
 }
 
-// Update the state of a device
+// Update the state of a device.
 func (d *List) SetState(id ID, state State) error {
 	d.Lock()
 	defer d.Unlock()
@@ -198,7 +205,7 @@ func (d *List) SetState(id ID, state State) error {
 	return fmt.Errorf("Node not found (%s)", id.String())
 }
 
-// Get returns a device
+// Get returns a device.
 func (d *List) Get(id ID) *Device {
 	d.RLock()
 	defer d.RUnlock()
@@ -211,7 +218,7 @@ func (d *List) Get(id ID) *Device {
 //return d.devices[id]
 //}
 
-// All get all devices
+// All get all devices.
 func (d *List) All() DeviceMap {
 	d.RLock()
 	defer d.RUnlock()
@@ -224,7 +231,7 @@ func (d *List) Remove(id ID) {
 	d.Unlock()
 }
 
-// Copy copies a list of devices
+// Copy copies a list of devices.
 func (d *List) Copy() *List {
 	newD := &List{
 		devices: make(DeviceMap),
@@ -256,7 +263,7 @@ func (d *List) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// Flatten can be used for metrics export and logic rules
+// Flatten can be used for metrics export and logic rules.
 func (d *List) Flatten() map[string]interface{} {
 	devmap := make(map[string]interface{})
 	for k, v := range d.All() {
@@ -270,7 +277,7 @@ func (d *List) Flatten() map[string]interface{} {
 	return devmap
 }
 
-// StateGroupedByNode get state from all devices grouped by node uuid
+// StateGroupedByNode get state from all devices grouped by node uuid.
 func (d *List) StateGroupedByNode() map[string]map[ID]State {
 	d.RLock()
 	devicesByNode := make(map[string]map[ID]State)

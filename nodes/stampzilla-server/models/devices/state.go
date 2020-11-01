@@ -10,7 +10,7 @@ func (ds State) Clone() State {
 	return newState
 }
 
-// Bool runs fn only if key is found in map and it is of type bool
+// Bool runs fn only if key is found in map and it is of type bool.
 func (ds State) Bool(key string, fn func(bool)) {
 	if v, ok := ds[key]; ok {
 		if v, ok := v.(bool); ok {
@@ -19,7 +19,7 @@ func (ds State) Bool(key string, fn func(bool)) {
 	}
 }
 
-// Int runs fn only if key is found in map and it is of type int
+// Int runs fn only if key is found in map and it is of type int.
 func (ds State) Int(key string, fn func(int64)) {
 	if v, ok := ds[key]; ok {
 		if v, ok := v.(int); ok {
@@ -31,7 +31,7 @@ func (ds State) Int(key string, fn func(int64)) {
 	}
 }
 
-// Float runs fn only if key is found in map and it is of type int
+// Float runs fn only if key is found in map and it is of type int.
 func (ds State) Float(key string, fn func(float64)) {
 	if v, ok := ds[key]; ok {
 		if v, ok := v.(float64); ok {
@@ -40,7 +40,7 @@ func (ds State) Float(key string, fn func(float64)) {
 	}
 }
 
-// String runs fn only if key is found in map and it is of type int
+// String runs fn only if key is found in map and it is of type int.
 func (ds State) String(key string, fn func(string)) {
 	if v, ok := ds[key]; ok {
 		if v, ok := v.(string); ok {
@@ -49,13 +49,13 @@ func (ds State) String(key string, fn func(string)) {
 	}
 }
 
-// Diff calculates the diff between 2 states. If key is missing in right but exists in left it will not be a diff
+// Diff calculates the diff between 2 states. If key is missing in right but exists in left it will not be a diff.
 func (ds State) Diff(right State) State {
 	diff := make(State)
 	for k, v := range ds {
 		rv, ok := right[k]
 		if !ok {
-			//diff[k] = v
+			// diff[k] = v
 			continue
 		}
 		if ok && v != rv {
@@ -72,7 +72,7 @@ func (ds State) Diff(right State) State {
 	return diff
 }
 
-// Merge two states
+// Merge two states.
 func (ds State) Merge(right State) State {
 	diff := make(State)
 	for k, v := range ds {
