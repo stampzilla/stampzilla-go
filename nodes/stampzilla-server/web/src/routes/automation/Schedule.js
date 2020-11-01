@@ -60,7 +60,7 @@ class Schedule extends Component {
     super();
 
     const { schedules, match } = props;
-    const schedule = schedules.find(n => n.get('uuid') === match.params.uuid);
+    const schedule = schedules.find((n) => n.get('uuid') === match.params.uuid);
     const formData = schedule && schedule.toJS();
     if (formData && formData.actions == null) {
       formData.actions = [];
@@ -78,7 +78,7 @@ class Schedule extends Component {
       || match.params.uuid !== this.props.match.params.uuid
       || schedules !== this.props.schedules
     ) {
-      const schedule = schedules.find(n => n.get('uuid') === match.params.uuid);
+      const schedule = schedules.find((n) => n.get('uuid') === match.params.uuid);
       const formData = schedule && schedule.toJS();
       if (formData && formData.actions == null) {
         formData.actions = [];
@@ -114,7 +114,7 @@ class Schedule extends Component {
     const { match } = this.props;
 
     return (
-      <React.Fragment>
+      <div className="content">
         <div className="row">
           <div className="col-md-12">
             <Card
@@ -155,18 +155,18 @@ class Schedule extends Component {
                   disabled={!this.state.isValid || this.props.disabled}
                   onClick={() => this.submitButton.click()}
                 >
-                  {'Save'}
+                  Save
                 </Button>
               </div>
             </Card>
           </div>
         </div>
-      </React.Fragment>
+      </div>
     );
   }
 }
 
-const mapToProps = state => ({
+const mapToProps = (state) => ({
   schedules: state.getIn(['schedules', 'list']),
 });
 

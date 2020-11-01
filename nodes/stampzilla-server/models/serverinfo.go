@@ -7,4 +7,7 @@ type ServerInfo struct {
 	Port    string `json:"port"`
 	Init    bool   `json:"init"`
 	Login   bool   `json:"login"`
+
+	Instance string `json:"instance,omitempty"`
+	Phrase   string `json:"phrase,omitempty"`
 }

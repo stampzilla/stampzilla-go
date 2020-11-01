@@ -152,7 +152,7 @@ class Person extends Component {
     const person = persons.find((n) => n.get('uuid') === match.params.uuid);
 
     return (
-      <>
+      <div className="content">
         <div className="row">
           <div className="col-md-12">
             <Card
@@ -220,7 +220,7 @@ class Person extends Component {
             </Card>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 }

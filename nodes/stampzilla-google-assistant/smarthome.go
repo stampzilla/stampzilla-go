@@ -170,7 +170,7 @@ func (shh *SmartHomeHandler) syncHandler(nodeID string, req *googleassistant.Req
 			Name: googleassistant.DeviceName{
 				Name: dev.Name,
 			},
-			WillReportState: false,
+			WillReportState: true,
 			Traits:          traits,
 			Attributes:      attributes,
 		}

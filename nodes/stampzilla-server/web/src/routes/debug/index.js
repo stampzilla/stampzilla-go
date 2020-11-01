@@ -18,12 +18,10 @@ class Debug extends Component {
   };
 
   render() {
-    const {
-      messages, connections, nodes, persons,
-    } = this.props;
+    const { connections, nodes, persons } = this.props;
 
     return (
-      <>
+      <div className="content">
         <div className="row">
           <div className="col-md-12">
             <Card title="Active connections" bodyClassName="p-0">
@@ -99,33 +97,12 @@ class Debug extends Component {
             </Card>
           </div>
         </div>
-        <Card title="Received messages" bodyClassName="p-0">
-          <table className="table table-striped table-valign-middle">
-            <thead>
-              <tr>
-                <th>Count</th>
-                <th>Type</th>
-                <th>Body</th>
-              </tr>
-            </thead>
-            <tbody>
-              {messages.reverse().map((message) => (
-                <tr key={message.id}>
-                  <td>{message.id}</td>
-                  <td>{message.type}</td>
-                  <td>{JSON.stringify(message.body)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
-      </>
+      </div>
     );
   }
 }
 
 const mapToProps = (state) => ({
-  messages: state.getIn(['connection', 'messages']),
   connections: state.getIn(['connections', 'list']),
   nodes: state.getIn(['nodes', 'list']),
   persons: state.getIn(['persons', 'list']),

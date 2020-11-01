@@ -10,6 +10,7 @@ import (
 	"log"
 	"net"
 	"path"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -33,6 +34,10 @@ type Connection struct {
 	_reconnect    bool
 	disconnected  *chan struct{}
 	reconnectLoop *chan struct{}
+	requestID     int
+	requests      map[int]chan models.Message
+	subscriptions map[string]struct{}
+
 	sync.RWMutex
 }
 
@@ -55,7 +60,9 @@ func New(store *store.Store, config *models.Config, ca *ca.CA, sender websocket.
 			ClientCAs:  caCertPool,
 			ClientAuth: tls.RequireAndVerifyClientCert,
 		},
-		sender: sender,
+		sender:        sender,
+		requests:      make(map[int]chan models.Message),
+		subscriptions: make(map[string]struct{}),
 	}
 
 	cl := store.GetCloud()
@@ -102,7 +109,7 @@ func (c *Connection) Reconnect() {
 				continue
 			}
 
-			go c.worker(conn)
+			go c.worker(conn, false)
 
 			return
 		}
@@ -121,7 +128,7 @@ func (c *Connection) Connect(config models.CloudConfig) error {
 		return err
 	}
 
-	err = c.setup(conn)
+	directUpgrade, err := c.setup(conn)
 	if err != nil {
 		return err
 	}
@@ -148,23 +155,54 @@ func (c *Connection) Connect(config models.CloudConfig) error {
 
 	// Start using the new connection
 	c.store.UpdateCloudConfig(config)
-	go c.worker(conn)
+	go c.worker(conn, directUpgrade)
+
+	return nil
+}
+
+func (c *Connection) Disconnect() error {
+	cl := c.store.GetCloud()
+	cl.Config.Enable = false
+	c.store.UpdateCloudConfig(cl.Config)
+
+	// Stop the reconnect loop
+	c.Lock()
+	c._reconnect = false
+	reconnectLoop := c.reconnectLoop
+	c.Unlock()
+	if reconnectLoop != nil {
+		<-*reconnectLoop
+	}
+
+	// Disconnect the previous connection if any
+	if c.connected() {
+		c.conn.Close()
+
+		// Wait until the connection is closed
+		c.RLock()
+		disconnected := c.disconnected
+		c.RUnlock()
+		<-*disconnected
+	}
 
 	return nil
 }
 
 // setup is only done when connecting with a new config
-func (c *Connection) setup(conn net.Conn) (err error) {
+func (c *Connection) setup(conn net.Conn) (directUpgrade bool, err error) {
 	logrus.Trace("cloud setup started")
 	defer logrus.Trace("cloud setup done", err)
 
 	cl := c.store.GetCloud()
 	err = c.SendTo(conn, "instance", models.ServerInfo{
-		Name: cl.Config.Instance,
 		UUID: c.config.UUID,
+		Name: c.config.Name,
+
+		Instance: cl.Config.Instance,
+		Phrase:   cl.Config.Phrase,
 	})
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	for {
@@ -174,41 +212,42 @@ func (c *Connection) setup(conn net.Conn) (err error) {
 
 		err := d.Decode(&msg)
 		if err != nil {
-			return err
+			return false, err
 		}
 
 		switch msg.Type {
+		case "upgrade":
+			logrus.Infof("cloud setup - server already has certificates")
+			return true, nil
 		case "certificate-signing-request":
 			logrus.Trace("cloud setup - got request")
 			var body models.Request
 			err := json.Unmarshal(msg.Body, &body)
 			if err != nil {
-				return err
+				return false, err
 			}
 
 			logrus.Trace("cloud setup - build cert")
 			cert := &strings.Builder{}
 			err = c.ca.CreateCertificateFromCloudRequest(cert, body)
 			if err != nil {
-				return err
+				return false, err
 			}
 
 			logrus.Trace("cloud setup - send cert")
 			err = c.SendTo(conn, "approved-certificate-signing-request", cert.String())
 			if err != nil {
-				return err
+				return false, err
 			}
 
 			logrus.Trace("cloud setup - send ca")
 			ca := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: c.ca.CAX509.Raw})
 			err = c.SendTo(conn, "certificate-authority", string(ca))
 			if err != nil {
-				return err
+				return false, err
 			}
 			logrus.Trace("cloud setup - done sending certs")
-			//case "upgrade":
-			//logrus.Trace("cloud: upgrade to TLS")
-			return nil
+			return false, nil
 		default:
 			logrus.WithFields(logrus.Fields{
 				"server": conn.RemoteAddr().String(),
@@ -236,7 +275,53 @@ func (c *Connection) SendTo(conn net.Conn, msgType string, data interface{}) err
 	return err
 }
 
-func (c *Connection) worker(conn net.Conn) (err error) {
+func (c *Connection) Request(req *models.Message) (json.RawMessage, error) {
+	if !c.connected() {
+		return nil, fmt.Errorf("not connected")
+	}
+
+	msg, err := models.NewMessage("request", req.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	ch := make(chan models.Message)
+
+	c.Lock()
+	msg.Request = json.RawMessage(strconv.Itoa(c.requestID))
+	c.requests[c.requestID] = ch
+	c.requestID++
+	c.Unlock()
+	defer func() {
+		c.Lock()
+		if c.requests[c.requestID] != nil {
+			close(c.requests[c.requestID])
+			delete(c.requests, c.requestID)
+		}
+		c.Unlock()
+	}()
+
+	_, err = msg.WriteToWriter(c.conn)
+	if err != nil {
+		return nil, err
+	}
+
+	select {
+	case resp := <-ch:
+		switch resp.Type {
+		case "failure":
+			return nil, fmt.Errorf(string(resp.Body))
+		case "success":
+			return resp.Body, nil
+		}
+	case <-time.After(time.Second * 10):
+		return nil, fmt.Errorf("timeout")
+	}
+
+	return nil, fmt.Errorf("should never happen")
+}
+
+func (c *Connection) worker(conn net.Conn, directUpgrade bool) (err error) {
 	disconnected := make(chan struct{})
 	c.Lock()
 	c.disconnected = &disconnected
@@ -280,14 +365,22 @@ func (c *Connection) worker(conn net.Conn) (err error) {
 
 	//var buffer = make([]byte, 1024)
 
+	if directUpgrade {
+		err = c.tlsWorker(conn)
+		return err
+	}
+
 	c.store.UpdateCloudState(models.CloudState{
 		Connected: true,
 	})
 
 	cl := c.store.GetCloud()
 	msg, err := models.NewMessage("instance", models.ServerInfo{
-		Name: cl.Config.Instance,
 		UUID: c.config.UUID,
+		Name: c.config.Name,
+
+		Instance: cl.Config.Instance,
+		Phrase:   cl.Config.Phrase,
 	})
 	if err != nil {
 		logrus.Error(err)
@@ -332,6 +425,15 @@ func (c *Connection) tlsWorker(unenc_conn net.Conn) error {
 		return err
 	}
 
+	c.Lock()
+	c.conn = conn
+	c.Unlock()
+	defer func() {
+		c.Lock()
+		c.conn = unenc_conn
+		c.Unlock()
+	}()
+
 	c.store.UpdateCloudState(models.CloudState{
 		Connected: true,
 		Secure:    true,
@@ -348,7 +450,26 @@ func (c *Connection) tlsWorker(unenc_conn net.Conn) error {
 			return err
 		}
 
-		c.processRequest(msg, conn)
+		if id, err := strconv.Atoi(string(msg.Request)); err == nil {
+			logrus.WithFields(logrus.Fields{
+				"type":      msg.Type,
+				"requestID": msg.Request,
+			}).Debug("Received request response")
+
+			c.Lock()
+			ch, ok := c.requests[id]
+			c.Unlock()
+
+			if ok {
+				go func() {
+					ch <- *msg
+				}()
+			}
+		}
+
+		if msg.Type != "success" && msg.Type != "failure" {
+			c.processRequest(msg, conn)
+		}
 	}
 }
 
@@ -398,11 +519,6 @@ func (c *Connection) processRequest(req *models.Message, conn *tls.Conn) {
 			logrus.Error(err)
 		}
 	}
-
-	if err != nil {
-		logrus.Error(err)
-	}
-
 }
 
 func (c *Connection) connected() bool {

@@ -21,7 +21,7 @@ class Persons extends Component {
     const { persons } = this.props;
 
     return (
-      <>
+      <div className="content">
         <div className="row">
           <div className="col-md-12">
             <Card
@@ -68,7 +68,7 @@ class Persons extends Component {
             </Card>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 }

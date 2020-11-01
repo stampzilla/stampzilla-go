@@ -168,7 +168,7 @@ class Rule extends Component {
     patchedUiSchema.conditions.current = match.params.uuid;
 
     return (
-      <>
+      <div className="content">
         <div className="row">
           <div className="col-md-12">
             {state.getIn([match.params.uuid, 'error']) && (
@@ -252,7 +252,7 @@ class Rule extends Component {
             </pre>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 }

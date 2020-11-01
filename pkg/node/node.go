@@ -1,21 +1,27 @@
 package node
 
 import (
+	"bufio"
+	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"os"
 	"os/signal"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -48,11 +54,14 @@ type Node struct {
 	TLS        *tls.Certificate
 	CA         *x509.CertPool
 	callbacks  map[string][]callbackFunc
+	requestID  int
+	requests   map[int]chan models.Message
 	Devices    *devices.List
 	shutdown   []func()
 	stop       chan struct{}
 	sendUpdate chan devices.ID
-	mutex      sync.Mutex
+
+	mutex sync.Mutex
 }
 
 // New returns a new Node
@@ -72,6 +81,7 @@ func NewWithClient(client websocket.Websocket) *Node {
 		Client:     client,
 		wg:         &sync.WaitGroup{},
 		callbacks:  make(map[string][]callbackFunc),
+		requests:   make(map[int]chan models.Message),
 		Devices:    devices.NewList(),
 		stop:       make(chan struct{}),
 		sendUpdate: make(chan devices.ID),
@@ -123,14 +133,63 @@ func (n *Node) setup() {
 // WriteMessage writes a message to the server over websocket client
 func (n *Node) WriteMessage(msgType string, data interface{}) error {
 	msg, err := models.NewMessage(msgType, data)
+	if err != nil {
+		return err
+	}
+
 	logrus.WithFields(logrus.Fields{
 		"type": msgType,
 		"body": data,
 	}).Tracef("Send to server")
-	if err != nil {
-		return err
-	}
+
 	return n.Client.WriteJSON(msg)
+}
+func (n *Node) WriteRequest(msgType string, data interface{}) (*models.Message, error) {
+	msg, err := models.NewMessage(msgType, data)
+	if err != nil {
+		return nil, err
+	}
+
+	ch := make(chan models.Message)
+
+	n.mutex.Lock()
+	msg.Request = json.RawMessage(strconv.Itoa(n.requestID))
+	n.requests[n.requestID] = ch
+	n.requestID++
+	n.mutex.Unlock()
+	defer func() {
+		n.mutex.Lock()
+		if n.requests[n.requestID] != nil {
+			close(n.requests[n.requestID])
+			delete(n.requests, n.requestID)
+		}
+		n.mutex.Unlock()
+	}()
+
+	logrus.WithFields(logrus.Fields{
+		"type":      msgType,
+		"body":      data,
+		"requestID": msg.Request,
+	}).Debugf("Send request to server")
+
+	err = n.Client.WriteJSON(msg)
+	if err != nil {
+		return nil, err
+	}
+
+	select {
+	case resp := <-ch:
+		switch resp.Type {
+		case "failure":
+			return nil, fmt.Errorf(string(resp.Body))
+		case "success":
+			return &resp, nil
+		}
+	case <-time.After(time.Second * 10):
+		return nil, fmt.Errorf("timeout")
+	}
+
+	return nil, fmt.Errorf("should never happen")
 }
 func (n *Node) WriteResponse(msgType string, data interface{}, request json.RawMessage) error {
 	msg, err := models.NewMessage(msgType, data)
@@ -318,17 +377,42 @@ func (n *Node) reader(ctx context.Context) {
 				logrus.Error("node:", err)
 				continue
 			}
+
+			// Dont wait for callbacks because they could send requests and then we need to be able to receive the result
 			cbs := n.getCallbacks()
-			for _, cb := range cbs[msg.Type] {
-				err := cb(msg.Body, msg.Request)
-				if err != nil {
-					logrus.Error(err)
-					continue
+			go func() {
+				for _, cb := range cbs[msg.Type] {
+					err := cb(msg.Body, msg.Request)
+					if err != nil {
+						logrus.Error(err)
+						continue
+					}
+				}
+			}()
+
+			var ok bool
+			if id, err := strconv.Atoi(string(msg.Request)); err == nil {
+				logrus.WithFields(logrus.Fields{
+					"type":      msg.Type,
+					"requestID": msg.Request,
+				}).Debug("Received request response")
+
+				n.mutex.Lock()
+				var ch chan models.Message
+				ch, ok = n.requests[id]
+				n.mutex.Unlock()
+
+				if ok {
+					go func() {
+						ch <- *msg
+					}()
 				}
 			}
-			if cbs[msg.Type] == nil || len(cbs[msg.Type]) == 0 {
+
+			if (cbs[msg.Type] == nil || len(cbs[msg.Type]) == 0) && !ok {
 				logrus.WithFields(logrus.Fields{
-					"type": msg.Type,
+					"type":      msg.Type,
+					"requestID": msg.Request,
 				}).Warn("Received message but no one cared")
 			}
 		}
@@ -689,10 +773,47 @@ func (n *Node) Subscribe(what ...string) error {
 }
 
 func (n *Node) SendThruCloud(service string, req *http.Request) (*http.Response, error) {
-	err := n.WriteMessage("cloud-request", req)
+	dump, err := httputil.DumpRequestOut(req, true)
 	if err != nil {
 		return nil, err
 	}
 
-	return nil, nil
+	msg, err := n.WriteRequest("cloud-request", models.ForwardedRequest{
+		Dump:    dump,
+		Service: service,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var body string
+	err = json.Unmarshal(msg.Body, &body)
+	if err != nil {
+		return nil, err
+	}
+
+	raw, err := base64.StdEncoding.DecodeString(body)
+	if err != nil {
+		return nil, err
+	}
+
+	b := bytes.NewBuffer(raw)
+	rd := bufio.NewReader(b)
+	resp, err := http.ReadResponse(rd, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var reader io.ReadCloser
+	switch resp.Header.Get("Content-Encoding") {
+	case "gzip":
+		reader, err = gzip.NewReader(resp.Body)
+		defer reader.Close()
+	default:
+		reader = resp.Body
+	}
+
+	resp.Body = reader
+
+	return resp, nil
 }

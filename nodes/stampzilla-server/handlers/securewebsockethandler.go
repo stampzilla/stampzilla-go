@@ -57,35 +57,12 @@ func BroadcastUpdate(sender websocket.Sender) func(string, *store.Store) error {
 	}
 
 	return func(area string, store *store.Store) error {
-		switch area {
-		case "devices":
-			return send(area, store.GetDevices())
-		case "connections":
-			return send(area, store.GetConnections())
-		case "nodes":
-			return send(area, store.GetNodes())
-		case "certificates":
-			return send(area, store.GetCertificates())
-		case "requests":
-			return send(area, store.GetRequests())
-		case "rules":
-			return send(area, store.GetRules())
-		case "savedstates":
-			return send(area, store.GetSavedStates())
-		case "schedules":
-			return send(area, store.GetScheduledTasks())
-		case "server":
-			return send(area, store.GetServerStateAsJson())
-		case "destinations":
-			return send(area, store.GetDestinations())
-		case "senders":
-			return send(area, store.GetSenders())
-		case "persons":
-			return send(area, store.GetPersons())
-		case "cloud":
-			return send(area, store.GetCloud())
+		data, ok := store.Get(area)
+		if !ok {
+			return nil
 		}
-		return nil
+
+		return send(area, data)
 	}
 }
 
@@ -229,6 +206,8 @@ func (wsh *secureWebsocketHandler) MessageFromNode(s interfaces.MelodySession, m
 			}
 			wsh.Store.AddOrUpdateDevice(dev)
 		}
+	case "cloud-request":
+		return wsh.Cloud.Request(msg)
 	default:
 		logrus.WithFields(logrus.Fields{
 			"type":   msg.Type,
@@ -296,6 +275,7 @@ func (wsh *secureWebsocketHandler) MessageFromUser(s interfaces.MelodySession, m
 		dev.Labels = device.Labels
 		dev.Unlock()
 		BroadcastUpdate(wsh.WebsocketSender)("devices", wsh.Store)
+		wsh.Cloud.SendUpdate("devices", wsh.Store)
 
 	case "accept-request":
 		connection := ""
@@ -455,6 +435,8 @@ func (wsh *secureWebsocketHandler) MessageFromUser(s interfaces.MelodySession, m
 		}).Debug("Received new cloud config")
 
 		return nil, wsh.Cloud.Connect(cc)
+	case "cloud-disconnect":
+		return nil, wsh.Cloud.Disconnect()
 	default:
 		logrus.WithFields(logrus.Fields{
 			"type":   msg.Type,
@@ -530,6 +512,7 @@ func (wsh *secureWebsocketHandler) Disconnect(s interfaces.MelodySession) error 
 		}
 		if modified {
 			BroadcastUpdate(wsh.WebsocketSender)("devices", wsh.Store)
+			wsh.Cloud.SendUpdate("devices", wsh.Store)
 		}
 	}
 	return nil

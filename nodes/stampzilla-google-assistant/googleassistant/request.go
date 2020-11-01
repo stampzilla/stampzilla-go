@@ -92,3 +92,13 @@ type Request struct {
 	RequestID string
 	Inputs    Inputs
 }
+
+type ReportStateRequest struct {
+	RequestID   string `json:"requestId"`
+	AgentUserID string `json:"agentUserId"`
+	Payload     struct {
+		Devices struct {
+			States map[string]map[string]interface{} `json:"states"`
+		} `json:"devices"`
+	} `json:"payload"`
+}

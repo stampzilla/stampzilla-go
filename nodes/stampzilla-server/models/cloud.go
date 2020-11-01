@@ -22,6 +22,7 @@ type CloudConfig struct {
 	Enable   bool   `json:"enable"`
 	Server   string `json:"server"`
 	Instance string `json:"instance"`
+	Phrase   string `json:"phrase"`
 }
 
 func (a CloudConfig) Equal(b CloudConfig) bool {
@@ -94,6 +95,11 @@ func (c *Cloud) Load() error {
 	}
 
 	return nil
+}
+
+type AuthorizeRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 type ForwardedRequest struct {

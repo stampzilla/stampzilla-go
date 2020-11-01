@@ -213,7 +213,7 @@ class App extends Component {
             </div>
           </div>
 
-          <div className="content">{children}</div>
+          {children}
         </div>
 
         <aside className="control-sidebar control-sidebar-dark" />
