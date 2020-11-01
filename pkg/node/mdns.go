@@ -38,7 +38,7 @@ func queryMDNS() (string, string) {
 	var entry *mdns.ServiceEntry
 	for {
 		entry = <-entriesCh
-		if strings.Contains(entry.Name, "_stampzilla._tcp") { //Ignore answers that are not what we are looking for
+		if strings.Contains(entry.Name, "_stampzilla._tcp") { // Ignore answers that are not what we are looking for
 			break
 		}
 	}
