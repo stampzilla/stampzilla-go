@@ -125,7 +125,7 @@ func NewWebserver(pool *Pool) *Webserver {
 	r.GET("/app/ws", func(c *gin.Context) {
 		conn, err := wsupgrader.Upgrade(c.Writer, c.Request, nil)
 		if err != nil {
-			fmt.Println("Failed to set websocket upgrade: %+v", err)
+			logrus.Warnf("Failed to set websocket upgrade: %+v", err)
 			return
 		}
 

@@ -15,7 +15,8 @@ require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/faiface/beep v1.0.1
 	github.com/fatih/camelcase v1.0.0 // indirect
-	github.com/foolin/goview v0.3.0 // indirect
+	github.com/fatih/color v1.10.0
+	github.com/foolin/goview v0.3.0
 	github.com/gin-contrib/cors v1.3.0
 	github.com/gin-contrib/gzip v0.0.1
 	github.com/gin-contrib/sessions v0.0.3
@@ -60,15 +61,13 @@ require (
 	github.com/stampzilla/gozwave v0.0.0-20190221183844-576012815e01
 	github.com/stretchr/testify v1.6.1
 	github.com/tarm/goserial v0.0.0-20151007205400-b3440c3c6355 // indirect
-	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07 // indirect
-	github.com/tyler-smith/go-bip39 v1.0.2 // indirect
+	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
+	github.com/tyler-smith/go-bip39 v1.0.2
 	github.com/urfave/cli v1.22.1
 	github.com/vapourismo/knx-go v0.0.0-20200924173532-6ed2bf1e51e6
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
-	golang.org/x/net v0.0.0-20200813134508-3edf25e44fcc // indirect
-	golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1 // indirect
-	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
-	google.golang.org/protobuf v1.25.0 // indirect
+	google.golang.org/api v0.34.0
+	google.golang.org/genproto v0.0.0-20200904004341-0bd0a958aa1d
 	gopkg.in/oauth2.v3 v3.12.0
 	software.sslmate.com/src/go-pkcs12 v0.0.0-20200619203921-c9ed90bd32dc
 )
