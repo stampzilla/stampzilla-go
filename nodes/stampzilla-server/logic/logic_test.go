@@ -9,6 +9,7 @@ import (
 
 	"github.com/olahol/melody"
 	"github.com/sirupsen/logrus"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
 	stypes "github.com/stampzilla/stampzilla-go/pkg/types"
 	"github.com/stretchr/testify/assert"
@@ -44,6 +45,13 @@ func (mss *mockSender) SendToProtocol(to string, msgType string, data interface{
 }
 func (mss *mockSender) BroadcastWithFilter(msgType string, data interface{}, fn func(*melody.Session) bool) error {
 	return nil
+}
+
+func (mss *mockSender) Request(to string, msgType string, data interface{}, timeout time.Duration) (json.RawMessage, error) {
+	return nil, nil
+}
+func (mss *mockSender) Response(msg *models.Message) {
+	return
 }
 
 func TestLoadRulesFromFile(t *testing.T) {
