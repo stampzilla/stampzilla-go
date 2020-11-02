@@ -1,25 +1,24 @@
-const GoogleFontsPlugin = require("@beyonk/google-fonts-webpack-plugin");
-const HtmlWebPackPlugin = require("html-webpack-plugin");
-const MiniCssExtractPlugin = require("mini-css-extract-plugin");
-const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin");
-const SWPrecacheWebpackPlugin = require("sw-precache-webpack-plugin");
-const WebpackPwaManifest = require("webpack-pwa-manifest");
-const TerserPlugin = require("terser-webpack-plugin");
+const GoogleFontsPlugin = require('@beyonk/google-fonts-webpack-plugin');
+const HtmlWebPackPlugin = require('html-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
+const WebpackPwaManifest = require('webpack-pwa-manifest');
+const TerserPlugin = require('terser-webpack-plugin');
 // const path = require('path');
-const webpack = require("webpack");
+const webpack = require('webpack');
 
 module.exports = (env, argv) => {
-  const DEV = argv.mode !== "production";
+  const DEV = argv.mode !== 'production';
   return {
-    devtool: DEV ? "cheap-module-eval-source-map" : undefined,
+    devtool: DEV ? 'cheap-module-eval-source-map' : undefined,
     output: {
-      filename: DEV ? "assets/[name].js" : "assets/[name].[contenthash].js",
-      publicPath: "/"
+      filename: DEV ? 'assets/[name].js' : 'assets/[name].[contenthash].js',
+      publicPath: '/',
     },
     optimization: {
       minimizer: [new OptimizeCSSAssetsPlugin({}), new TerserPlugin()],
       usedExports: true,
-      sideEffects: true
+      sideEffects: true,
     },
     module: {
       rules: [
@@ -32,82 +31,82 @@ module.exports = (env, argv) => {
           include: [/src/, /node_modules\/react-json-editor-ajrm/],
           use: [
             {
-              loader: "babel-loader"
-            }
-          ]
+              loader: 'babel-loader',
+            },
+          ],
         },
         {
           test: /\.s?css$/,
           include: [/index\.scss/],
           use: [
             {
-              loader: DEV ? "style-loader" : MiniCssExtractPlugin.loader
+              loader: DEV ? 'style-loader' : MiniCssExtractPlugin.loader,
             },
             {
-              loader: "css-loader",
-              query: {
+              loader: 'css-loader',
+              options: {
                 modules: false,
                 sourceMap: true,
-                importLoaders: 2
-              }
+                importLoaders: 2,
+              },
             },
             {
-              loader: "sass-loader",
+              loader: 'sass-loader',
               options: {
-                sourceMap: true
-              }
-            }
-          ]
+                sourceMap: true,
+              },
+            },
+          ],
         },
         {
           test: /\.s?css$/,
           exclude: [/index\.scss/],
           use: [
             {
-              loader: DEV ? "style-loader" : MiniCssExtractPlugin.loader
+              loader: DEV ? 'style-loader' : MiniCssExtractPlugin.loader,
             },
             {
-              loader: "css-loader",
-              query: {
+              loader: 'css-loader',
+              options: {
                 modules: {
-                  mode: "local",
-                  localIdentName: "[name]__[local]___[hash:base64:5]"
+                  mode: 'local',
+                  localIdentName: '[name]__[local]___[hash:base64:5]',
                 },
                 sourceMap: true,
-                importLoaders: 2
-              }
+                importLoaders: 2,
+              },
             },
             {
-              loader: "sass-loader",
+              loader: 'sass-loader',
               options: {
-                sourceMap: true
-              }
-            }
-          ]
+                sourceMap: true,
+              },
+            },
+          ],
         },
         {
           test: /\.html$/,
           use: [
             {
-              loader: "html-loader"
-            }
-          ]
+              loader: 'html-loader',
+            },
+          ],
         },
         {
           test: /\.jpe?g$|\.ico$|\.gif$|\.png$|\.svg$|\.ico$|\.xml$|\.webmanifest$/,
           use: [
             {
-              loader: "file-loader",
+              loader: 'file-loader',
               options: {
-                name: "[name].[ext]",
+                name: '[name].[ext]',
                 // useRelativePath: !process.env.NODE_ENV,
                 // publicPath: (DEV && CDN_URL === '') ? '/' : '',
                 // Remove the default root slash because we load images from our CDN
-                outputPath: "assets/",
-                publicPath: "/assets"
-              }
-            }
-          ]
+                outputPath: 'assets/',
+                publicPath: '/assets',
+              },
+            },
+          ],
         },
         // {
         // test: /\.(png|jpg|gif)$/,
@@ -124,81 +123,74 @@ module.exports = (env, argv) => {
           test: /\.(eot|svg|ttf|woff|woff2)$/,
           use: [
             {
-              loader: "file-loader",
+              loader: 'file-loader',
               options: {
                 // useRelativePath: !process.env.NODE_ENV,
                 // publicPath: (DEV && CDN_URL === '') ? '/' : '',
                 // Remove the default root slash because we load images from our CDN
-                outputPath: "assets/",
-                publicPath: "/assets"
-              }
-            }
-          ]
-        }
-      ]
+                outputPath: 'assets/',
+                publicPath: '/assets',
+              },
+            },
+          ],
+        },
+      ],
     },
     devServer: {
       overlay: true,
-      historyApiFallback: true
+      historyApiFallback: true,
     },
     plugins: [
       new HtmlWebPackPlugin({
-        template: "./src/index.html",
-        filename: "./index.html"
+        template: './src/index.html',
+        filename: './index.html',
       }),
       new webpack.ProvidePlugin({
-        $: "jquery",
-        jQuery: "jquery"
+        $: 'jquery',
+        jQuery: 'jquery',
       }),
       new MiniCssExtractPlugin({
-        filename: "assets/[name].[contenthash].css",
-        chunkFilename: "assets/[id].[contenthash].css"
+        filename: 'assets/[name].[contenthash].css',
+        chunkFilename: 'assets/[id].[contenthash].css',
       }),
       new GoogleFontsPlugin({
         fonts: [
           {
-            family: "Roboto",
+            family: 'Roboto',
             variants: [
-              "300",
-              "400",
-              "600",
-              "700",
-              "300italic",
-              "400italic",
-              "600italic"
-            ]
-          }
+              '300',
+              '400',
+              '600',
+              '700',
+              '300italic',
+              '400italic',
+              '600italic',
+            ],
+          },
         ],
-        path: "/",
-        filename: "assets/fonts.css"
-      }),
-      new SWPrecacheWebpackPlugin({
-        cacheId: "stampzilla-go",
-        dontCacheBustUrlsMatching: /\.\w{8}\./,
-        filename: "service-worker.js",
-        minify: true,
-        staticFileGlobsIgnorePatterns: [/\.map$/, /manifest\.json$/, /ws$/]
+        path: '/',
+        filename: 'assets/fonts.css',
       }),
       new WebpackPwaManifest({
-        filename: "assets/manifest.[hash].json",
-        name: "stampzilla-go",
-        short_name: "stampzilla",
-        description: "Homeautomation :)",
-        background_color: "#01579b",
-        theme_color: "#01579b",
-        "theme-color": "#01579b",
-        start_url: "/",
+        filename: 'assets/manifest.[contenthash].json',
+        name: 'stampzilla-go',
+        short_name: 'stampzilla',
+        description: 'Homeautomation :)',
+        background_color: '#01579b',
+        theme_color: '#01579b',
+        'theme-color': '#01579b',
+        start_url: '/',
         icons: [
           // {
           // src: path.resolve('src/images/icon.png'),
           // sizes: [96, 128, 192, 256, 384, 512],
           // destination: path.join('assets', 'icons')
           // }
-        ]
+        ],
       }),
       new webpack.DefinePlugin({
-        NODE_ENV: `${process.env.NODE_ENV}`
-      })
-    ]
+        NODE_ENV: `${process.env.NODE_ENV}`,
+      }),
+    ],
   };
 };

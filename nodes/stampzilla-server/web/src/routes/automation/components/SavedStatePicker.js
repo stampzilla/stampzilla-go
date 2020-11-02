@@ -1,12 +1,12 @@
-import React from 'react';
-import Modal from 'react-modal';
-import classnames from 'classnames';
 import { connect } from 'react-redux';
-import makeUUID from 'uuid/v4';
+import { v4 as makeUUID } from 'uuid';
+import Modal from 'react-modal';
+import React from 'react';
+import classnames from 'classnames';
 
 import './SavedStatePicker.scss';
-import Scene from './Scene';
 import { save } from '../../../ducks/savedstates';
+import Scene from './Scene';
 
 Modal.setAppElement('#app');
 

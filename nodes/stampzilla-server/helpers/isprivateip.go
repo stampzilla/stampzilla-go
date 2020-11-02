@@ -3,7 +3,8 @@ package helpers
 import (
 	"fmt"
 	"net"
-	"strings"
+
+	"net/url"
 
 	"github.com/sirupsen/logrus"
 )
@@ -30,13 +31,13 @@ func init() {
 	}
 }
 
-func IsPrivateIP(ipStr string) (res bool) {
-	sep := strings.LastIndex(ipStr, ":")
-	if sep == -1 {
-		return true
+func IsPrivateIP(ipStr string) bool {
+	u, err := url.Parse("http://" + ipStr)
+	if err != nil {
+		return false
 	}
 
-	ip := net.ParseIP(ipStr[:sep])
+	ip := net.ParseIP(u.Hostname())
 
 	defer func() {
 		if !res {

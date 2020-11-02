@@ -140,12 +140,12 @@ func cspMiddleware() gin.HandlerFunc {
 func (ws *Webserver) handleConnect(requireAuth bool) func(s *melody.Session) {
 	return func(s *melody.Session) {
 		msg, err := models.NewMessage("server-info", models.ServerInfo{
-			Name:    ws.Config.Name,
-			UUID:    ws.Config.UUID,
-			TLSPort: ws.Config.TLSPort,
-			Port:    ws.Config.Port,
-			Init:    ws.Store.CountAdmins() < 1,
-			Login:   helpers.IsPrivateIP(s.Request.RemoteAddr),
+			Name:       ws.Config.Name,
+			UUID:       ws.Config.UUID,
+			TLSPort:    ws.Config.TLSPort,
+			Port:       ws.Config.Port,
+			Init:       ws.Store.CountAdmins() < 1,
+			AllowLogin: helpers.IsPrivateIP(s.Request.RemoteAddr),
 		})
 		if err != nil {
 			logrus.Error(err)

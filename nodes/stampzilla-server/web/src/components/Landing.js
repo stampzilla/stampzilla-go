@@ -172,14 +172,14 @@ class Landing extends Component {
               && server.get('tlsPort') === port
               && disconnectionCode === 4001 && (
                 <>
-                  {!server.get('login') && (
+                  {!server.get('allowLogin') && (
                     <div className="alert alert-warning">
                       Only client certificates are accepted as login when
                       connecting from the internet
                     </div>
                   )}
 
-                  {server.get('login') && !server.get('init') && (
+                  {server.get('allowLogin') && !server.get('init') && (
                     <Login
                       error={this.state.error}
                       onSubmit={(username, password) => {
@@ -212,7 +212,7 @@ class Landing extends Component {
                     />
                   )}
 
-                  {server.get('login') && server.get('init') && (
+                  {server.get('allowLogin') && server.get('init') && (
                     <>
                       <div
                         className="alert alert-info"
