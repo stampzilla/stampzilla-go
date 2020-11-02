@@ -255,23 +255,37 @@ func (ws *Webserver) handleMessage() func(s *melody.Session, msg []byte) {
 				msg, e := models.NewMessage("success", resp)
 				if e != nil {
 					logrus.Error(e)
+					return
 				}
 				if err != nil {
 					msg, e = models.NewMessage("failure", err.Error())
 					if e != nil {
 						logrus.Error(e)
+						return
 					}
 				}
 
 				msg.Request = data.Request
-				err := msg.WriteTo(s)
-				if err != nil {
+				e = msg.WriteTo(s)
+				if e != nil {
 					logrus.Error(err)
+					return
 				}
-			}
 
+				logrus.WithFields(logrus.Fields{
+					"error":     err,
+					"type":      data.Type,
+					"requestID": data.Request,
+					"from":      data.FromUUID,
+				}).Error("Wrote response")
+			}
 			if err != nil {
-				logrus.Error(err)
+				logrus.WithFields(logrus.Fields{
+					"error":     err,
+					"type":      data.Type,
+					"requestID": data.Request,
+					"from":      data.FromUUID,
+				}).Error("incoming request failed")
 			}
 		}()
 	}

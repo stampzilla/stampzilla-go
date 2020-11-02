@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/olahol/melody"
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
@@ -103,7 +102,6 @@ func (ws *sender) Request(to string, msgType string, data interface{}, timeout t
 
 	select {
 	case resp := <-c:
-		spew.Dump(resp)
 		ws.requests[requestID] = nil
 		return resp.Body, nil
 	case <-time.After(timeout):

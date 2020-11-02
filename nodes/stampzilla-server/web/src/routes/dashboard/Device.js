@@ -321,9 +321,9 @@ class Device extends Component {
           <Modal.Header closeButton>
             <Modal.Title>Edit device</Modal.Title>
           </Modal.Header>
-          <Modal.Body>
-            <Tabs>
-              <Tab eventKey="settings" title="Settings">
+          <Tabs className="mt-2">
+            <Tab eventKey="settings" title="Settings" tabClassName="ml-2">
+              <Modal.Body>
                 <Form
                   schema={schema}
                   uiSchema={uiSchema}
@@ -345,8 +345,10 @@ class Device extends Component {
                     type="submit"
                   />
                 </Form>
-              </Tab>
-              <Tab eventKey="raw" title="Raw state">
+              </Modal.Body>
+            </Tab>
+            <Tab eventKey="raw" title="Raw state">
+              <Modal.Body>
                 <div className="mt-2">
                   <ReactJson
                     name={false}
@@ -356,9 +358,9 @@ class Device extends Component {
                     displayObjectSize={false}
                   />
                 </div>
-              </Tab>
-            </Tabs>
-          </Modal.Body>
+              </Modal.Body>
+            </Tab>
+          </Tabs>
           <Modal.Footer>
             <button
               type="button"

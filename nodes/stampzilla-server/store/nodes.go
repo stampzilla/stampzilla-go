@@ -123,6 +123,7 @@ func (store *Store) LoadNodes() error {
 	}
 	return nil
 }
+
 func loadNodeConfigFromFile(file string) (*models.Node, error) {
 	f, err := os.Open(file)
 	if err != nil {

@@ -7,6 +7,7 @@ import (
 
 	client "github.com/influxdata/influxdb1-client/v2"
 	"github.com/sirupsen/logrus"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
 	"github.com/stampzilla/stampzilla-go/pkg/node"
 )
@@ -24,17 +25,20 @@ var config = &Config{}
 
 var influxClient client.Client
 
-var deviceList = devices.NewList()
+var (
+	nodesList  = make(map[string]string)
+	deviceList = devices.NewList()
+)
 
 func main() {
 	node := node.New("metrics-influxdb")
 
 	stop := make(chan struct{})
-	device := make(chan func(), 1000)
-	node.OnConfig(updatedConfig(stop, device))
-	node.On("devices", onDevices(device))
+	queue := make(chan func(), 1000)
+	node.OnConfig(updatedConfig(stop, queue))
+	node.On("nodes", onNodes(queue))
+	node.On("devices", onDevices(queue))
 	err := node.Connect()
-
 	if err != nil {
 		logrus.Error(err)
 		return
@@ -47,7 +51,34 @@ func main() {
 	}()
 	node.Wait()
 }
-func onDevices(deviceChan chan func()) func(data json.RawMessage) error {
+
+func onNodes(queueChan chan func()) func(data json.RawMessage) error {
+	return func(data json.RawMessage) error {
+		logrus.Info("Received nodes data")
+		nodes := make(map[string]models.Node)
+		err := json.Unmarshal(data, &nodes)
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"err": err,
+			}).Errorf("failed to unmarshal nodes message")
+			return err
+		}
+
+		for _, n := range nodes {
+			// Only select what we need in order to avoid copying locks on the Node type.
+			nodeName := n.Name
+			nodeType := n.Type
+			nodeUUID := n.UUID
+			queueChan <- func() {
+				logrus.Infof("update node %s (%s)", nodeUUID, nodeName)
+				nodesList[nodeUUID] = nodeType
+			}
+		}
+		return err
+	}
+}
+
+func onDevices(queueChan chan func()) func(data json.RawMessage) error {
 	return func(data json.RawMessage) error {
 		devs := make(devices.DeviceMap)
 		err := json.Unmarshal(data, &devs)
@@ -57,8 +88,8 @@ func onDevices(deviceChan chan func()) func(data json.RawMessage) error {
 
 		for _, d := range devs {
 			device := d
-			deviceChan <- func() {
-				//check if state is different
+			queueChan <- func() {
+				// check if state is different
 				var state devices.State
 				if prevDev := deviceList.Get(device.ID); prevDev != nil {
 					state = prevDev.State.Diff(device.State)
@@ -75,7 +106,6 @@ func onDevices(deviceChan chan func()) func(data json.RawMessage) error {
 				}
 
 				if len(state) > 0 {
-					logrus.Infof("We should log value node: %s, %s  %#v", device.ID.Node, device.Name, state)
 					tags := map[string]string{
 						"node-uuid": device.ID.Node,
 						"name":      device.Name,
@@ -83,10 +113,25 @@ func onDevices(deviceChan chan func()) func(data json.RawMessage) error {
 						"id":        device.ID.ID,
 						"type":      device.Type,
 					}
+
+					appendNodeTypeOnTags(tags, device.ID.Node)
+
 					err = write(tags, state)
 					if err != nil {
-						logrus.Error("error writing to influx: ", err)
+						logrus.WithFields(logrus.Fields{
+							"node":   device.ID.Node,
+							"device": device.Name,
+							"state":  state,
+							"err":    err,
+						}).Error("error writing to influx")
+						return
 					}
+
+					logrus.WithFields(logrus.Fields{
+						"node":   device.ID.Node,
+						"device": device.Name,
+						"state":  state,
+					}).Infof("logged device values")
 				}
 			}
 		}
@@ -94,20 +139,28 @@ func onDevices(deviceChan chan func()) func(data json.RawMessage) error {
 	}
 }
 
-func worker(stop chan struct{}, deviceChan chan func()) {
+func appendNodeTypeOnTags(tags map[string]string, uuid string) {
+	nodeType, ok := nodesList[uuid]
+	if !ok {
+		return
+	}
+	tags["node-type"] = nodeType
+}
+
+func worker(stop chan struct{}, queueChan chan func()) {
 	logrus.Info("Starting worker")
 	for {
 		select {
 		case <-stop:
 			logrus.Info("stopping worker")
 			return
-		case fn := <-deviceChan:
+		case fn := <-queueChan:
 			fn()
 		}
 	}
 }
 
-func updatedConfig(stop chan struct{}, deviceChan chan func()) func(data json.RawMessage) error {
+func updatedConfig(stop chan struct{}, queueChan chan func()) func(data json.RawMessage) error {
 	return func(data json.RawMessage) error {
 		logrus.Info("Got new config:", string(data))
 
@@ -139,7 +192,7 @@ func updatedConfig(stop chan struct{}, deviceChan chan func()) func(data json.Ra
 		}
 
 		// start worker
-		go worker(stop, deviceChan)
+		go worker(stop, queueChan)
 
 		logrus.Infof("Config is now: %#v", config)
 		return nil
@@ -164,6 +217,16 @@ func write(tags map[string]string, fields map[string]interface{}) error {
 				fields[k] = 0
 			}
 		}
+		if v, ok := v.(int); ok {
+			fields[k] = float64(v)
+		}
+		if v == nil {
+			delete(fields, k)
+		}
+	}
+
+	if len(fields) == 0 {
+		return fmt.Errorf("no loggable values")
 	}
 
 	// Create a new point batch

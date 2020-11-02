@@ -6,7 +6,6 @@ const c = defineAction('connection', [
   'CONNECTED',
   'DISCONNECTED',
   'ERROR',
-  'RECEIVED',
 ]);
 
 const defaultState = Map({
@@ -27,7 +26,10 @@ export function connecting(port) {
 }
 export function connected(port, method, user) {
   return {
-    type: c.CONNECTED, port, method, user,
+    type: c.CONNECTED,
+    port,
+    method,
+    user,
   };
 }
 
@@ -51,12 +53,7 @@ export function error(err) {
   return { type: c.ERROR, error: err };
 }
 
-export function received(message) {
-  return { type: c.RECEIVED, message };
-}
-
 // Reducer
-let idCount = 0;
 export default function reducer(state = defaultState, action) {
   switch (action.type) {
     case c.CONNECTING: {
@@ -83,19 +80,6 @@ export default function reducer(state = defaultState, action) {
     }
     case c.ERROR: {
       return state.set('error', action.error);
-    }
-    case c.RECEIVED: {
-      idCount += 1;
-      return state.set(
-        'messages',
-        state
-          .get('messages')
-          .push({
-            ...action.message,
-            id: idCount,
-          })
-          .slice(-10),
-      );
     }
     default:
       return state;

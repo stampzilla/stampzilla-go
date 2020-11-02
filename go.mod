@@ -63,9 +63,10 @@ require (
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07 // indirect
 	github.com/tyler-smith/go-bip39 v1.0.2 // indirect
 	github.com/urfave/cli v1.22.1
-	github.com/vapourismo/knx-go v0.0.0-20190917200938-c1313fa7e9ca
+	github.com/vapourismo/knx-go v0.0.0-20200924173532-6ed2bf1e51e6
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
 	golang.org/x/net v0.0.0-20200813134508-3edf25e44fcc // indirect
+	golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1 // indirect
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/oauth2.v3 v3.12.0

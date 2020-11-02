@@ -21,7 +21,7 @@ class Nodes extends Component {
     const { nodes, connections } = this.props;
 
     return (
-      <React.Fragment>
+      <div className="content">
         <div className="row">
           <div className="col-md-12">
             <Card title="Nodes" bodyClassName="p-0">
@@ -91,7 +91,7 @@ class Nodes extends Component {
             </Card>
           </div>
         </div>
-      </React.Fragment>
+      </div>
     );
   }
 }

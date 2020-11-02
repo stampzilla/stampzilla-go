@@ -145,5 +145,6 @@ func (m *Main) Init() {
 	m.Config.Save("config.json")
 
 	m.Store.OnUpdate(handlers.BroadcastUpdate(secureSender))
+	m.Store.OnUpdate(cloud.SendUpdate)
 	m.Store.OnUserDemote(m.TLSServer.Logout)
 }

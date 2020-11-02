@@ -6,6 +6,14 @@ import Card from '../../components/Card';
 import Device from './Device';
 
 class Dashboard extends Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      tab: null,
+    };
+  }
+
   render() {
     const { devices, nodes } = this.props;
 
@@ -45,9 +53,20 @@ class Dashboard extends Component {
     }, {});
 
     return (
-      <Tabs>
+      <Tabs
+        activeKey={
+          this.state.tab
+          || (Object.keys(devicesByRoom).length > 0 ? 'byroom' : 'bynode')
+        }
+        onSelect={(k) => this.setState({ tab: k })}
+      >
         {Object.keys(devicesByRoom).length > 0 && (
-          <Tab eventKey="byroom" title="Rooms">
+          <Tab
+            eventKey="byroom"
+            title="Rooms"
+            tabClassName="ml-2"
+            className="bg-white"
+          >
             <div
               style={{
                 display: 'flex',
@@ -87,7 +106,12 @@ class Dashboard extends Component {
           </Tab>
         )}
 
-        <Tab eventKey="bynode" title="Nodes">
+        <Tab
+          eventKey="bynode"
+          title="Nodes"
+          tabClassName="ml-2"
+          className="bg-white"
+        >
           <div
             style={{
               display: 'flex',
@@ -128,7 +152,12 @@ class Dashboard extends Component {
         </Tab>
 
         {Object.keys(cloudEnabledDevices).length > 0 && (
-          <Tab eventKey="bycloud" title="Cloud enabled">
+          <Tab
+            eventKey="bycloud"
+            title="Cloud enabled"
+            tabClassName="ml-2"
+            className="bg-white"
+          >
             <div
               style={{
                 display: 'flex',

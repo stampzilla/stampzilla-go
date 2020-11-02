@@ -181,7 +181,7 @@ class Trigger extends Component {
     patchedUiSchema.conditions.current = match.params.uuid;
 
     return (
-      <>
+      <div className="content">
         <div className="row">
           <div className="col-md-12">
             {state.getIn([match.params.uuid, 'error']) && (
@@ -232,7 +232,7 @@ class Trigger extends Component {
               </div>
               <div className="card-footer">
                 <Button color="secondary" onClick={this.onBackClick()}>
-                  {'Back'}
+                  Back
                 </Button>
                 <Button
                   color="primary"
@@ -240,7 +240,7 @@ class Trigger extends Component {
                   onClick={() => this.submitButton.click()}
                   className="float-right"
                 >
-                  {'Save'}
+                  Save
                 </Button>
               </div>
             </Card>
@@ -249,14 +249,14 @@ class Trigger extends Component {
               {Object.keys(params).map((key) => (
                 <div key={key}>
                   {key}
-:
+                  :
                   <strong>{JSON.stringify(params[key])}</strong>
                 </div>
               ))}
             </pre>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 }

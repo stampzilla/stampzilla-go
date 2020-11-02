@@ -4,12 +4,7 @@ import ReconnectingWebSocket from 'reconnecting-websocket';
 import Url from 'url';
 
 import { subscribe as certificates } from '../ducks/certificates';
-import {
-  connected,
-  disconnected,
-  received,
-  connecting,
-} from '../ducks/connection';
+import { connected, disconnected, connecting } from '../ducks/connection';
 import { subscribe as cloud } from '../ducks/cloud';
 import { subscribe as connections } from '../ducks/connections';
 import { subscribe as destinations } from '../ducks/destinations';
@@ -111,7 +106,6 @@ class Websocket extends Component {
     const { dispatch } = this.props;
     const parsed = JSON.parse(event.data);
 
-    dispatch(received(parsed));
     const subscriptions = this.subscriptions[parsed.type];
     if (subscriptions) {
       subscriptions.forEach((callback) => callback(parsed.body));
@@ -135,6 +129,7 @@ class Websocket extends Component {
         const req = activeRequests.find((a) => a.id === parsed.request);
         req.reject(parsed.body);
         activeRequests = activeRequests.filter((a) => a.id !== parsed.request);
+        break;
       }
       default: {
         // Nothing

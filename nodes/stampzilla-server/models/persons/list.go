@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/sirupsen/logrus"
@@ -37,6 +38,8 @@ func (l *List) Add(p PersonWithPasswords) error {
 	if err != nil {
 		return err
 	}
+
+	p.Username = strings.ToLower(strings.TrimSpace(p.Username))
 
 	l.persons[p.UUID] = &p.PersonWithPassword
 
@@ -84,8 +87,10 @@ func (l *List) GetByUsernameWithPassowrd(username string) *PersonWithPassword {
 	l.RLock()
 	defer l.RUnlock()
 
+	u := strings.ToLower(strings.TrimSpace(username))
+
 	for _, p := range l.persons {
-		if p.Username == username {
+		if p.Username == u {
 			return p
 		}
 	}

@@ -255,7 +255,7 @@ class Destination extends Component {
     }
 
     return (
-      <>
+      <div className="content">
         <div className="row">
           <div className="col-md-12">
             <Card
@@ -385,7 +385,7 @@ class Destination extends Component {
             )}
           </div>
         </div>
-      </>
+      </div>
     );
   }
 }

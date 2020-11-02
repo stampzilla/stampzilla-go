@@ -22,6 +22,7 @@ type CloudConfig struct {
 	Enable   bool   `json:"enable"`
 	Server   string `json:"server"`
 	Instance string `json:"instance"`
+	Phrase   string `json:"phrase"`
 }
 
 func (a CloudConfig) Equal(b CloudConfig) bool {
