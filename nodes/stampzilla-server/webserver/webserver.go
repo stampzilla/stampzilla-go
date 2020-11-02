@@ -251,27 +251,41 @@ func (ws *Webserver) handleMessage() func(s *melody.Session, msg []byte) {
 			resp, err := ws.WebsocketHandler.Message(s, data)
 
 			// The message contains a request ID, so respond with the result
-			if len(data.Request) > 0 {
+			if len(data.Request) > 0 && data.Type != "success" && data.Type != "failure" {
 				msg, e := models.NewMessage("success", resp)
 				if e != nil {
 					logrus.Error(e)
+					return
 				}
 				if err != nil {
 					msg, e = models.NewMessage("failure", err.Error())
-					if err != nil {
+					if e != nil {
 						logrus.Error(e)
+						return
 					}
 				}
 
 				msg.Request = data.Request
-				err := msg.WriteTo(s)
-				if err != nil {
+				e = msg.WriteTo(s)
+				if e != nil {
 					logrus.Error(err)
+					return
 				}
-			}
 
+				logrus.WithFields(logrus.Fields{
+					"error":     err,
+					"type":      data.Type,
+					"requestID": data.Request,
+					"from":      data.FromUUID,
+				}).Error("Wrote response")
+			}
 			if err != nil {
-				logrus.Error(err)
+				logrus.WithFields(logrus.Fields{
+					"error":     err,
+					"type":      data.Type,
+					"requestID": data.Request,
+					"from":      data.FromUUID,
+				}).Error("incoming request failed")
 			}
 		}()
 	}

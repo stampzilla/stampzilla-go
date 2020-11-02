@@ -19,6 +19,7 @@ const (
 
 	CommandBrightnessAbsolute = "action.devices.commands.BrightnessAbsolute"
 	CommandOnOff              = "action.devices.commands.OnOff"
+	CommandColorAbsolute      = "action.devices.commands.ColorAbsolute"
 )
 
 // Inputs from google
@@ -69,6 +70,11 @@ type Payload struct {
 			Params  struct {
 				On         bool `json:"on"`
 				Brightness int  `json:"brightness"`
+				Color      struct {
+					Name        string `json:"name"`
+					SpectrumRGB int    `json:"spectrumRGB"`
+					Temperature int    `json:"temperature"`
+				} `json:"color"`
 			} `json:"params"`
 		} `json:"execution"`
 	} `json:"commands"`
@@ -85,4 +91,14 @@ type Payload struct {
 type Request struct {
 	RequestID string
 	Inputs    Inputs
+}
+
+type ReportStateRequest struct {
+	RequestID   string `json:"requestId"`
+	AgentUserID string `json:"agentUserId"`
+	Payload     struct {
+		Devices struct {
+			States map[string]map[string]interface{} `json:"states"`
+		} `json:"devices"`
+	} `json:"payload"`
 }

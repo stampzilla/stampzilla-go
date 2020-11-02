@@ -3,6 +3,7 @@ package devices
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 	"sync"
 )
@@ -54,10 +55,13 @@ type Device struct {
 	Type   string   `json:"type"`
 	ID     ID       `json:"id"`
 	Name   string   `json:"name,omitempty"`
-	Alias  string   `json:"alias,omitempty"`
 	Online bool     `json:"online"`
 	State  State    `json:"state"`
 	Traits []string `json:"traits"`
+
+	Alias  string            `json:"alias,omitempty"`
+	Labels map[string]string `json:"labels,omitempty"`
+
 	sync.RWMutex
 }
 
@@ -98,11 +102,12 @@ func (d *Device) Equal(dev *Device) bool {
 	if d.Online != dev.Online {
 		return false
 	}
-	if d.Online != dev.Online {
+
+	if !sliceIsEqual(d.Traits, dev.Traits) {
 		return false
 	}
 
-	if !sliceIsEqual(d.Traits, dev.Traits) {
+	if !reflect.DeepEqual(d.Labels, dev.Labels) {
 		return false
 	}
 
@@ -147,9 +152,18 @@ func (d *Device) Copy() *Device {
 		Online: d.Online,
 		State:  newState,
 		Traits: d.Traits,
+		Labels: d.Labels,
 	}
 	d.Unlock()
 	return newD
+}
+
+func (d *Device) Label(k string) (string, bool) {
+	d.RLock()
+	defer d.RUnlock()
+	v, ok := d.Labels[k]
+
+	return v, ok
 }
 
 type DeviceMap map[ID]*Device

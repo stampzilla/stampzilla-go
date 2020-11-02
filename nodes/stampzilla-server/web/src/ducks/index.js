@@ -2,6 +2,7 @@ import { combineReducers } from 'redux-immutable';
 
 import app from './app';
 import certificates from './certificates';
+import cloud from './cloud';
 import connection from './connection';
 import connections from './connections';
 import destinations from './destinations';
@@ -18,6 +19,7 @@ import server from './server';
 const rootReducer = combineReducers({
   app,
   certificates,
+  cloud,
   connection,
   connections,
   destinations,

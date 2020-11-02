@@ -3,6 +3,7 @@ package models
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 
 	"github.com/olahol/melody"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/interfaces"
@@ -42,6 +43,15 @@ func (m *Message) WriteTo(s interfaces.MelodyWriter) error {
 	return s.Write(msg)
 }
 
+func (m *Message) WriteToWriter(s io.Writer) (int, error) {
+	msg, err := m.Encode()
+	if err != nil {
+		return 0, err
+	}
+
+	return s.Write(msg)
+}
+
 func (m *Message) WriteWithFilter(mel *melody.Melody, f func(s *melody.Session) bool) error {
 	msg, err := m.Encode()
 	if err != nil {
@@ -57,5 +67,5 @@ func (m *Message) Encode() ([]byte, error) {
 	return msg, err
 }
 func (m *Message) String() string {
-	return fmt.Sprintf("Type: %s Body: %s", m.Type, string(m.Body))
+	return fmt.Sprintf("Type: %s Body: %s Request: 0x%x", m.Type, string(m.Body), m.Request)
 }

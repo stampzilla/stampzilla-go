@@ -242,7 +242,7 @@ class Sender extends Component {
     };
 
     return (
-      <>
+      <div className="content">
         <div className="row">
           <div className="col-md-12">
             <Card
@@ -301,7 +301,7 @@ class Sender extends Component {
             </Card>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 }

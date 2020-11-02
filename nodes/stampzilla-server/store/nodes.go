@@ -24,6 +24,18 @@ func (store *Store) GetNode(uuid string) *models.Node {
 	return n
 }
 
+func (store *Store) GetNodeOfType(t string) *models.Node {
+	store.RLock()
+	defer store.RUnlock()
+	for _, v := range store.Nodes {
+		if v.Type == t {
+			return v
+		}
+	}
+
+	return nil
+}
+
 func (store *Store) AddOrUpdateNode(node *models.Node) {
 	store.Lock()
 

@@ -8,6 +8,7 @@ import (
 	"github.com/olahol/melody"
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/ca"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/cloud"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/interfaces"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/logic"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
@@ -21,15 +22,17 @@ import (
 type secureWebsocketHandler struct {
 	CA              *ca.CA
 	Store           *store.Store
+	Cloud           *cloud.Connection
 	Config          *models.Config
 	WebsocketSender websocket.Sender
 }
 
 // NewSecureWebsockerHandler is the constructor
-func NewSecureWebsockerHandler(store *store.Store, config *models.Config, ws websocket.Sender, ca *ca.CA) WebsocketHandler {
+func NewSecureWebsockerHandler(store *store.Store, config *models.Config, ws websocket.Sender, ca *ca.CA, cloud *cloud.Connection) WebsocketHandler {
 	return &secureWebsocketHandler{
 		CA:              ca,
 		Store:           store,
+		Cloud:           cloud,
 		Config:          config,
 		WebsocketSender: ws,
 	}
@@ -54,33 +57,12 @@ func BroadcastUpdate(sender websocket.Sender) func(string, *store.Store) error {
 	}
 
 	return func(area string, store *store.Store) error {
-		switch area {
-		case "devices":
-			return send(area, store.GetDevices())
-		case "connections":
-			return send(area, store.GetConnections())
-		case "nodes":
-			return send(area, store.GetNodes())
-		case "certificates":
-			return send(area, store.GetCertificates())
-		case "requests":
-			return send(area, store.GetRequests())
-		case "rules":
-			return send(area, store.GetRules())
-		case "savedstates":
-			return send(area, store.GetSavedStates())
-		case "schedules":
-			return send(area, store.GetScheduledTasks())
-		case "server":
-			return send(area, store.GetServerStateAsJson())
-		case "destinations":
-			return send(area, store.GetDestinations())
-		case "senders":
-			return send(area, store.GetSenders())
-		case "persons":
-			return send(area, store.GetPersons())
+		data, ok := store.Get(area)
+		if !ok {
+			return nil
 		}
-		return nil
+
+		return send(area, data)
 	}
 }
 
@@ -127,6 +109,24 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 		}
 
 		wsh.Store.ConnectionChanged()
+	case "state-change":
+		devs := devices.NewList()
+		err := json.Unmarshal(msg.Body, devs)
+		if err != nil {
+			return nil, err
+		}
+
+		logrus.WithFields(logrus.Fields{
+			"from":    msg.FromUUID,
+			"devices": devs,
+		}).Debug("Received state change request")
+
+		for node, devices := range devs.StateGroupedByNode() {
+			logrus.WithFields(logrus.Fields{
+				"to": node,
+			}).Debug("Send state change request to node")
+			wsh.WebsocketSender.SendToID(node, "state-change", devices)
+		}
 
 	// If not a common message type, then it its probably a client specific one
 	default:
@@ -167,73 +167,12 @@ func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *mode
 }
 
 func (wsh *secureWebsocketHandler) MessageFromNode(s interfaces.MelodySession, msg *models.Message, n *models.Node) (json.RawMessage, error) {
+	if msg.Type == "success" || msg.Type == "failure" {
+		wsh.WebsocketSender.Response(msg)
+		return nil, nil
+	}
+
 	switch msg.Type {
-	case "setup-node":
-		node := &models.Node{}
-		err := json.Unmarshal(msg.Body, node)
-		if err != nil {
-			return nil, err
-		}
-
-		logrus.WithFields(logrus.Fields{
-			"from":   msg.FromUUID,
-			"config": node,
-		}).Debug("Received new node configuration")
-
-		wsh.Store.AddOrUpdateNode(node)
-		err = wsh.Store.SaveNodes()
-		if err != nil {
-			return nil, err
-		}
-		wsh.WebsocketSender.SendToID(node.UUID, "setup", node)
-
-	case "setup-device":
-		device := &devices.Device{}
-		err := json.Unmarshal(msg.Body, device)
-		if err != nil {
-			return nil, err
-		}
-
-		logrus.WithFields(logrus.Fields{
-			"from":   msg.FromUUID,
-			"config": device,
-		}).Debug("Received new device configuration")
-
-		node := wsh.Store.GetNode(device.ID.Node)
-		if node == nil {
-			return nil, fmt.Errorf("Node was not found")
-		}
-
-		node.SetAlias(device.ID, device.Alias)
-		err = wsh.Store.SaveNode(node)
-		if err != nil {
-			return nil, err
-		}
-		BroadcastUpdate(wsh.WebsocketSender)("nodes", wsh.Store)
-
-		dev := wsh.Store.GetDevices().Get(device.ID)
-		dev.Lock()
-		dev.Alias = device.Alias
-		dev.Unlock()
-		BroadcastUpdate(wsh.WebsocketSender)("devices", wsh.Store)
-	case "state-change":
-		devs := devices.NewList()
-		err := json.Unmarshal(msg.Body, devs)
-		if err != nil {
-			return nil, err
-		}
-
-		logrus.WithFields(logrus.Fields{
-			"from":    msg.FromUUID,
-			"devices": devs,
-		}).Debug("Received state change request")
-
-		for node, devices := range devs.StateGroupedByNode() {
-			logrus.WithFields(logrus.Fields{
-				"to": node,
-			}).Debug("Send state change request to node")
-			wsh.WebsocketSender.SendToID(node, "state-change", devices)
-		}
 	case "update-device":
 		device := devices.NewDevice()
 		err := json.Unmarshal(msg.Body, device)
@@ -267,13 +206,15 @@ func (wsh *secureWebsocketHandler) MessageFromNode(s interfaces.MelodySession, m
 			}
 			wsh.Store.AddOrUpdateDevice(dev)
 		}
+	case "cloud-request":
+		return wsh.Cloud.Request(msg)
 	default:
 		logrus.WithFields(logrus.Fields{
 			"type":   msg.Type,
 			"source": "node",
 		}).Warnf("Received unknown message")
 
-		return nil, fmt.Errorf("unknown request: %s", msg.Type)
+		return nil, fmt.Errorf("unknown request from node: %s", msg.Type)
 	}
 
 	return nil, nil
@@ -285,6 +226,57 @@ func (wsh *secureWebsocketHandler) MessageFromUser(s interfaces.MelodySession, m
 	}
 
 	switch msg.Type {
+	case "setup-node":
+		node := &models.Node{}
+		err := json.Unmarshal(msg.Body, node)
+		if err != nil {
+			return nil, err
+		}
+
+		logrus.WithFields(logrus.Fields{
+			"from":   msg.FromUUID,
+			"config": node,
+		}).Debug("Received new node configuration")
+
+		wsh.Store.AddOrUpdateNode(node)
+		err = wsh.Store.SaveNodes()
+		if err != nil {
+			return nil, err
+		}
+		wsh.WebsocketSender.SendToID(node.UUID, "setup", node)
+	case "setup-device":
+		device := &devices.Device{}
+		err := json.Unmarshal(msg.Body, device)
+		if err != nil {
+			return nil, err
+		}
+
+		logrus.WithFields(logrus.Fields{
+			"from":   msg.FromUUID,
+			"config": device,
+		}).Debug("Received new device configuration")
+
+		node := wsh.Store.GetNode(device.ID.Node)
+		if node == nil {
+			return nil, fmt.Errorf("Node was not found")
+		}
+
+		node.SetAlias(device.ID, device.Alias)
+		node.SetLabels(device.ID, device.Labels)
+		err = wsh.Store.SaveNode(node)
+		if err != nil {
+			return nil, err
+		}
+		BroadcastUpdate(wsh.WebsocketSender)("nodes", wsh.Store)
+
+		dev := wsh.Store.GetDevices().Get(device.ID)
+		dev.Lock()
+		dev.Alias = device.Alias
+		dev.Labels = device.Labels
+		dev.Unlock()
+		BroadcastUpdate(wsh.WebsocketSender)("devices", wsh.Store)
+		wsh.Cloud.SendUpdate("devices", wsh.Store)
+
 	case "accept-request":
 		connection := ""
 		err := json.Unmarshal(msg.Body, &connection)
@@ -430,13 +422,28 @@ func (wsh *secureWebsocketHandler) MessageFromUser(s interfaces.MelodySession, m
 		}).Debug("Received new savedstates")
 
 		wsh.Store.AddOrUpdateSavedStates(ss)
+	case "cloud-connect":
+		cc := models.CloudConfig{}
+		err := json.Unmarshal(msg.Body, &cc)
+		if err != nil {
+			return nil, err
+		}
+
+		logrus.WithFields(logrus.Fields{
+			"from":         msg.FromUUID,
+			"cloud config": cc,
+		}).Debug("Received new cloud config")
+
+		return nil, wsh.Cloud.Connect(cc)
+	case "cloud-disconnect":
+		return nil, wsh.Cloud.Disconnect()
 	default:
 		logrus.WithFields(logrus.Fields{
 			"type":   msg.Type,
 			"source": "user",
 		}).Warnf("Received unknown message")
 
-		return nil, fmt.Errorf("unknown request: %s", msg.Type)
+		return nil, fmt.Errorf("unknown request from user: %s", msg.Type)
 	}
 
 	return nil, nil
@@ -505,6 +512,7 @@ func (wsh *secureWebsocketHandler) Disconnect(s interfaces.MelodySession) error 
 		}
 		if modified {
 			BroadcastUpdate(wsh.WebsocketSender)("devices", wsh.Store)
+			wsh.Cloud.SendUpdate("devices", wsh.Store)
 		}
 	}
 	return nil

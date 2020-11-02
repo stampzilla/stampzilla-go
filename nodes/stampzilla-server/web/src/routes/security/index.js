@@ -7,25 +7,25 @@ import Card from '../../components/Card';
 
 const typeOrder = ['ca', 'server', 'client'];
 
-const sortPrio = usages => usages
-  .map(usage => typeOrder.indexOf(usage))
+const sortPrio = (usages) => usages
+  .map((usage) => typeOrder.indexOf(usage))
   .sort()
   .first();
 
 class Security extends Component {
-  onClickNode = uuid => () => {
+  onClickNode = (uuid) => () => {
     const { history } = this.props;
     history.push(`/security/${uuid}`);
   };
 
-  onClickAccept = connection => () => {
+  onClickAccept = (connection) => () => {
     write({
       type: 'accept-request',
       body: connection,
     });
   };
 
-  onClickRevoke = serial => () => {
+  onClickRevoke = (serial) => () => {
     write({
       type: 'revoke',
       body: serial,
@@ -36,7 +36,7 @@ class Security extends Component {
     const { certificates, requests, connections } = this.props;
 
     return (
-      <React.Fragment>
+      <div className="content">
         {requests.size > 0 && (
           <div className="row">
             <div className="col-md-12">
@@ -52,7 +52,7 @@ class Security extends Component {
                   </thead>
                   <tbody>
                     {requests
-                      .map(n => (
+                      .map((n) => (
                         <tr key={n.get('connection')}>
                           <td>
                             {n.get('identity').length !== 36
@@ -67,9 +67,9 @@ class Security extends Component {
                           <td>
                             {connections.getIn([n.get('connection'), 'type'])}
                             {' '}
-(
+                            (
                             {n.get('type')}
-)
+                            )
                           </td>
                           <td>
                             {connections.getIn([
@@ -117,7 +117,7 @@ class Security extends Component {
                       (a, b) => sortPrio(a.get('usage')) - sortPrio(b.get('usage'))
                         || a.get('serial').localeCompare(b.get('serial')),
                     )
-                    .map(n => (
+                    .map((n) => (
                       <tr key={n.get('serial')}>
                         <td>{n.get('serial')}</td>
                         <td>
@@ -145,13 +145,15 @@ class Security extends Component {
                         </td>
                         <td>{n.getIn(['fingerprints', 'sha1'])}</td>
                         <td className="text-right">
-                          <button
-                            type="button"
-                            className="btn btn-danger"
-                            onClick={this.onClickRevoke(n.get('serial'))}
-                          >
-                            Revoke
-                          </button>
+                          {false && (
+                            <button
+                              type="button"
+                              className="btn btn-danger"
+                              onClick={this.onClickRevoke(n.get('serial'))}
+                            >
+                              Revoke
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))
@@ -162,12 +164,12 @@ class Security extends Component {
             </Card>
           </div>
         </div>
-      </React.Fragment>
+      </div>
     );
   }
 }
 
-const mapToProps = state => ({
+const mapToProps = (state) => ({
   certificates: state.getIn(['certificates', 'list']),
   requests: state.getIn(['requests', 'list']),
   connections: state.getIn(['connections', 'list']),

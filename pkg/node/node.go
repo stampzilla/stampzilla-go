@@ -1,20 +1,27 @@
 package node
 
 import (
+	"bufio"
+	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/http/httputil"
 	"os"
 	"os/signal"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -27,8 +34,10 @@ import (
 	"github.com/stampzilla/stampzilla-go/pkg/websocket"
 )
 
-// OnFunc is used in all the callbacks.
-type OnFunc func(json.RawMessage) error
+// OnFunc is used in all the callbacks
+type OnFunc func(body json.RawMessage) error
+type OnCloudRequestFunc func(req *http.Request) (*http.Response, error)
+type callbackFunc func(body json.RawMessage, requestID json.RawMessage) error
 
 // Node is the main struct.
 type Node struct {
@@ -44,12 +53,15 @@ type Node struct {
 	X509       *x509.Certificate
 	TLS        *tls.Certificate
 	CA         *x509.CertPool
-	callbacks  map[string][]OnFunc
+	callbacks  map[string][]callbackFunc
+	requestID  int
+	requests   map[int]chan models.Message
 	Devices    *devices.List
 	shutdown   []func()
 	stop       chan struct{}
 	sendUpdate chan devices.ID
-	mutex      sync.Mutex
+
+	mutex sync.Mutex
 }
 
 // New returns a new Node.
@@ -68,7 +80,8 @@ func NewWithClient(client websocket.Websocket) *Node {
 	return &Node{
 		Client:     client,
 		wg:         &sync.WaitGroup{},
-		callbacks:  make(map[string][]OnFunc),
+		callbacks:  make(map[string][]callbackFunc),
+		requests:   make(map[int]chan models.Message),
 		Devices:    devices.NewList(),
 		stop:       make(chan struct{}),
 		sendUpdate: make(chan devices.ID),
@@ -120,6 +133,66 @@ func (n *Node) setup() {
 // WriteMessage writes a message to the server over websocket client.
 func (n *Node) WriteMessage(msgType string, data interface{}) error {
 	msg, err := models.NewMessage(msgType, data)
+	if err != nil {
+		return err
+	}
+
+	logrus.WithFields(logrus.Fields{
+		"type": msgType,
+		"body": data,
+	}).Tracef("Send to server")
+
+	return n.Client.WriteJSON(msg)
+}
+func (n *Node) WriteRequest(msgType string, data interface{}) (*models.Message, error) {
+	msg, err := models.NewMessage(msgType, data)
+	if err != nil {
+		return nil, err
+	}
+
+	ch := make(chan models.Message)
+
+	n.mutex.Lock()
+	msg.Request = json.RawMessage(strconv.Itoa(n.requestID))
+	n.requests[n.requestID] = ch
+	n.requestID++
+	n.mutex.Unlock()
+	defer func() {
+		n.mutex.Lock()
+		if n.requests[n.requestID] != nil {
+			close(n.requests[n.requestID])
+			delete(n.requests, n.requestID)
+		}
+		n.mutex.Unlock()
+	}()
+
+	logrus.WithFields(logrus.Fields{
+		"type":      msgType,
+		"body":      data,
+		"requestID": msg.Request,
+	}).Debugf("Send request to server")
+
+	err = n.Client.WriteJSON(msg)
+	if err != nil {
+		return nil, err
+	}
+
+	select {
+	case resp := <-ch:
+		switch resp.Type {
+		case "failure":
+			return nil, fmt.Errorf(string(resp.Body))
+		case "success":
+			return &resp, nil
+		}
+	case <-time.After(time.Second * 10):
+		return nil, fmt.Errorf("timeout")
+	}
+
+	return nil, fmt.Errorf("should never happen")
+}
+func (n *Node) WriteResponse(msgType string, data interface{}, request json.RawMessage) error {
+	msg, err := models.NewMessage(msgType, data)
 	logrus.WithFields(logrus.Fields{
 		"type": msgType,
 		"body": data,
@@ -127,6 +200,14 @@ func (n *Node) WriteMessage(msgType string, data interface{}) error {
 	if err != nil {
 		return err
 	}
+
+	msg.Request = request
+
+	logrus.WithFields(logrus.Fields{
+		"type":    msg.Type,
+		"request": msg.Request,
+	}).Debug("Wrote response")
+
 	return n.Client.WriteJSON(msg)
 }
 
@@ -295,17 +376,42 @@ func (n *Node) reader(ctx context.Context) {
 				logrus.Error("node:", err)
 				continue
 			}
+
+			// Dont wait for callbacks because they could send requests and then we need to be able to receive the result
 			cbs := n.getCallbacks()
-			for _, cb := range cbs[msg.Type] {
-				err := cb(msg.Body)
-				if err != nil {
-					logrus.Error(err)
-					continue
+			go func() {
+				for _, cb := range cbs[msg.Type] {
+					err := cb(msg.Body, msg.Request)
+					if err != nil {
+						logrus.Error(err)
+						continue
+					}
+				}
+			}()
+
+			var ok bool
+			if id, err := strconv.Atoi(string(msg.Request)); err == nil {
+				logrus.WithFields(logrus.Fields{
+					"type":      msg.Type,
+					"requestID": msg.Request,
+				}).Debug("Received request response")
+
+				n.mutex.Lock()
+				var ch chan models.Message
+				ch, ok = n.requests[id]
+				n.mutex.Unlock()
+
+				if ok {
+					go func() {
+						ch <- *msg
+					}()
 				}
 			}
-			if cbs[msg.Type] == nil || len(cbs[msg.Type]) == 0 {
+
+			if (cbs[msg.Type] == nil || len(cbs[msg.Type]) == 0) && !ok {
 				logrus.WithFields(logrus.Fields{
-					"type": msg.Type,
+					"type":      msg.Type,
+					"requestID": msg.Request,
 				}).Warn("Received message but no one cared")
 			}
 		}
@@ -405,13 +511,78 @@ func (n *Node) generateCSR() ([]byte, error) {
 // On sets up a callback that is run when a message received with type what.
 func (n *Node) On(what string, cb OnFunc) {
 	n.mutex.Lock()
-	n.callbacks[what] = append(n.callbacks[what], cb)
+	n.callbacks[what] = append(n.callbacks[what], func(raw json.RawMessage, req json.RawMessage) error {
+		return cb(raw)
+	})
 	n.mutex.Unlock()
 	n.Subscribe(what)
 }
 
-func (n *Node) getCallbacks() map[string][]OnFunc {
-	cbs := make(map[string][]OnFunc)
+func (n *Node) OnCloudRequest(cb OnCloudRequestFunc) {
+	n.mutex.Lock()
+	n.callbacks["cloud-request"] = append(n.callbacks["cloud-request"], func(raw json.RawMessage, reqID json.RawMessage) error {
+		msg, err := models.ParseForwardedRequest(raw)
+		if err != nil {
+			return err
+		}
+
+		req, err := msg.ParseRequest()
+		if err != nil {
+			return err
+		}
+
+		defer func() {
+			if r := recover(); r != nil {
+				err, ok := r.(error)
+				if !ok {
+					err = fmt.Errorf("%s", r)
+				}
+
+				if len(reqID) == 0 {
+					logrus.Error(err)
+					return
+				}
+
+				err = n.WriteResponse("failure", err.Error(), reqID)
+				if err != nil {
+					logrus.Error(err)
+				}
+			}
+		}()
+
+		resp, err := cb(req)
+
+		dump, err := httputil.DumpResponse(resp, true)
+		if err != nil {
+			return err
+		}
+
+		// The message contains a request ID, so respond with the result
+		if len(reqID) > 0 {
+			if err != nil {
+				err := n.WriteResponse("failure", err.Error(), reqID)
+				if err != nil {
+					logrus.Error(err)
+				}
+			} else {
+				err := n.WriteResponse("success", dump, reqID)
+				if err != nil {
+					logrus.Error(err)
+				}
+			}
+		}
+
+		if err != nil {
+			logrus.Error(err)
+		}
+		return err
+	})
+	n.mutex.Unlock()
+	n.Subscribe("cloud-request")
+}
+
+func (n *Node) getCallbacks() map[string][]callbackFunc {
+	cbs := make(map[string][]callbackFunc)
 	n.mutex.Lock()
 	for k, v := range n.callbacks {
 		cbs[k] = v
@@ -600,4 +771,50 @@ func (n *Node) SyncDevice(id string) {
 // Subscribe subscribes to a topic in the server.
 func (n *Node) Subscribe(what ...string) error {
 	return n.WriteMessage("subscribe", what)
+}
+
+func (n *Node) SendThruCloud(service string, req *http.Request) (*http.Response, error) {
+	dump, err := httputil.DumpRequestOut(req, true)
+	if err != nil {
+		return nil, err
+	}
+
+	msg, err := n.WriteRequest("cloud-request", models.ForwardedRequest{
+		Dump:    dump,
+		Service: service,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var body string
+	err = json.Unmarshal(msg.Body, &body)
+	if err != nil {
+		return nil, err
+	}
+
+	raw, err := base64.StdEncoding.DecodeString(body)
+	if err != nil {
+		return nil, err
+	}
+
+	b := bytes.NewBuffer(raw)
+	rd := bufio.NewReader(b)
+	resp, err := http.ReadResponse(rd, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var reader io.ReadCloser
+	switch resp.Header.Get("Content-Encoding") {
+	case "gzip":
+		reader, err = gzip.NewReader(resp.Body)
+		defer reader.Close()
+	default:
+		reader = resp.Body
+	}
+
+	resp.Body = reader
+
+	return resp, nil
 }

@@ -230,7 +230,7 @@ func TestSecureUnknownRequest(t *testing.T) {
 	`)
 	node.On("failure", func(data json.RawMessage) error {
 		fmt.Println("data is", string(data))
-		assert.Equal(t, `"unknown request: unknown-request"`, string(data))
+		assert.Equal(t, `"unknown request from node: unknown-request"`, string(data))
 		atomic.AddUint64(&cnt, 1)
 		return nil
 	})

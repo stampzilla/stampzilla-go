@@ -37,7 +37,7 @@ class Automation extends Component {
     } = this.props;
 
     return (
-      <>
+      <div className="content">
         <div className="row">
           <div className="col-md-12">
             <Card
@@ -127,7 +127,7 @@ class Automation extends Component {
             </Card>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 }

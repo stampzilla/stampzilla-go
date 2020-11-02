@@ -240,6 +240,59 @@ func (ca *CA) CreateCertificateFromRequest(wr io.Writer, c string, r models.Requ
 	return pem.Encode(wr, &pem.Block{Type: "CERTIFICATE", Bytes: certBytes})
 }
 
+func (ca *CA) CreateCertificateFromCloudRequest(wr io.Writer, r models.Request) error {
+	pemBlock, _ := pem.Decode([]byte(r.CSR))
+	if pemBlock == nil {
+		return fmt.Errorf("pem.Decode failed?")
+	}
+	clientCSR, err := x509.ParseCertificateRequest(pemBlock.Bytes)
+	if err != nil {
+		return err
+	}
+	if err = clientCSR.CheckSignature(); err != nil {
+		return err
+	}
+
+	// create client certificate template
+	clientCRTTemplate := x509.Certificate{
+		Signature:          clientCSR.Signature,
+		SignatureAlgorithm: clientCSR.SignatureAlgorithm,
+
+		PublicKeyAlgorithm: clientCSR.PublicKeyAlgorithm,
+		PublicKey:          clientCSR.PublicKey,
+
+		SerialNumber: ca.GetNextSerial(),
+		Issuer:       ca.CAX509.Subject,
+		Subject:      clientCSR.Subject,
+		NotBefore:    time.Now(),
+		NotAfter:     time.Now().AddDate(10, 0, 0), // 10 years
+		KeyUsage:     x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+	}
+
+	// create client certificate from template and CA public key
+	certBytes, err := x509.CreateCertificate(rand.Reader, &clientCRTTemplate, ca.CAX509, clientCRTTemplate.PublicKey, ca.CATLS.PrivateKey)
+	if err != nil {
+		return err
+	}
+
+	// Save the issued certificate to file
+	certOut, err := os.Create(path.Join(storagePath, clientCSR.Subject.CommonName+".crt"))
+	if err != nil {
+		return err
+	}
+	err = pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: certBytes})
+	if err != nil {
+		return err
+	}
+	certOut.Close()
+	logrus.Info("Wrote " + clientCSR.Subject.CommonName + ".crt\n")
+
+	ca.Store.UpdateCertificates(ca.GetCertificates())
+
+	return pem.Encode(wr, &pem.Block{Type: "CERTIFICATE", Bytes: certBytes})
+}
+
 func (ca *CA) CreateClientCertificate(uuid string) ([]byte, error) {
 	hostname, err := os.Hostname()
 	if err != nil {

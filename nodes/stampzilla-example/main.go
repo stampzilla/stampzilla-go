@@ -21,7 +21,8 @@ func main() {
 		Online: true,
 		Traits: []string{"OnOff"},
 		State: devices.State{
-			"on": false,
+			"on":              false,
+			"extra-parameter": 12.2,
 		},
 	}
 	dev2 := &devices.Device{
@@ -31,8 +32,9 @@ func main() {
 		Online: true,
 		Traits: []string{"OnOff", "Brightness", "ColorSetting"},
 		State: devices.State{
-			"on":         false,
-			"brightness": 0.0,
+			"on":              false,
+			"brightness":      0.0,
+			"extra-parameter": 144.2,
 		},
 	}
 	dev3 := &devices.Device{

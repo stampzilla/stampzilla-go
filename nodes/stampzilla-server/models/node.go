@@ -14,8 +14,9 @@ type Node struct {
 	Type       string `json:"type,omitempty"`
 	Name       string `json:"name,omitempty"`
 	//Devices   Devices         `json:"devices,omitempty"`
-	Config  json.RawMessage       `json:"config,omitempty"`
-	Aliases map[devices.ID]string `json:"aliases,omitempty"`
+	Config       json.RawMessage                  `json:"config,omitempty"`
+	Aliases      map[devices.ID]string            `json:"aliases,omitempty"`
+	DeviceLabels map[devices.ID]map[string]string `json:"labels,omitempty"`
 	sync.Mutex
 }
 
@@ -29,6 +30,7 @@ func (n *Node) Connected() bool {
 	defer n.Unlock()
 	return n.Connected_
 }
+
 func (n *Node) SetAlias(id devices.ID, alias string) {
 	n.Lock()
 	if n.Aliases == nil {
@@ -44,4 +46,21 @@ func (n *Node) Alias(id devices.ID) string {
 		return a
 	}
 	return ""
+}
+
+func (n *Node) SetLabels(id devices.ID, labels map[string]string) {
+	n.Lock()
+	if n.DeviceLabels == nil {
+		n.DeviceLabels = make(map[devices.ID]map[string]string)
+	}
+	n.DeviceLabels[id] = labels
+	n.Unlock()
+}
+func (n *Node) Labels(id devices.ID) map[string]string {
+	n.Lock()
+	defer n.Unlock()
+	if a, ok := n.DeviceLabels[id]; ok {
+		return a
+	}
+	return make(map[string]string)
 }

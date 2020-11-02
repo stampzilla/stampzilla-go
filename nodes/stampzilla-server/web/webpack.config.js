@@ -23,7 +23,7 @@ module.exports = (env, argv) => {
     module: {
       rules: [
         {
-          test: /\.js$/,
+          test: /\.m?js$/,
           // exclude: /node_modules\/(?![react-json-editor-ajrm])/,
           // exclude: /node_modules\/(?!(react-json-editor-ajrm)\/).*/,
           // exclude: /node_modules\/(?![react\-json\-editor\-ajrm])/,
@@ -34,6 +34,9 @@ module.exports = (env, argv) => {
               loader: 'babel-loader',
             },
           ],
+          resolve: {
+            fullySpecified: false,
+          },
         },
         {
           test: /\.s?css$/,
