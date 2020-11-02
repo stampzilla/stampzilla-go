@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
@@ -12,6 +13,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"net/http/httputil"
+	"net/url"
 	"os"
 
 	"github.com/davecgh/go-spew/spew"
@@ -19,6 +22,8 @@ import (
 	"github.com/onrik/logrus/filename"
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
+	"google.golang.org/api/option"
+	"google.golang.org/api/transport"
 )
 
 func main() {
@@ -65,7 +70,6 @@ func handleConnection(conn net.Conn, pool *Pool, webserver *Webserver) (err erro
 			return err
 		}
 
-		spew.Dump("RECEIVED", msg)
 		switch msg.Type {
 		case "instance":
 			err = json.Unmarshal(msg.Body, &instance)
@@ -186,13 +190,23 @@ func handleTLSConnection(config *tls.Config, unenc_conn net.Conn, instance model
 	logrus.Info("TLS ACTIVE")
 
 	client := &Client{
-		Name: instance.Name,
-		ID:   instance.UUID,
-		Conn: conn,
-		Pool: pool,
+		ID:       instance.UUID,
+		Name:     instance.Name,
+		Instance: instance.Instance,
+		Phrase:   instance.Phrase,
+		Conn:     conn,
+		Pool:     pool,
 
+		hub:      webserver.hub,
 		requests: make(map[int]chan models.Message),
 	}
+
+	logrus.WithFields(logrus.Fields{
+		"uuid":     instance.UUID,
+		"name":     instance.Name,
+		"instance": instance.Instance,
+		"phrase":   instance.Phrase,
+	}).Info("Client connected")
 
 	if i, _ := pool.GetByID(instance.UUID); i != nil {
 		conn.Close()
@@ -207,7 +221,16 @@ func handleTLSConnection(config *tls.Config, unenc_conn net.Conn, instance model
 	pool.Register <- client
 	defer func() {
 		pool.Unregister <- client
+		logrus.WithFields(logrus.Fields{
+			"uuid":     instance.UUID,
+			"name":     instance.Name,
+			"instance": instance.Instance,
+		}).Info("Client disconnected")
 	}()
+
+	var m *models.Message
+	m, err = models.NewMessage("subscribe", []string{"devices", "nodes"})
+	m.WriteToWriter(conn)
 
 	for {
 		d := json.NewDecoder(conn)
@@ -224,10 +247,57 @@ func handleTLSConnection(config *tls.Config, unenc_conn net.Conn, instance model
 			webserver.HandleResponse(msg, client)
 		case "failure":
 			webserver.HandleResponse(msg, client)
+		case "request":
+			go client.handleOutgoingRequest(msg)
+		case "nodes":
+			raw, _ := msg.Encode()
+			client.SetNodes(raw)
+		case "devices":
+			raw, _ := msg.Encode()
+			client.SetDevices(raw)
 		default:
-			spew.Dump("RECEIVED TLS", msg)
+			spew.Dump(msg)
 		}
 	}
+}
+
+func (c *Client) handleOutgoingRequest(msg models.Message) {
+	defer func() {
+		if r := recover(); r != nil {
+			err, ok := r.(error)
+			if !ok {
+				err = fmt.Errorf("%s", r)
+			}
+
+			if len(msg.Request) == 0 {
+				logrus.Error(err)
+				return
+			}
+
+			resp, err := models.NewMessage("failure", err.Error())
+			if err != nil {
+				logrus.Error(err)
+			}
+			resp.Request = msg.Request
+			resp.WriteToWriter(c.Conn)
+		}
+	}()
+
+	respBody, err := doOutgoingRequest(msg.Body)
+
+	var resp *models.Message
+	if err != nil {
+		resp, err = models.NewMessage("failure", err.Error())
+	} else {
+		resp, err = models.NewMessage("success", respBody)
+	}
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
+
+	resp.Request = msg.Request
+	resp.WriteToWriter(c.Conn)
 }
 
 func generateCSR(id string) ([]byte, error) {
@@ -274,4 +344,41 @@ func generateKey(id string) (*rsa.PrivateKey, error) {
 	err = pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(priv)})
 	keyOut.Close()
 	return priv, err
+}
+
+func doOutgoingRequest(body json.RawMessage) (interface{}, error) {
+	fr, err := models.ParseForwardedRequest(body)
+	if err != nil {
+		return nil, err
+	}
+	req, err := fr.ParseRequest()
+	if err != nil {
+		return nil, err
+	}
+
+	// Make the request!
+	u, err := url.Parse("https://homegraph.googleapis.com" + req.RequestURI)
+	req.Host = "homegraph.googleapis.com"
+	//u, err := url.Parse("https://" + req.Host + req.RequestURI)
+	if err != nil {
+		panic(err)
+	}
+	req.URL = u
+	req.RequestURI = ""
+
+	// GOOGLE CLIENT
+	ctx := context.Background()
+	googleclient, _, err := transport.NewHTTPClient(ctx, option.WithCredentialsFile("./credentials/google-assistant.json"), option.WithScopes("https://www.googleapis.com/auth/homegraph"))
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := googleclient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	// Send the result back to the requester
+	dump, err := httputil.DumpResponse(resp, true)
+	return dump, err
 }
