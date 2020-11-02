@@ -91,7 +91,7 @@
 </head>
 
 <body class="text-center">
-   <form class="form-signin" method="POST">
+   <form class="form-signin" method="POST" autocomplete="off">
 	<svg viewBox="0 0 500 500" width="72" height="72" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" >		<defs>
 		<linearGradient x1="50%" y1="0%" x2="50%" y2="68.051%" id="linearGradient-1">
 			<stop stop-color="#FFF" offset="0%"></stop>
@@ -105,8 +105,9 @@
 
         <p class="mt-1 text-muted">Login to your local stampzilla-server. Your requests will be proxied thru a encrypted TLS connection to your stampzilla-server.</p>
 
+	<input type=”hidden” value=”something” style="display:none"/>
         <label for="inputInstance" class="sr-only">Instance</label>
-	<input type="text" name="instance" id="inputInstance" class="form-control mb-2" placeholder="Instance name" required autofocus value="{{.instance}}">
+	<input type="text" name="instance" id="inputInstance" class="form-control mb-2" placeholder="Instance name" required autofocus value="{{.instance}}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="text-transform: lowercase;">
 
 	<div class="d-flex align-items-center">
 		<small class="text-left text-muted flex-grow-1">
@@ -117,11 +118,11 @@
 	</div>
 
         <label for="inputUsername" class="sr-only">Username</label>
-	<input type="text" name="username" id="inputUsername" class="form-control mt-2 {{.errorClass}}" placeholder="Username" required value="{{.username}}">
+	<input type="text" name="username" id="inputUsername" class="form-control mt-2 {{.errorClass}}" placeholder="Username" required value="{{.username}}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"  style="text-transform: lowercase;">
 
 	<div>
         <label for="inputPassword" class="sr-only">Password</label>
-	<input type="password" name="password" id="inputPassword" class="form-control {{.errorClass}}" placeholder="Password" required>
+	<input type="password" name="password" id="inputPassword" class="form-control {{.errorClass}}" placeholder="Password" required autocomplete=”off”>
 	<div id="inputPasswordFeedback" class="invalid-feedback mb-2">
         	{{.error}}
       	</div>
@@ -132,7 +133,7 @@
 	<script language="javascript">
 	function lookup_instance( event ) {
 		$.ajax({
-			url: "/identify/" + event.target.value,
+			url: "/identify/" + event.target.value.trim(),
 			beforeSend: function( xhr ) {
 				$('#spinner').show();
 			}

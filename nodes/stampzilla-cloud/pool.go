@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/sirupsen/logrus"
@@ -37,15 +38,24 @@ func (pool *Pool) Start() {
 				break
 			}
 
+			// Dont accept new connections that use the same instance
+			instance := strings.ToLower(strings.TrimSpace(client.Instance))
+			if _, ok := pool.byInstance[instance]; ok {
+				pool.Unlock()
+				go client.Disconnect()
+				break
+			}
+
 			pool.byID[client.ID] = client
-			pool.byInstance[client.Instance] = client
+			pool.byInstance[instance] = client
 			pool.Unlock()
 			logrus.Info("Size of Connection Pool: ", len(pool.byID))
 			break
 		case client := <-pool.Unregister:
 			pool.Lock()
+			instance := strings.ToLower(strings.TrimSpace(client.Instance))
 			delete(pool.byID, client.ID)
-			delete(pool.byInstance, client.Instance)
+			delete(pool.byInstance, instance)
 			pool.Unlock()
 			logrus.Info("Size of Connection Pool: ", len(pool.byID))
 			break
@@ -69,7 +79,7 @@ func (pool *Pool) GetByInstance(instance string) (*Client, error) {
 	pool.RLock()
 	defer pool.RUnlock()
 
-	client, ok := pool.byInstance[instance]
+	client, ok := pool.byInstance[strings.ToLower(strings.TrimSpace(instance))]
 	if !ok {
 		return nil, fmt.Errorf("instance not found")
 	}

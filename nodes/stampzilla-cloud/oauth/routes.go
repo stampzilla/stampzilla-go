@@ -13,6 +13,7 @@ import (
 func AddRoutes(r *gin.Engine, srv *server.Server, verifyUser func(instance, username, password string) (*Authorization, error)) {
 	r.Any("/authorize", authorizationHandler(srv, verifyUser))
 
+	r.OPTIONS("/token", func(c *gin.Context) {})
 	r.POST("/token", func(c *gin.Context) {
 		srv.HandleTokenRequest(c.Writer, c.Request)
 	})

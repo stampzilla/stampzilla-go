@@ -103,6 +103,7 @@ type AuthorizeRequest struct {
 
 type ForwardedRequest struct {
 	Dump       []byte `json:"dump"`
+	URL        string `json:"url"`
 	Service    string `json:"service"`
 	RemoteAddr string `json:"remote_addr"`
 }

@@ -16,6 +16,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-cloud/websockets"
 	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
 )
 
@@ -29,6 +30,10 @@ type Client struct {
 
 	requestID int
 	requests  map[int]chan models.Message
+	hub       *websockets.Hub
+
+	devices []byte
+	nodes   []byte
 
 	sync.RWMutex
 }
@@ -142,4 +147,20 @@ func (cl *Client) ForwardRequest(service string, c *gin.Context) {
 	case <-time.After(time.Second * 10):
 		c.AbortWithError(http.StatusInternalServerError, fmt.Errorf("timeout"))
 	}
+}
+
+func (c *Client) SetNodes(d json.RawMessage) {
+	c.Lock()
+	c.nodes = d
+	c.Unlock()
+
+	c.hub.Broadcast(c.ID, d)
+}
+
+func (c *Client) SetDevices(d json.RawMessage) {
+	c.Lock()
+	c.devices = d
+	c.Unlock()
+
+	c.hub.Broadcast(c.ID, d)
 }
