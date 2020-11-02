@@ -1,11 +1,15 @@
 import React, { Component } from 'react';
+import { Theme as Bootstrap4Theme } from '@rjsf/bootstrap-4';
 import { Map } from 'immutable';
 // import Modal from 'react-modal';
 import { Modal, Tab, Tabs } from 'react-bootstrap';
 import {
-  mdiLightbulb, mdiPower, mdiPulse, mdiVolumeHigh,
+  mdiLightbulb,
+  mdiPower,
+  mdiPulse,
+  mdiVolumeHigh,
 } from '@mdi/js';
-import Form from '@rjsf/bootstrap-4';
+import { withTheme } from '@rjsf/core';
 // import Form from 'react-jsonschema-form';
 import Icon from '@mdi/react';
 import ReactJson from 'react-json-view';
@@ -38,6 +42,8 @@ const icons = {
   sensor: mdiPulse,
   audio: mdiVolumeHigh,
 };
+
+const Form = withTheme(Bootstrap4Theme);
 
 const guessType = (device) => {
   const traits = (device.get('traits') && device.get('traits').toJS()) || [];

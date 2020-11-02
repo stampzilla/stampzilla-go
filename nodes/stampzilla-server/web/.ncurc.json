@@ -1,0 +1,7 @@
+{
+  "reject": [
+    "slate",
+    "slate-react",
+    "node-sass"
+  ]
+}

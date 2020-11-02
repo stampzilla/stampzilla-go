@@ -31,7 +31,7 @@ func init() {
 	}
 }
 
-func IsPrivateIP(ipStr string) bool {
+func IsPrivateIP(ipStr string) (res bool) {
 	u, err := url.Parse("http://" + ipStr)
 	if err != nil {
 		return false
