@@ -114,14 +114,12 @@ func (r *Rule) Cancel() {
 }
 
 func (r *Rule) Run(store *SavedStateStore, sender websocket.Sender, triggerDestination func(string, string) error) {
-
 	ctx, cancel := context.WithCancel(context.Background())
 	r.Lock()
 	r.cancel = cancel
 	r.Unlock()
 	defer cancel()
 	for k, v := range r.Actions_ {
-
 		duration, err := time.ParseDuration(v)
 		if err == nil { // its a duration. Do the sleep only
 			logrus.Debugf("logic: sleep action: %s", duration)
@@ -130,7 +128,6 @@ func (r *Rule) Run(store *SavedStateStore, sender websocket.Sender, triggerDesti
 			case <-ctx.Done():
 				logrus.Debugf("logic: stopping action %d due to cancel", k)
 				return
-
 			}
 			continue
 		}

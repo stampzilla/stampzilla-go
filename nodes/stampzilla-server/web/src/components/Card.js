@@ -11,7 +11,7 @@ const Card = (props) => {
         <h3 className="card-title">{title}</h3>
         <div className="card-tools">
           {toolbar
-            && toolbar.map(tool => (
+            && toolbar.map((tool) => (
               <button
                 onClick={tool.onClick}
                 className={classnames('btn btn-tool btn-sm', tool.className)}

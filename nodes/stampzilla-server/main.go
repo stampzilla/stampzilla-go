@@ -13,7 +13,6 @@ import (
 )
 
 func main() {
-
 	config := &models.Config{}
 	config.MustLoad()
 

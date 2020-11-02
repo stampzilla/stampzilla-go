@@ -18,10 +18,12 @@ class Debug extends Component {
   };
 
   render() {
-    const { messages, connections, nodes } = this.props;
+    const {
+      messages, connections, nodes, persons,
+    } = this.props;
 
     return (
-      <React.Fragment>
+      <>
         <div className="row">
           <div className="col-md-12">
             <Card title="Active connections" bodyClassName="p-0">
@@ -54,25 +56,30 @@ class Debug extends Component {
                         a.getIn(['attributes', 'identity']) || ''
                       ).localeCompare(b.getIn(['attributes', 'identity']));
                     })
-                    .map(c => (
+                    .map((c) => (
                       <tr key={c.getIn(['attributes', 'ID'])}>
                         <td>
                           {c.getIn(['attributes', 'secure']) && (
-                            <React.Fragment>
+                            <>
                               {c.getIn(['attributes', 'identity']) && (
                                 <i className="nav-icon fa fa-lock text-success" />
                               )}
                               {!c.getIn(['attributes', 'identity']) && (
                                 <i className="nav-icon fa fa-lock" />
                               )}
-                            </React.Fragment>
+                            </>
                           )}
                         </td>
                         <td>
-                          {nodes.getIn([
+                          {persons.getIn([
                             c.getIn(['attributes', 'identity']),
                             'name',
-                          ]) || c.getIn(['attributes', 'ID'])}
+                          ])
+                            || nodes.getIn([
+                              c.getIn(['attributes', 'identity']),
+                              'name',
+                            ])
+                            || c.getIn(['attributes', 'ID'])}
                         </td>
                         <td>{c.get('remoteAddr')}</td>
                         <td>{c.get('type')}</td>
@@ -102,7 +109,7 @@ class Debug extends Component {
               </tr>
             </thead>
             <tbody>
-              {messages.reverse().map(message => (
+              {messages.reverse().map((message) => (
                 <tr key={message.id}>
                   <td>{message.id}</td>
                   <td>{message.type}</td>
@@ -112,15 +119,16 @@ class Debug extends Component {
             </tbody>
           </table>
         </Card>
-      </React.Fragment>
+      </>
     );
   }
 }
 
-const mapToProps = state => ({
+const mapToProps = (state) => ({
   messages: state.getIn(['connection', 'messages']),
   connections: state.getIn(['connections', 'list']),
   nodes: state.getIn(['nodes', 'list']),
+  persons: state.getIn(['persons', 'list']),
 });
 
 export default connect(mapToProps)(Debug);

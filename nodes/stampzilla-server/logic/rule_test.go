@@ -44,7 +44,6 @@ func TestType(t *testing.T) {
 }
 
 func TestEval(t *testing.T) {
-
 	tests := []struct {
 		State       devices.State
 		Expression  string
@@ -109,9 +108,7 @@ func TestEval(t *testing.T) {
 			assert.Equal(t, v.ExpectedErr, err)
 			assert.Equal(t, v.Expected, result)
 		})
-
 	}
-
 }
 
 func TestRunActions(t *testing.T) {
@@ -122,7 +119,7 @@ func TestRunActions(t *testing.T) {
 		Name: "testname",
 		UUID: "uuid",
 		State: map[devices.ID]devices.State{
-			devices.ID{Node: "node", ID: "id"}: devices.State{
+			{Node: "node", ID: "id"}: {
 				"on": false,
 				"a":  true,
 				"b":  true,

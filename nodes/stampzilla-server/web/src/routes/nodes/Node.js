@@ -1,7 +1,5 @@
 import React, { Component } from 'react';
-import {
-  Button,
-} from 'reactstrap';
+import { Button } from 'reactstrap';
 import { connect } from 'react-redux';
 import Form from 'react-jsonschema-form';
 import JSONInput from 'react-json-editor-ajrm';
@@ -12,10 +10,7 @@ import Card from '../../components/Card';
 import CustomCheckbox from '../../components/CustomCheckbox';
 
 const JsonWidget = (props) => {
-  const {
-    value,
-    onChange,
-  } = props;
+  const { value, onChange } = props;
 
   let parsedValue = {};
   try {
@@ -42,10 +37,7 @@ const JsonWidget = (props) => {
 
 const schema = {
   type: 'object',
-  required: [
-    'name',
-    'config',
-  ],
+  required: ['name', 'config'],
   properties: {
     name: {
       type: 'string',
@@ -69,17 +61,16 @@ const uiSchema = {
 class Node extends Component {
   state = {
     isValid: true,
-    formData: {
-    },
-  }
+    formData: {},
+  };
 
   componentDidMount = () => {
     this.componentWillReceiveProps(this.props);
-  }
+  };
 
   componentWillReceiveProps = (props) => {
     const { nodes, match } = props;
-    const node = nodes && nodes.find(n => n.get('uuid') === match.params.uuid);
+    const node = nodes && nodes.find((n) => n.get('uuid') === match.params.uuid);
     if (node) {
       this.setState({
         formData: {
@@ -88,7 +79,7 @@ class Node extends Component {
         },
       });
     }
-  }
+  };
 
   onChange = () => (data) => {
     const { errors, formData } = data;
@@ -96,11 +87,11 @@ class Node extends Component {
       isValid: errors.length === 0,
       formData,
     });
-  }
+  };
 
   onSubmit = () => ({ formData }) => {
     const { nodes, match } = this.props;
-    const node = nodes.find(n => n.get('uuid') === match.params.uuid);
+    const node = nodes.find((n) => n.get('uuid') === match.params.uuid);
 
     write({
       type: 'setup-node',
@@ -110,23 +101,38 @@ class Node extends Component {
         config: JSON.parse(formData.config),
       },
     });
-  }
+  };
 
-  onClickNode = uuid => () => {
+  onClickNode = (uuid) => () => {
     const { history } = this.props;
     history.push(`/nodes/${uuid}`);
-  }
+  };
 
   render() {
     const { nodes, match } = this.props;
-    const node = nodes.find(n => n.get('uuid') === match.params.uuid);
+    const node = nodes.find((n) => n.get('uuid') === match.params.uuid);
 
     return (
-      <React.Fragment>
+      <>
         <div className="row">
           <div className="col-md-12">
             <Card
-              title={node ? `Settings for node <strong>${node.get('uuid')}</strong> (type <strong>${node.get('type')}</strong>)` : 'Settings'}
+              title={
+                node ? (
+                  <>
+                    Settings for node
+                    {' '}
+                    <strong>{node.get('uuid')}</strong>
+                    {' '}
+                    (type
+                    {' '}
+                    <strong>{node.get('type')}</strong>
+                    )
+                  </>
+                ) : (
+                  'Settings'
+                )
+              }
               bodyClassName="p-0"
             >
               <div className="card-body">
@@ -146,23 +152,33 @@ class Node extends Component {
                     json: JsonWidget,
                   }}
                 >
-                  <button ref={(btn) => { this.submitButton = btn; }} style={{ display: 'none' }} type="submit" />
+                  <button
+                    ref={(btn) => {
+                      this.submitButton = btn;
+                    }}
+                    style={{ display: 'none' }}
+                    type="submit"
+                  />
                 </Form>
               </div>
               <div className="card-footer">
-                <Button color="primary" disabled={!this.state.isValid || this.props.disabled} onClick={() => this.submitButton.click()}>
-                  {'Save'}
+                <Button
+                  color="primary"
+                  disabled={!this.state.isValid || this.props.disabled}
+                  onClick={() => this.submitButton.click()}
+                >
+                  Save
                 </Button>
               </div>
             </Card>
           </div>
         </div>
-      </React.Fragment>
+      </>
     );
   }
 }
 
-const mapToProps = state => ({
+const mapToProps = (state) => ({
   nodes: state.getIn(['nodes', 'list']),
   connections: state.getIn(['connections', 'list']),
 });

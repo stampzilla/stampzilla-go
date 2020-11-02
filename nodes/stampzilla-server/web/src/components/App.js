@@ -1,28 +1,57 @@
-import React, { Component } from 'react';
-import { connect } from 'react-redux';
-import { withRouter } from 'react-router';
+import React, { Component } from "react";
+import { connect } from "react-redux";
+import { withRouter } from "react-router";
+import { get } from "axios";
+import Url from "url";
 
-import { update } from '../ducks/app';
-import Link from './Link';
-import SocketModal from './SocketModal';
+import { update } from "../ducks/app";
+import Link from "./Link";
+import SocketModal from "./SocketModal";
 
 class App extends Component {
-  state = {
-    socketModal: false,
+  constructor(props) {
+    super(props);
+    this.state = {
+      socketModal: false
+    };
+  }
+
+  onLogout = () => {
+    const { app, server } = this.props;
+
+    const serverUrl = Url.parse(app.get("url"));
+    const u = `https://${serverUrl.hostname}:${server.get("tlsPort")}/logout`;
+
+    get(u, { withCredentials: true })
+      .then(() => {
+        this.props.dispatch(update({ url: "" }));
+        this.props.dispatch(update({ url: app.get("url") }));
+      })
+      .catch(error => {
+        console.log("error", error);
+      });
   };
 
   render = () => {
     const {
-      children, connected, dispatch, requests,
+      children,
+      connected,
+      dispatch,
+      requests,
+      method,
+      server,
+      app
     } = this.props;
+    const serverUrl = Url.parse(app.get("url"));
     const { socketModal } = this.state;
 
     return (
-      <React.Fragment>
+      <>
         <SocketModal
           visible={socketModal}
           onClose={() => this.setState({ socketModal: false })}
-          onChange={({ hostname, port }) => dispatch(update({ url: `ws://${hostname}:${port}/ws` }))
+          onChange={({ hostname, port }) =>
+            dispatch(update({ url: `ws://${hostname}:${port}/ws` }))
           }
         />
         <nav className="main-header navbar navbar-expand bg-white navbar-light border-bottom">
@@ -49,7 +78,7 @@ class App extends Component {
                 data-accordion="false"
               >
                 <li className="nav-item">
-                  <Link to="/" className="nav-link" activeClass="active">
+                  <Link to="/" exact className="nav-link" activeClass="active">
                     <i className="nav-icon fa fa-tachometer" />
                     Dashboard
                   </Link>
@@ -58,6 +87,12 @@ class App extends Component {
                   <Link to="/aut" className="nav-link" activeClass="active">
                     <i className="nav-icon fa fa-magic" />
                     Automation
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link to="/persons" className="nav-link" activeClass="active">
+                    <i className="nav-icon fa fa-user" />
+                    Persons and users
                   </Link>
                 </li>
                 <li className="nav-item">
@@ -85,12 +120,41 @@ class App extends Component {
                     )}
                   </Link>
                 </li>
+
                 <li className="nav-item mt-4">
                   <Link to="/debug" className="nav-link" activeClass="active">
                     <i className="nav-icon fa fa-terminal" />
                     Debug
                   </Link>
                 </li>
+
+                {method === "session" && (
+                  <>
+                    <li className="nav-item mt-4">
+                      <a
+                        href={`https://${serverUrl.hostname}:${server.get(
+                          "tlsPort"
+                        )}/cert`}
+                        className="nav-link"
+                        tabIndex="-1"
+                      >
+                        <i className="nav-icon fa fa-download" />
+                        Download client cert
+                      </a>
+                    </li>
+                    <li className="nav-item mt-4">
+                      <div
+                        className="nav-link"
+                        onClick={this.onLogout}
+                        role="button"
+                        tabIndex="-1"
+                      >
+                        <i className="nav-icon fa fa-sign-out" />
+                        Logout
+                      </div>
+                    </li>
+                  </>
+                )}
               </ul>
             </nav>
           </div>
@@ -102,7 +166,7 @@ class App extends Component {
               <button
                 className="btn btn-secondary float-right"
                 type="button"
-                style={{ marginTop: '-8px' }}
+                style={{ marginTop: "-8px" }}
                 onClick={() => this.setState({ socketModal: true })}
               >
                 Change socket url
@@ -114,7 +178,7 @@ class App extends Component {
             <div className="container-fluid">
               <div className="row mb-2">
                 <div className="col-sm-6">
-                  <h1 className="m-0 text-dark" style={{ display: 'none' }}>
+                  <h1 className="m-0 text-dark" style={{ display: "none" }}>
                     Debug
                   </h1>
                 </div>
@@ -126,14 +190,17 @@ class App extends Component {
         </div>
 
         <aside className="control-sidebar control-sidebar-dark" />
-      </React.Fragment>
+      </>
     );
   };
 }
 
 const mapToProps = state => ({
-  connected: state.getIn(['connection', 'connected']),
-  requests: state.getIn(['requests', 'list']),
+  connected: state.getIn(["connection", "connected"]),
+  method: state.getIn(["connection", "method"]),
+  requests: state.getIn(["requests", "list"]),
+  app: state.getIn(["app"]),
+  server: state.getIn(["server"])
 });
 
 export default withRouter(connect(mapToProps)(App));

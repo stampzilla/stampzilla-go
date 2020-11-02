@@ -5,8 +5,10 @@ import React from 'react';
 import Automation from './routes/automation';
 import Dashboard from './routes/dashboard';
 import Debug from './routes/debug';
-import Node from './routes/nodes/Node';
+import Persons from './routes/persons';
+import Person from './routes/persons/Person';
 import Nodes from './routes/nodes';
+import Node from './routes/nodes/Node';
 import Rule from './routes/automation/Rule';
 import Schedule from './routes/automation/Schedule';
 import Alerts from './routes/alerts';
@@ -28,6 +30,8 @@ const Routes = () => (
       component={withBoudary(Schedule)}
     />
     <Route exact path="/aut/schedule/:uuid" component={withBoudary(Schedule)} />
+    <Route exact path="/persons" component={withBoudary(Persons)} />
+    <Route path="/persons/:uuid" component={withBoudary(Person)} />
     <Route exact path="/nodes" component={withBoudary(Nodes)} />
     <Route path="/nodes/:uuid" component={withBoudary(Node)} />
     <Route exact path="/alerts" component={withBoudary(Alerts)} />

@@ -1,14 +1,20 @@
 import { Component } from 'react';
 import { connect } from 'react-redux';
-import ReconnectableWebSocket from 'reconnectingwebsocket';
+import ReconnectingWebSocket from 'reconnecting-websocket';
 import Url from 'url';
 
 import { subscribe as certificates } from '../ducks/certificates';
-import { connected, disconnected, received } from '../ducks/connection';
+import {
+  connected,
+  disconnected,
+  received,
+  connecting,
+} from '../ducks/connection';
 import { subscribe as connections } from '../ducks/connections';
 import { subscribe as destinations } from '../ducks/destinations';
 import { subscribe as devices } from '../ducks/devices';
 import { subscribe as nodes } from '../ducks/nodes';
+import { subscribe as persons } from '../ducks/persons';
 import { subscribe as requests } from '../ducks/requests';
 import { subscribe as rules } from '../ducks/rules';
 import { subscribe as savedstates } from '../ducks/savedstates';
@@ -24,6 +30,7 @@ const writeFunc = (data) => {
   }
   writeSocket.send(data);
 };
+
 let requestId = 0;
 let activeRequests = [];
 export const write = (msg) => writeFunc(JSON.stringify(msg));
@@ -64,10 +71,10 @@ class Websocket extends Component {
     }
   }
 
-  onOpen = () => () => {
-    this.props.dispatch(connected());
-
+  onOpen = ({ method, user }) => {
     const url = Url.parse(this.props.url);
+    this.props.dispatch(connected(url.port, method, user));
+
     if (url.protocol === 'wss:') {
       this.props.dispatch(updateServer({ secure: true }));
     }
@@ -78,6 +85,7 @@ class Websocket extends Component {
       destinations,
       devices,
       nodes,
+      persons,
       requests,
       rules,
       savedstates,
@@ -86,12 +94,18 @@ class Websocket extends Component {
     });
   };
 
-  onClose = () => () => {
-    this.props.dispatch(disconnected());
+  onClose = (err) => {
+    let retrying = true;
+    if (err.code === 4001) {
+      this.socket.close();
+      retrying = false;
+    }
+
+    this.props.dispatch(disconnected(err.code, err.reason, retrying));
     this.subscriptions = {};
   };
 
-  onMessage = () => (event) => {
+  onMessage = (event) => {
     const { dispatch } = this.props;
     const parsed = JSON.parse(event.data);
 
@@ -105,6 +119,10 @@ class Websocket extends Component {
         dispatch(updateServer(parsed.body));
         break;
       }
+      case 'ready': {
+        this.onOpen(parsed.body);
+        break;
+      }
       case 'success': {
         const req = activeRequests.find((a) => a.id === parsed.request);
         req.resolve(parsed.body);
@@ -115,7 +133,6 @@ class Websocket extends Component {
         const req = activeRequests.find((a) => a.id === parsed.request);
         req.reject(parsed.body);
         activeRequests = activeRequests.filter((a) => a.id !== parsed.request);
-        break;
       }
       default: {
         // Nothing
@@ -141,7 +158,7 @@ class Websocket extends Component {
       pathname: '/ws',
     });
 
-    this.socket = new ReconnectableWebSocket(
+    this.socket = new ReconnectingWebSocket(
       window.location.protocol === 'https' ? secureUrl : url,
       ['gui'],
       {
@@ -149,12 +166,16 @@ class Websocket extends Component {
         timeoutInterval: 1000,
       },
     );
+
+    const parsedUrl = Url.parse(url);
+    props.dispatch(connecting(parsedUrl.port));
+
     writeSocket = this.socket;
     // writeFunc = this.socket.send;
-    this.socket.onmessage = this.onMessage();
-    this.socket.onopen = this.onOpen();
-    this.socket.onerror = this.onClose();
-    this.socket.onclose = this.onClose();
+    this.socket.onmessage = this.onMessage;
+    // this.socket.onopen = this.onOpen;
+    this.socket.onerror = this.onClose;
+    this.socket.onclose = this.onClose;
   }
 
   subscribe = (ducks) => {

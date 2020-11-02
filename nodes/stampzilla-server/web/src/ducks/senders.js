@@ -1,6 +1,6 @@
 import { Map, fromJS } from 'immutable';
 import { defineAction } from 'redux-define';
-import makeUUID from 'uuid/v4';
+import { v4 as makeUUID } from 'uuid';
 
 const c = defineAction(
   'senders',

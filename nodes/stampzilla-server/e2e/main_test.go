@@ -2,9 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -21,6 +23,7 @@ func TestDownloadCA(t *testing.T) {
 
 	resp := w.Result()
 	body, _ := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
 
 	assert.Equal(t, "application/x-x509-ca-cert", resp.Header.Get("Content-Type"))
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -33,10 +36,11 @@ func TestInsecureWebsocket(t *testing.T) {
 
 	d := wstest.NewDialer(main.HTTPServer)
 	d.Subprotocols = []string{"node"}
-	c, _, err := d.Dial("ws://example.org/ws", nil)
+	c, resp, err := d.Dial("ws://example.org/ws", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer resp.Body.Close()
 
 	msgType, msgByte, err := c.ReadMessage()
 	if err != nil {
@@ -169,8 +173,16 @@ func TestNodeToServerSubscribeDevices(t *testing.T) {
 }
 
 func TestSecureUpdateDestinations(t *testing.T) {
-	main, cleanup := setupServer(t)
+	main, node, cleanup := setupWebsocketTest(t)
 	defer cleanup()
+	acceptCertificateRequest(t, main)
+
+	node.Protocol = "gui"
+
+	err := node.Connect()
+	assert.NoError(t, err)
+
+	addAdminPerson(t, main, node)
 
 	b := []byte(`{
 "type": "update-destinations",
@@ -190,61 +202,48 @@ func TestSecureUpdateDestinations(t *testing.T) {
 }
 	`)
 
-	d := wstest.NewDialer(main.TLSServer)
-	d.Subprotocols = []string{"node"}
-	c, _, err := d.Dial("ws://example.org/ws", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	c.WriteMessage(websocket.TextMessage, b)
+	err = node.Client.WriteMessage(websocket.TextMessage, b)
+	assert.NoError(t, err)
 
 	// wait for one destination
 	waitFor(t, 1*time.Second, "we should have 1 destination", func() bool {
 		return len(main.Store.GetDestinations()) == 1
 	})
 
-	c.Close()
-
 	assert.Equal(t, "0285d687-5782-4fd1-8d1d-3dc6568e08e9", main.Store.Destinations.Get("0285d687-5782-4fd1-8d1d-3dc6568e08e9").UUID)
 	assert.Len(t, main.Store.Destinations.Get("0285d687-5782-4fd1-8d1d-3dc6568e08e9").Destinations, 2)
 }
 
 func TestSecureUnknownRequest(t *testing.T) {
-	main, cleanup := setupServer(t)
+	main, node, cleanup := setupWebsocketTest(t)
 	defer cleanup()
+	acceptCertificateRequest(t, main)
+	err := node.Connect()
+	assert.NoError(t, err)
 
+	var cnt uint64
 	b := []byte(`{
 			"request":"1",
 			"type": "unknown-request",
 			"body": ""
 		}
 	`)
-
-	d := wstest.NewDialer(main.TLSServer)
-	d.Subprotocols = []string{"node"}
-	c, _, err := d.Dial("ws://example.org/ws", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// read the first message ( "type":"setup" )  so we can read again below
-	_, _, err = c.ReadMessage()
-	if err != nil {
-		t.Fatal(err)
-	}
+	node.On("failure", func(data json.RawMessage) error {
+		fmt.Println("data is", string(data))
+		assert.Equal(t, `"unknown request: unknown-request"`, string(data))
+		atomic.AddUint64(&cnt, 1)
+		return nil
+	})
 
 	waitFor(t, 1*time.Second, "connections should be 1", func() bool {
 		return len(main.Store.GetConnections()) == 1
 	})
-	err = c.WriteMessage(websocket.TextMessage, b)
+	err = node.Client.WriteMessage(websocket.TextMessage, b)
 	if err != nil {
 		t.Fatal(err)
 	}
-	msgType, msgByte, err := c.ReadMessage()
-	if err != nil {
-		t.Fatal(err)
-	}
-	assert.Equal(t, websocket.TextMessage, msgType)
-	assert.Equal(t, `{"type":"failure","body":"unknown request: unknown-request","request":"1"}`, string(msgByte))
-	c.Close()
+
+	waitFor(t, 1*time.Second, "we should have got 1 failure callback", func() bool {
+		return cnt > 0
+	})
 }

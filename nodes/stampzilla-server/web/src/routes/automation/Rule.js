@@ -10,7 +10,7 @@ import {
   CustomCheckbox,
   ObjectFieldTemplate,
 } from '../../components/formComponents';
-import { add, save } from '../../ducks/rules';
+import { add, save, remove } from '../../ducks/rules';
 import Card from '../../components/Card';
 import Editor from '../../components/editor';
 import SavedStateWidget from './components/SavedStatePicker';
@@ -72,7 +72,7 @@ const uiSchema = fromJS({
 
 const loadFromProps = (props) => {
   const { rules, match } = props;
-  const rule = rules.find(n => n.get('uuid') === match.params.uuid);
+  const rule = rules.find((n) => n.get('uuid') === match.params.uuid);
   const formData = rule && rule.toJS();
 
   if (rule) {
@@ -115,6 +115,14 @@ class Rule extends Component {
     });
   };
 
+  onRemove = () => {
+    if (confirm('Are you sure?')) {
+      const { match, dispatch } = this.props;
+      dispatch(remove(match.params.uuid));
+      this.onBackClick();
+    }
+  };
+
   onSubmit = () => ({ formData }) => {
     const { dispatch } = this.props;
 
@@ -130,7 +138,7 @@ class Rule extends Component {
     }
   };
 
-  onBackClick = () => () => {
+  onBackClick = () => {
     const { history } = this.props;
     history.push('/aut');
   };
@@ -150,7 +158,7 @@ class Rule extends Component {
 
     const patchedSchema = schema.toJS();
     if (
-      rules.filter(rule => rule.get('uuid') !== match.params.uuid).size === 0
+      rules.filter((rule) => rule.get('uuid') !== match.params.uuid).size === 0
     ) {
       // Hide the conditions part if there is no other rules
       delete patchedSchema.properties.conditions;
@@ -160,7 +168,7 @@ class Rule extends Component {
     patchedUiSchema.conditions.current = match.params.uuid;
 
     return (
-      <React.Fragment>
+      <>
         <div className="row">
           <div className="col-md-12">
             {state.getIn([match.params.uuid, 'error']) && (
@@ -210,37 +218,46 @@ class Rule extends Component {
                 </Form>
               </div>
               <div className="card-footer">
-                <Button color="secondary" onClick={this.onBackClick()}>
-                  {'Back'}
+                <Button color="secondary" onClick={this.onBackClick}>
+                  Back
                 </Button>
+                <Button
+                  color="danger"
+                  disabled={this.props.disabled}
+                  onClick={this.onRemove}
+                  className="ml-2 btn-sm"
+                >
+                  Remove
+                </Button>
+
                 <Button
                   color="primary"
                   disabled={!this.state.isValid || this.props.disabled}
                   onClick={() => this.submitButton.click()}
                   className="float-right"
                 >
-                  {'Save'}
+                  Save
                 </Button>
               </div>
             </Card>
 
             <pre>
-              {Object.keys(params).map(key => (
+              {Object.keys(params).map((key) => (
                 <div key={key}>
                   {key}
-:
+                  :
                   <strong>{JSON.stringify(params[key])}</strong>
                 </div>
               ))}
             </pre>
           </div>
         </div>
-      </React.Fragment>
+      </>
     );
   }
 }
 
-const mapToProps = state => ({
+const mapToProps = (state) => ({
   rules: state.getIn(['rules', 'list']),
   state: state.getIn(['rules', 'state']),
   devices: state.getIn(['devices', 'list']),

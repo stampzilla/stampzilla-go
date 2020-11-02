@@ -74,7 +74,7 @@ func (m *Main) TLSConfig() *tls.Config {
 	caCertPool.AppendCertsFromPEM(caCert)
 	return &tls.Config{
 		// Dynamic load certificates
-		GetCertificate: m.CA.GetCertificate,
+		GetCertificate: m.CA.GetServerCertificate,
 
 		// Needed to verify client certificates
 		ClientCAs: caCertPool,
@@ -128,15 +128,18 @@ func (m *Main) Init() {
 		m.Config,
 		handlers.NewInSecureWebsockerHandler(m.Store, m.Config, insecureSender, m.CA),
 		insecureMelody,
+		nil,
 	)
 	m.TLSServer = webserver.New(
 		m.Store,
 		m.Config,
 		handlers.NewSecureWebsockerHandler(m.Store, m.Config, secureSender, m.CA),
 		secureMelody,
+		m.CA,
 	)
 
 	m.Config.Save("config.json")
 
 	m.Store.OnUpdate(handlers.BroadcastUpdate(secureSender))
+	m.Store.OnUserDemote(m.TLSServer.Logout)
 }

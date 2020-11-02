@@ -33,7 +33,7 @@ func TestCreateFileSender(t *testing.T) {
 
 func TestCreateUnknownSender(t *testing.T) {
 	s := &Sender{
-		Type: "unkown",
+		Type: "unknown",
 	}
 
 	d1 := &Destination{

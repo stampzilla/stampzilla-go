@@ -2,7 +2,6 @@ const GoogleFontsPlugin = require('@beyonk/google-fonts-webpack-plugin');
 const HtmlWebPackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
-const SWPrecacheWebpackPlugin = require('sw-precache-webpack-plugin');
 const WebpackPwaManifest = require('webpack-pwa-manifest');
 const TerserPlugin = require('terser-webpack-plugin');
 // const path = require('path');
@@ -45,7 +44,7 @@ module.exports = (env, argv) => {
             },
             {
               loader: 'css-loader',
-              query: {
+              options: {
                 modules: false,
                 sourceMap: true,
                 importLoaders: 2,
@@ -68,7 +67,7 @@ module.exports = (env, argv) => {
             },
             {
               loader: 'css-loader',
-              query: {
+              options: {
                 modules: {
                   mode: 'local',
                   localIdentName: '[name]__[local]___[hash:base64:5]',
@@ -95,7 +94,19 @@ module.exports = (env, argv) => {
         },
         {
           test: /\.jpe?g$|\.ico$|\.gif$|\.png$|\.svg$|\.ico$|\.xml$|\.webmanifest$/,
-          loader: 'file-loader?name=[name].[ext]', // <-- retain original file name
+          use: [
+            {
+              loader: 'file-loader',
+              options: {
+                name: '[name].[ext]',
+                // useRelativePath: !process.env.NODE_ENV,
+                // publicPath: (DEV && CDN_URL === '') ? '/' : '',
+                // Remove the default root slash because we load images from our CDN
+                outputPath: 'assets/',
+                publicPath: '/assets',
+              },
+            },
+          ],
         },
         // {
         // test: /\.(png|jpg|gif)$/,
@@ -160,15 +171,8 @@ module.exports = (env, argv) => {
         path: '/',
         filename: 'assets/fonts.css',
       }),
-      new SWPrecacheWebpackPlugin({
-        cacheId: 'stampzilla-go',
-        dontCacheBustUrlsMatching: /\.\w{8}\./,
-        filename: 'service-worker.js',
-        minify: true,
-        staticFileGlobsIgnorePatterns: [/\.map$/, /manifest\.json$/, /ws$/],
-      }),
       new WebpackPwaManifest({
-        filename: 'assets/manifest.[hash].json',
+        filename: 'assets/manifest.[contenthash].json',
         name: 'stampzilla-go',
         short_name: 'stampzilla',
         description: 'Homeautomation :)',
