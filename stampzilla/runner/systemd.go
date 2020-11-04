@@ -93,7 +93,7 @@ func (sd *Systemd) Stop(nodes ...string) error {
 		return err
 	}
 
-	//stop all running stampzilla processes
+	// stop all running stampzilla processes
 	for _, p := range units {
 		logrus.Info("Stopping ", p.Name)
 		ch := make(chan string)
@@ -106,7 +106,7 @@ func (sd *Systemd) Stop(nodes ...string) error {
 	return nil
 }
 
-// Restart restarts currencly running nodes
+// Restart restarts currencly running nodes.
 func (sd *Systemd) Restart(nodes ...string) error {
 	conn := sd.dbus()
 	units, err := conn.ListUnitsByPatterns([]string{"active", "activating", "failed"}, []string{"stampzilla-*"})

@@ -14,6 +14,7 @@ type Daemon struct {
 	Name      string `json:"name"`
 	Autostart bool   `json:"autostart"`
 }
+
 type Config struct {
 	Daemons []*Daemon `json:"daemons"`
 }
@@ -26,6 +27,7 @@ func (c *Config) GetConfigForNode(name string) *Daemon {
 	}
 	return nil
 }
+
 func (c *Config) GetAutostartingNodes() []*Daemon {
 	var daemons []*Daemon
 	for _, d := range c.Daemons {
@@ -35,6 +37,7 @@ func (c *Config) GetAutostartingNodes() []*Daemon {
 	}
 	return daemons
 }
+
 func (c *Config) GenerateDefault() error {
 	nodes, err := ioutil.ReadDir("/home/stampzilla/go/src/github.com/stampzilla/stampzilla-go/nodes/")
 	if err != nil {
@@ -70,6 +73,7 @@ func (c *Config) SaveToFile(filepath string) error {
 	out.WriteTo(configFile)
 	return nil
 }
+
 func (c *Config) ReadConfigFromFile(filepath string) error {
 	configFile, err := os.Open(filepath)
 	if err != nil {

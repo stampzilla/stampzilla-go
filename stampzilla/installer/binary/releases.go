@@ -10,7 +10,6 @@ func GetReleases() []*github.RepositoryRelease {
 	client := github.NewClient(nil)
 	ctx := context.Background()
 	releases, _, err := client.Repositories.ListReleases(ctx, "stampzilla", "stampzilla-go", &github.ListOptions{})
-
 	if err != nil {
 		return nil
 	}
@@ -19,7 +18,7 @@ func GetReleases() []*github.RepositoryRelease {
 
 	////commits, _, err := client.Repositories.ListCommits(ctx, "stampzilla", "stampzilla-go"
 
-	//url := "https://api.github.com/repos/stampzilla/stampzilla-go/releases"
+	// url := "https://api.github.com/repos/stampzilla/stampzilla-go/releases"
 
 	//req, err := http.NewRequest("GET", url, nil)
 	//if err != nil {
@@ -27,7 +26,7 @@ func GetReleases() []*github.RepositoryRelease {
 	//return []Release{}
 	//}
 
-	//client := &http.Client{}
+	// client := &http.Client{}
 
 	//resp, err := client.Do(req)
 	//if err != nil {
@@ -35,13 +34,13 @@ func GetReleases() []*github.RepositoryRelease {
 	//return []Release{}
 	//}
 
-	//defer resp.Body.Close()
+	// defer resp.Body.Close()
 
-	//var releases []Release
+	// var releases []Release
 
 	//if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
 	//log.Println(err)
 	//}
 
-	//return releases
+	// return releases
 }

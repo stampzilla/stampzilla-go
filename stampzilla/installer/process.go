@@ -104,7 +104,7 @@ func Run(head string, parts ...string) (string, error) {
 		return "", err
 	}
 	cmd := exec.Command(head, parts...)
-	//cmd.Env = []string{"GOPATH=$HOME/go", "PATH=$PATH:$GOPATH/bin"}
+	// cmd.Env = []string{"GOPATH=$HOME/go", "PATH=$PATH:$GOPATH/bin"}
 	cmd.Env = []string{
 		"GOPATH=/home/stampzilla/go",
 		"PATH=" + os.Getenv("PATH"),

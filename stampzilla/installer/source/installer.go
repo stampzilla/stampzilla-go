@@ -25,9 +25,11 @@ func NewInstaller() *Installer {
 func (t *Installer) Prepare() error {
 	return nil
 }
+
 func (t *Installer) Install(nodes ...string) error {
 	return build(nodes, false)
 }
+
 func (t *Installer) Update(nodes ...string) error {
 	return build(nodes, true)
 }
@@ -69,7 +71,12 @@ func GoGet(url string) error {
 		return fmt.Errorf("LookPath Error: %s", err.Error())
 	}
 
-	_, err = Run(gobin, "get", "-u", "-d", url)
+	_, err = Run(gobin, "get", "-u", "-d", "github.com/stampzilla/stampzilla-go")
+	if err != nil {
+		return err
+	}
+	os.Chdir(filepath.Join("/home", "stampzilla", "go", "src", "github.com", "stampzilla", "stampzilla-go"))
+	_, err = Run(gobin, "mod", "download")
 	if err != nil {
 		return err
 	}
@@ -92,7 +99,7 @@ func getArgs(binName string) []string {
 		filepath.Join("/home", "stampzilla", "go", "bin", binName),
 		filepath.Join("/home", "stampzilla", "go", "src", "github.com", "stampzilla", "stampzilla-go", "nodes", binName),
 	}
-	//fmt.Println(strings.Join(m, "\n"))
+	// fmt.Println(strings.Join(m, "\n"))
 	return m
 }
 

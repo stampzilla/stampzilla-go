@@ -13,7 +13,7 @@ func (f *PidFile) String() string {
 	return string(*f)
 }
 
-//Read the pidfile.
+// Read the pidfile.
 func (f *PidFile) Read() int {
 	data, err := ioutil.ReadFile(string(*f))
 	if err != nil {
@@ -27,7 +27,7 @@ func (f *PidFile) Read() int {
 	return int(pid)
 }
 
-//Write the pidfile.
+// Write the pidfile.
 func (f *PidFile) write(data int) error {
 	err := ioutil.WriteFile(string(*f), []byte(strconv.Itoa(data)), 0660)
 	if err != nil {
@@ -36,7 +36,7 @@ func (f *PidFile) write(data int) error {
 	return nil
 }
 
-//Delete the pidfile
+//Delete the pidfile.
 func (f *PidFile) delete() bool {
 	_, err := os.Stat(string(*f))
 	if err != nil {
