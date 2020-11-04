@@ -26,6 +26,7 @@ func NewInstaller() *Installer {
 func (t *Installer) Prepare() error {
 	return nil
 }
+
 func (t *Installer) Install(nodes ...string) error {
 	if len(nodes) == 0 {
 		return fmt.Errorf("Please specify which nodes you like to install. (ex 'stampzilla install server example')")
@@ -39,6 +40,7 @@ func (t *Installer) Install(nodes ...string) error {
 		return false
 	})
 }
+
 func (t *Installer) Update(nodes ...string) error {
 	return download(nodes, func(a github.ReleaseAsset) bool {
 		_, err := os.Stat(getFilePath(a))
@@ -50,7 +52,7 @@ func (t *Installer) Update(nodes ...string) error {
 	})
 }
 
-// Download downloads a file and takes a callback. If callback returns true, skip download
+// Download downloads a file and takes a callback. If callback returns true, skip download.
 func download(nodes []string, cb ...func(github.ReleaseAsset) bool) error {
 	releases := GetReleases()
 

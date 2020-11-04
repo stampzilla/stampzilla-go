@@ -17,6 +17,7 @@ type Bare struct {
 
 func (t *Bare) Close() {
 }
+
 func (t *Bare) Restart(nodes ...string) error {
 	err := t.Stop(nodes...)
 	if err != nil {
@@ -25,6 +26,7 @@ func (t *Bare) Restart(nodes ...string) error {
 
 	return t.Start(nodes...)
 }
+
 func (t *Bare) Start(nodes ...string) error {
 	cfg := installer.Config{}
 	cfg.ReadConfigFromFile("/etc/stampzilla/nodes.conf")
@@ -52,7 +54,7 @@ func (t *Bare) Stop(nodes ...string) error {
 		return nil
 	}
 
-	//stop all running stampzilla processes
+	// stop all running stampzilla processes
 	processes := t.getRunningProcesses()
 	for _, p := range processes {
 		p.Stop()
@@ -99,7 +101,7 @@ func (b *Bare) getRunningProcesses() []*installer.Process {
 		processes = append(processes, process)
 	}
 
-	//change to this when you have time: http://linux.die.net/man/5/proc /proc/pid/stat
+	// change to this when you have time: http://linux.die.net/man/5/proc /proc/pid/stat
 	ps, err := installer.Run("ps", "aux")
 	if err != nil {
 		fmt.Println(err)
@@ -120,8 +122,8 @@ func (b *Bare) getRunningProcesses() []*installer.Process {
 			var process *installer.Process
 			for _, p1 := range processes {
 				process = nil
-				//fmt.Println(p[4], p1.Pid)
-				//fmt.Printf("%#v\n", p)
+				// fmt.Println(p[4], p1.Pid)
+				// fmt.Printf("%#v\n", p)
 				if strings.Contains(pslineslice[1], strconv.Itoa(p1.Pid)) {
 					process = p1
 					break
@@ -131,18 +133,18 @@ func (b *Bare) getRunningProcesses() []*installer.Process {
 			if process == nil {
 				continue
 			}
-			//fmt.Println("NAME", p[len(p)-1])
-			//fmt.Println("CPU", p[6])
-			//fmt.Println("MEM", p[8])
-			//process := &Process{Name: p[len(p)-1], Command: p[len(p)-1]}
-			//fmt.Printf("%#v\n", pslineslice)
+			// fmt.Println("NAME", p[len(p)-1])
+			// fmt.Println("CPU", p[6])
+			// fmt.Println("MEM", p[8])
+			// process := &Process{Name: p[len(p)-1], Command: p[len(p)-1]}
+			// fmt.Printf("%#v\n", pslineslice)
 			process.Name = filepath.Base(pslineslice[len(pslineslice)-1])
 			process.Command = pslineslice[len(pslineslice)-1]
 			process.Status = &installer.ProcessStatus{true, pslineslice[2], pslineslice[3]}
 		}
 	}
 
-	//remove not found processes from the list.
+	// remove not found processes from the list.
 	for index, p := range processes {
 		if p.Name == "" {
 			if len(processes) > index+1 {

@@ -68,7 +68,6 @@ func (t *cliHandler) List(c *cli.Context) error {
 	client := github.NewClient(nil)
 	ctx := context.Background()
 	releases, _, err := client.Repositories.ListReleases(ctx, "stampzilla", "stampzilla-go", &github.ListOptions{})
-
 	if err != nil {
 		return err
 	}
@@ -160,12 +159,14 @@ func (t *cliHandler) Restart(c *cli.Context) error {
 
 	return r.Restart(c.Args()...)
 }
+
 func (t *cliHandler) Status(c *cli.Context) error {
 	requireRoot()
 	r := getRunner(c)
 	defer r.Close()
 	return r.Status()
 }
+
 func (t *cliHandler) Disable(c *cli.Context) error {
 	requireRoot()
 	r := &runner.Systemd{}

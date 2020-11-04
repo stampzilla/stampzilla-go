@@ -32,6 +32,7 @@ func CreateUser(username string) {
 		"created": "true",
 	}).Info(action)
 }
+
 func userExists(username string) bool {
 	_, err := Run("id", "-u", username)
 	if err != nil {
@@ -42,7 +43,7 @@ func userExists(username string) bool {
 
 func CreateDirAsUser(directory string, username string) {
 	action := "Check directory " + directory
-	var created = false
+	created := false
 
 	if _, err := os.Stat(directory); os.IsNotExist(err) {
 		err := os.MkdirAll(directory, 0777)
