@@ -24,11 +24,10 @@ deploy:
   skip_cleanup: true
   provider: releases
   api_key:
-    secure: gHm00kgQkMxJgPmC3hxLaOzpH0TSe4ygDTe0vt0b0bhyOwE2/7RBFlYf3jvy2RNtY1YRqWB3lzeGHGMnniAQH3QBv+BsWu6bn1op8osc+jiudyiJzGtBk2J3NcOFvZZ4HUnyvvodN5PboWBIihMzAnfYh/B4SlZvfwe33biUP7M=
+    secure: bbn0U42cMuDYAQGCMaPXbkTOygk3Sr/P8u998Y13RVFEe/rcM4UQ9WjvhOMFlMLS3gN6Gqu/Qm3cT5z4AawY0JPf1PnbGprTMCZEzrHPmd203cAMRmcpzTYBEkioRRTgOS5syVxxY8ZNKCW4+/QAmngai3uU/CL/4aPL5T6SQSk=
   file_glob: true
   file: "*"
   on:
     tags: true
     repo: stampzilla/stampzilla-go
     condition: $TRAVIS_GO_VERSION =~ ^1\.15
-
