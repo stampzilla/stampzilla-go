@@ -71,7 +71,7 @@ func GoGet(url string) error {
 		return fmt.Errorf("LookPath Error: %s", err.Error())
 	}
 
-	_, err = Run(gobin, "get", "-u", "-d", "github.com/stampzilla/stampzilla-go/v2")
+	_, err = Run(gobin, "get", "-u", "-d", "github.com/stampzilla/stampzilla-go")
 	if err != nil {
 		return err
 	}
