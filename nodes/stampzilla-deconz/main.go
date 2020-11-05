@@ -10,17 +10,16 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-deconz/models"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
-	"github.com/stampzilla/stampzilla-go/pkg/node"
-	nodelib "github.com/stampzilla/stampzilla-go/pkg/node"
-	"github.com/stampzilla/stampzilla-go/pkg/websocket"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-deconz/models"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/pkg/node"
+	"github.com/stampzilla/stampzilla-go/v2/pkg/websocket"
 )
 
 var wsClient = websocket.New()
 
 func main() {
-	node := nodelib.New("deconz")
+	nodeInstance := node.New("deconz")
 
 	err := localConfig.Load()
 	if err != nil {
@@ -33,11 +32,11 @@ func main() {
 	ctx, stopWs := context.WithCancel(context.Background())
 	changed := make(chan struct{})
 
-	go configChanged(ctx, changed, node, api)
-	go reader(ctx, node, api)
+	go configChanged(ctx, changed, nodeInstance, api)
+	go reader(ctx, nodeInstance, api)
 
-	node.OnConfig(updatedConfig(changed, api))
-	node.OnShutdown(func() {
+	nodeInstance.OnConfig(updatedConfig(changed, api))
+	nodeInstance.OnShutdown(func() {
 		stopWs()
 		err = localConfig.Save()
 		if err != nil {
@@ -46,8 +45,8 @@ func main() {
 		}
 	})
 
-	node.OnRequestStateChange(func(state devices.State, device *devices.Device) error {
-		//fmt.Printf("onstate req %v\n", state)
+	nodeInstance.OnRequestStateChange(func(state devices.State, device *devices.Device) error {
+		// fmt.Printf("onstate req %v\n", state)
 		lightState := make(devices.State)
 		state.Float("brightness", func(v float64) {
 			bri := int(math.Round(255 * v))
@@ -70,8 +69,8 @@ func main() {
 			}
 			v = (6500 + 2000) - v                                                   // invert value
 			ct := int(math.Round(((v - 2000) / (6500 - 2000) * (500 - 153)) + 153)) // rescale value
-			//fmt.Println("temperature: ", v)
-			//fmt.Println("setting ct to ", ct)
+			// fmt.Println("temperature: ", v)
+			// fmt.Println("setting ct to ", ct)
 			lightState["ct"] = ct
 		})
 
@@ -83,17 +82,17 @@ func main() {
 		if err != nil {
 			logrus.Error(err)
 		}
-		return nodelib.ErrSkipSync
+		return node.ErrSkipSync
 	})
 
-	err = node.Connect()
+	err = nodeInstance.Connect()
 
 	if err != nil {
 		logrus.Error(err)
 		return
 	}
 
-	node.Wait()
+	nodeInstance.Wait()
 }
 
 type WsEvent struct {
@@ -106,7 +105,7 @@ type WsEvent struct {
 	Config   devices.State `json:"config"`
 }
 
-//Get ID returns different IDs if its a light or sensor. This is because a single sensor device can be divided in multiple sensors in the API
+// Get ID returns different IDs if its a light or sensor. This is because a single sensor device can be divided in multiple sensors in the API.
 func (we *WsEvent) GetID() string {
 	if we.Resource == "sensors" {
 		// take first part of uniqueid 00:15:8d:00:02:55:82:0f-01-0402 which is the mac address
@@ -166,7 +165,7 @@ func reader(ctx context.Context, node *node.Node, api *API) {
 				}
 			})
 
-			//Sensor have battery in Config
+			// Sensor have battery in Config
 			event.Config.Float("battery", func(b float64) {
 				newState["battery"] = int(b)
 			})
@@ -179,20 +178,20 @@ func reader(ctx context.Context, node *node.Node, api *API) {
 			//{"config":{"battery":100,"offset":0,"on":true,"reachable":true},"e":"changed","id":"4","r":"sensors","t":"event","uniqueid":"00:15:8d:00:02:3d:26:5e-01-0405"}
 			//{"e":"changed","id":"4","r":"sensors","state":{"humidity":2289,"lastupdated":"2019-01-20T19:15:51"},"t":"event","uniqueid":"00:15:8d:00:02:3d:26:5e-01-0405"}
 
-			//TODO
+			// TODO
 			// {"e":"changed","id":"1","r":"lights","state":{"on":false},"t":"event","uniqueid":"00:0b:57:ff:fe:c0:28:82-01"}
 			// http://dresden-elektronik.github.io/deconz-rest-doc/websocket/
 		}
 	}
 }
 
-func configChanged(parentCtx context.Context, changed chan struct{}, node *node.Node, api *API) error {
+func configChanged(parentCtx context.Context, changed chan struct{}, node *node.Node, api *API) {
 	for {
 		var ctx context.Context
 		var cancel context.CancelFunc
 		select {
 		case <-parentCtx.Done():
-			return parentCtx.Err()
+			return
 		case <-changed:
 			syncLights(node, api)
 			syncSensors(node, api)
@@ -305,6 +304,7 @@ func syncLights(node *node.Node, api *API) error {
 	}
 	return nil
 }
+
 func syncSensors(node *node.Node, api *API) error {
 	sensors, err := api.Sensors()
 	if err != nil {

@@ -12,8 +12,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jonaz/gograce"
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
-	"github.com/stampzilla/stampzilla-go/pkg/node"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/pkg/node"
 )
 
 func main() {
@@ -84,7 +84,6 @@ func onDevices(config *Config, deviceList *devices.List) func(data json.RawMessa
 
 		changes := 0
 		for _, dev := range list.All() {
-
 			old := deviceList.Get(dev.ID)
 			if old == nil {
 				deviceList.Add(dev)
@@ -119,6 +118,7 @@ func onDevices(config *Config, deviceList *devices.List) func(data json.RawMessa
 		return nil
 	}
 }
+
 func updatedConfig(config *Config) func(data json.RawMessage) error {
 	return func(data json.RawMessage) error {
 		logrus.Debug("Received config from server:", string(data))

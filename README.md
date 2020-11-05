@@ -14,7 +14,7 @@ sudo stampzilla install server deconz #or whatever nodes you want to use.
 
 Installation from source
 ```bash
-go get -u github.com/stampzilla/stampzilla-go/stampzilla
+go get -u github.com/stampzilla/stampzilla-go/v2/cmd/stampzilla
 sudo stampzilla install
 ```
 This creates a stampzilla user. checksout the code in stampzilla user home folder and creates some required folders. 

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -32,7 +32,7 @@ type PersonWithPasswords struct {
 	RepeatPassword string `json:"repeat_password,omitempty"`
 }
 
-// Equal checks if 2 persons are equal
+// Equal checks if 2 persons are equal.
 func (a Person) Equal(b PersonWithPasswords) bool {
 	if !a.State.Equal(b.State) { // this is most likely to not be equal so we check it first
 		return false

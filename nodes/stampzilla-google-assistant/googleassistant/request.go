@@ -6,22 +6,22 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Intent of the action
+// Intent of the action.
 type Intent string
 
 const (
-	// SyncIntent is used when syncing devices
+	// SyncIntent is used when syncing devices.
 	SyncIntent = "action.devices.SYNC"
-	// QueryIntent is used when querying for status
+	// QueryIntent is used when querying for status.
 	QueryIntent = "action.devices.QUERY"
-	// ExecuteIntent is used when controling devices
+	// ExecuteIntent is used when controlling devices.
 	ExecuteIntent = "action.devices.EXECUTE"
 
 	CommandBrightnessAbsolute = "action.devices.commands.BrightnessAbsolute"
 	CommandOnOff              = "action.devices.commands.OnOff"
 )
 
-// Inputs from google
+// Inputs from google.
 type Inputs []map[string]json.RawMessage
 
 func (i Inputs) Intent() Intent {
@@ -39,6 +39,7 @@ func (i Inputs) Intent() Intent {
 	}
 	return ""
 }
+
 func (i Inputs) Payload() Payload {
 	for _, v := range i {
 		if v, ok := v["payload"]; ok {

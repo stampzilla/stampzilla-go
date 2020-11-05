@@ -4,7 +4,7 @@ import (
 	"time"
 
 	sigar "github.com/cloudfoundry/gosigar"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
 )
 
 func monitorHealth() {

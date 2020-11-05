@@ -9,6 +9,7 @@ var handlers *eepHandlers
 type eepHandlers struct {
 	handlers map[string]Handler
 }
+
 type Handler interface {
 	On(*Device)
 	Off(*Device)

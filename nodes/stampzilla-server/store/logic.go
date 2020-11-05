@@ -1,7 +1,7 @@
 package store
 
 import (
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/logic"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/logic"
 )
 
 func (store *Store) GetRules() logic.Rules {

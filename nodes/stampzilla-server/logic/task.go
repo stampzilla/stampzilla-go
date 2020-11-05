@@ -4,11 +4,11 @@ import (
 	"sync"
 
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/websocket"
 )
 
-// Task is a task that can be scheduled using scheduler
+// Task is a task that can be scheduled using scheduler.
 type Task struct {
 	XName   string   `json:"name"`
 	XUuid   string   `json:"uuid"`
@@ -21,31 +21,33 @@ type Task struct {
 	sender          websocket.Sender
 }
 
-// SetUuid sets ths uuid on the task
+// SetUuid sets ths uuid on the task.
 func (t *Task) SetUuid(uuid string) {
 	t.Lock()
 	t.XUuid = uuid
 	t.Unlock()
 }
 
-// SetWhen sets when the task should be run in cron syntax
+// SetWhen sets when the task should be run in cron syntax.
 func (t *Task) SetWhen(when string) {
 	t.Lock()
 	t.When = when
 	t.Unlock()
 }
 
-// Uuid returns tasks uuid
+// Uuid returns tasks uuid.
 func (r *Task) Uuid() string {
 	r.RLock()
 	defer r.RUnlock()
 	return r.XUuid
 }
+
 func (r *Task) Name() string {
 	r.RLock()
 	defer r.RUnlock()
 	return r.XName
 }
+
 func (r *Task) CronId() int64 {
 	r.RLock()
 	defer r.RUnlock()

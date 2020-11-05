@@ -4,9 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"strconv"
-
 	"net/http"
+	"strconv"
 )
 
 type Parameter struct {

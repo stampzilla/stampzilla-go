@@ -9,7 +9,6 @@ import (
 )
 
 func TestMarshalJSOn(t *testing.T) {
-
 	s := struct {
 		D Duration
 	}{
@@ -22,7 +21,6 @@ func TestMarshalJSOn(t *testing.T) {
 }
 
 func TestUnmarshalJSON(t *testing.T) {
-
 	s := struct {
 		D Duration
 	}{}

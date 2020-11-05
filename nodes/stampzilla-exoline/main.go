@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
-	"github.com/stampzilla/stampzilla-go/pkg/node"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/pkg/node"
 )
 
 func main() {
@@ -34,7 +34,7 @@ func main() {
 		return
 	}
 
-	//connection := basenode.Connect()
+	// connection := basenode.Connect()
 	dev := &devices.Device{
 		Name:   "ventilation",
 		Type:   "sensor",

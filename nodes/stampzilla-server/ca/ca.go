@@ -23,8 +23,8 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/store"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/store"
 	pkcs12 "software.sslmate.com/src/go-pkcs12"
 )
 
@@ -382,8 +382,8 @@ func (ca *CA) GetCertificates() []store.Certificate {
 			},
 			CommonName: crt.Subject.CommonName,
 			IsCA:       crt.IsCA,
-			//Usage      []string
-			//Revoked    bool
+			// Usage      []string
+			// Revoked    bool
 			Issued:  crt.NotBefore,
 			Expires: crt.NotAfter,
 
@@ -439,7 +439,7 @@ func (ca *CA) WaitForApproval(s pkix.Name, c string, r models.Request) chan bool
 	return req.Approved
 }
 
-// Dynamic TLS server config
+// Dynamic TLS server config.
 func (ca *CA) GetServerCertificate(helo *tls.ClientHelloInfo) (*tls.Certificate, error) {
 	// Dynamicly load or create based on the requested hostname
 
@@ -462,7 +462,6 @@ func (ca *CA) GetServerCertificate(helo *tls.ClientHelloInfo) (*tls.Certificate,
 }
 
 func (ca *CA) GetUserCertificate(uuid string) ([]byte, error) {
-
 	cert, err := ca.CreateClientCertificate(uuid)
 	if err != nil {
 		return nil, err

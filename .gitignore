@@ -31,9 +31,7 @@ stampzilla-server/gin-bin
 config.json
 devices.json
 
-build
 dist
-
 
 #vim stuff
 # swap

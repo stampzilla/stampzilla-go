@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-nibe/nibe"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-nibe/nibe"
 )
 
 type Config struct {

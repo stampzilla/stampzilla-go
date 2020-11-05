@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -38,28 +38,28 @@ func TestSchedulerRunTask(t *testing.T) {
 
 	scheduler := NewScheduler(savedState, syncer)
 
-	//Add first task.
+	// Add first task.
 	task := scheduler.AddTask("Test1")
 	task.AddAction("uuid")
 	task.SetWhen("* * * * * *")
 	task.Enabled = true
 	scheduler.ScheduleTask(task)
 
-	//Add a second task.
+	// Add a second task.
 	task = scheduler.AddTask("Test2")
 	task.AddAction("uuid2")
 	task.SetWhen("* * * * * *")
 	task.Enabled = true
 	scheduler.ScheduleTask(task)
 
-	//Add a third disabled task which should not be run
+	// Add a third disabled task which should not be run
 	task = scheduler.AddTask("Test2")
 	task.AddAction("uuid2")
 	task.SetWhen("* * * * * *")
 	task.Enabled = false
 	scheduler.ScheduleTask(task)
 
-	//Start Cron
+	// Start Cron
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	scheduler.Cron.Start(ctx)

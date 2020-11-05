@@ -1,6 +1,6 @@
 package notification
 
-import "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
+import "github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models"
 
 type Messages []Message
 

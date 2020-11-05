@@ -7,15 +7,15 @@ import (
 
 	"github.com/olahol/melody"
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/ca"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/interfaces"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/logic"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/notification"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/persons"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/store"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/ca"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/interfaces"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/logic"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/notification"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/persons"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/store"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/websocket"
 )
 
 type secureWebsocketHandler struct {
@@ -25,7 +25,7 @@ type secureWebsocketHandler struct {
 	WebsocketSender websocket.Sender
 }
 
-// NewSecureWebsockerHandler is the constructor
+// NewSecureWebsockerHandler is the constructor.
 func NewSecureWebsockerHandler(store *store.Store, config *models.Config, ws websocket.Sender, ca *ca.CA) WebsocketHandler {
 	return &secureWebsocketHandler{
 		CA:              ca,
@@ -92,6 +92,7 @@ func sliceHas(s []string, val string) bool {
 	}
 	return false
 }
+
 func (wsh *secureWebsocketHandler) Message(s interfaces.MelodySession, msg *models.Message) (json.RawMessage, error) {
 	// Common messages for both nodes and users
 	switch msg.Type {

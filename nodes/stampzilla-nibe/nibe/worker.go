@@ -64,7 +64,6 @@ func (n *Nibe) connect() error {
 				n.handle(s, message)
 			}
 		}
-
 	}
 }
 
@@ -72,7 +71,7 @@ var reset = true
 
 func (n *Nibe) handle(s *serial.Port, m *Message) error {
 	blue := color.New(color.FgBlue)
-	//log := color.New(color.FgWhite)
+	// log := color.New(color.FgWhite)
 
 	switch m.Cmd {
 	case 0x68: // Cyclic LOG data
@@ -105,7 +104,7 @@ func (n *Nibe) handle(s *serial.Port, m *Message) error {
 			n.RUnlock()
 		}
 	case 0x69: // READ token
-		//log.Printf(" -> READ TOKEN -> %x\n", m.Cmd);
+		// log.Printf(" -> READ TOKEN -> %x\n", m.Cmd);
 		select {
 		case req := <-n.read:
 			// Read the requested register
@@ -124,7 +123,7 @@ func (n *Nibe) handle(s *serial.Port, m *Message) error {
 	case 0x6A: // Read result
 		wr(s, []byte{0x06})
 
-		//blue.Printf(" -> Read result -> %#v\n", m.Data)
+		// blue.Printf(" -> Read result -> %#v\n", m.Data)
 		if n.readResult != nil {
 			select {
 			case n.readResult <- binary.LittleEndian.Uint16(m.Data[2:]):
@@ -149,10 +148,10 @@ func (n *Nibe) handle(s *serial.Port, m *Message) error {
 			wr(s, []byte{0x06})
 		}
 	case 0x6C: // Write result
-		//blue.Printf(" -> Write result -> %#v\n", m.Data)
+		// blue.Printf(" -> Write result -> %#v\n", m.Data)
 		wr(s, []byte{0x06})
 	case 0x6D: // Connected controller info
-		//log.Printf(" -> Controller -> %s\n", string(m.Data[3:]))
+		// log.Printf(" -> Controller -> %s\n", string(m.Data[3:]))
 		wr(s, []byte{0x06})
 	case 0xEE: // ID?
 
@@ -165,7 +164,7 @@ func (n *Nibe) handle(s *serial.Port, m *Message) error {
 			[]byte{0x4},
 		)
 		wr(s, msg)
-		//wr(s, []byte{0x06});
+		// wr(s, []byte{0x06});
 	default:
 		blue.Printf(" -> UNKNOWN -> %#v\n", m)
 		wr(s, []byte{0x06})

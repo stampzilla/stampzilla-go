@@ -12,8 +12,8 @@ import (
 
 func asRoundedFloat(data []byte) (float64, error) {
 	// this works OK according to protocol example:
-	//Extract temperature 21,8
-	//0000   3d 05 00 d3 5e ae 41 67 3e
+	// Extract temperature 21,8
+	// 0000   3d 05 00 d3 5e ae 41 67 3e
 	if len(data) != 4 {
 		return 0.0, fmt.Errorf("could not pase float from binary")
 	}
@@ -83,7 +83,7 @@ func compileMsg(b []byte) []byte {
 		0x3e, // last in msg
 	}
 
-	//calculate checksum
+	// calculate checksum
 	var s byte
 	for _, v := range b {
 		s ^= v

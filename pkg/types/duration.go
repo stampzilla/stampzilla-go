@@ -15,6 +15,7 @@ func (d Duration) String() string {
 func (d Duration) MarshalJSON() (b []byte, err error) {
 	return []byte(fmt.Sprintf(`"%s"`, time.Duration(d).String())), nil
 }
+
 func (d *Duration) UnmarshalJSON(b []byte) error {
 	td, err := time.ParseDuration(strings.Trim(string(b), `"`))
 	if err != nil {

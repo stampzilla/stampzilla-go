@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/interfaces"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/interfaces"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models"
 )
 
 type WebsocketHandler interface {

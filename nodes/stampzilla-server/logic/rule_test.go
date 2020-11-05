@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -160,7 +160,7 @@ func TestRunActions(t *testing.T) {
 		t.Error("Expected to sleep in the action for at least 25ms")
 	}
 
-	//t.Log(store.Devices.Get("node", "id"))
+	// t.Log(store.Devices.Get("node", "id"))
 	assert.Equal(t, false, syncer.Devices.Get(devices.ID{Node: "node", ID: "id"}).State["on"])
 	assert.Equal(t, true, syncer.Devices.Get(devices.ID{Node: "node", ID: "id"}).State["a"])
 	assert.Equal(t, true, syncer.Devices.Get(devices.ID{Node: "node", ID: "id"}).State["b"])
@@ -207,6 +207,7 @@ func TestRunActionsCancelSleep(t *testing.T) {
 	assert.Contains(t, logBuf.String(), "stopping action 1 due to cancel")
 	assert.Equal(t, 0, cnt)
 }
+
 func BenchmarkEval(b *testing.B) {
 	devs := devices.NewList()
 	devs.Add(&devices.Device{

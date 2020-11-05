@@ -14,10 +14,10 @@ import (
 	"github.com/google/cel-go/interpreter"
 	"github.com/google/cel-go/parser"
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
-	stypes "github.com/stampzilla/stampzilla-go/pkg/types"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/websocket"
+	stypes "github.com/stampzilla/stampzilla-go/v2/pkg/types"
 	exprpb "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 )
 
@@ -45,26 +45,31 @@ func (r *Rule) Expression() string {
 	defer r.RUnlock()
 	return r.Expression_
 }
+
 func (r *Rule) Active() bool {
 	r.RLock()
 	defer r.RUnlock()
 	return r.Active_
 }
+
 func (r *Rule) Pending() bool {
 	r.RLock()
 	defer r.RUnlock()
 	return r.Pending_
 }
+
 func (r *Rule) Uuid() string {
 	r.RLock()
 	defer r.RUnlock()
 	return r.Uuid_
 }
+
 func (r *Rule) Name() string {
 	r.RLock()
 	defer r.RUnlock()
 	return r.Name_
 }
+
 func (r *Rule) SetUuid(uuid string) {
 	r.Lock()
 	r.Uuid_ = uuid
@@ -82,21 +87,25 @@ func (r *Rule) SetActive(a bool) {
 	r.Active_ = a
 	r.Unlock()
 }
+
 func (r *Rule) SetPending(a bool) {
 	r.Lock()
 	r.Pending_ = a
 	r.Unlock()
 }
+
 func (r *Rule) For() stypes.Duration {
 	r.RLock()
 	defer r.RUnlock()
 	return r.For_
 }
+
 func (r *Rule) Type() string {
 	r.RLock()
 	defer r.RUnlock()
 	return r.Type_
 }
+
 func (r *Rule) Stop() {
 	select {
 	case r.stop <- struct{}{}:
@@ -167,7 +176,7 @@ func (r *Rule) Run(store *SavedStateStore, sender websocket.Sender, triggerDesti
 	}
 }
 
-//Eval evaluates the cel expression
+//Eval evaluates the cel expression.
 func (r *Rule) Eval(devices *devices.List, rules map[string]bool) (bool, error) {
 	devicesState := make(map[string]map[string]interface{})
 	for devID, v := range devices.All() {
@@ -220,7 +229,6 @@ func (r *Rule) Eval(devices *devices.List, rules map[string]bool) (bool, error) 
 			"rules":   rules,
 		},
 	)
-
 	if err != nil {
 		return false, err
 	}

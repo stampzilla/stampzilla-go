@@ -56,8 +56,8 @@ func (ws *WebhookSender) notify(trigger bool, url string, body string) error {
 
 	defer resp.Body.Close()
 
-	//b, err := ioutil.ReadAll(resp.Body)
-	//spew.Dump(b)
+	// b, err := ioutil.ReadAll(resp.Body)
+	// spew.Dump(b)
 
 	return err
 }

@@ -14,16 +14,16 @@ import (
 	"github.com/onrik/logrus/filename"
 	"github.com/sirupsen/logrus"
 	"github.com/stamp/mdns"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/ca"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/handlers"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/logic"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/store"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/webserver"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/ca"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/handlers"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/logic"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/store"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/webserver"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/websocket"
 )
 
-// Main contains deps used by server that will be exposed so we can write good end to end tests
+// Main contains deps used by server that will be exposed so we can write good end to end tests.
 type Main struct {
 	Config     *models.Config
 	Store      *store.Store
@@ -32,7 +32,7 @@ type Main struct {
 	CA         *ca.CA
 }
 
-// New creates a new main
+// New creates a new main.
 func New(config *models.Config) *Main {
 	return &Main{
 		Config: config,
@@ -78,12 +78,12 @@ func (m *Main) TLSConfig() *tls.Config {
 
 		// Needed to verify client certificates
 		ClientCAs: caCertPool,
-		//Certificates: []tls.Certificate{*c.CA.TLS},
+		// Certificates: []tls.Certificate{*c.CA.TLS},
 		ClientAuth: tls.VerifyClientCertIfGiven,
 	}
 }
 
-// Init initializes the web handlers. Could be used to start server or to test it
+// Init initializes the web handlers. Could be used to start server or to test it.
 func (m *Main) Init() {
 	var err error
 
@@ -105,10 +105,10 @@ func (m *Main) Init() {
 	}
 
 	insecureMelody := melody.New()
-	//TODO i dont like melody anymore.. raw gorilla seems fine?
+	// TODO i dont like melody anymore.. raw gorilla seems fine?
 	insecureMelody.Config.MaxMessageSize = 0
 	secureMelody := melody.New()
-	//TODO i dont like melody anymore.. raw gorilla seems fine?
+	// TODO i dont like melody anymore.. raw gorilla seems fine?
 	secureMelody.Config.MaxMessageSize = 0
 
 	insecureSender := websocket.NewWebsocketSender(insecureMelody)

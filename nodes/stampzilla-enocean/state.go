@@ -27,6 +27,7 @@ func (s *State) Device(id [4]byte) *Device {
 	}
 	return nil
 }
+
 func (s *State) DeviceByString(senderId string) *Device {
 	s.Lock()
 	defer s.Unlock()
@@ -43,6 +44,7 @@ func (s *State) AddDevice(id [4]byte, name string, features []string, on bool) *
 	s.Devices[d.IdString()] = d
 	return d
 }
+
 func (s *State) RemoveDevice(id [4]byte) {
 	s.Lock()
 	defer s.Unlock()
@@ -88,6 +90,7 @@ func (d *Device) AddEepForSending(eep string) {
 	defer d.Unlock()
 	d.SendEEPs = append(d.SendEEPs, eep)
 }
+
 func (d *Device) AddEepForReceiving(eep string) {
 	d.Lock()
 	defer d.Unlock()
@@ -102,21 +105,25 @@ func (d *Device) Id() [4]byte {
 	copy(ret[:], senderid[0:4])
 	return ret
 }
+
 func (d *Device) IdString() string {
 	d.RLock()
 	defer d.RUnlock()
 	return d.SenderId
 }
+
 func (d *Device) SetOn(s bool) {
 	d.Lock()
 	d.On_ = s
 	d.Unlock()
 }
+
 func (d *Device) On() bool {
 	d.RLock()
 	defer d.RUnlock()
 	return d.On_
 }
+
 func (d *Device) SetId(senderId [4]byte) {
 	d.Lock()
 	defer d.Unlock()
@@ -134,6 +141,7 @@ func (d *Device) GetPowerW() int64 {
 	defer d.RUnlock()
 	return d.PowerW
 }
+
 func (d *Device) SetPowerkWh(pwr int64) {
 	d.Lock()
 	defer d.Unlock()
@@ -152,6 +160,7 @@ func (d *Device) handler() (Handler, error) {
 	}
 	return handlers.getHandler(d.SendEEPs[0]), nil
 }
+
 func (d *Device) CmdOn() {
 	h, err := d.handler()
 	if err != nil {
@@ -161,6 +170,7 @@ func (d *Device) CmdOn() {
 
 	h.On(d)
 }
+
 func (d *Device) CmdOff() {
 	h, err := d.handler()
 	if err != nil {
@@ -169,6 +179,7 @@ func (d *Device) CmdOff() {
 	}
 	h.Off(d)
 }
+
 func (d *Device) CmdToggle() {
 	h, err := d.handler()
 	if err != nil {
@@ -177,6 +188,7 @@ func (d *Device) CmdToggle() {
 	}
 	h.Toggle(d)
 }
+
 func (d *Device) CmdDim(val int) {
 	h, err := d.handler()
 	if err != nil {
@@ -185,6 +197,7 @@ func (d *Device) CmdDim(val int) {
 	}
 	h.Dim(val, d)
 }
+
 func (d *Device) CmdLearn() {
 	h, err := d.handler()
 	if err != nil {

@@ -76,6 +76,7 @@ func TestAddDestination(t *testing.T) {
 	dests.Add(d1)
 	assert.Equal(t, "name", dests.Get("uuid").Name)
 }
+
 func TestRemoveDestination(t *testing.T) {
 	dests := NewDestinations()
 	d1 := &Destination{

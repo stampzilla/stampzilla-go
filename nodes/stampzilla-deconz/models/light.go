@@ -3,17 +3,17 @@ package models
 import (
 	"math"
 
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
 )
 
-// Lights is a list of Light's
+// Lights is a list of Light's.
 type Lights map[string]Light
 
 func NewLights() Lights {
 	return make(map[string]Light)
 }
 
-// Light is a deconz RESP api light
+// Light is a deconz RESP api light.
 type Light struct {
 	Etag         string `json:"etag"`
 	Hascolor     bool   `json:"hascolor"`
@@ -87,10 +87,10 @@ func (l Light) GenerateDevice(id string) *devices.Device {
 	return dev
 }
 
-// GetTraits converts deconz types to stampzilla devices types
+// GetTraits converts deconz types to stampzilla devices types.
 func (l Light) GetTraits() []string {
 	var traits []string
-	//traits :=
+	// traits :=
 	switch l.Type {
 	case "On/Off plug-in unit":
 		traits = []string{
@@ -107,7 +107,7 @@ func (l Light) GetTraits() []string {
 	return traits
 }
 
-// GetType converts deconz types to stampzilla devices types
+// GetType converts deconz types to stampzilla devices types.
 func (l Light) GetType() string {
 	switch l.Type {
 	case "On/Off plug-in unit":

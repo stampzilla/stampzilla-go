@@ -1,6 +1,6 @@
 package models
 
-import "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/persons"
+import "github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/persons"
 
 type ReadyInfo struct {
 	Method string          `json:"method"`

@@ -9,8 +9,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type PersonMapWithPassword map[string]*PersonWithPassword
-type PersonMap map[string]*Person
+type (
+	PersonMapWithPassword map[string]*PersonWithPassword
+	PersonMap             map[string]*Person
+)
 
 type List struct {
 	persons PersonMapWithPassword
@@ -23,7 +25,7 @@ func NewList() List {
 	}
 }
 
-// Add adds a person to the list
+// Add adds a person to the list.
 func (l *List) Add(p PersonWithPasswords) error {
 	l.Lock()
 	defer l.Unlock()
@@ -43,7 +45,7 @@ func (l *List) Add(p PersonWithPasswords) error {
 	return nil
 }
 
-// All get all persons
+// All get all persons.
 func (l *List) All() PersonMap {
 	l.RLock()
 	defer l.RUnlock()
@@ -57,7 +59,7 @@ func (l *List) All() PersonMap {
 	return m
 }
 
-// Get returns a person
+// Get returns a person.
 func (l *List) Get(id string) *Person {
 	l.RLock()
 	defer l.RUnlock()
@@ -70,7 +72,7 @@ func (l *List) Get(id string) *Person {
 	return &p.Person
 }
 
-// Get returns a person
+// Get returns a person.
 func (l *List) Delete(id string) error {
 	l.Lock()
 	defer l.Unlock()
@@ -79,7 +81,7 @@ func (l *List) Delete(id string) error {
 	return nil
 }
 
-// GetByEmail returns a person
+// GetByEmail returns a person.
 func (l *List) GetByUsernameWithPassowrd(username string) *PersonWithPassword {
 	l.RLock()
 	defer l.RUnlock()

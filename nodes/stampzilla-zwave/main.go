@@ -13,8 +13,8 @@ import (
 	"github.com/stampzilla/gozwave/nodes"
 	zp "github.com/stampzilla/gozwave/protocol"
 	"github.com/stampzilla/gozwave/serialrecorder"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
-	"github.com/stampzilla/stampzilla-go/pkg/node"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/pkg/node"
 )
 
 func main() {
@@ -111,7 +111,7 @@ func addOrUpdateDevice(node *node.Node, znode *nodes.Node) {
 		if v, ok := stateFloat["power_w"]; ok {
 			newState["power_w"] = v
 		}
-		//Dont add if it already exists
+		// Dont add if it already exists
 		if dev := node.GetDevice(devid); dev != nil {
 			node.UpdateState(devid, newState)
 			return
@@ -120,7 +120,7 @@ func addOrUpdateDevice(node *node.Node, znode *nodes.Node) {
 		switch {
 		case znode.IsDeviceClass(zp.GENERIC_TYPE_SWITCH_MULTILEVEL,
 			zp.SPECIFIC_TYPE_POWER_SWITCH_MULTILEVEL):
-			//znode.HasCommand(commands.SwitchMultilevel):
+			// znode.HasCommand(commands.SwitchMultilevel):
 			node.AddOrUpdate(&devices.Device{
 				Type:   "light",
 				Name:   znode.Brand + " - " + znode.Product + " (Address: " + devid + ")",
@@ -129,7 +129,7 @@ func addOrUpdateDevice(node *node.Node, znode *nodes.Node) {
 				Traits: []string{"OnOff", "Brightness"},
 				State:  newState,
 			})
-		//case znode.HasCommand(commands.SwitchBinary):
+		// case znode.HasCommand(commands.SwitchBinary):
 		case znode.IsDeviceClass(zp.GENERIC_TYPE_SWITCH_BINARY,
 			zp.SPECIFIC_TYPE_POWER_SWITCH_BINARY):
 			node.AddOrUpdate(&devices.Device{

@@ -8,10 +8,10 @@ import (
 
 	"github.com/rakyll/statik/fs"
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-nibe/nibe"
-	_ "github.com/stampzilla/stampzilla-go/nodes/stampzilla-nibe/statik"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
-	"github.com/stampzilla/stampzilla-go/pkg/node"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-nibe/nibe"
+	_ "github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-nibe/statik"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/pkg/node"
 )
 
 var config = &Config{}
@@ -122,7 +122,6 @@ func main() {
 
 		id++
 		node.AddOrUpdate(d)
-
 	}
 
 	other := &devices.Device{

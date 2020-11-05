@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/olahol/melody"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/interfaces"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/interfaces"
 )
 
 type Message struct {
@@ -56,6 +56,7 @@ func (m *Message) Encode() ([]byte, error) {
 
 	return msg, err
 }
+
 func (m *Message) String() string {
 	return fmt.Sprintf("Type: %s Body: %s", m.Type, string(m.Body))
 }

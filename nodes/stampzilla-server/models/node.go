@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"sync"
 
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
 )
 
 type Node struct {
@@ -13,7 +13,7 @@ type Node struct {
 	Version    string `json:"version,omitempty"`
 	Type       string `json:"type,omitempty"`
 	Name       string `json:"name,omitempty"`
-	//Devices   Devices         `json:"devices,omitempty"`
+	// Devices   Devices         `json:"devices,omitempty"`
 	Config  json.RawMessage       `json:"config,omitempty"`
 	Aliases map[devices.ID]string `json:"aliases,omitempty"`
 	sync.Mutex
@@ -24,11 +24,13 @@ func (n *Node) SetConnected(c bool) {
 	n.Connected_ = c
 	n.Unlock()
 }
+
 func (n *Node) Connected() bool {
 	n.Lock()
 	defer n.Unlock()
 	return n.Connected_
 }
+
 func (n *Node) SetAlias(id devices.ID, alias string) {
 	n.Lock()
 	if n.Aliases == nil {
@@ -37,6 +39,7 @@ func (n *Node) SetAlias(id devices.ID, alias string) {
 	n.Aliases[id] = alias
 	n.Unlock()
 }
+
 func (n *Node) Alias(id devices.ID) string {
 	n.Lock()
 	defer n.Unlock()

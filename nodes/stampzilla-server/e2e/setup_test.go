@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/persons"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/servermain"
-	"github.com/stampzilla/stampzilla-go/pkg/node"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/persons"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/servermain"
+	"github.com/stampzilla/stampzilla-go/v2/pkg/node"
 )
 
 func makeRequest(t *testing.T, handler http.Handler, method, url string, body io.Reader) *httptest.ResponseRecorder {

@@ -52,7 +52,7 @@ func (lc *LocalConfig) Load() error {
 	err = jsonParser.Decode(&lc)
 	return errors.Wrap(err, "error loading local config")
 
-	//TODO loop over rules and generate UUIDs if needed. If it was needed save the rules again
+	// TODO loop over rules and generate UUIDs if needed. If it was needed save the rules again
 }
 
 /*

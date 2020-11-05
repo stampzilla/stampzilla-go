@@ -3,7 +3,7 @@ package models
 import (
 	"strings"
 
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
 )
 
 /*
@@ -27,7 +27,7 @@ import (
     "uniqueid": "00:15:8d:00:02:3d:26:5e-01-0405"
   }
 */
-// Lights is a list of Light's
+// Lights is a list of Light's.
 type Sensors map[string]Sensor
 
 func NewSensors() Sensors {
@@ -46,7 +46,7 @@ type Sensor struct {
 	ID               string        `json:"id"`
 }
 
-//Get ID returns different IDs if its a light or sensor. This is because a single sensor device can be divided in multiple sensors in the API
+// Get ID returns different IDs if its a light or sensor. This is because a single sensor device can be divided in multiple sensors in the API.
 func (s *Sensor) GetID() string {
 	// take first part of uniqueid 00:15:8d:00:02:55:82:0f-01-0402 which is the mac address
 	return strings.SplitN(s.UniqueID, "-", 2)[0]
@@ -68,10 +68,11 @@ func (s Sensor) GenerateDevice() *devices.Device {
 		Name:   s.Name,
 		Online: online,
 		State:  state,
-		//Traits: s.GetTraits(),
+		// Traits: s.GetTraits(),
 	}
 	return dev
 }
+
 func SensorToDeviceState(sensorsState, state devices.State) bool {
 	//for k, v := range sensorsState {
 	//fmt.Printf("%s: %T %v\n", k, v, v)

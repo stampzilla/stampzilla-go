@@ -70,8 +70,8 @@ func (nx *NxSender) notify(trigger bool, dest []string, body string) error {
 
 	defer resp.Body.Close()
 
-	//b, err := ioutil.ReadAll(resp.Body)
-	//spew.Dump(b)
+	// b, err := ioutil.ReadAll(resp.Body)
+	// spew.Dump(b)
 
 	return err
 }
@@ -152,7 +152,7 @@ func (nx *NxSender) Destinations() (map[string]string, error) {
 		return nil, err
 	}
 
-	var response = Response{}
+	response := Response{}
 	err = json.Unmarshal(b, &response)
 	if err != nil {
 		return nil, err
