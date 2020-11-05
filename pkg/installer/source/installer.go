@@ -71,11 +71,21 @@ func GoGet(url string) error {
 		return fmt.Errorf("LookPath Error: %s", err.Error())
 	}
 
-	_, err = Run(gobin, "get", "-u", "-d", "github.com/stampzilla/stampzilla-go/v2")
+	//_, err = Run(gobin, "get", "-u", "-d", "github.com/stampzilla/stampzilla-go")
+	gitDir := filepath.Join("/home", "stampzilla", "go", "src", "github.com", "stampzilla", "stampzilla-go")
+	if _, err := os.Stat(gitDir); os.IsNotExist(err) {
+		_, err = Run("git", "clone", "https://github.com/stampzilla/stampzilla-go.git", gitDir)
+		if err != nil {
+			return err
+		}
+	}
+	os.Chdir(filepath.Join("/home", "stampzilla", "go", "src", "github.com", "stampzilla", "stampzilla-go"))
+
+	_, err = Run("git", "pull")
 	if err != nil {
 		return err
 	}
-	os.Chdir(filepath.Join("/home", "stampzilla", "go", "src", "github.com", "stampzilla", "stampzilla-go"))
+
 	_, err = Run(gobin, "mod", "download")
 	if err != nil {
 		return err
