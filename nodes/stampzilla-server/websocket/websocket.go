@@ -2,7 +2,7 @@ package websocket
 
 import (
 	"github.com/olahol/melody"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models"
 )
 
 type SessionKey string
@@ -38,6 +38,7 @@ func (ws *sender) sendMessageTo(key SessionKey, to string, msg *models.Message) 
 		return exists && v == to
 	})
 }
+
 func (ws *sender) SendToID(to string, msgType string, data interface{}) error {
 	message, err := models.NewMessage(msgType, data)
 	if err != nil {
@@ -53,6 +54,7 @@ func (ws *sender) SendToProtocol(to string, msgType string, data interface{}) er
 	}
 	return ws.sendMessageTo(KeyProtocol, to, message)
 }
+
 func (ws *sender) BroadcastWithFilter(msgType string, data interface{}, fn func(*melody.Session) bool) error {
 	message, err := models.NewMessage(msgType, data)
 	if err != nil {

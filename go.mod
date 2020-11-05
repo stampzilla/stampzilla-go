@@ -1,6 +1,6 @@
-module github.com/stampzilla/stampzilla-go
+module github.com/stampzilla/stampzilla-go/v2
 
-go 1.13
+go 1.15
 
 require (
 	github.com/RangelReale/osin v1.0.1

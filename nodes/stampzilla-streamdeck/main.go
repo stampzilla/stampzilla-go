@@ -8,9 +8,9 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/llgcode/draw2d"
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-streamdeck/streamdeck"
-	"github.com/stampzilla/stampzilla-go/pkg/node"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-streamdeck/streamdeck"
+	"github.com/stampzilla/stampzilla-go/v2/pkg/node"
 )
 
 var ICON_SIZE = 72

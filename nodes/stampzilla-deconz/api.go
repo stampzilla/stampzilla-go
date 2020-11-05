@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-deconz/models"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-deconz/models"
 )
 
 func createUser() {
@@ -40,8 +40,8 @@ func createUser() {
 		return
 	}
 
-	//bodyText, err := ioutil.ReadAll(resp.Body)
-	//fmt.Println(string(bodyText))
+	// bodyText, err := ioutil.ReadAll(resp.Body)
+	// fmt.Println(string(bodyText))
 	if len(data) != 1 {
 		log.Println("Error wrong response")
 		return
@@ -101,6 +101,7 @@ func (a *API) do(method, path string, body io.Reader, v interface{}) error {
 	decoder := json.NewDecoder(resp.Body)
 	return decoder.Decode(v)
 }
+
 func (a *API) Get(path string, v interface{}) error {
 	return a.do("GET", path, nil, v)
 }
@@ -120,7 +121,7 @@ func (a *API) PutData(path string, v interface{}) error {
 	if err != nil {
 		return err
 	}
-	//TODO read response awsell and verify errors
+	// TODO read response awsell and verify errors
 	return a.do("PUT", path, &buf, nil)
 }
 
@@ -129,6 +130,7 @@ func (a *API) Lights() (models.Lights, error) {
 	err := a.Get("lights", &lights)
 	return lights, err
 }
+
 func (a *API) Sensors() (models.Sensors, error) {
 	data := models.NewSensors()
 	err := a.Get("sensors", &data)

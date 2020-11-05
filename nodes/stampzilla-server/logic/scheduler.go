@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jonaz/cron"
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/websocket"
 )
 
 /* schedule.json
@@ -28,7 +28,7 @@ import (
 
 type Tasks map[string]*Task
 
-// Scheduler that schedule running saved state actions
+// Scheduler that schedule running saved state actions.
 type Scheduler struct {
 	tasks Tasks
 	Cron  *cron.Cron
@@ -73,6 +73,7 @@ func (s *Scheduler) SetTasks(t Tasks) {
 	s.syncTaskDependencies()
 	s.Unlock()
 }
+
 func (s *Scheduler) Tasks() Tasks {
 	s.RLock()
 	defer s.RUnlock()
@@ -91,6 +92,7 @@ func (s *Scheduler) AddTask(name string) *Task {
 	s.Unlock()
 	return task
 }
+
 func (s *Scheduler) Task(uuid string) *Task {
 	s.RLock()
 	defer s.RUnlock()

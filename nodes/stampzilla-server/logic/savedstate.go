@@ -6,7 +6,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
 )
 
 /* savedstate.json example
@@ -30,6 +30,7 @@ type SavedState struct {
 	UUID  string                       `json:"uuid"`
 	State map[devices.ID]devices.State `json:"state"`
 }
+
 type SavedStateStore struct {
 	State SavedStates
 	sync.RWMutex
@@ -40,6 +41,7 @@ func (sss *SavedStateStore) Get(id string) *SavedState {
 	defer sss.RUnlock()
 	return sss.State[id]
 }
+
 func (sss *SavedStateStore) All() SavedStates {
 	sss.RLock()
 	defer sss.RUnlock()
@@ -57,6 +59,7 @@ func (sss *SavedStateStore) SetState(s SavedStates) {
 	sss.State = s
 	sss.Unlock()
 }
+
 func (sss *SavedStateStore) Save() error {
 	sss.Lock()
 	defer sss.Unlock()

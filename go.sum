@@ -244,6 +244,7 @@ github.com/stampzilla/gocast v0.0.0-20190221121651-0a779e5bbe32 h1:gSVDj2+YBn8RG
 github.com/stampzilla/gocast v0.0.0-20190221121651-0a779e5bbe32/go.mod h1:Q0NtDGNfHmGvXUM0pg8Gi0Hb2ASyB4Rgw3HkYaA1U+4=
 github.com/stampzilla/gozwave v0.0.0-20190221183844-576012815e01 h1:GRRheWNWtlXb+948wNX/bCQoLteqNi5B8Lx56cTDgp8=
 github.com/stampzilla/gozwave v0.0.0-20190221183844-576012815e01/go.mod h1:wlBQc7Be/mfObs+lwcTwSUss/xnjAoGmSHJGFDFe/mU=
+github.com/stampzilla/stampzilla-go v0.0.6 h1:5UTHNUKsGiYWACgGA7Fr3GkuCtr4JaOiwVGg27MSrv4=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=

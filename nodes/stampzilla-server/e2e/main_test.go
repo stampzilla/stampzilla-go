@@ -12,7 +12,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/posener/wstest"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -65,7 +65,7 @@ func TestInsecureWebsocket(t *testing.T) {
 	})
 }
 
-// TestInsecureWebsocketRequestCertificate is a full end to end test between a node and the server going through a node initial connection process etc
+// TestInsecureWebsocketRequestCertificate is a full end to end test between a node and the server going through a node initial connection process etc.
 func TestInsecureWebsocketRequestCertificate(t *testing.T) {
 	main, node, cleanup := setupWebsocketTest(t)
 	defer cleanup()
@@ -121,9 +121,9 @@ func TestNodeToServerDevices(t *testing.T) {
 		return len(main.Store.Devices.All()) != 0
 	})
 
-	//log.Println("devs", main.Store.Devices.All())
+	// log.Println("devs", main.Store.Devices.All())
 
-	//Make sure node and server has the correct device key which is unique with nodeuuid + device id
+	// Make sure node and server has the correct device key which is unique with nodeuuid + device id
 	assert.Contains(t, main.Store.Devices.All(), devices.ID{Node: node.UUID, ID: "1"})
 	assert.Contains(t, node.Devices.All(), devices.ID{Node: node.UUID, ID: "1"})
 }

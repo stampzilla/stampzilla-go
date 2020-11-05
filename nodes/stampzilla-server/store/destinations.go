@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/notification"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/notification"
 )
 
 func (store *Store) GetDestinations() map[string]*notification.Destination {

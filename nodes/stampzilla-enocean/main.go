@@ -13,13 +13,15 @@ import (
 
 	"github.com/jonaz/goenocean"
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
-	"github.com/stampzilla/stampzilla-go/pkg/node"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/pkg/node"
 )
 
-var globalState *State
-var enoceanSend chan goenocean.Encoder
-var usb300SenderId [4]byte
+var (
+	globalState    *State
+	enoceanSend    chan goenocean.Encoder
+	usb300SenderId [4]byte
+)
 
 func main() {
 	globalState = NewState()
@@ -177,7 +179,7 @@ func receiver(ctx context.Context, node *node.Node, recv chan goenocean.Packet) 
 func incomingPacket(node *node.Node, p goenocean.Packet) {
 	var d *Device
 	if d = globalState.Device(p.SenderId()); d == nil {
-		//Add unknown device
+		// Add unknown device
 		d = globalState.AddDevice(p.SenderId(), "UNKNOWN", nil, false)
 		logrus.Infof("Found new device %v. Please configure it in the config", d)
 	}
@@ -194,11 +196,11 @@ func incomingPacket(node *node.Node, p goenocean.Packet) {
 			if h := handlers.getHandler(deviceEep); h != nil {
 				h.Process(d, t)
 				logrus.Debug("Incoming packet processed from", d.IdString())
-				//connection.Send(node)
+				// connection.Send(node)
 				newState := devices.State{
 					"on":         d.On(),
 					"brightness": d.Dim,
-					"status":     d.Status, //TODO make a trait that is some kind of button and standardify X button presses.
+					"status":     d.Status, // TODO make a trait that is some kind of button and standardify X button presses.
 				}
 				node.UpdateState(d.IdString(), newState)
 				return
@@ -206,5 +208,5 @@ func incomingPacket(node *node.Node, p goenocean.Packet) {
 		}
 	}
 
-	//fmt.Println("Unknown packet")
+	// fmt.Println("Unknown packet")
 }

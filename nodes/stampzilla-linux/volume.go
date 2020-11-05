@@ -6,7 +6,7 @@ import (
 
 	volume "github.com/itchyny/volume-go"
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
 )
 
 func monitorVolume() {
@@ -65,7 +65,6 @@ func commandVolume(state devices.State) error {
 		if err != nil {
 			return fmt.Errorf("unmute failed: %+v", err)
 		}
-
 	}
 
 	return nil

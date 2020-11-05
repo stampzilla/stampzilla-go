@@ -15,12 +15,11 @@ func authorize(oauth2server *osin.Server) func(c *gin.Context) {
 		defer resp.Close()
 
 		if ar := oauth2server.HandleAuthorizeRequest(resp, c.Request); ar != nil {
-
 			// HANDLE LOGIN PAGE HERE
 			if !handleLoginPage(ar, c.Writer, c.Request) {
 				return
 			}
-			//ar.UserData = struct{ Login string }{Login: "test"}
+			// ar.UserData = struct{ Login string }{Login: "test"}
 			ar.Authorized = true
 			oauth2server.FinishAuthorizeRequest(resp, c.Request, ar)
 		}
@@ -30,6 +29,7 @@ func authorize(oauth2server *osin.Server) func(c *gin.Context) {
 		osin.OutputJSON(resp, c.Writer, c.Request)
 	}
 }
+
 func token(oauth2server *osin.Server) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		resp := oauth2server.NewResponse()

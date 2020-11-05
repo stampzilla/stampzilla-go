@@ -1,6 +1,6 @@
 package store
 
-import "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
+import "github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
 
 func (store *Store) GetDevices() *devices.List {
 	store.RLock()

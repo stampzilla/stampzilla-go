@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models"
 )
 
 type Destination struct {
@@ -97,7 +97,7 @@ func (d *Destinations) Remove(uuid string) {
 	d.Unlock()
 }
 
-// Save saves the rules to rules.json
+// Save saves the rules to rules.json.
 func (d *Destinations) Save(filename string) error {
 	configFile, err := os.Create(filename)
 	if err != nil {
@@ -114,7 +114,7 @@ func (d *Destinations) Save(filename string) error {
 	return nil
 }
 
-//Load loads the rules from rules.json
+//Load loads the rules from rules.json.
 func (d *Destinations) Load(filename string) error {
 	logrus.Debugf("destinations: loading rules from %s", filename)
 	configFile, err := os.Open(filename)

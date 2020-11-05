@@ -1,8 +1,8 @@
 package nibe
 
 import (
-	//"log"
 
+	//"log".
 	"github.com/fatih/color"
 )
 
@@ -89,9 +89,8 @@ func decodeMessage(data []byte) (*Message, []byte) {
 					//	log.Printf(" - %f - %d", 45 -(float64(parameter.Value) / 1023 * 33), parameter.Value);
 					//}
 					//}
-
 				}
-				//log.Printf(" <- %s (%x) - cmd %x len %d data %x\n", devices[addr], addr, cmd, length, content)
+				// log.Printf(" <- %s (%x) - cmd %x len %d data %x\n", devices[addr], addr, cmd, length, content)
 
 				msg := &Message{
 					Addr: addr,
@@ -101,7 +100,7 @@ func decodeMessage(data []byte) (*Message, []byte) {
 
 				return msg, data[i+6+length:]
 			} else {
-				//log.Printf(" <- %s (%x) - cmd %x len %d data %x | %x != %x\n", devices[addr], addr, cmd, length, content, chk, chk2)
+				// log.Printf(" <- %s (%x) - cmd %x len %d data %x | %x != %x\n", devices[addr], addr, cmd, length, content, chk, chk2)
 
 				return nil, data[i+6+length:]
 			}
@@ -116,14 +115,14 @@ func decodeMessage(data []byte) (*Message, []byte) {
 			}
 
 			content := data[i+3 : i+3+length]
-			//chk := data[i+3+length]
+			// chk := data[i+3+length]
 
 			chk2 := byte(0)
 			for _, v := range data[i : i+3+length] {
 				chk2 ^= v
 			}
 
-			//log.Printf(" <- RESPONSE %x len %d data %x | %x ?= %x\n", cmd, length, content, chk, chk2)
+			// log.Printf(" <- RESPONSE %x len %d data %x | %x ?= %x\n", cmd, length, content, chk, chk2)
 
 			msg := &Message{
 				Cmd:  cmd,
@@ -133,7 +132,7 @@ func decodeMessage(data []byte) (*Message, []byte) {
 		}
 
 		if val == 0x06 { // ACK
-			//log.Printf(" <- ACK\n")
+			// log.Printf(" <- ACK\n")
 			msg := &Message{
 				Cmd: val,
 			}

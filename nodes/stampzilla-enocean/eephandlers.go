@@ -10,27 +10,33 @@ type baseHandler struct {
 }
 
 func (h *baseHandler) On(d *Device) {
-	//NOOP
+	// NOOP
 }
+
 func (h *baseHandler) Off(d *Device) {
-	//NOOP
+	// NOOP
 }
+
 func (h *baseHandler) Toggle(d *Device) {
-	//NOOP
+	// NOOP
 }
+
 func (h *baseHandler) Learn(d *Device) {
-	//NOOP
+	// NOOP
 }
+
 func (h *baseHandler) Dim(lvl int, d *Device) {
-	//NOOP
+	// NOOP
 }
+
 func (h *baseHandler) Process(d *Device, t goenocean.Telegram) {
-	//NOOP
+	// NOOP
 }
+
 func (h *baseHandler) generateSenderId(d *Device) [4]byte {
 	senderId := usb300SenderId
-	//id := d.Id()[3]
-	//senderId[3] = id & 0x7f
+	// id := d.Id()[3]
+	// senderId[3] = id & 0x7f
 
 	senderId[3] = byte(d.UniqueId)
 
@@ -38,7 +44,7 @@ func (h *baseHandler) generateSenderId(d *Device) [4]byte {
 	return senderId
 }
 
-//Handler for profile f60201
+//Handler for profile f60201.
 type handlerEepf60201 struct {
 	baseHandler
 }
@@ -47,20 +53,22 @@ func (h *handlerEepf60201) On(d *Device) {
 	p := goenocean.NewEepF60201()
 	p.SetSenderId(h.generateSenderId(d))
 	p.SetDestinationId(d.Id())
-	//TODO create set methods in EepF60201
-	p.SetTelegramData([]byte{0x50}) //ON
+	// TODO create set methods in EepF60201
+	p.SetTelegramData([]byte{0x50}) // ON
 	fmt.Printf("Sending ON: % x\n", p.Encode())
 	enoceanSend <- p
 }
+
 func (h *handlerEepf60201) Off(d *Device) {
 	p := goenocean.NewEepF60201()
 	p.SetSenderId(h.generateSenderId(d))
 	p.SetDestinationId(d.Id())
-	//TODO create set methods in EepF60201
-	p.SetTelegramData([]byte{0x70}) //OFF
+	// TODO create set methods in EepF60201
+	p.SetTelegramData([]byte{0x70}) // OFF
 	fmt.Printf("Sending OFF: % x\n", p.Encode())
 	enoceanSend <- p
 }
+
 func (h *handlerEepf60201) Toggle(d *Device) {
 	if d.On() {
 		h.Off(d)
@@ -68,10 +76,11 @@ func (h *handlerEepf60201) Toggle(d *Device) {
 		h.On(d)
 	}
 }
+
 func (h *handlerEepf60201) Process(d *Device, t goenocean.Telegram) {
 	if t, ok := t.(goenocean.TelegramRps); ok {
 		eep := goenocean.NewEepF60201()
-		eep.SetTelegram(t) //THIS IS COOL!
+		eep.SetTelegram(t) // THIS IS COOL!
 
 		d.Status = ""
 
@@ -108,7 +117,7 @@ func (h *handlerEepf60201) Process(d *Device, t goenocean.Telegram) {
 	}
 }
 
-//Handler for profile f60201eltako
+//Handler for profile f60201eltako.
 type handlerEepf60201eltako struct {
 	handlerEepf60201
 }
@@ -118,17 +127,17 @@ func (h *handlerEepf60201eltako) Process(d *Device, t goenocean.Telegram) {
 		eep := goenocean.NewEepF60201()
 		eep.SetTelegram(t)
 
-		//i know this is backwards... eltako is!
-		if eep.R1B0() { //ON
+		// i know this is backwards... eltako is!
+		if eep.R1B0() { // ON
 			d.SetOn(true)
 		}
-		if eep.R1B1() { //OFF
+		if eep.R1B1() { // OFF
 			d.SetOn(false)
 		}
 	}
 }
 
-//Handler for profile a53808
+//Handler for profile a53808.
 type handlerEepa53808 struct {
 	baseHandler
 }
@@ -142,6 +151,7 @@ func (h *handlerEepa53808) On(d *Device) {
 	fmt.Printf("Sending ON: % x\n", p.Encode())
 	enoceanSend <- p
 }
+
 func (h *handlerEepa53808) Off(d *Device) {
 	p := goenocean.NewEepA53808()
 	p.SetDestinationId(d.Id())
@@ -151,6 +161,7 @@ func (h *handlerEepa53808) Off(d *Device) {
 	fmt.Printf("Sending OFF: % x\n", p.Encode())
 	enoceanSend <- p
 }
+
 func (h *handlerEepa53808) Toggle(d *Device) {
 	if d.On() {
 		h.Off(d)
@@ -158,6 +169,7 @@ func (h *handlerEepa53808) Toggle(d *Device) {
 		h.On(d)
 	}
 }
+
 func (h *handlerEepa53808) Learn(d *Device) {
 	p := goenocean.NewTelegram4bsLearn()
 	p.SetLearnFunc(0x38)
@@ -167,7 +179,7 @@ func (h *handlerEepa53808) Learn(d *Device) {
 	fmt.Printf("Sending learn: % x\n", p.Encode())
 	enoceanSend <- p
 
-	//Simple learn. Set learn bit to false and send
+	// Simple learn. Set learn bit to false and send
 	p1 := goenocean.NewEepA53808()
 	tmp := p1.TelegramData()
 	tmp[3] &^= 0x08
@@ -178,7 +190,7 @@ func (h *handlerEepa53808) Learn(d *Device) {
 	enoceanSend <- p1
 }
 
-//Handler for profile a53808eltako
+//Handler for profile a53808eltako.
 type handlerEepa53808eltako struct {
 	handlerEepa53808
 }
@@ -190,6 +202,7 @@ func (h *handlerEepa53808eltako) Toggle(d *Device) {
 		h.On(d)
 	}
 }
+
 func (h *handlerEepa53808eltako) On(d *Device) {
 	p := goenocean.NewEepA53808()
 	p.SetSenderId(h.generateSenderId(d))
@@ -211,20 +224,22 @@ func (h *handlerEepa53808eltako) Off(d *Device) {
 	fmt.Printf("Sending OFF: % x\n", p.Encode())
 	enoceanSend <- p
 }
+
 func (h *handlerEepa53808eltako) Dim(lvl int, d *Device) {
 	p := goenocean.NewEepA53808()
 	p.SetSenderId(h.generateSenderId(d))
 	p.SetDestinationId(d.Id())
 	p.SetCommand(2)
-	//TODO dim level should be 0-100 in stampzilla and send 0-255 to enocean device
+	// TODO dim level should be 0-100 in stampzilla and send 0-255 to enocean device
 	p.SetDimValue(uint8(lvl))
 	p.SetSwitchingCommand(1)
 	fmt.Printf("Sending DIM: % x\n", p.Encode())
 	enoceanSend <- p
 }
+
 func (h *handlerEepa53808eltako) Process(d *Device, t goenocean.Telegram) {
 	eep := goenocean.NewEepA53808()
-	eep.SetTelegram(t) //THIS IS COOL!
+	eep.SetTelegram(t) // THIS IS COOL!
 	fmt.Println("DIMVALUE:", eep.DimValue())
 	fmt.Println("SW command STATUS:", eep.SwitchingCommand())
 	if eep.SwitchingCommand() == 1 {
@@ -235,6 +250,7 @@ func (h *handlerEepa53808eltako) Process(d *Device, t goenocean.Telegram) {
 	}
 	d.Dim = int64(eep.DimValue())
 }
+
 func (h *handlerEepa53808eltako) Learn(d *Device) {
 	p := goenocean.NewTelegram4bsLearn()
 	p.SetLearnFunc(0x38)
@@ -242,7 +258,7 @@ func (h *handlerEepa53808eltako) Learn(d *Device) {
 	fmt.Printf("Sending learn: % x\n", p.Encode())
 	enoceanSend <- p
 
-	//Simple learn. Set learn bit to false and send
+	// Simple learn. Set learn bit to false and send
 	p1 := goenocean.NewEepA53808()
 	p.SetSenderId(h.generateSenderId(d))
 	tmp := p1.TelegramData()
@@ -254,14 +270,14 @@ func (h *handlerEepa53808eltako) Learn(d *Device) {
 	enoceanSend <- p1
 }
 
-//Handler for profile a51201
+//Handler for profile a51201.
 type handlerEepa51201 struct {
 	baseHandler
 }
 
 func (h *handlerEepa51201) Process(d *Device, t goenocean.Telegram) {
 	eep := goenocean.NewEepA51201()
-	eep.SetTelegram(t) //THIS IS COOL!
+	eep.SetTelegram(t) // THIS IS COOL!
 	fmt.Println("METERREADING:", eep.MeterReading(), eep.DataType())
 	if eep.DataType() == "W" {
 		d.SetPowerW(eep.MeterReading())
@@ -270,14 +286,14 @@ func (h *handlerEepa51201) Process(d *Device, t goenocean.Telegram) {
 	}
 }
 
-//Handler for profile d20109
+//Handler for profile d20109.
 type handlerEepd20109 struct {
 	baseHandler
 }
 
 func (h *handlerEepd20109) Process(d *Device, t goenocean.Telegram) {
 	eep := goenocean.NewEepD20109()
-	eep.SetTelegram(t) //THIS IS COOL!
+	eep.SetTelegram(t) // THIS IS COOL!
 	fmt.Println("OUTPUTVALUE", eep.OutputValue())
 	if eep.CommandId() == 4 {
 		value := eep.OutputValue()

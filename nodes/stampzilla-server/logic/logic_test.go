@@ -9,8 +9,8 @@ import (
 
 	"github.com/olahol/melody"
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
-	stypes "github.com/stampzilla/stampzilla-go/pkg/types"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
+	stypes "github.com/stampzilla/stampzilla-go/v2/pkg/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -39,9 +39,11 @@ func (mss *mockSender) SendToID(to string, msgType string, data interface{}) err
 	}
 	return nil
 }
+
 func (mss *mockSender) SendToProtocol(to string, msgType string, data interface{}) error {
 	return nil
 }
+
 func (mss *mockSender) BroadcastWithFilter(msgType string, data interface{}, fn func(*melody.Session) bool) error {
 	return nil
 }
@@ -53,7 +55,7 @@ func TestLoadRulesFromFile(t *testing.T) {
 	l.Load()
 
 	assert.Equal(t, stypes.Duration(time.Minute*5), l.Rules["e8092b86-1261-44cd-ab64-38121df58a79"].For_)
-	//spew.Dump(l.Rules)
+	// spew.Dump(l.Rules)
 	jsonData, err := json.MarshalIndent(l.Rules, "", "\t")
 	assert.NoError(t, err)
 	t.Log(string(jsonData))
@@ -114,7 +116,7 @@ func TestEvaluateRules(t *testing.T) {
 	})
 	cancel()
 	l.Wait()
-	//l.EvaluateRules(context.Background())
+	// l.EvaluateRules(context.Background())
 	assert.Equal(t, false, l.Rules[r.Uuid()].Active())
 }
 

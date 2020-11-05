@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
 )
 
 func startMonitorDpms() {
@@ -56,7 +56,6 @@ func monitorDpms(screen string) {
 		var stderr bytes.Buffer
 		cmd.Stderr = &stderr
 		out, err := cmd.Output()
-
 		if err != nil {
 			logrus.Errorf("Failed to read monitor status: %s: %s", fmt.Sprint(err), stderr.String())
 			return

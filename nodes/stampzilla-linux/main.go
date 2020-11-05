@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
-	"github.com/stampzilla/stampzilla-go/pkg/node"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/pkg/node"
 )
 
 type Config struct {
@@ -14,8 +14,10 @@ type Config struct {
 	Players map[string]PlayerConfig `json:"players"`
 }
 
-var config Config
-var n *node.Node
+var (
+	config Config
+	n      *node.Node
+)
 
 func main() {
 	n = node.New("linux")

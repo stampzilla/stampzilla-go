@@ -10,9 +10,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/websocket"
 )
 
 /* rules.json example:
@@ -48,17 +47,17 @@ import (
 }
 */
 
-// Rules is a list of rules
+// Rules is a list of rules.
 type Rules map[string]*Rule
 
-// Logic is the main struct
+// Logic is the main struct.
 type Logic struct {
 	StateStore           *SavedStateStore
 	Rules                map[string]*Rule
 	devices              *devices.List
 	onReportState        func(string, devices.State)
 	onTriggerDestination func(string, string) error
-	//ActionProgressChan chan ActionProgress
+	// ActionProgressChan chan ActionProgress
 	sync.RWMutex
 	sync.WaitGroup
 	c               chan func()
@@ -73,11 +72,11 @@ type ActionProgress struct {
 }
 */
 
-// New returns a new logic that is ready to use
+// New returns a new logic that is ready to use.
 func New(sss *SavedStateStore, websocketSender websocket.Sender) *Logic {
 	l := &Logic{
 		devices: devices.NewList(),
-		//ActionProgressChan: make(chan ActionProgress, 100),
+		// ActionProgressChan: make(chan ActionProgress, 100),
 		Rules:                make(map[string]*Rule),
 		StateStore:           sss,
 		onReportState:        func(string, devices.State) {},
@@ -88,7 +87,7 @@ func New(sss *SavedStateStore, websocketSender websocket.Sender) *Logic {
 	return l
 }
 
-// AddRule adds a new logic rule. Mainly used in tests
+// AddRule adds a new logic rule. Mainly used in tests.
 func (l *Logic) AddRule(name string) *Rule {
 	r := &Rule{Name_: name, Uuid_: uuid.New().String()}
 	l.Lock()
@@ -97,14 +96,14 @@ func (l *Logic) AddRule(name string) *Rule {
 	return r
 }
 
-//GetRules returns a list of Rules
+//GetRules returns a list of Rules.
 func (l *Logic) GetRules() Rules {
 	l.RLock()
 	defer l.RUnlock()
 	return l.Rules
 }
 
-// SetRules overwrites all rules in logic
+// SetRules overwrites all rules in logic.
 func (l *Logic) SetRules(rules Rules) {
 	l.Lock()
 	l.Rules = rules
@@ -122,7 +121,7 @@ func (l *Logic) OnTriggerDestination(callback func(string, string) error) {
 	l.onTriggerDestination = callback
 }
 
-// Start starts the logic worker
+// Start starts the logic worker.
 func (l *Logic) Start(ctx context.Context) {
 	l.Add(1)
 	logrus.Info("logic: starting worker")
@@ -143,12 +142,13 @@ func (l *Logic) worker(ctx context.Context) {
 	}
 }
 
-// UpdateDevice update the state in the logic store with the new state from the device
+// UpdateDevice update the state in the logic store with the new state from the device.
 func (l *Logic) UpdateDevice(dev *devices.Device) {
 	l.c <- func() {
 		l.updateDevice(dev)
 	}
 }
+
 func (l *Logic) updateDevice(dev *devices.Device) {
 	if oldDev := l.devices.Get(dev.ID); oldDev != nil {
 		if diff := oldDev.State.Diff(dev.State); len(diff) > 0 {
@@ -161,7 +161,7 @@ func (l *Logic) updateDevice(dev *devices.Device) {
 	l.devices.Add(dev)
 }
 
-// EvaluateRules loops over each rule and run evaluation on them
+// EvaluateRules loops over each rule and run evaluation on them.
 func (l *Logic) EvaluateRules(ctx context.Context) {
 	for _, rule := range l.Rules {
 		if !rule.Enabled {
@@ -175,8 +175,9 @@ func (l *Logic) EvaluateRules(ctx context.Context) {
 		l.runFor(ctx, rule, evaluation)
 	}
 }
+
 func (l *Logic) runFor(ctx context.Context, rule *Rule, evaluation bool) {
-	//TODO implement for 5m here. Do not run or set active until 5m passed.
+	// TODO implement for 5m here. Do not run or set active until 5m passed.
 	// go run sleep 5m. cancel go routine if we have new evaluation. After 5m run evaluateRule again before rule.Run
 
 	if rule.stop == nil { // lazy initialized
@@ -229,6 +230,7 @@ func (l *Logic) runFor(ctx context.Context, rule *Rule, evaluation bool) {
 	})
 	rule.SetActive(false)
 }
+
 func (l *Logic) runNow(rule *Rule, evaluation bool) {
 	if evaluation != rule.Active() {
 		l.onReportState(rule.Uuid(), map[string]interface{}{
@@ -268,7 +270,7 @@ func (l *Logic) evaluateRule(r *Rule) bool {
 	return result
 }
 
-// Save saves the rules to rules.json
+// Save saves the rules to rules.json.
 func (l *Logic) Save() error {
 	configFile, err := os.Create("rules.json")
 	if err != nil {
@@ -285,7 +287,7 @@ func (l *Logic) Save() error {
 	return nil
 }
 
-//Load loads the rules from rules.json
+//Load loads the rules from rules.json.
 func (l *Logic) Load() error {
 	logrus.Debug("logic: loading rules from rules.json")
 	configFile, err := os.Open("rules.json")
@@ -304,7 +306,7 @@ func (l *Logic) Load() error {
 		return fmt.Errorf("logic: error loading rules.json: %s", err.Error())
 	}
 
-	//TODO loop over rules and generate UUIDs if needed. If it was needed save the rules again
+	// TODO loop over rules and generate UUIDs if needed. If it was needed save the rules again
 
 	return nil
 }

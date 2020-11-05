@@ -9,9 +9,9 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-google-assistant/googleassistant"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
-	"github.com/stampzilla/stampzilla-go/pkg/node"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-google-assistant/googleassistant"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/pkg/node"
 )
 
 // SmartHomeHandler contains the logic to answer Google Actions API requests and authorize them usnig oauth2.
@@ -26,7 +26,6 @@ func NewSmartHomeHandler(node *node.Node, deviceList *devices.List) *SmartHomeHa
 		node:       node,
 		deviceList: deviceList,
 	}
-
 }
 
 func (shh *SmartHomeHandler) smartHomeActionHandler(oauth2server *osin.Server) func(c *gin.Context) {
@@ -79,7 +78,6 @@ func (shh *SmartHomeHandler) smartHomeActionHandler(oauth2server *osin.Server) f
 			c.JSON(http.StatusOK, shh.executeHandler(r))
 		case googleassistant.QueryIntent:
 			c.JSON(http.StatusOK, shh.queryHandler(r))
-
 		}
 	}
 }
@@ -106,7 +104,6 @@ func (shh *SmartHomeHandler) executeHandler(req *googleassistant.Request) *googl
 	affectedDevs := make(devices.DeviceMap)
 
 	for _, command := range req.Inputs.Payload().Commands {
-
 		for _, v := range command.Execution {
 			for _, googleDev := range command.Devices {
 				devID, err := devices.NewIDFromString(googleDev.ID)
@@ -178,13 +175,11 @@ func (shh *SmartHomeHandler) executeHandler(req *googleassistant.Request) *googl
 }
 
 func (shh *SmartHomeHandler) syncHandler(req *googleassistant.Request) *googleassistant.Response {
-
 	resp := &googleassistant.Response{}
 	resp.RequestID = req.RequestID
 	resp.Payload.AgentUserID = "agentuserid"
 
 	for _, dev := range shh.deviceList.All() {
-
 		skip := true
 		for _, v := range dev.Traits {
 			if v == "OnOff" || v == "Brightness" {
@@ -220,7 +215,6 @@ func (shh *SmartHomeHandler) syncHandler(req *googleassistant.Request) *googleas
 			rdev.Name.Name = dev.Alias
 		}
 		resp.Payload.Devices = append(resp.Payload.Devices, rdev)
-
 	}
 
 	logrus.Debug("Sync Response: ", resp)

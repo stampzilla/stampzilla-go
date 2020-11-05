@@ -10,8 +10,8 @@ import (
 	"sync"
 
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-spc/edp"
-	"github.com/stampzilla/stampzilla-go/pkg/node"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-spc/edp"
+	"github.com/stampzilla/stampzilla-go/v2/pkg/node"
 )
 
 func main() {

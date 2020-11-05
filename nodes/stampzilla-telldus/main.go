@@ -6,8 +6,8 @@ import (
 	"unsafe"
 
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
-	n "github.com/stampzilla/stampzilla-go/pkg/node"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
+	n "github.com/stampzilla/stampzilla-go/v2/pkg/node"
 )
 
 /*

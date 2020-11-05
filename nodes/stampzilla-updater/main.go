@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/google/go-github/github"
-	"github.com/stampzilla/stampzilla-go/stampzilla/installer"
+	"github.com/stampzilla/stampzilla-go/v2/pkg/installer"
 )
 
 const (
@@ -21,9 +21,9 @@ const (
 )
 
 func main() {
-	//installer := installer.NewInstaller()
-	//installer.GoGet("github.com/stampzilla/stampzilla-go/nodes/stampzilla-enocean", true)
-	//return
+	// installer := installer.NewInstaller()
+	// installer.GoGet("github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-enocean", true)
+	// return
 
 	wg := &sync.WaitGroup{}
 	quit := make(chan struct{})
@@ -79,7 +79,7 @@ func update(wg *sync.WaitGroup) {
 
 			if repoDate.After(n.ModTime()) {
 				log.Printf("Update date: %s for node: %s\n", repoDate, n.Name())
-				//installer.GoGet("github.com/stampzilla/stampzilla-go/nodes/"+n.Name(), true)
+				// installer.GoGet("github.com/stampzilla/stampzilla-go/v2/nodes/"+n.Name(), true)
 				installer.Update(n.Name())
 			}
 		}
@@ -94,7 +94,6 @@ func getLatestCommitTimeInFolder(folder string) (*time.Time, error) {
 			Path: folder,
 			SHA:  "master",
 		})
-
 	if err != nil {
 		return nil, err
 	}
@@ -129,6 +128,7 @@ func getLatestLocalCommit() (sha1 string, err error) {
 	sha1 = strings.Fields(result)[0]
 	return
 }
+
 func signalHandler(wg *sync.WaitGroup, quit chan struct{}) {
 	ch := make(chan os.Signal, 10)
 	signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT)

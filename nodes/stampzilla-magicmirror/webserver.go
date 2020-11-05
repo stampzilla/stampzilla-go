@@ -8,8 +8,7 @@ import (
 	"github.com/olahol/melody"
 	"github.com/rakyll/statik/fs"
 	"github.com/sirupsen/logrus"
-
-	_ "github.com/stampzilla/stampzilla-go/nodes/stampzilla-magicmirror/statik"
+	_ "github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-magicmirror/statik"
 )
 
 type Message struct {
@@ -17,8 +16,10 @@ type Message struct {
 	Data json.RawMessage `json:"data"`
 }
 
-var m = melody.New()
-var lastMessages = make(map[string][]byte)
+var (
+	m            = melody.New()
+	lastMessages = make(map[string][]byte)
+)
 
 func initWebserver() {
 	r := gin.Default()
@@ -41,9 +42,9 @@ func initWebserver() {
 			http.FileServer(statikFS).ServeHTTP(c.Writer, c.Request)
 		})
 
-		//r.StaticFile("/", "./web/build/index.html")
-		//r.StaticFile("/manifest.json", "./web/build/manifest.json")
-		//r.Static("/static", "./web/build/static")
+		// r.StaticFile("/", "./web/build/index.html")
+		// r.StaticFile("/manifest.json", "./web/build/manifest.json")
+		// r.Static("/static", "./web/build/static")
 	}
 
 	r.GET("/ws", func(c *gin.Context) {

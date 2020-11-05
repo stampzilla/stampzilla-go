@@ -48,8 +48,8 @@ func (pb *PushbulletSender) Trigger(dest []string, body string) error {
 
 	defer resp.Body.Close()
 
-	//b, err := ioutil.ReadAll(resp.Body)
-	//spew.Dump(b)
+	// b, err := ioutil.ReadAll(resp.Body)
+	// spew.Dump(b)
 
 	return err
 }
@@ -103,13 +103,13 @@ func (pb *PushbulletSender) Destinations() (map[string]string, error) {
 		return nil, err
 	}
 
-	var response = Response{}
+	response := Response{}
 	err = json.Unmarshal(b, &response)
 	if err != nil {
 		return nil, err
 	}
 
-	//spew.Dump(b)
+	// spew.Dump(b)
 	dest := make(map[string]string)
 	for _, dev := range response.Devices {
 		dest[dev.Iden] = dev.Nickname

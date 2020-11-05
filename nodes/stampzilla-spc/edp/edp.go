@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
 )
 
 type Packet struct {

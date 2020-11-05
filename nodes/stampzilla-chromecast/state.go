@@ -42,7 +42,7 @@ func (s *State) Add(c *Chromecast) {
 	*/
 }
 
-// Remove removes a chromecast from the state
+// Remove removes a chromecast from the state.
 func (s *State) Remove(c *Chromecast) {
 	_, ok := s.Chromecasts[c.Uuid()]
 	if ok {

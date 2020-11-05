@@ -2,7 +2,7 @@ package hueemulator
 
 type Request struct {
 	UserId string
-	//RequestedOnState bool
+	// RequestedOnState bool
 	Request    *request
 	RemoteAddr string
 }

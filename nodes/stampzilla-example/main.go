@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
-	"github.com/stampzilla/stampzilla-go/pkg/node"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/pkg/node"
 )
 
 func main() {
@@ -69,7 +69,7 @@ func main() {
 
 		// Require a device config for node 4 only
 		if !ok && device.ID.ID == "4" {
-			return fmt.Errorf("Foudn no config for device %s", device.ID)
+			return fmt.Errorf("Found no config for device %s", device.ID)
 		}
 
 		state.Bool("on", func(on bool) {
@@ -88,7 +88,6 @@ func main() {
 	})
 
 	err := node.Connect()
-
 	if err != nil {
 		logrus.Error(err)
 		return

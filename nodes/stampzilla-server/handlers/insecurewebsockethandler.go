@@ -8,12 +8,12 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/ca"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/helpers"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/interfaces"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/store"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/ca"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/helpers"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/interfaces"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/store"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/websocket"
 )
 
 type insecureWebsocketHandler struct {

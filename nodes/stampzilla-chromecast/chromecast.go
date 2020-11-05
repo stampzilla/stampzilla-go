@@ -9,15 +9,15 @@ import (
 	"github.com/stampzilla/gocast/events"
 	"github.com/stampzilla/gocast/handlers"
 	"github.com/stampzilla/gocast/responses"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
-	"github.com/stampzilla/stampzilla-go/pkg/node"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/pkg/node"
 )
 
 type Chromecast struct {
 	PrimaryApp      string
 	PrimaryEndpoint string
 	Playing         bool
-	//Paused          bool
+	// Paused          bool
 
 	IsStandBy     bool
 	IsIdleScreen  bool
@@ -26,8 +26,8 @@ type Chromecast struct {
 	Volume float64
 	Muted  bool
 
-	//Addr net.IP
-	//Port int
+	// Addr net.IP
+	// Port int
 
 	Media Chromecast_Media
 
@@ -64,9 +64,11 @@ func NewChromecast(node *node.Node, d *gocast.Device) *Chromecast {
 func (c *Chromecast) Play() {
 	c.mediaHandler.Play()
 }
+
 func (c *Chromecast) Pause() {
 	c.mediaHandler.Pause()
 }
+
 func (c *Chromecast) Stop() {
 	c.mediaHandler.Stop()
 }
@@ -79,7 +81,7 @@ func (c *Chromecast) PlayUrl(url string, contentType string) {
 	}
 
 	if err != handlers.ErrAppAlreadyLaunched {
-		//Wait for new media connection to launched app
+		// Wait for new media connection to launched app
 		if err := c.waitForAppLaunch(gocast.AppMedia); err != nil {
 			logrus.Error(err)
 			return
@@ -110,10 +112,9 @@ func (c *Chromecast) waitForAppLaunch(app string) error {
 		return fmt.Errorf("Wrong app launched. Expected %s got %s", app, launchedApp)
 	case <-time.After(time.Second * 20):
 		return fmt.Errorf("timeout waiting for app launch after 20 seconds")
-
 	}
-
 }
+
 func (c *Chromecast) appLaunched(app string) {
 	select {
 	case c.appLaunch <- app:
@@ -125,7 +126,6 @@ func (c *Chromecast) appLaunched(app string) {
 
 func (c *Chromecast) Event(node *node.Node) func(event events.Event) {
 	return func(event events.Event) {
-
 		newState := make(devices.State)
 
 		switch data := event.(type) {
@@ -166,7 +166,7 @@ func (c *Chromecast) Event(node *node.Node) func(event events.Event) {
 			newState["app"] = ""
 		case events.AppStarted:
 			logrus.Info(c.Name(), "- App started:", data.DisplayName, "(", data.AppID, ")")
-			//spew.Dump("Data:", data)
+			// spew.Dump("Data:", data)
 
 			newState["app"] = data.DisplayName
 			c.PrimaryApp = data.DisplayName
@@ -182,7 +182,7 @@ func (c *Chromecast) Event(node *node.Node) func(event events.Event) {
 			c.Media.Url = ""
 			c.Media.Duration = 0
 
-			//If the app supports media controls lets subscribe to it
+			// If the app supports media controls lets subscribe to it
 			if data.HasNamespace("urn:x-cast:com.google.cast.media") {
 				logrus.Info(c.Name(), "- Subscribe cast.tp.connection:", data.DisplayName, "(", data.AppID, ")")
 				c.Subscribe("urn:x-cast:com.google.cast.tp.connection", data.TransportId, c.mediaConnectionHandler)
@@ -194,9 +194,9 @@ func (c *Chromecast) Event(node *node.Node) func(event events.Event) {
 
 		case events.AppStopped:
 			logrus.Info(c.Name(), "- App stopped:", data.DisplayName, "(", data.AppID, ")")
-			//spew.Dump("Data:", data)
+			// spew.Dump("Data:", data)
 
-			//unsubscribe from old channels
+			// unsubscribe from old channels
 			for _, v := range data.Namespaces {
 				c.UnsubscribeByUrnAndDestinationId(v.Name, data.TransportId)
 			}
@@ -253,7 +253,7 @@ func (c *Chromecast) Event(node *node.Node) func(event events.Event) {
 				}
 			*/
 
-		//gocast.MediaEvent:
+		// gocast.MediaEvent:
 		default:
 			logrus.Warnf("unexpected event %T: %#v\n", data, data)
 		}

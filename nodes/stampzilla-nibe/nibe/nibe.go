@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	//"github.com/fatih/color"
+	//"github.com/fatih/color".
 	"github.com/tarm/serial"
 )
 
@@ -62,6 +62,7 @@ func (n *Nibe) Connect(p string) {
 
 	go n.Worker()
 }
+
 func (n *Nibe) Stop() {
 	n.Lock()
 	defer n.Unlock()
@@ -110,7 +111,7 @@ func (n *Nibe) Write(reg uint16, value int16) (uint16, error) {
 }
 
 func wr(s *serial.Port, data []byte) {
-	//sendLog := color.New(color.FgRed, color.Bold)
-	//sendLog.Printf(" -> WRITE %x\n", data)
+	// sendLog := color.New(color.FgRed, color.Bold)
+	// sendLog.Printf(" -> WRITE %x\n", data)
 	s.Write(data)
 }

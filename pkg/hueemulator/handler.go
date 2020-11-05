@@ -12,9 +12,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var handlerMap map[int]*huestate
-var debug bool
-var handlerMapLock sync.Mutex
+var (
+	handlerMap     map[int]*huestate
+	debug          bool
+	handlerMapLock sync.Mutex
+)
 
 func init() {
 	log.SetOutput(ioutil.Discard)
@@ -32,8 +34,8 @@ func SetDebug(d bool) {
 
 func ListenAndServe(addr string) error {
 	log.Println("Listening to: ", addr)
-	//router := httprouter.New()
-	//router := gin.Default()
+	// router := httprouter.New()
+	// router := gin.Default()
 	router := gin.New()
 
 	if debug {
@@ -84,6 +86,7 @@ func requestLogger(h http.Handler) http.Handler {
 		h.ServeHTTP(w, r)
 	})
 }
+
 func GetPrimaryIp() string {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {

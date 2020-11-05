@@ -15,7 +15,7 @@ const (
 	upnp_uri               = "/upnp/setup.xml"
 )
 
-//OPT: "http://schemas.upnp.org/upnp/1/0/"; ns=01
+//OPT: "http://schemas.upnp.org/upnp/1/0/"; ns=01.
 var responseTemplateText = `HTTP/1.1 200 OK
 CACHE-CONTROL: max-age=86400
 EXT:
@@ -109,7 +109,7 @@ func upnpTemplateInit() {
 
 func upnpSetup(addr string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		//w.Header().Set("Content-Type", "application/xml")
+		// w.Header().Set("Content-Type", "application/xml")
 		err := setupTemplate.Execute(c.Writer, addr)
 		if err != nil {
 			log.Fatalln("[WEB] upnpSetup:", err)

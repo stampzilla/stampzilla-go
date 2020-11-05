@@ -21,14 +21,13 @@ import (
 	"github.com/olahol/melody"
 	"github.com/rakyll/statik/fs"
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/ca"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/handlers"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/helpers"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/persons"
-
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/store"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/websocket"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/ca"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/handlers"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/helpers"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/persons"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/store"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/websocket"
 )
 
 type Webserver struct {
@@ -103,6 +102,7 @@ func (ws *Webserver) Init(requireAuth bool) *gin.Engine {
 	ws.router = r
 	return r
 }
+
 func (ws *Webserver) Start(addr string, tlsConfig *tls.Config) chan struct{} {
 	server, done := gograce.NewServerWithTimeout(10 * time.Second)
 

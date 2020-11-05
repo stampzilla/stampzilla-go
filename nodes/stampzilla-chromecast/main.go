@@ -4,9 +4,8 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-
 	"github.com/stampzilla/gocast/discovery"
-	"github.com/stampzilla/stampzilla-go/pkg/node"
+	"github.com/stampzilla/stampzilla-go/v2/pkg/node"
 )
 
 var state = &State{
@@ -16,7 +15,7 @@ var state = &State{
 func main() {
 	node := node.New("chromecast")
 
-	//node.OnConfig(updatedConfig)
+	// node.OnConfig(updatedConfig)
 
 	stop := make(chan struct{})
 	node.OnShutdown(func() {
@@ -40,7 +39,7 @@ func discoveryListner(node *node.Node, discovery *discovery.Service, stop chan s
 	for {
 		select {
 		case device := <-discovery.Found():
-			logrus.Debugf("New device discoverd: %s", device.String())
+			logrus.Debugf("New device discovered: %s", device.String())
 			d := NewChromecast(node, device)
 			state.Add(d)
 			go func() {

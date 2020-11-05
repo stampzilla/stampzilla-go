@@ -14,7 +14,7 @@ import (
 	"github.com/faiface/beep/mp3"
 	"github.com/faiface/beep/speaker"
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
 )
 
 type Player struct {
@@ -35,8 +35,10 @@ type PlayerConfig struct {
 	Playlist []string `json:"playlist"`
 }
 
-var players = make(map[string]*Player, 0)
-var sr = beep.SampleRate(44100)
+var (
+	players = make(map[string]*Player, 0)
+	sr      = beep.SampleRate(44100)
+)
 
 func init() {
 	speaker.Init(sr, sr.N(time.Second/10))

@@ -1,6 +1,6 @@
 package store
 
-import "github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/notification"
+import "github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/notification"
 
 func (store *Store) GetSenders() map[string]notification.Sender {
 	store.RLock()

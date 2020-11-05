@@ -85,18 +85,18 @@ func setLightState(c *gin.Context) {
 
 	log.Println("[DEVICE]", c.Param("userId"), "requested state:", req.On, "requested brightness: ", req.Brightness)
 
-	//if hstate, ok := handlerMap[lightId]; ok {
+	// if hstate, ok := handlerMap[lightId]; ok {
 	if hstate := getHueStateById(lightId); hstate != nil {
 		hstate.Handler(Request{
 			UserId: c.Param("userId"),
-			//RequestedOnState: req.On,
+			// RequestedOnState: req.On,
 			Request:    req,
 			RemoteAddr: c.Request.RemoteAddr,
 		})
 		hstate.Light.State.On = req.On
 		hstate.Light.State.Bri = req.Brightness
 		log.Println("[DEVICE] handler replied with state:", req.On)
-		//handlerMap[lightId] = hstate
+		// handlerMap[lightId] = hstate
 		c.Writer.Write([]byte("[{\"success\":{\"/lights/" + lightId + "/state/on\":" + strconv.FormatBool(req.On) + "}}]"))
 	}
 }

@@ -25,7 +25,7 @@ const (
 	reconnectWait = 2 * time.Second
 )
 
-// Websocket implements a websocket client
+// Websocket implements a websocket client.
 type Websocket interface {
 	OnConnect(cb func())
 	ConnectContext(ctx context.Context, addr string, headers http.Header) error
@@ -50,7 +50,7 @@ type websocketClient struct {
 	sync.Mutex
 }
 
-// New creates a new Websocket
+// New creates a new Websocket.
 func New() Websocket {
 	return &websocketClient{
 		write:        make(chan func()),
@@ -70,6 +70,7 @@ func (ws *websocketClient) OnConnect(cb func()) {
 	ws.onConnect = cb
 	ws.Unlock()
 }
+
 func (ws *websocketClient) getOnConnect() func() {
 	ws.Lock()
 	defer ws.Unlock()
@@ -107,7 +108,7 @@ func (ws *websocketClient) ConnectContext(ctx context.Context, addr string, head
 }
 
 // ConnectWithRetry tries to connect and blocks until connected.
-// if disconnected because an error tries to reconnect again every 5th second
+// if disconnected because an error tries to reconnect again every 5th second.
 func (ws *websocketClient) ConnectWithRetry(parentCtx context.Context, addr string, headers http.Header) {
 	ctx, cancel := context.WithCancel(parentCtx)
 	ws.wg.Add(1)
@@ -167,7 +168,7 @@ func (ws *websocketClient) WriteMessage(messageType int, data []byte) error {
 	return <-errCh
 }
 
-// WriteJSON writes interface{} encoded as JSON to our connection
+// WriteJSON writes interface{} encoded as JSON to our connection.
 func (ws *websocketClient) WriteJSON(v interface{}) error {
 	errCh := make(chan error, 1)
 	select {

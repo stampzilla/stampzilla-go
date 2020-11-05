@@ -7,12 +7,12 @@ import (
 	"sync"
 
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/notification/email"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/notification/file"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/notification/nx"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/notification/pushbullet"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/notification/webhook"
-	"github.com/stampzilla/stampzilla-go/nodes/stampzilla-server/models/notification/wirepusher"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/notification/email"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/notification/file"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/notification/nx"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/notification/pushbullet"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/notification/webhook"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/notification/wirepusher"
 )
 
 type Sender struct {
@@ -36,6 +36,7 @@ func (s Sender) Trigger(dest *Destination, body string) error {
 
 	return fmt.Errorf("Trigger - Not implemented")
 }
+
 func (s Sender) Release(dest *Destination, body string) error {
 	sd := NewSender(s.Type, s.Parameters)
 	if sd != nil {
@@ -84,7 +85,7 @@ func NewSenders() *Senders {
 	}
 }
 
-// Save saves the rules to rules.json
+// Save saves the rules to rules.json.
 func (s *Senders) Save(filename string) error {
 	configFile, err := os.Create(filename)
 	if err != nil {
@@ -101,7 +102,7 @@ func (s *Senders) Save(filename string) error {
 	return nil
 }
 
-//Load loads the rules from rules.json
+//Load loads the rules from rules.json.
 func (s *Senders) Load(filename string) error {
 	logrus.Debugf("senders: loading from %s", filename)
 	configFile, err := os.Open(filename)

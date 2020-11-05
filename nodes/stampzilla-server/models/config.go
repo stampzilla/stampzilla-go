@@ -10,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-//Config is the main server configuration
+//Config is the main server configuration.
 type Config struct {
 	Port     string `json:"port" default:"8080"`
 	TLSPort  string `json:"tlsPort" default:"6443"`
@@ -23,7 +23,7 @@ type Config struct {
 	Version bool `json:"version,omitempty" flagUsage:"show the version of the app without starting"`
 }
 
-//Save writes the config as json to specified filename
+//Save writes the config as json to specified filename.
 func (c *Config) Save(filename string) {
 	configFile, err := os.Create(filename)
 	if err != nil {
@@ -40,7 +40,7 @@ func (c *Config) Save(filename string) {
 	out.WriteTo(configFile)
 }
 
-//MustLoad loads the config using multiconfig from json or environment or command line args
+//MustLoad loads the config using multiconfig from json or environment or command line args.
 func (c *Config) MustLoad() {
 	m := c.createMultiConfig()
 	m.MustLoad(c)
@@ -50,7 +50,7 @@ func (c *Config) MustLoad() {
 	}
 }
 
-//Load loads the config using multiconfig from json or environment or command line args but does not fatal as MustLoad does
+//Load loads the config using multiconfig from json or environment or command line args but does not fatal as MustLoad does.
 func (c *Config) Load() error {
 	m := c.createMultiConfig()
 	err := m.Load(c)
