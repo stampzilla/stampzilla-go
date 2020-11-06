@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+	"text/tabwriter"
 	"time"
 
 	"github.com/google/go-github/github"
@@ -114,21 +116,12 @@ func (t *cliHandler) runInstaller(c *cli.Context, i installer.Installer) error {
 		}
 
 		// generate for all nodes in binary dir
-		nodes, err := ioutil.ReadDir("/home/stampzilla/go/bin")
+		nodes, err := getNodesFromDisk()
 		if err != nil {
 			return err
 		}
 		for _, node := range nodes {
-			if node.IsDir() {
-				continue
-			}
-			if node.Name() == "stampzilla" { // skip stampzilla cli if it exists
-				continue
-			}
-			if !strings.HasPrefix(node.Name(), "stampzilla-") {
-				continue
-			}
-			err := r.GenerateUnit(node.Name())
+			err := r.GenerateUnit(node)
 			if err != nil {
 				return err
 			}
@@ -291,6 +284,40 @@ Possible solutions:
 
 	logrus.Infof("Update to version %s successful", version)
 	return nil
+}
+
+func (t *cliHandler) Version(c *cli.Context) error {
+	w := tabwriter.NewWriter(os.Stdout, 0, 8, 0, '\t', 0)
+	nodes, err := getNodesFromDisk()
+	if err != nil {
+		return err
+	}
+	for _, node := range nodes {
+		out, _ := exec.Command(fmt.Sprintf("/home/stampzilla/go/bin/%s", node), "--version").CombinedOutput()
+		fmt.Fprintf(w, "%s\t%s\n", node, bytes.TrimSpace(out))
+	}
+	return w.Flush()
+}
+
+func getNodesFromDisk() ([]string, error) {
+	nodes, err := ioutil.ReadDir("/home/stampzilla/go/bin")
+	if err != nil {
+		return nil, err
+	}
+	ret := []string{}
+	for _, node := range nodes {
+		if node.IsDir() {
+			continue
+		}
+		if node.Name() == "stampzilla" { // skip stampzilla cli if it exists
+			continue
+		}
+		if !strings.HasPrefix(node.Name(), "stampzilla-") {
+			continue
+		}
+		ret = append(ret, node.Name())
+	}
+	return ret, nil
 }
 
 func getRunner(c *cli.Context) runner.Runner {
