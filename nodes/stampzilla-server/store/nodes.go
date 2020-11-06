@@ -30,7 +30,7 @@ func (store *Store) AddOrUpdateNode(node *models.Node) {
 	if _, ok := store.Nodes[node.UUID]; !ok {
 		store.Nodes[node.UUID] = node
 	} else {
-		if node.Version != "" {
+		if node.Version.Version != "" {
 			store.Nodes[node.UUID].Version = node.Version
 		}
 		if node.Type != "" {

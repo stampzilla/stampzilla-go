@@ -16,6 +16,7 @@ import (
 	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/persons"
 	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/store"
 	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/websocket"
+	"github.com/stampzilla/stampzilla-go/v2/pkg/build"
 )
 
 type secureWebsocketHandler struct {
@@ -460,6 +461,14 @@ func (wsh *secureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.R
 			}
 			if t, ok := s.Get("type"); ok {
 				n.Type = t.(string)
+			}
+			v := r.Header.Get("X-VERSION")
+			if v != "" {
+				vdata := &build.Data{}
+				err := json.Unmarshal([]byte(v), vdata)
+				if err == nil {
+					n.Version = *vdata
+				}
 			}
 			wsh.Store.AddOrUpdateNode(n)
 		}
