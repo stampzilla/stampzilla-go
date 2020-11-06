@@ -102,7 +102,7 @@ func (s *Senders) Save(filename string) error {
 	return nil
 }
 
-//Load loads the rules from rules.json.
+// Load loads the rules from rules.json.
 func (s *Senders) Load(filename string) error {
 	logrus.Debugf("senders: loading from %s", filename)
 	configFile, err := os.Open(filename)
