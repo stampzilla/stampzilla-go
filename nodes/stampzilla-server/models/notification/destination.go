@@ -114,7 +114,7 @@ func (d *Destinations) Save(filename string) error {
 	return nil
 }
 
-//Load loads the rules from rules.json.
+// Load loads the rules from rules.json.
 func (d *Destinations) Load(filename string) error {
 	logrus.Debugf("destinations: loading rules from %s", filename)
 	configFile, err := os.Open(filename)

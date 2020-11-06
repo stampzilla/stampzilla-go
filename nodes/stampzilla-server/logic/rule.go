@@ -176,7 +176,7 @@ func (r *Rule) Run(store *SavedStateStore, sender websocket.Sender, triggerDesti
 	}
 }
 
-//Eval evaluates the cel expression.
+// Eval evaluates the cel expression.
 func (r *Rule) Eval(devices *devices.List, rules map[string]bool) (bool, error) {
 	devicesState := make(map[string]map[string]interface{})
 	for devID, v := range devices.All() {

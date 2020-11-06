@@ -96,7 +96,7 @@ func (l *Logic) AddRule(name string) *Rule {
 	return r
 }
 
-//GetRules returns a list of Rules.
+// GetRules returns a list of Rules.
 func (l *Logic) GetRules() Rules {
 	l.RLock()
 	defer l.RUnlock()
@@ -287,7 +287,7 @@ func (l *Logic) Save() error {
 	return nil
 }
 
-//Load loads the rules from rules.json.
+// Load loads the rules from rules.json.
 func (l *Logic) Load() error {
 	logrus.Debug("logic: loading rules from rules.json")
 	configFile, err := os.Open("rules.json")

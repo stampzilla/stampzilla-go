@@ -127,6 +127,11 @@ func main() {
 			Usage:  "Update stampzilla cli",
 			Action: addDebug(cliHandler.SelfUpdate),
 		},
+		{
+			Name:   "version",
+			Usage:  "print version of all installed stampzilla nodes",
+			Action: addDebug(cliHandler.Version),
+		},
 	}
 
 	err := app.Run(os.Args)
