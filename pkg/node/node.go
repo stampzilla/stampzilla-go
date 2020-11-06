@@ -316,6 +316,7 @@ func (n *Node) connect(ctx context.Context, addr string) {
 	headers := http.Header{}
 	headers.Add("X-UUID", n.UUID)
 	headers.Add("X-TYPE", n.Type)
+	headers.Add("X-VERSION", build.JSON())
 	headers.Set("Sec-WebSocket-Protocol", n.Protocol)
 	if n.Protocol == "" {
 		headers.Set("Sec-WebSocket-Protocol", "node")
