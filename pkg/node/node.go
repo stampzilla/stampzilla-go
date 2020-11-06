@@ -479,6 +479,9 @@ func (n *Node) OnRequestStateChange(cb func(state devices.State, device *devices
 			stateChange := make(devices.State)
 			foundChange := false
 			oldDev := n.Devices.Get(devID)
+			if oldDev == nil {
+				continue // got state-change request for a device we dont have
+			}
 			for s, newState := range state {
 				oldState := oldDev.State[s]
 				if newState != oldState {
