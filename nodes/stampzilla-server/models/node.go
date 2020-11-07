@@ -5,14 +5,15 @@ import (
 	"sync"
 
 	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
+	"github.com/stampzilla/stampzilla-go/v2/pkg/build"
 )
 
 type Node struct {
-	UUID       string `json:"uuid,omitempty"`
-	Connected_ bool   `json:"connected,omitempty"`
-	Version    string `json:"version,omitempty"`
-	Type       string `json:"type,omitempty"`
-	Name       string `json:"name,omitempty"`
+	UUID       string     `json:"uuid,omitempty"`
+	Connected_ bool       `json:"connected,omitempty"`
+	Version    build.Data `json:"version,omitempty"`
+	Type       string     `json:"type,omitempty"`
+	Name       string     `json:"name,omitempty"`
 	// Devices   Devices         `json:"devices,omitempty"`
 	Config  json.RawMessage       `json:"config,omitempty"`
 	Aliases map[devices.ID]string `json:"aliases,omitempty"`

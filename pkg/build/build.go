@@ -15,3 +15,13 @@ var Commit = ""
 func String() string {
 	return fmt.Sprintf(`Version: "%s", BuildTime: "%s", Commit: "%s" `, Version, BuildTime, Commit)
 }
+
+func JSON() string {
+	return fmt.Sprintf(`{"Version": "%s", "BuildTime": "%s", "Commit": "%s"} `, Version, BuildTime, Commit)
+}
+
+type Data struct {
+	Version   string
+	BuildTime string
+	Commit    string
+}
