@@ -11,7 +11,7 @@ import (
 type Node struct {
 	UUID       string     `json:"uuid,omitempty"`
 	Connected_ bool       `json:"connected,omitempty"`
-	Version    build.Data `json:"version,omitempty"`
+	Build      build.Data `json:"build,omitempty"`
 	Type       string     `json:"type,omitempty"`
 	Name       string     `json:"name,omitempty"`
 	// Devices   Devices         `json:"devices,omitempty"`

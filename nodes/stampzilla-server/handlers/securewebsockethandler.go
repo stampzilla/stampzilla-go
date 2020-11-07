@@ -449,7 +449,6 @@ func (wsh *secureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.R
 	id, _ := s.Get(websocket.KeyID.String())
 	logrus.Debugf("ws handle secure connect with id %s (%s)", id, proto)
 
-	// Send a list of all nodes if its a webgui
 	switch proto {
 	case "node":
 		n := wsh.Store.GetNode(id.(string))
@@ -458,20 +457,20 @@ func (wsh *secureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.R
 			n = &models.Node{
 				UUID:       id.(string),
 				Connected_: true,
+				Type:       r.Header.Get("X-TYPE"),
 			}
-			if t, ok := s.Get("type"); ok {
-				n.Type = t.(string)
-			}
-			v := r.Header.Get("X-VERSION")
-			if v != "" {
-				vdata := &build.Data{}
-				err := json.Unmarshal([]byte(v), vdata)
-				if err == nil {
-					n.Version = *vdata
-				}
-			}
-			wsh.Store.AddOrUpdateNode(n)
 		}
+		v := r.Header.Get("X-VERSION")
+		if v != "" {
+			vdata := &build.Data{}
+			err := json.Unmarshal([]byte(v), vdata)
+			if err == nil {
+				n.Lock()
+				n.Build = *vdata
+				n.Unlock()
+			}
+		}
+		wsh.Store.AddOrUpdateNode(n)
 
 		msg, err := models.NewMessage("setup", n)
 		if err != nil {

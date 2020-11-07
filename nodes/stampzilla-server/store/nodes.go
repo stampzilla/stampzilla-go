@@ -27,27 +27,35 @@ func (store *Store) GetNode(uuid string) *models.Node {
 func (store *Store) AddOrUpdateNode(node *models.Node) {
 	store.Lock()
 
+	changed := false
 	if _, ok := store.Nodes[node.UUID]; !ok {
 		store.Nodes[node.UUID] = node
+		changed = true
 	} else {
-		if node.Version.Version != "" {
-			store.Nodes[node.UUID].Version = node.Version
+		if node.Build.Version != store.Nodes[node.UUID].Build.Version {
+			store.Nodes[node.UUID].Build = node.Build
+			changed = true
 		}
-		if node.Type != "" {
+		if node.Type != store.Nodes[node.UUID].Type {
 			store.Nodes[node.UUID].Type = node.Type
+			changed = true
 		}
-		if node.Name != "" {
+		if node.Name != store.Nodes[node.UUID].Name {
 			store.Nodes[node.UUID].Name = node.Name
+			changed = true
 		}
 		if node.Config != nil {
-			logrus.Info("Setting config to: ", string(node.Config))
+			logrus.Debug("Setting config to: ", string(node.Config))
 			store.Nodes[node.UUID].Config = node.Config
+			changed = true
 		}
 	}
 
 	store.Unlock()
 
-	store.runCallbacks("nodes")
+	if changed {
+		store.runCallbacks("nodes")
+	}
 }
 
 func (store *Store) SaveNode(node *models.Node) error {

@@ -12,7 +12,7 @@ class Nodes extends Component {
     });
   };
 
-  onClickNode = uuid => () => {
+  onClickNode = (uuid) => () => {
     const { history } = this.props;
     history.push(`/nodes/${uuid}`);
   };
@@ -21,7 +21,7 @@ class Nodes extends Component {
     const { nodes, connections } = this.props;
 
     return (
-      <React.Fragment>
+      <>
         <div className="row">
           <div className="col-md-12">
             <Card title="Nodes" bodyClassName="p-0">
@@ -30,13 +30,15 @@ class Nodes extends Component {
                   <tr>
                     <th>Connected</th>
                     <th>Name</th>
+                    <th>Type</th>
+                    <th>Version</th>
                     <th>Identity</th>
                   </tr>
                 </thead>
                 <tbody>
                   {nodes
                     .sort((a, b) => (a.get('name') || '').localeCompare(b.get('name')))
-                    .map(n => (
+                    .map((n) => (
                       <tr
                         key={n.get('uuid')}
                         style={{ cursor: 'pointer' }}
@@ -48,7 +50,7 @@ class Nodes extends Component {
                             'attributes',
                             'secure',
                           ]) && (
-                            <React.Fragment>
+                            <>
                               {connections.getIn([
                                 n.get('uuid'),
                                 'attributes',
@@ -69,7 +71,7 @@ class Nodes extends Component {
                                   title="Missing identity"
                                 />
                               )}
-                            </React.Fragment>
+                            </>
                           )}
                           {!connections.has(n.get('uuid')) && (
                             <i
@@ -79,6 +81,8 @@ class Nodes extends Component {
                           )}
                         </td>
                         <td>{n.get('name')}</td>
+                        <td>{n.get('type')}</td>
+                        {n.get('build') ? (<td>{n.get('build').get('Version')}</td>) : (<td></td>)}
                         <td>
                           <small>{n.get('uuid')}</small>
                         </td>
@@ -91,12 +95,12 @@ class Nodes extends Component {
             </Card>
           </div>
         </div>
-      </React.Fragment>
+      </>
     );
   }
 }
 
-const mapToProps = state => ({
+const mapToProps = (state) => ({
   nodes: state.getIn(['nodes', 'list']),
   connections: state.getIn(['connections', 'list']),
 });

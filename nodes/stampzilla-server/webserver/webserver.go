@@ -358,7 +358,6 @@ func (ws *Webserver) handleWs(m *melody.Melody) func(c *gin.Context) {
 				if c.Request.Header.Get("X-UUID") != "" {
 					uuid = c.Request.Header.Get("X-UUID")
 				}
-				keys["type"] = c.Request.Header.Get("X-TYPE")
 			} else if helpers.IsPrivateIP(c.Request.RemoteAddr) {
 				// Check the cookie session, only allowed in with local access
 				session := sessions.Default(c)
