@@ -9,11 +9,14 @@ import (
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/checker/decls"
 	"github.com/google/cel-go/common/types"
+	"github.com/google/cel-go/common/types/ref"
+	"github.com/google/cel-go/interpreter/functions"
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models"
 	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
 	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/websocket"
 	stypes "github.com/stampzilla/stampzilla-go/v2/pkg/types"
+	exprpb "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 )
 
 type Rule struct {
@@ -29,7 +32,7 @@ type Rule struct {
 	For_          stypes.Duration `json:"for"`
 	Type_         string          `json:"type"`
 	Destinations_ []string        `json:"destinations"`
-	checkedExp    *cel.Ast
+	ast           *cel.Ast
 	sync.RWMutex
 	cancel context.CancelFunc
 	stop   chan struct{}
@@ -178,6 +181,10 @@ func init() {
 	celEnv, err = cel.NewEnv(cel.Declarations(
 		decls.NewVar("devices", decls.NewMapType(decls.String, decls.Dyn)),
 		decls.NewVar("rules", decls.NewMapType(decls.String, decls.Bool)),
+		decls.NewFunction("daily",
+			decls.NewOverload("daily_string_string",
+				[]*exprpb.Type{decls.String, decls.String},
+				decls.Bool)),
 	))
 	if err != nil {
 		logrus.Fatal(err)
@@ -196,7 +203,7 @@ func (r *Rule) Eval(devices *devices.List, rules map[string]bool) (bool, error) 
 		v.Unlock()
 	}
 
-	if r.checkedExp == nil {
+	if r.ast == nil {
 		ast, iss := celEnv.Parse(r.Expression())
 		if iss.Err() != nil {
 			return false, iss.Err()
@@ -206,10 +213,36 @@ func (r *Rule) Eval(devices *devices.List, rules map[string]bool) (bool, error) 
 		if iss.Err() != nil {
 			return false, iss.Err()
 		}
-		r.checkedExp = c
+		r.ast = c
 	}
+	dailyFunc := &functions.Overload{
+		Operator: "daily_string_string",
+		Binary: func(from ref.Val, to ref.Val) ref.Val {
+			now := time.Now().UTC()
+			z, _ := now.Zone()
+			loc, err := time.LoadLocation(z)
+			if err != nil {
+				return types.NewErr(err.Error())
+			}
+			start, err := time.ParseInLocation("15:04", from.Value().(string), loc)
+			if err != nil {
+				return types.NewErr(err.Error())
+			}
+			end, err := time.ParseInLocation("15:04", to.Value().(string), loc)
+			if err != nil {
+				return types.NewErr(err.Error())
+			}
 
-	prg, err := celEnv.Program(r.checkedExp, cel.EvalOptions(cel.OptOptimize))
+			today := now.Truncate(24 * time.Hour)
+			n := start.Truncate(24 * time.Hour).Add(now.Sub(today))
+
+			if inTimeSpan(start, end, n) {
+				return types.Bool(true)
+			}
+			return types.Bool(false)
+		},
+	}
+	prg, err := celEnv.Program(r.ast, cel.EvalOptions(cel.OptOptimize), cel.Functions(dailyFunc))
 	if err != nil {
 		return false, err
 	}
@@ -232,6 +265,18 @@ func (r *Rule) Eval(devices *devices.List, rules map[string]bool) (bool, error) 
 }
 
 var ErrExpressionNotBool = fmt.Errorf("invalid result of expression. Only bool expressions are valid")
+
+func inTimeSpan(start, end, check time.Time) bool {
+	_end := end
+	_check := check
+	if end.Before(start) {
+		_end = end.Add(24 * time.Hour)
+		if check.Before(start) {
+			_check = check.Add(24 * time.Hour)
+		}
+	}
+	return _check.After(start) && _check.Before(_end)
+}
 
 /*
 func (r *Rule) RunActions(progressChan chan ActionProgress) {
