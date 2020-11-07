@@ -464,8 +464,6 @@ func (wsh *secureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.R
 		if v != "" {
 			vdata := &build.Data{}
 			err := json.Unmarshal([]byte(v), vdata)
-			fmt.Println("asdf", err)
-			fmt.Println("asdf", vdata)
 			if err == nil {
 				n.Lock()
 				n.Build = *vdata
