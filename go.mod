@@ -24,7 +24,7 @@ require (
 	github.com/goburrow/serial v0.1.0 // indirect
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/protobuf v1.4.3 // indirect
-	github.com/google/cel-go v0.3.2
+	github.com/google/cel-go v0.6.0
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/google/uuid v1.1.2
