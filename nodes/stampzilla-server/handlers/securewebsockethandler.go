@@ -449,7 +449,6 @@ func (wsh *secureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.R
 	id, _ := s.Get(websocket.KeyID.String())
 	logrus.Debugf("ws handle secure connect with id %s (%s)", id, proto)
 
-	// Send a list of all nodes if its a webgui
 	switch proto {
 	case "node":
 		n := wsh.Store.GetNode(id.(string))
@@ -458,9 +457,7 @@ func (wsh *secureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.R
 			n = &models.Node{
 				UUID:       id.(string),
 				Connected_: true,
-			}
-			if t, ok := s.Get("type"); ok {
-				n.Type = t.(string)
+				Type:       r.Header.Get("X-TYPE"),
 			}
 		}
 		v := r.Header.Get("X-VERSION")

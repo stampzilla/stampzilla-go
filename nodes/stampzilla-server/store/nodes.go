@@ -32,15 +32,15 @@ func (store *Store) AddOrUpdateNode(node *models.Node) {
 		store.Nodes[node.UUID] = node
 		changed = true
 	} else {
-		if node.Build.Version != "" {
+		if node.Build.Version != store.Nodes[node.UUID].Build.Version {
 			store.Nodes[node.UUID].Build = node.Build
 			changed = true
 		}
-		if node.Type != "" {
+		if node.Type != store.Nodes[node.UUID].Type {
 			store.Nodes[node.UUID].Type = node.Type
 			changed = true
 		}
-		if node.Name != "" {
+		if node.Name != store.Nodes[node.UUID].Name {
 			store.Nodes[node.UUID].Name = node.Name
 			changed = true
 		}
