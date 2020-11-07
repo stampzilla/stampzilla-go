@@ -462,16 +462,20 @@ func (wsh *secureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.R
 			if t, ok := s.Get("type"); ok {
 				n.Type = t.(string)
 			}
-			v := r.Header.Get("X-VERSION")
-			if v != "" {
-				vdata := &build.Data{}
-				err := json.Unmarshal([]byte(v), vdata)
-				if err == nil {
-					n.Version = *vdata
-				}
-			}
-			wsh.Store.AddOrUpdateNode(n)
 		}
+		v := r.Header.Get("X-VERSION")
+		if v != "" {
+			vdata := &build.Data{}
+			err := json.Unmarshal([]byte(v), vdata)
+			fmt.Println("asdf", err)
+			fmt.Println("asdf", vdata)
+			if err == nil {
+				n.Lock()
+				n.Build = *vdata
+				n.Unlock()
+			}
+		}
+		wsh.Store.AddOrUpdateNode(n)
 
 		msg, err := models.NewMessage("setup", n)
 		if err != nil {

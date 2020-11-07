@@ -10,7 +10,7 @@ const webpack = require('webpack');
 module.exports = (env, argv) => {
   const DEV = argv.mode !== 'production';
   return {
-    devtool: DEV ? 'cheap-module-eval-source-map' : undefined,
+    devtool: DEV ? 'eval-cheap-source-map' : false,
     output: {
       filename: DEV ? 'assets/[name].js' : 'assets/[name].[contenthash].js',
       publicPath: '/',
