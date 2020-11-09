@@ -23,52 +23,53 @@
 
 
 
-
-.ReactModal__Overlay {
-  -webkit-perspective: 600;
-  perspective: 600;
-  opacity: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 20000;
-}
-
-.ReactModal__Overlay--after-open {
-  opacity: 1;
-  transition: opacity 150ms ease-out;
-}
-
-.ReactModal__Content {
-  -webkit-transform: translateY(30px);
-  transform: translateY(30px);
-  z-index: 20000;
-
-  .modal-content{
-    .nav-link {
-      cursor:pointer;
-      outline: none;
+:global {
+  .ReactModal__Overlay {
+    -webkit-perspective: 600;
+    perspective: 600;
+    opacity: 0;
+    overflow-x: hidden;
+    overflow-y: scroll !important;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 20000;
+  }
+  
+  .ReactModal__Overlay--after-open {
+    opacity: 1;
+    transition: opacity 150ms ease-out;
+  }
+  
+  .ReactModal__Content {
+    -webkit-transform: translateY(30px);
+    transform: translateY(30px);
+    z-index: 20000;
+  
+    .modal-content{
+      .nav-link {
+        cursor:pointer;
+        outline: none;
+      }
     }
   }
-}
-
-.ReactModal__Content--after-open {
-  -webkit-transform: translateY(0);
-  transform: translateY(0);
-  transition: all 150ms ease-in;
-}
-
-.ReactModal__Overlay--before-close {
-  opacity: 0;
-}
-
-.ReactModal__Content--before-close {
-  -webkit-transform: translateY(30px);
-  transform: translateY(30px);
-  transition: all 150ms ease-in;
-}
-
-.ReactModal__Content.modal-dialog {
-  border: none;
-  background-color: transparent;
+  
+  .ReactModal__Content--after-open {
+    -webkit-transform: translateY(0);
+    transform: translateY(0);
+    transition: all 150ms ease-in;
+  }
+  
+  .ReactModal__Overlay--before-close {
+    opacity: 0;
+  }
+  
+  .ReactModal__Content--before-close {
+    -webkit-transform: translateY(30px);
+    transform: translateY(30px);
+    transition: all 150ms ease-in;
+  }
+  
+  .ReactModal__Content.modal-dialog {
+    border: none;
+    background-color: transparent;
+  }
 }
