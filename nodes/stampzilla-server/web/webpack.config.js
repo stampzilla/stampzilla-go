@@ -46,14 +46,14 @@ module.exports = (env, argv) => {
               loader: 'css-loader',
               options: {
                 modules: false,
-                sourceMap: true,
+                sourceMap: DEV,
                 importLoaders: 2,
               },
             },
             {
               loader: 'sass-loader',
               options: {
-                sourceMap: true,
+                sourceMap: DEV,
               },
             },
           ],
@@ -72,14 +72,14 @@ module.exports = (env, argv) => {
                   mode: 'local',
                   localIdentName: '[name]__[local]___[hash:base64:5]',
                 },
-                sourceMap: true,
+                sourceMap: DEV,
                 importLoaders: 2,
               },
             },
             {
               loader: 'sass-loader',
               options: {
-                sourceMap: true,
+                sourceMap: DEV,
               },
             },
           ],
