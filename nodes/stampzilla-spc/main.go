@@ -49,7 +49,7 @@ func startListen(ctx context.Context, node *node.Node, connectToPort chan string
 		go func() {
 			defer wg.Done()
 			for {
-				buf := make([]byte, 1024)
+				buf := make([]byte, 1440)
 				n, _, err := l.ReadFrom(buf)
 				if err != nil {
 					if strings.Contains(err.Error(), "use of closed network connection") {
@@ -77,7 +77,7 @@ func startListen(ctx context.Context, node *node.Node, connectToPort chan string
 				}
 
 				if newDev == nil {
-					logrus.Warnf("unsupported packet class %s data: %s", pkg.Class, string(buf[23:]))
+					logrus.Warnf("unsupported packet class %s data: %s", pkg.Class, string(buf[23:n]))
 					continue
 				}
 
