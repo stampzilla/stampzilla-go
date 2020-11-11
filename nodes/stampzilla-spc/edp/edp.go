@@ -28,8 +28,11 @@ func Decode(data []byte) (*Packet, error) {
 	}
 
 	name := bytes.Split(tmp[4], []byte{0xa6}) // this is ¦ in Kök IR¦ZONE¦1¦Larm
+	if len(name) < 3 {
+		return nil, fmt.Errorf("unsupported edp packet: %s", string(data))
+	}
 
-	zone, err := strconv.Atoi(string(name[2]))
+	zone, err := strconv.Atoi(string(name[2])) // TODO it might not always be zone in this one. Check for unsupported edp packet errors.
 	if err != nil {
 		return nil, err
 	}
