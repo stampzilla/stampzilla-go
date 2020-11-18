@@ -11,7 +11,7 @@ const Wrapper = (props) => {
   const { server, connection } = props;
 
   const secure = (window.location.protocol.match(/^https/) || server.get('secure'))
-    && connection.get('code') !== 4001;
+    && connection !== 4001;
 
   return (
     <React.Fragment>
@@ -30,7 +30,7 @@ const Wrapper = (props) => {
 
 const mapToProps = state => ({
   server: state.get('server'),
-  connection: state.get('connection'),
+  connection: state.getIn(['connection', 'code']),
 });
 
 export default connect(mapToProps)(Wrapper);

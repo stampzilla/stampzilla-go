@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
@@ -54,6 +55,16 @@ func main() {
 			"on": false,
 		},
 	}
+	dev5 := &devices.Device{
+		Name:   "toggleonoff",
+		Type:   "light",
+		ID:     devices.ID{ID: "5"},
+		Online: true,
+		Traits: []string{"OnOff"},
+		State: devices.State{
+			"on": false,
+		},
+	}
 
 	node.OnRequestStateChange(func(state devices.State, device *devices.Device) error {
 		logrus.Info("OnRequestStateChange:", state, device.ID)
@@ -93,10 +104,23 @@ func main() {
 		return
 	}
 
+	ticker := time.NewTicker(time.Second * 10)
+	go func() {
+		for range ticker.C {
+			dev5.Lock()
+			dev5.State.Bool("on", func(on bool) {
+				dev5.State["on"] = !on
+			})
+			dev5.Unlock()
+			node.SyncDevice(dev5.ID.ID)
+		}
+	}()
+
 	node.AddOrUpdate(dev1)
 	node.AddOrUpdate(dev2)
 	node.AddOrUpdate(dev3)
 	node.AddOrUpdate(dev4)
+	node.AddOrUpdate(dev5)
 
 	node.Wait()
 }
