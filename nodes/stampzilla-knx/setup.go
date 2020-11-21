@@ -23,6 +23,7 @@ func setupLight(node *node.Node, tunnel *tunnel, light light) {
 			"on": false,
 		},
 	}
+	node.AddOrUpdate(dev)
 
 	if light.StateSwitch != "" {
 		tunnel.AddLink(light.StateSwitch, "on", "bool", dev)
@@ -31,8 +32,6 @@ func setupLight(node *node.Node, tunnel *tunnel, light light) {
 	if light.StateBrightness != "" {
 		tunnel.AddLink(light.StateBrightness, "brightness", "procentage", dev)
 	}
-
-	node.AddOrUpdate(dev)
 }
 
 func setupSensor(node *node.Node, tunnel *tunnel, sensor sensor) {
@@ -41,6 +40,7 @@ func setupSensor(node *node.Node, tunnel *tunnel, sensor sensor) {
 		ID:    devices.ID{ID: "sensor." + sensor.ID},
 		State: make(devices.State),
 	}
+	node.AddOrUpdate(dev)
 
 	if sensor.Temperature != "" {
 		tunnel.AddLink(sensor.Temperature, "temperature", "temperature", dev)
@@ -66,6 +66,4 @@ func setupSensor(node *node.Node, tunnel *tunnel, sensor sensor) {
 	if sensor.DewPoint != "" {
 		tunnel.AddLink(sensor.DewPoint, "dewpoint", "dewPoint", dev)
 	}
-
-	node.AddOrUpdate(dev)
 }
