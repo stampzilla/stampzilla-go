@@ -19,7 +19,7 @@ import (
 //logrus.Infof("Found %s:%d", ip, port)
 //}
 
-func queryMDNS() (string, string) {
+func queryMDNS() (string, string, string) {
 	entriesCh := make(chan *mdns.ServiceEntry)
 
 	logrus.Info("node: running mdns query")
@@ -44,6 +44,16 @@ func queryMDNS() (string, string) {
 	}
 	cancel()
 	port := strconv.Itoa(entry.Port)
-	logrus.Infof("node: got mdns query response %s:%s", entry.AddrV4.String(), port)
-	return entry.AddrV4.String(), port
+	tlsPort := ""
+	for _, v := range entry.InfoFields {
+		tmp := strings.SplitN(v, "=", 2)
+		if len(tmp) != 2 {
+			continue
+		}
+		if tmp[0] == "tlsPort" {
+			tlsPort = tmp[1]
+		}
+	}
+	logrus.Infof("node: got mdns query response %s:%s (tlsPort=%s)", entry.AddrV4.String(), port, tlsPort)
+	return entry.AddrV4.String(), port, tlsPort
 }

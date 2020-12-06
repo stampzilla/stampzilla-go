@@ -53,7 +53,7 @@ require (
 	github.com/sirupsen/logrus v1.7.0
 	github.com/stamp/hid v0.0.0-20190105143849-bc55d7d13ce1
 	github.com/stamp/mdns v0.0.0-20190125083120-df204ac59ca1
-	github.com/stampzilla/gocast v0.0.0-20190221121651-0a779e5bbe32
+	github.com/stampzilla/gocast v0.0.0-20201206204400-b3419c6ce229
 	github.com/stampzilla/gozwave v0.0.0-20190221183844-576012815e01
 	github.com/stretchr/testify v1.6.1
 	github.com/tarm/goserial v0.0.0-20151007205400-b3440c3c6355 // indirect
@@ -62,10 +62,12 @@ require (
 	github.com/urfave/cli v1.22.1
 	github.com/vapourismo/knx-go v0.0.0-20200924173532-6ed2bf1e51e6
 	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897
-	golang.org/x/sys v0.0.0-20201101102859-da207088b7d1 // indirect
+	golang.org/x/sys v0.0.0-20201204225414-ed752295db88 // indirect
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
 	software.sslmate.com/src/go-pkcs12 v0.0.0-20200619203921-c9ed90bd32dc
 )
+
+//replace github.com/stampzilla/gocast => /home/jonaz/go/src/github.com/stampzilla/gocast

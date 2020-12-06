@@ -113,8 +113,6 @@ func (n *Node) setup() {
 		}
 		logrus.SetLevel(lvl)
 	}
-
-	// n.Config.Save("config.json")
 }
 
 // WriteMessage writes a message to the server over websocket client.
@@ -157,11 +155,16 @@ func (n *Node) fetchCertificate() error {
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGQUIT, syscall.SIGTERM)
-	go func() {
+	stopTemporaryShutdownHandler := make(chan struct{})
+	n.wg.Add(1)
+	go func() { // start temporary shutdown handler while waiting for cert approved
+		defer n.wg.Done()
 		select {
 		case <-interrupt:
 			close(n.stop)
 		case <-n.stop:
+		case <-stopTemporaryShutdownHandler:
+			return
 		}
 		cancel()
 		go func() {
@@ -212,6 +215,7 @@ func (n *Node) fetchCertificate() error {
 	}
 
 	logrus.Info("Disconnect inseure connection")
+	close(stopTemporaryShutdownHandler)
 	cancel()
 	n.Wait()
 
@@ -222,9 +226,10 @@ func (n *Node) fetchCertificate() error {
 // Connect starts the node and makes connection to the server. Normally discovered using mdns but can be configured aswell.
 func (n *Node) Connect() error {
 	if n.Config.Host == "" {
-		ip, port := queryMDNS()
+		ip, port, tlsPort := queryMDNS()
 		n.Config.Host = ip
 		n.Config.Port = port
+		n.Config.TLSPort = tlsPort
 	}
 
 	// Load our signed certificate and get our UUID
