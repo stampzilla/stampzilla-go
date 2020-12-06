@@ -261,7 +261,7 @@ func (l *Logic) evaluateRule(r *Rule) bool {
 		l.onReportState(r.Uuid(), map[string]interface{}{
 			"error": err.Error(),
 		})
-		logrus.Errorf("Error evaluating rule %s: %s", r.Uuid(), err.Error())
+		logrus.Debugf("Error evaluating rule %s: %s", r.Uuid(), err.Error())
 		return false
 	}
 	l.onReportState(r.Uuid(), map[string]interface{}{
