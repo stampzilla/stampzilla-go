@@ -229,7 +229,9 @@ func (n *Node) Connect() error {
 		ip, port, tlsPort := queryMDNS()
 		n.Config.Host = ip
 		n.Config.Port = port
-		n.Config.TLSPort = tlsPort
+		if tlsPort != "" {
+			n.Config.TLSPort = tlsPort
+		}
 	}
 
 	// Load our signed certificate and get our UUID
