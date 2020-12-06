@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -46,7 +47,7 @@ func (c *Main) Run() {
 	// Setup and start mDNS
 	if port, err := strconv.Atoi(c.Config.Port); err == nil {
 		host, _ := os.Hostname()
-		info := []string{"stampzilla-go"}
+		info := []string{"app=stampzilla-go", fmt.Sprintf("tlsPort=%s", c.Config.TLSPort)}
 		mdnsService, _ := mdns.NewMDNSService(host, "_stampzilla._tcp", "", "", port, nil, info)
 		mdnsServer, _ := mdns.NewServer(&mdns.Config{Zone: mdnsService})
 		defer mdnsServer.Shutdown()
