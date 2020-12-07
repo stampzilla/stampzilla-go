@@ -53,6 +53,18 @@ func newTunnel(node *node.Node) *tunnel {
 	}
 }
 
+func (tunnel *tunnel) GroupNames() []string {
+	ret := make([]string, len(tunnel.Groups))
+	i := 0
+	tunnel.Lock()
+	for k := range tunnel.Groups {
+		ret[i] = k
+		i++
+	}
+	tunnel.Unlock()
+	return ret
+}
+
 func (tunnel *tunnel) Send(event knx.GroupEvent) error {
 	errCh := make(chan error)
 	s := sendCh{
@@ -101,6 +113,12 @@ func (tunnel *tunnel) Connected() bool {
 	tunnel.RLock()
 	defer tunnel.RUnlock()
 	return tunnel.connected
+}
+
+func (tunnel *tunnel) SetConnected(b bool) {
+	tunnel.Lock()
+	tunnel.connected = b
+	tunnel.Unlock()
 }
 
 func (tunnel *tunnel) Wait() {
@@ -160,8 +178,8 @@ func (tunnel *tunnel) connect(ctx context.Context, address string) error {
 		return err
 	}
 
+	tunnel.SetConnected(true)
 	tunnel.Lock()
-	tunnel.connected = true
 	tunnel.Client = &client
 	tunnel.Unlock()
 
@@ -202,20 +220,15 @@ func (tunnel *tunnel) connect(ctx context.Context, address string) error {
 func (tunnel *tunnel) onConnect() {
 	time.Sleep(time.Second)
 	logrus.Info("Connected to KNX gateway")
-	// Trigger a read on each group address that we monitor
-	tunnel.RLock()
-	for ga := range tunnel.Groups {
+	for _, ga := range tunnel.GroupNames() {
 		tunnel.triggerRead(ga)
 	}
-	tunnel.RUnlock()
 	tunnel.OnConnect()
 }
 
 func (tunnel *tunnel) onDisconnect() {
 	logrus.Warn("Disconnected from KNX gateway")
-	tunnel.Lock()
-	tunnel.connected = false
-	tunnel.Unlock()
+	tunnel.SetConnected(false)
 	tunnel.OnDisconnect()
 }
 
