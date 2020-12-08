@@ -54,14 +54,16 @@ func newTunnel(node *node.Node) *tunnel {
 }
 
 func (tunnel *tunnel) GroupNames() []string {
+	tunnel.RLock()
 	ret := make([]string, len(tunnel.Groups))
+	tunnel.RUnlock()
 	i := 0
-	tunnel.Lock()
+	tunnel.RLock()
 	for k := range tunnel.Groups {
 		ret[i] = k
 		i++
 	}
-	tunnel.Unlock()
+	tunnel.RUnlock()
 	return ret
 }
 
