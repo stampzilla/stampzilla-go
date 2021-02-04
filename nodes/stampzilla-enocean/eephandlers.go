@@ -44,7 +44,7 @@ func (h *baseHandler) generateSenderId(d *Device) [4]byte {
 	return senderId
 }
 
-//Handler for profile f60201.
+// Handler for profile f60201.
 type handlerEepf60201 struct {
 	baseHandler
 }
@@ -117,7 +117,7 @@ func (h *handlerEepf60201) Process(d *Device, t goenocean.Telegram) {
 	}
 }
 
-//Handler for profile f60201eltako.
+// Handler for profile f60201eltako.
 type handlerEepf60201eltako struct {
 	handlerEepf60201
 }
@@ -137,7 +137,7 @@ func (h *handlerEepf60201eltako) Process(d *Device, t goenocean.Telegram) {
 	}
 }
 
-//Handler for profile a53808.
+// Handler for profile a53808.
 type handlerEepa53808 struct {
 	baseHandler
 }
@@ -190,7 +190,7 @@ func (h *handlerEepa53808) Learn(d *Device) {
 	enoceanSend <- p1
 }
 
-//Handler for profile a53808eltako.
+// Handler for profile a53808eltako.
 type handlerEepa53808eltako struct {
 	handlerEepa53808
 }
@@ -270,7 +270,7 @@ func (h *handlerEepa53808eltako) Learn(d *Device) {
 	enoceanSend <- p1
 }
 
-//Handler for profile a51201.
+// Handler for profile a51201.
 type handlerEepa51201 struct {
 	baseHandler
 }
@@ -286,7 +286,7 @@ func (h *handlerEepa51201) Process(d *Device, t goenocean.Telegram) {
 	}
 }
 
-//Handler for profile d20109.
+// Handler for profile d20109.
 type handlerEepd20109 struct {
 	baseHandler
 }

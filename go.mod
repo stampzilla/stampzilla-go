@@ -22,7 +22,6 @@ require (
 	github.com/go-playground/validator/v10 v10.4.1 // indirect
 	github.com/goburrow/modbus v0.1.0
 	github.com/goburrow/serial v0.1.0 // indirect
-	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/google/cel-go v0.6.0
 	github.com/google/go-github v17.0.0+incompatible

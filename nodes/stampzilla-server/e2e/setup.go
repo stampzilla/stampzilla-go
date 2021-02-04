@@ -1,4 +1,4 @@
-package main
+package e2e
 
 import (
 	"context"
@@ -25,7 +25,7 @@ func makeRequest(t *testing.T, handler http.Handler, method, url string, body io
 	return w
 }
 
-func setupWebsocketTest(t *testing.T) (*servermain.Main, *node.Node, func()) {
+func SetupWebsocketTest(t *testing.T) (*servermain.Main, *node.Node, func()) {
 	main, cleanup := setupServer(t)
 	insecure := httptest.NewServer(main.HTTPServer)
 
@@ -87,7 +87,7 @@ func setupServer(t *testing.T) (*servermain.Main, func()) {
 	return server, cleanUp
 }
 
-func waitFor(t *testing.T, timeout time.Duration, msg string, ok func() bool) {
+func WaitFor(t *testing.T, timeout time.Duration, msg string, ok func() bool) {
 	end := time.Now().Add(timeout)
 	for {
 		if end.Before(time.Now()) {
@@ -101,9 +101,9 @@ func waitFor(t *testing.T, timeout time.Duration, msg string, ok func() bool) {
 	}
 }
 
-func acceptCertificateRequest(t *testing.T, main *servermain.Main) {
+func AcceptCertificateRequest(t *testing.T, main *servermain.Main) {
 	go func() {
-		waitFor(t, 2*time.Second, "nodes should be 1", func() bool {
+		WaitFor(t, 2*time.Second, "nodes should be 1", func() bool {
 			return len(main.Store.GetRequests()) == 1
 		})
 		r := main.Store.GetRequests()
