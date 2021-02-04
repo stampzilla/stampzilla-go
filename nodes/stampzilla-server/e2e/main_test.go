@@ -1,4 +1,4 @@
-package main
+package e2e
 
 import (
 	"encoding/json"
@@ -60,22 +60,22 @@ func TestInsecureWebsocket(t *testing.T) {
 	}
 	c.Close()
 
-	waitFor(t, 1*time.Second, "connections should be zero after connection close", func() bool {
+	WaitFor(t, 1*time.Second, "connections should be zero after connection close", func() bool {
 		return len(main.Store.GetConnections()) == 0
 	})
 }
 
 // TestInsecureWebsocketRequestCertificate is a full end to end test between a node and the server going through a node initial connection process etc.
 func TestInsecureWebsocketRequestCertificate(t *testing.T) {
-	main, node, cleanup := setupWebsocketTest(t)
+	main, node, cleanup := SetupWebsocketTest(t)
 	defer cleanup()
 
-	acceptCertificateRequest(t, main)
+	AcceptCertificateRequest(t, main)
 
 	err := node.Connect()
 	assert.NoError(t, err)
 
-	waitFor(t, 1*time.Second, "nodes should be 1", func() bool {
+	WaitFor(t, 1*time.Second, "nodes should be 1", func() bool {
 		return len(main.Store.GetNodes()) == 1
 	})
 
@@ -89,7 +89,7 @@ func TestInsecureWebsocketRequestCertificate(t *testing.T) {
 	}()
 	node.Wait()
 
-	waitFor(t, 1*time.Second, "connections should be 0", func() bool {
+	WaitFor(t, 1*time.Second, "connections should be 0", func() bool {
 		return len(main.Store.GetConnections()) == 0
 	})
 	assert.Len(t, main.Store.GetConnections(), 0)
@@ -97,10 +97,10 @@ func TestInsecureWebsocketRequestCertificate(t *testing.T) {
 }
 
 func TestNodeToServerDevices(t *testing.T) {
-	main, node, cleanup := setupWebsocketTest(t)
+	main, node, cleanup := SetupWebsocketTest(t)
 	defer cleanup()
 
-	acceptCertificateRequest(t, main)
+	AcceptCertificateRequest(t, main)
 
 	err := node.Connect()
 	assert.NoError(t, err)
@@ -117,7 +117,7 @@ func TestNodeToServerDevices(t *testing.T) {
 		},
 	}
 	node.AddOrUpdate(dev1)
-	waitFor(t, 1*time.Second, "should have some devices", func() bool {
+	WaitFor(t, 1*time.Second, "should have some devices", func() bool {
 		return len(main.Store.Devices.All()) != 0
 	})
 
@@ -129,10 +129,10 @@ func TestNodeToServerDevices(t *testing.T) {
 }
 
 func TestNodeToServerSubscribeDevices(t *testing.T) {
-	main, node, cleanup := setupWebsocketTest(t)
+	main, node, cleanup := SetupWebsocketTest(t)
 	defer cleanup()
 
-	acceptCertificateRequest(t, main)
+	AcceptCertificateRequest(t, main)
 
 	err := node.Connect()
 	assert.NoError(t, err)
@@ -150,7 +150,7 @@ func TestNodeToServerSubscribeDevices(t *testing.T) {
 	}
 	node.AddOrUpdate(dev1)
 
-	waitFor(t, 1*time.Second, "should have some devices", func() bool {
+	WaitFor(t, 1*time.Second, "should have some devices", func() bool {
 		return len(main.Store.Devices.All()) != 0
 	})
 
@@ -163,7 +163,7 @@ func TestNodeToServerSubscribeDevices(t *testing.T) {
 		return nil
 	})
 
-	waitFor(t, 1*time.Second, "should have gotten devices subscription data", func() bool {
+	WaitFor(t, 1*time.Second, "should have gotten devices subscription data", func() bool {
 		mu.Lock()
 		defer mu.Unlock()
 		return deviceSubscriptionData != ""
@@ -173,9 +173,9 @@ func TestNodeToServerSubscribeDevices(t *testing.T) {
 }
 
 func TestSecureUpdateDestinations(t *testing.T) {
-	main, node, cleanup := setupWebsocketTest(t)
+	main, node, cleanup := SetupWebsocketTest(t)
 	defer cleanup()
-	acceptCertificateRequest(t, main)
+	AcceptCertificateRequest(t, main)
 
 	node.Protocol = "gui"
 
@@ -206,7 +206,7 @@ func TestSecureUpdateDestinations(t *testing.T) {
 	assert.NoError(t, err)
 
 	// wait for one destination
-	waitFor(t, 1*time.Second, "we should have 1 destination", func() bool {
+	WaitFor(t, 1*time.Second, "we should have 1 destination", func() bool {
 		return len(main.Store.GetDestinations()) == 1
 	})
 
@@ -215,9 +215,9 @@ func TestSecureUpdateDestinations(t *testing.T) {
 }
 
 func TestSecureUnknownRequest(t *testing.T) {
-	main, node, cleanup := setupWebsocketTest(t)
+	main, node, cleanup := SetupWebsocketTest(t)
 	defer cleanup()
-	acceptCertificateRequest(t, main)
+	AcceptCertificateRequest(t, main)
 	err := node.Connect()
 	assert.NoError(t, err)
 
@@ -235,7 +235,7 @@ func TestSecureUnknownRequest(t *testing.T) {
 		return nil
 	})
 
-	waitFor(t, 1*time.Second, "connections should be 1", func() bool {
+	WaitFor(t, 1*time.Second, "connections should be 1", func() bool {
 		return len(main.Store.GetConnections()) == 1
 	})
 	err = node.Client.WriteMessage(websocket.TextMessage, b)
@@ -243,7 +243,7 @@ func TestSecureUnknownRequest(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	waitFor(t, 1*time.Second, "we should have got 1 failure callback", func() bool {
+	WaitFor(t, 1*time.Second, "we should have got 1 failure callback", func() bool {
 		return cnt > 0
 	})
 }

@@ -31,7 +31,7 @@ func (ds State) Int(key string, fn func(int64)) {
 	}
 }
 
-// Float runs fn only if key is found in map and it is of type int.
+// Float runs fn only if key is found in map and it is of type float64.
 func (ds State) Float(key string, fn func(float64)) {
 	if v, ok := ds[key]; ok {
 		if v, ok := v.(float64); ok {
@@ -40,7 +40,7 @@ func (ds State) Float(key string, fn func(float64)) {
 	}
 }
 
-// String runs fn only if key is found in map and it is of type int.
+// String runs fn only if key is found in map and it is of type string.
 func (ds State) String(key string, fn func(string)) {
 	if v, ok := ds[key]; ok {
 		if v, ok := v.(string); ok {
