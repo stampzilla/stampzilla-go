@@ -30,7 +30,6 @@ func TestUpdateState(t *testing.T) {
 
 	err := node.Connect()
 	assert.NoError(t, err)
-	assert.Len(t, main.Store.GetConnections(), 1)
 
 	dev := &devices.Device{
 		Name:   "heatpump",
