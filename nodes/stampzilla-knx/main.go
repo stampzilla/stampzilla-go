@@ -50,6 +50,15 @@ func main() {
 					logrus.Error()
 				}
 			})
+		case "blind":
+
+			// blind := config.GetLight(id[1])
+			state.Bool("up", func(up bool) {
+				//err := blind.Switch(tunnel, on)
+				//if err != nil {
+				//logrus.Error()
+				//}
+			})
 
 		default:
 			return fmt.Errorf("Unknown device type \"%s\"", id[0])

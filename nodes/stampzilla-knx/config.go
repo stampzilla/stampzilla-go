@@ -12,6 +12,7 @@ import (
 type config struct {
 	Gateway gateway  `json:"gateway"`
 	Lights  lights   `json:"lights"`
+	Blinds  blinds   `json:"blinds"`
 	Sensors []sensor `json:"sensors"`
 	sync.Mutex
 }
@@ -20,6 +21,17 @@ func (c *config) GetLight(id string) *light {
 	c.Lock()
 	defer c.Unlock()
 	for _, v := range c.Lights {
+		if v.ID == id {
+			return &v
+		}
+	}
+	return nil
+}
+
+func (c *config) GetBlind(id string) *blind {
+	c.Lock()
+	defer c.Unlock()
+	for _, v := range c.Blinds {
 		if v.ID == id {
 			return &v
 		}
@@ -86,4 +98,12 @@ func (light *light) Brightness(tunnel *tunnel, target float64) error {
 		Data:        dpt.DPT_5001(float32(target)).Pack(),
 	}
 	return tunnel.Send(cmd)
+}
+
+type blinds []blind
+
+type blind struct {
+	ID            string `json:"id"`
+	ControlSwitch string `json:"control_switch"`
+	StateSwitch   string `json:"state_switch"`
 }

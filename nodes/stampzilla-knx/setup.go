@@ -34,6 +34,32 @@ func setupLight(node *node.Node, tunnel *tunnel, light light) {
 	}
 }
 
+func setupBlinds(node *node.Node, tunnel *tunnel, light light) {
+	traits := []string{}
+
+	if light.ControlSwitch != "" {
+		traits = append(traits, "OpenClose")
+	}
+
+	dev := &devices.Device{
+		Name:   light.ID,
+		ID:     devices.ID{ID: "blind." + light.ID},
+		Traits: traits,
+		State: devices.State{
+			"on": false,
+		},
+	}
+	node.AddOrUpdate(dev)
+
+	if light.StateSwitch != "" {
+		tunnel.AddLink(light.StateSwitch, "on", "bool", dev)
+	}
+
+	if light.StateBrightness != "" {
+		tunnel.AddLink(light.StateBrightness, "brightness", "procentage", dev)
+	}
+}
+
 func setupSensor(node *node.Node, tunnel *tunnel, sensor sensor) {
 	dev := &devices.Device{
 		Name:  sensor.ID,
