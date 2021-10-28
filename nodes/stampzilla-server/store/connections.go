@@ -4,8 +4,12 @@ import "github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models"
 
 func (store *Store) GetConnections() Connections {
 	store.RLock()
-	defer store.RUnlock()
-	return store.Connections
+	conns := make(Connections)
+	for k, v := range store.Connections {
+		conns[k] = v
+	}
+	store.RUnlock()
+	return conns
 }
 
 func (store *Store) Connection(id string) *models.Connection {

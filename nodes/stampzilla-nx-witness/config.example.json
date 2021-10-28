@@ -1,0 +1,6 @@
+{
+	"host": "http://1.1.1.1:7001",
+    "username": "admin",
+    "password": "asdf",
+	"interval": "5m"
+}
