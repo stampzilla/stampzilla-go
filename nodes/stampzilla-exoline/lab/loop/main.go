@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-exoline/exoline"
 )
 
 func getTemps(buf *bufio.Reader, w io.Writer) {
@@ -62,7 +63,32 @@ func main() {
 	buf := bufio.NewReader(conn)
 
 	boolPtr := flag.Bool("t", false, "print temperatures")
+	ln := flag.Int("ln", 0, "load number")
+	cell := flag.Int("cell", 0, "cell")
+	op := flag.String("operation", "RRP", "read operation")
 	flag.Parse()
+
+	if *cell != 0 && *ln != 0 && *op != "" {
+		logrus.SetLevel(logrus.DebugLevel)
+
+		var resp interface{}
+		switch *op {
+		case "RRP": // Read real segment var.
+			resp, err = exoline.RRP(buf, conn, *ln, *cell) // OutDoorTemp
+		case "RLP": // Read logic segment var.
+			resp, err = exoline.RLP(buf, conn, *ln, *cell) // OutDoorTemp
+		case "RXP": // Read logic segment var.
+			resp, err = exoline.RXP(buf, conn, *ln, *cell) // OutDoorTemp
+		}
+
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
+		fmt.Println("Response: ", resp)
+
+		return
+	}
 
 	if *boolPtr {
 		getTemps(buf, conn)
