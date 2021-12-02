@@ -7,9 +7,10 @@ type Config struct {
 }
 
 type Variables struct {
-	Name    string
-	Address string
-	Type    string
+	Name       string `json:"name"`
+	LoadNumber int    `json:"loadNumber"`
+	Cell       int    `json:"cell"`
+	Type       string `json:"type"`
 }
 
 func NewConfig() *Config {

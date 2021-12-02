@@ -4,27 +4,44 @@
     "variables": [
         {
             "name": "ExtractAir",
-            "address": "040800",
+			"loadNumber": 58,
+			"cell": 585,
             "type": "float"
         },
         {
             "name": "OutdoorAir",
-            "address": "0404ec",
+			"loadNumber": 58,
+			"cell": 579,
             "type": "float"
         },
         {
             "name": "ExhaustAir",
-            "address": "3b0095",
+			"loadNumber": 58,
+			"cell": 588,
             "type": "float"
         },
         {
             "name": "SupplyAir",
-            "address": "3902fa",
+			"loadNumber": 58,
+			"cell": 582,
             "type": "float"
         },
         {
             "name": "SetSupplyAir",
-            "address": "040008",
+			"loadNumber": 4,
+			"cell": 8,
+            "type": "float"
+        },
+        {
+            "name": "HeatingValve",
+			"loadNumber": 58,
+			"cell": 747,
+            "type": "float"
+        },
+        {
+            "name": "CoolingValve",
+			"loadNumber": 58,
+			"cell": 750,
             "type": "float"
         }
     ]
