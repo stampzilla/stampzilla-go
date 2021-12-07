@@ -36,14 +36,16 @@ type Scheduler struct {
 
 	SavedStateStore *SavedStateStore
 	sender          websocket.Sender
+	logic           *Logic
 	stop            context.CancelFunc
 }
 
-func NewScheduler(savedStateStore *SavedStateStore, sender websocket.Sender) *Scheduler {
+func NewScheduler(savedStateStore *SavedStateStore, sender websocket.Sender, logic *Logic) *Scheduler {
 	scheduler := &Scheduler{
 		SavedStateStore: savedStateStore,
 		sender:          sender,
 		tasks:           make(Tasks),
+		logic:           logic,
 	}
 	scheduler.Cron = cron.New()
 	return scheduler
@@ -86,6 +88,7 @@ func (s *Scheduler) AddTask(name string) *Task {
 		XUuid:           uuid.New().String(),
 		sender:          s.sender,
 		savedStateStore: s.SavedStateStore,
+		logic:           s.logic,
 	}
 	s.Lock()
 	s.tasks[task.XUuid] = task
@@ -160,6 +163,7 @@ func (s *Scheduler) syncTaskDependencies() {
 		if task.savedStateStore == nil {
 			task.savedStateStore = s.SavedStateStore
 		}
+		task.logic = s.logic
 		task.Unlock()
 
 		// generate uuid if missing
