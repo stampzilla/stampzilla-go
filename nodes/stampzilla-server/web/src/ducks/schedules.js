@@ -29,7 +29,7 @@ export function updateState(schedules) {
 // Subscribe to channels and register the action for the packages
 export function subscribe(dispatch) {
   return {
-    schedules: schedules => dispatch(update(schedules)),
+    schedules: (schedules) => dispatch(update(schedules)),
     server: ({ schedules }) => schedules && dispatch(updateState(schedules)),
   };
 }
