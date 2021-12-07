@@ -431,6 +431,11 @@ func (ws *Webserver) handleLogin() func(c *gin.Context) {
 
 func (ws *Webserver) login(c *gin.Context, user *persons.Person) error {
 	session := sessions.Default(c)
+	// TODO make this configurable? must use this if running server and ui with npm run dev
+	//session.Options(sessions.Options{
+	//SameSite: http.SameSiteNoneMode,
+	//Secure:   true,
+	//})
 	session.Set("username", user.Username)
 	session.Set("is_admin", user.IsAdmin)
 	session.Set("id", user.UUID)

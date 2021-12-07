@@ -30,6 +30,11 @@ const schema = {
       title: 'When',
       description: 'Cron formated when line [second minute hour day month dow]',
     },
+    expression: {
+      type: 'string',
+      title: 'Expression',
+      description: 'expression that must evaluate to true for the schedule to run. Same syntax as for rules',
+    },
     actions: {
       type: 'array',
       title: 'Actions',
