@@ -34,15 +34,34 @@
         },
         {
             "name": "HeatingValve",
-			"loadNumber": 58,
-			"cell": 747,
+			"loadNumber": 4,
+			"cell": 60,
             "type": "float"
         },
         {
             "name": "CoolingValve",
-			"loadNumber": 58,
-			"cell": 750,
+			"loadNumber": 4,
+			"cell": 63,
+            "type": "float"
+        },
+        {
+            "name": "Bypass",
+			"loadNumber": 4,
+			"cell": 66,
+            "type": "float"
+        },
+        {
+            "name": "SupplyFan",
+			"loadNumber": 4,
+			"cell": 69,
+            "type": "float"
+        },
+        {
+            "name": "ExtractFan",
+			"loadNumber": 4,
+			"cell": 72,
             "type": "float"
         }
+
     ]
 }
