@@ -88,7 +88,7 @@ func tickerLoop(config *Config, node *node.Node) {
 				continue
 			}
 
-			if heatPump.RadiatorForward != 0 { // handle when we get invalid data sometimes. Dont log that
+			if heatPump.Valid() {
 				node.UpdateState(dev.ID.ID, heatPump.State())
 			}
 		case <-node.Stopped():

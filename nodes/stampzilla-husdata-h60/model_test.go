@@ -14,6 +14,8 @@ func TestHeatPumpState(t *testing.T) {
 	}{
 		// 65529 - 65536 = -7
 		{`{"0007":65529}`, `"Outdoor":-0.7`},
+		{`{"0007":-7}`, `"Outdoor":-0.7`},
+		{`{"0007":-71}`, `"Outdoor":-7.1`},
 		{`{"0007":123}`, `"Outdoor":12.3`},
 		{`{"1A01":1}`, `"Compressor":true`},
 		{`{"1A01":0}`, `"Compressor":false`},
