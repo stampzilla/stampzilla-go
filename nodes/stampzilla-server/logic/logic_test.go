@@ -70,15 +70,15 @@ func TestGetSetRules(t *testing.T) {
 		"rule1": &Rule{},
 		"rule2": &Rule{},
 	}
-	cnt := 0
+	var cnt int64
 	go func() {
 		<-l.c
-		cnt++
+		atomic.AddInt64(&cnt, 1)
 	}()
 	l.SetRules(rules)
 
 	assert.Equal(t, l.GetRules(), rules)
-	assert.Equal(t, cnt, 1)
+	assert.Equal(t, int64(1), atomic.LoadInt64(&cnt))
 }
 
 func TestEvaluateRules(t *testing.T) {
@@ -172,7 +172,7 @@ func TestEvaluateRulesCanceledIfNotActive(t *testing.T) {
 	r.Enabled = true
 	r.Actions_ = []string{
 		"uuid",
-		"20ms",
+		"50ms",
 		"uuid",
 	}
 

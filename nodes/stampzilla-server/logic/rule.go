@@ -193,29 +193,11 @@ func init() {
 
 // Eval evaluates the cel expression.
 func (r *Rule) Eval(devices *devices.List, rules map[string]bool) (bool, error) {
-	devicesState := make(map[string]map[string]interface{})
-	for devID, v := range devices.All() {
-		devicesState[devID.String()] = make(map[string]interface{})
-		v.Lock()
-		for k, v := range v.State {
-			devicesState[devID.String()][k] = v
-		}
-		v.Unlock()
-	}
+	return eval(r.Expression(), devices, rules, r.ast)
+}
 
-	if r.ast == nil {
-		ast, iss := celEnv.Parse(r.Expression())
-		if iss.Err() != nil {
-			return false, iss.Err()
-		}
-
-		c, iss := celEnv.Check(ast)
-		if iss.Err() != nil {
-			return false, iss.Err()
-		}
-		r.ast = c
-	}
-	dailyFunc := &functions.Overload{
+func getDailyCelFunc() *functions.Overload {
+	return &functions.Overload{
 		Operator: "daily_string_string",
 		Binary: func(from ref.Val, to ref.Val) ref.Val {
 			now := time.Now().UTC()
@@ -242,7 +224,34 @@ func (r *Rule) Eval(devices *devices.List, rules map[string]bool) (bool, error) 
 			return types.Bool(false)
 		},
 	}
-	prg, err := celEnv.Program(r.ast, cel.EvalOptions(cel.OptOptimize), cel.Functions(dailyFunc))
+}
+
+func eval(exp string, devices *devices.List, rules map[string]bool, ast *cel.Ast) (bool, error) {
+	devicesState := make(map[string]map[string]interface{})
+	for devID, v := range devices.All() {
+		devicesState[devID.String()] = make(map[string]interface{})
+		v.Lock()
+		for k, v := range v.State {
+			devicesState[devID.String()][k] = v
+		}
+		v.Unlock()
+	}
+
+	if ast == nil {
+		var iss *cel.Issues
+		ast, iss = celEnv.Parse(exp)
+		if iss.Err() != nil {
+			return false, iss.Err()
+		}
+
+		c, iss := celEnv.Check(ast)
+		if iss.Err() != nil {
+			return false, iss.Err()
+		}
+		ast = c
+	}
+
+	prg, err := celEnv.Program(ast, cel.EvalOptions(cel.OptOptimize), cel.Functions(getDailyCelFunc()))
 	if err != nil {
 		return false, err
 	}

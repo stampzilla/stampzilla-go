@@ -117,7 +117,7 @@ func (m *Main) Init() {
 
 	sss := logic.NewSavedStateStore()
 	l := logic.New(sss, secureSender)
-	scheduler := logic.NewScheduler(sss, secureSender)
+	scheduler := logic.NewScheduler(sss, secureSender, l)
 	m.Store = store.New(l, scheduler, sss)
 	m.CA.SetStore(m.Store)
 

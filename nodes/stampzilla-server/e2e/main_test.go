@@ -244,6 +244,6 @@ func TestSecureUnknownRequest(t *testing.T) {
 	}
 
 	WaitFor(t, 1*time.Second, "we should have got 1 failure callback", func() bool {
-		return cnt > 0
+		return atomic.LoadUint64(&cnt) > 0
 	})
 }
