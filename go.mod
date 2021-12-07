@@ -17,12 +17,12 @@ require (
 	github.com/gin-contrib/cors v1.3.0
 	github.com/gin-contrib/gzip v0.0.1
 	github.com/gin-contrib/sessions v0.0.3
-	github.com/gin-gonic/gin v1.6.3
+	github.com/gin-gonic/gin v1.7.4
 	github.com/go-ole/go-ole v1.2.4 // indirect
-	github.com/go-playground/validator/v10 v10.4.1 // indirect
+	github.com/go-playground/validator/v10 v10.9.0 // indirect
 	github.com/goburrow/modbus v0.1.0
 	github.com/goburrow/serial v0.1.0 // indirect
-	github.com/golang/protobuf v1.4.3 // indirect
+	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/cel-go v0.6.0
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-querystring v1.0.0 // indirect
@@ -35,9 +35,10 @@ require (
 	github.com/jonaz/ginlogrus v0.0.0-20191118094232-2f4da50f5dd6
 	github.com/jonaz/goenocean v0.0.0-20190218201525-96fde8f44745
 	github.com/jonaz/gograce v0.0.0-20170710084154-582d7afa93c3
-	github.com/json-iterator/go v1.1.10 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/koding/multiconfig v0.0.0-20171124222453-69c27309b2d7
 	github.com/llgcode/draw2d v0.0.0-20190810100245-79e59b6b8fbc
+	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/micro/mdns v0.3.0
 	github.com/olahol/melody v0.0.0-20180227134253-7bd65910e5ab
 	github.com/onrik/logrus v0.4.1
@@ -54,18 +55,18 @@ require (
 	github.com/stamp/mdns v0.0.0-20190125083120-df204ac59ca1
 	github.com/stampzilla/gocast v0.0.0-20201206204400-b3419c6ce229
 	github.com/stampzilla/gozwave v0.0.0-20190221183844-576012815e01
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.7.0
 	github.com/tarm/goserial v0.0.0-20151007205400-b3440c3c6355 // indirect
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
-	github.com/ugorji/go v1.1.13 // indirect
+	github.com/ugorji/go v1.2.6 // indirect
 	github.com/urfave/cli v1.22.1
 	github.com/vapourismo/knx-go v0.0.0-20200924173532-6ed2bf1e51e6
-	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897
-	golang.org/x/sys v0.0.0-20201204225414-ed752295db88 // indirect
+	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
+	golang.org/x/sys v0.0.0-20211025201205-69cdffdb9359 // indirect
+	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
-	google.golang.org/protobuf v1.25.0 // indirect
-	gopkg.in/yaml.v2 v2.3.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
+	google.golang.org/protobuf v1.27.1 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	software.sslmate.com/src/go-pkcs12 v0.0.0-20200619203921-c9ed90bd32dc
 )
 

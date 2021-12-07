@@ -1,4 +1,4 @@
-package main
+package exoline
 
 import (
 	"bufio"
@@ -10,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func asRoundedFloat(data []byte) (float64, error) {
+func AsRoundedFloat(data []byte) (float64, error) {
 	// this works OK according to protocol example:
 	// Extract temperature 21,8
 	// 0000   3d 05 00 d3 5e ae 41 67 3e
@@ -22,12 +22,60 @@ func asRoundedFloat(data []byte) (float64, error) {
 	return math.Round(float*100) / 100, nil
 }
 
-func Send(buf *bufio.Reader, w io.Writer, data []byte) ([]byte, error) {
+func generateMsg(op, ln, cell int) []byte {
+	addr := []byte{0xff, 0x1e, 0xc8, 0x04, byte(op), 0x04, 0x08, 0x00}
+	addr[5] = byte(ln)
+	addr[6] = byte(cell / 60)
+	addr[7] = byte(cell % 60)
+	return addr
+}
+
+// RRP reads real segment var. (verified working).
+func RRP(buf *bufio.Reader, w io.Writer, ln, cell int) (float64, error) {
+	addr := generateMsg(0xb6, ln, cell)
+	b, err := Send(buf, w, addr)
+	if err != nil {
+		return 0.0, err
+	}
+	return AsRoundedFloat(b.Payload())
+}
+
+// RLP reads logic segment var. (not working??? TODO).
+func RLP(buf *bufio.Reader, w io.Writer, ln, cell int) (bool, error) {
+	addr := generateMsg(0xb3, ln, cell)
+	b, err := Send(buf, w, addr)
+	if err != nil {
+		return false, err
+	}
+	p := b.Payload()
+	if len(p) != 1 {
+		return false, fmt.Errorf("wrong length on RLP expected 1 byte")
+	}
+	if p[0] != 0 {
+		return true, nil
+	}
+	return false, nil
+}
+
+// RXP reads index segment var. (verified working).
+func RXP(buf *bufio.Reader, w io.Writer, ln, cell int) (int, error) {
+	addr := generateMsg(0x34, ln, cell)
+	b, err := Send(buf, w, addr)
+	if err != nil {
+		return 0, err
+	}
+	p := b.Payload()
+	if len(p) != 1 {
+		return 0, fmt.Errorf("wrong length on RXP expected 1 byte")
+	}
+	return int(p[0]), nil
+}
+
+func Send(buf *bufio.Reader, w io.Writer, data []byte) (Message, error) {
 	sendMsg := compileMsg(data)
 	logrus.Debugf("send msg: %x\n", sendMsg)
-	_, err := w.Write(sendMsg)
-	if err != nil {
-		logrus.Error(err)
+	if _, err := w.Write(sendMsg); err != nil {
+		return nil, fmt.Errorf("error writing to exoline connection: %w", err)
 	}
 	return read(buf)
 }
@@ -38,12 +86,18 @@ read msghex: 0x3d 0x5 0x0 0xf5 0xaf 0x41 0x5 0x3e
 error fetching data: data hex: 0x3d 0x5 0x0 0xf5 0xaf 0x41 0x5 0x3e  could not pase float from binary
 */
 
-func read(buf *bufio.Reader) ([]byte, error) {
+type Message []byte
+
+func (m Message) Payload() []byte {
+	return m[3 : len(m)-2]
+}
+
+func read(buf *bufio.Reader) (Message, error) {
 	msg, err := buf.ReadBytes(0x3e)
 	if err != nil {
 		return nil, err
 	}
-	logrus.Debug("raw msg", printHex(msg))
+	logrus.Debug("raw msg", PrintHex(msg))
 
 	// handle escape byte
 	indexesToFlip := []int{}
@@ -62,12 +116,12 @@ func read(buf *bufio.Reader) ([]byte, error) {
 		msg[v] ^= 0xff
 	}
 
-	logrus.Debug("read msg", printHex(msg))
+	logrus.Debug("read msg", PrintHex(msg))
 
 	return msg, nil
 }
 
-func printHex(data []byte) string {
+func PrintHex(data []byte) string {
 	str := "hex: "
 	for _, v := range data {
 		str += fmt.Sprintf("%#x ", v)

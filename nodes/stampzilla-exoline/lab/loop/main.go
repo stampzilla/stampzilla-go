@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/binary"
 	"flag"
@@ -11,10 +10,10 @@ import (
 	"log"
 	"math"
 	"net"
-	"os"
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-exoline/exoline"
 )
 
 func getTemps(buf *bufio.Reader, w io.Writer) {
@@ -36,20 +35,21 @@ func getTemps(buf *bufio.Reader, w io.Writer) {
 
 func main() {
 	// test read escape 0x1b
-	test := bytes.NewBuffer([]byte{0x3d, 0x5, 0x0, 0xf5, 0x1b, 0xe4, 0xaf, 0x41, 0x5, 0x3e})
-	buff := bufio.NewReader(test)
-	read(buff)
-	os.Exit(0)
-	data := []byte{0x3d, 0x5, 0x0, 0xff, 0x1b, 0x41, 0x92, 0x3e}
-	value := data[3 : len(data)-2]
-	if len(value) == 3 {
-		value = append(value, 0)
-		copy(value[1:], value)
-		value[0] = 0x00
-	}
+	// test := bytes.NewBuffer([]byte{0x3d, 0x5, 0x0, 0xf5, 0x1b, 0xe4, 0xaf, 0x41, 0x5, 0x3e})
+	// buff := bufio.NewReader(test)
+	// read(buff)
+	// os.Exit(0)
 
-	fmt.Println(decode(value))
-	os.Exit(0)
+	//data := []byte{0x3d, 0x5, 0x0, 0xff, 0x1b, 0x41, 0x92, 0x3e}
+	//value := data[3 : len(data)-2]
+	//if len(value) == 3 {
+	//value = append(value, 0)
+	//copy(value[1:], value)
+	//value[0] = 0x00
+	//}
+
+	// fmt.Println(decodeInt(value))
+	// os.Exit(0)
 
 	var dialer net.Dialer
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
@@ -63,7 +63,32 @@ func main() {
 	buf := bufio.NewReader(conn)
 
 	boolPtr := flag.Bool("t", false, "print temperatures")
+	ln := flag.Int("ln", 0, "load number")
+	cell := flag.Int("cell", 0, "cell")
+	op := flag.String("operation", "RRP", "read operation")
 	flag.Parse()
+
+	if *cell != 0 && *ln != 0 && *op != "" {
+		logrus.SetLevel(logrus.DebugLevel)
+
+		var resp interface{}
+		switch *op {
+		case "RRP": // Read real segment var.
+			resp, err = exoline.RRP(buf, conn, *ln, *cell) // OutDoorTemp
+		case "RLP": // Read logic segment var.
+			resp, err = exoline.RLP(buf, conn, *ln, *cell) // OutDoorTemp
+		case "RXP": // Read logic segment var.
+			resp, err = exoline.RXP(buf, conn, *ln, *cell) // OutDoorTemp
+		}
+
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
+		fmt.Println("Response: ", resp)
+
+		return
+	}
 
 	if *boolPtr {
 		getTemps(buf, conn)
@@ -71,9 +96,9 @@ func main() {
 	}
 
 	var a, b, c uint8
-	for a = 0; a < 255; a++ {
-		for b = 0; b < 255; b++ {
-			for c = 0; c < 255; c++ {
+	for a = 0; a < 60; a++ {
+		for b = 0; b < 60; b++ {
+			for c = 0; c < 60; c++ {
 				Send(buf, conn, []byte{0xff, 0x1e, 0xc8, 0x04, 0xb6, a, b, c})
 			}
 		}
@@ -128,7 +153,7 @@ func compileMsg(b []byte) []byte {
 
 func Send(buf *bufio.Reader, w io.Writer, data []byte) {
 	sendMsg := compileMsg(data)
-	fmt.Printf("send msg: %x\n", sendMsg)
+	fmt.Printf("send msg: %x ", sendMsg)
 	_, err := w.Write(sendMsg)
 	if err != nil {
 		logrus.Error(err)
@@ -159,24 +184,62 @@ func read(buf *bufio.Reader) {
 		msg[v] ^= 0xff
 	}
 
-	fmt.Printf("hex:")
+	fmt.Printf("resp:")
 	for _, v := range msg {
 		fmt.Printf("%#x ", v)
 	}
+	// fmt.Println()
+
+	//if msg[1] != 0x05 && msg[2] != 0x00 {
+	//return
+	//}
+
+	f, _ := decodeFloat(msg[3 : len(msg)-2])
+	//if err != nil {
+	//if err != nil {
+	//return
+	//}
+	//return
+	//}
+	if f != 0.0 {
+		fmt.Print(" decode float:", f)
+	}
+	i, _ := decodeIntLittleEndian(msg[3 : len(msg)-2])
+	if i != 0 {
+		fmt.Print(" decode int littleEndian:", i)
+	}
+	i2, _ := decodeIntBigEndian(msg[3 : len(msg)-2])
+	if i2 != 0 {
+		fmt.Print(" decode int bigEndian:", i2)
+	}
 	fmt.Println()
-
-	if msg[1] != 0x05 && msg[2] != 0x00 {
-		return
-	}
-
-	f, err := decode(msg[3 : len(msg)-2])
-	if err != nil {
-		return
-	}
-	fmt.Println("decode float:", f)
 }
 
-func decode(data []byte) (float64, error) {
+func decodeIntBigEndian(data []byte) (int, error) {
+	if len(data) == 4 {
+		bits := binary.BigEndian.Uint32(data)
+		return int(bits), nil
+	}
+	if len(data) == 2 {
+		bits := binary.BigEndian.Uint16(data)
+		return int(bits), nil
+	}
+	return 0, fmt.Errorf("could not parse int from binary")
+}
+
+func decodeIntLittleEndian(data []byte) (int, error) {
+	if len(data) == 4 {
+		bits := binary.LittleEndian.Uint32(data)
+		return int(bits), nil
+	}
+	if len(data) == 2 {
+		bits := binary.LittleEndian.Uint16(data)
+		return int(bits), nil
+	}
+	return 0, fmt.Errorf("could not parse int from binary")
+}
+
+func decodeFloat(data []byte) (float64, error) {
 	// this works OK according to protocol example:
 	// Extract temperature 21,8
 	// 0000   3d 05 00 d3 5e ae 41 67 3e
