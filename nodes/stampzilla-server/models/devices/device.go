@@ -83,6 +83,8 @@ func (d *Device) MarshalJSON() ([]byte, error) {
 
 // Equal checks if 2 devices are equal.
 func (d *Device) Equal(dev *Device) bool {
+	d.RLock()
+	defer d.RUnlock()
 	if !d.State.Equal(dev.State) { // this is most likely to not be equal so we check it first
 		return false
 	}
