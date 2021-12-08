@@ -315,7 +315,7 @@ func (tunnel *tunnel) decodeKNX(msg knx.GroupEvent) error {
 	default:
 		newState[groupAddress.Name] = v
 	}
-	groupAddress.Device.SetOnline(true)
+	tunnel.Node.SetDeviceOnline(groupAddress.Device.ID.ID, true)
 
 	// If temperature and relative humidity is known, calculate absolute humidity
 	// Seems unused, will comment it out

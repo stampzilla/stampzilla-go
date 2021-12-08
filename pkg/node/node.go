@@ -612,3 +612,20 @@ func (n *Node) SyncDevice(id string) {
 func (n *Node) Subscribe(what ...string) error {
 	return n.WriteMessage("subscribe", what)
 }
+
+func (n *Node) SetDeviceOnline(id string, online bool) {
+	device := n.GetDevice(id)
+	if device == nil {
+		return
+	}
+
+	device.RLock()
+	old := device.Online
+	device.RUnlock()
+
+	if old == online {
+		return
+	}
+	device.SetOnline(online)
+	n.SyncDevice(id)
+}
