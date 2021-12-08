@@ -20,7 +20,15 @@ func TestUpdateState(t *testing.T) {
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Assert we called our heatpump with the correct parameters
-		assert.Equal(t, "/api/set?idx=0203&val=225", r.URL.String())
+		if r.URL.Query().Get("idx") == "0203" {
+			assert.Equal(t, "/api/set?idx=0203&val=225", r.URL.String())
+			return
+		}
+		if r.URL.Query().Get("idx") == "6209" {
+			assert.Equal(t, "/api/set?idx=6209&val=2", r.URL.String())
+			return
+		}
+		t.Error("unexpected get parameters")
 	}))
 	defer ts.Close()
 
@@ -51,7 +59,8 @@ func TestUpdateState(t *testing.T) {
 		            "name": "heatpump",
 		            "online": true,
 		            "state": {
-		                "RoomTempSetpoint": 22.5
+		                "RoomTempSetpoint": 22.5,
+		                "ExtraWarmWater": 2
 		            }
 		        }
 		    }
@@ -60,12 +69,14 @@ func TestUpdateState(t *testing.T) {
 
 	err = node.Client.WriteMessage(websocket.TextMessage, b)
 	assert.NoError(t, err)
+	var syncedDev *devices.Device
 	e2e.WaitFor(t, 1*time.Second, "wait for node to have updated RoomTempSetpoint", func() bool {
-		dev := node.GetDevice("1")
-		if dev != nil && dev.State["RoomTempSetpoint"] == 22.5 {
+		syncedDev = node.GetDevice("1")
+		if dev != nil && syncedDev.State["RoomTempSetpoint"] != nil {
 			return true
 		}
-
 		return false
 	})
+	assert.Equal(t, 22.5, syncedDev.State["RoomTempSetpoint"])
+	assert.Equal(t, float64(2), syncedDev.State["ExtraWarmWater"])
 }

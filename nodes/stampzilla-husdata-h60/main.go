@@ -53,7 +53,14 @@ func setupNode(config *Config) *node.Node {
 	node.OnRequestStateChange(func(state devices.State, device *devices.Device) error {
 		var err error
 		state.Float("RoomTempSetpoint", func(v float64) {
-			err = update(config, "0203", v)
+			err = update(config, "0203", v*float64(10.0))
+		})
+		if err != nil {
+			return err
+		}
+
+		state.Float("ExtraWarmWater", func(v float64) {
+			err = update(config, "6209", v)
 		})
 		return err
 	})
@@ -132,7 +139,7 @@ func update(config *Config, id string, value float64) error {
 	u.Path = path.Join(u.Path, "api", "set")
 	q := u.Query()
 	q.Set("idx", id)
-	q.Set("val", strconv.Itoa(int(math.RoundToEven(value*float64(10.0)))))
+	q.Set("val", strconv.Itoa(int(math.RoundToEven(value))))
 	u.RawQuery = q.Encode()
 
 	logrus.Debugf("requesting update value in heatpump %s", u.String())
@@ -148,3 +155,6 @@ func update(config *Config, id string, value float64) error {
 
 	return nil
 }
+
+// warmwater doesnt noeed to be multiplied / diviced by 10
+// http://192.168.13.181/api/set?idx=6209&val=2
