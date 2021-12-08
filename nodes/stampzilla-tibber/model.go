@@ -42,6 +42,7 @@ type Prices struct {
 	prices              map[time.Time]Price
 	mutex               sync.RWMutex
 	cheapestChargeStart time.Time
+	cheapestHour        time.Time
 }
 
 func NewPrices() *Prices {
@@ -66,6 +67,17 @@ func (p *Prices) CheapestChargeStart() time.Time {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	return p.cheapestChargeStart
+}
+func (p *Prices) SetCheapestHour(t time.Time) {
+	p.mutex.Lock()
+	p.cheapestHour = t
+	p.mutex.Unlock()
+}
+
+func (p *Prices) CheapestHour() time.Time {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	return p.cheapestHour
 }
 
 func (p *Prices) Last() time.Time {
@@ -160,6 +172,10 @@ func (p *Prices) ClearOld() {
 	p.mutex.Unlock()
 }
 
+func isSameHourAndDay(t1, t2 time.Time) bool {
+	return t1.Truncate(1 * time.Hour).Equal(t2.Truncate(1 * time.Hour))
+}
+
 func inTimeSpan(start, end, check time.Time) bool {
 	if start.Before(end) {
 		return !check.Before(start) && !check.After(end)
@@ -181,10 +197,35 @@ func (p *Prices) State() devices.State {
 		state["carChargeStart"] = true
 	}
 
+	state["cheapestHour"] = false
+	if isSameHourAndDay(now, p.CheapestHour()) {
+		state["cheapestHour"] = true
+	}
+
 	state["priceExpensive"] = false
 	if current.Level == "EXPENSIVE" || current.Level == "VERY_EXPENSIVE" {
 		state["priceExpensive"] = true
 	}
 
+	state["priceLevel"] = p.priceToInt(current.Level)
+
 	return state
+}
+
+// PriceToInt converts tibbers enum values to ints.
+func (p *Prices) priceToInt(s string) int {
+	switch s {
+	case "VERY_EXPENSIVE":
+		return 5
+	case "EXPENSIVE":
+		return 4
+	case "NORMAL":
+		return 3
+	case "CHEAP":
+		return 2
+	case "VERY_CHEAP":
+		return 1
+	}
+
+	return 0
 }

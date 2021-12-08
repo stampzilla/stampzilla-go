@@ -18,6 +18,7 @@ func newPriceTotal(hour int, total float64) Price {
 }
 
 func TestClearOld(t *testing.T) {
+	t.Parallel()
 	price1 := newPrice(time.Now(), "")
 	price2 := newPrice(time.Now().Add(-1*time.Hour), "")
 
@@ -31,6 +32,7 @@ func TestClearOld(t *testing.T) {
 }
 
 func TestCurrent(t *testing.T) {
+	t.Parallel()
 	price1 := newPrice(time.Now(), "now")
 	price2 := newPrice(time.Now().Add(-1*time.Hour), "lasthour")
 	price3 := newPrice(time.Now().Add(1*time.Hour), "nexthour")
@@ -45,6 +47,7 @@ func TestCurrent(t *testing.T) {
 }
 
 func TestHasTomorrowPrices(t *testing.T) {
+	t.Parallel()
 	price1 := newPrice(time.Now().Truncate(24*time.Hour).Add(24*time.Hour), "")
 
 	t.Log(price1)
@@ -56,6 +59,7 @@ func TestHasTomorrowPrices(t *testing.T) {
 }
 
 func TestCalculateBestChargeHours(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		hoursPrice []struct {
 			hour  int
@@ -151,6 +155,58 @@ func TestCalculateBestChargeHours(t *testing.T) {
 			cheapestStartTime := prices.calculateBestChargeHours(6 * time.Hour)
 
 			t.Log("cheapestStartTime", cheapestStartTime)
+			expected := time.Date(2020, 10, 10, tt.exp, 0, 0, 0, time.UTC)
+			assert.Equal(t, expected, cheapestStartTime)
+		})
+	}
+}
+
+func TestCheapestSingleHour(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		hoursPrice []struct {
+			hour  int
+			price float64
+		}
+		exp int
+	}{
+
+		{
+			hoursPrice: []struct {
+				hour  int
+				price float64
+			}{
+				{0, 30},
+				{1, 29},
+				{2, 28},
+				{3, 27},
+				{4, 25},
+				{5, 15},
+				{6, 2},
+				{7, 11},
+				{8, 12},
+				{9, 13},
+				{10, 14},
+				{11, 1},
+				{12, 16},
+				{13, 2},
+				{14, 18},
+				{15, 19},
+				{16, 20},
+			},
+			exp: 11,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(fmt.Sprintf("expected %d", tt.exp), func(t *testing.T) {
+			t.Parallel()
+			prices := NewPrices()
+			for _, v := range tt.hoursPrice {
+				prices.Add(newPriceTotal(v.hour, v.price))
+			}
+			cheapestStartTime := prices.calculateBestChargeHours(1 * time.Hour)
 			expected := time.Date(2020, 10, 10, tt.exp, 0, 0, 0, time.UTC)
 			assert.Equal(t, expected, cheapestStartTime)
 		})

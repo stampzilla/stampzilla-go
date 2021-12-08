@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/v2/pkg/node"
@@ -30,6 +31,9 @@ func fetchAndCalculate(config *Config, node *node.Node) {
 	if pricesStore.HasTomorrowPricesYet() {
 		cheapestStartTime := pricesStore.calculateBestChargeHours(config.carChargeDuration)
 		pricesStore.SetCheapestChargeStart(cheapestStartTime)
+
+		cheapestHour := pricesStore.calculateBestChargeHours(1 * time.Hour)
+		pricesStore.SetCheapestHour(cheapestHour)
 	}
 
 	node.UpdateState("1", pricesStore.State())
