@@ -22,6 +22,30 @@ import (
 	A Pulses As is (For S0 El-meter pulse counter)
 */
 
+type dividedby100 float64
+
+func (d100 *dividedby100) UnmarshalJSON(data []byte) error {
+	i64, err := strconv.ParseInt(string(data), 10, 64)
+	if err != nil {
+		return err
+	}
+
+	*d100 = dividedby100(float64(i64) / 100.0)
+	return nil
+}
+
+type dividedby1000 float64
+
+func (d1000 *dividedby1000) UnmarshalJSON(data []byte) error {
+	i64, err := strconv.ParseInt(string(data), 10, 64)
+	if err != nil {
+		return err
+	}
+
+	*d1000 = dividedby1000(float64(i64) / 1000.0)
+	return nil
+}
+
 type number float64
 
 func (ss *number) UnmarshalJSON(data []byte) error {
@@ -44,52 +68,52 @@ func (ss *number) UnmarshalJSON(data []byte) error {
 }
 
 type HeatPump struct {
-	RoomSensorInfluence           number `json:"2204"` // Number /10
-	AddHeatStatus                 int    `json:"3104"`
-	ExtraWarmWater                int    `json:"6209"` // Hours
-	RadiatorForward               number `json:"0002"` // Degrees /10
-	HeatCarrierReturn             number `json:"0003"` // Degrees /10
-	HeatCarrierForward            number `json:"0004"` // Degrees /10
-	BrineIn                       number `json:"0005"` // Degrees /10
-	BrineOut                      number `json:"0006"` // Degrees /10
-	Outdoor                       number `json:"0007"` // Degrees /10
-	Indoor                        number `json:"0008"` // Degrees /10
-	WarmWater1Top                 number `json:"0009"` // Degrees /10
-	HotGasCompressor              number `json:"000B"` // Degrees /10
-	AirIntake                     number `json:"000E"` // Degrees /10
-	Pool                          number `json:"0011"` // Degrees /10
-	RadiatorForward2              number `json:"0020"` // Degrees /10
-	Indoor2                       number `json:"0021"` // Degrees /10
-	Compressor                    int    `json:"1A01"` // Bool
-	PumpColdCircuit               int    `json:"1A04"` // Bool
-	PumpHeatCircuit               int    `json:"1A05"` // Bool
-	PumpRadiator                  int    `json:"1A06"` // Bool
-	SwitchValve1                  int    `json:"1A07"` // Bool
-	SwitchValve2                  int    `json:"1A08"` // Bool
-	Fan                           int    `json:"1A09"` // Bool
-	HighPressostat                int    `json:"1A0A"` // Bool
-	LowPressostat                 int    `json:"1A0B"` // Bool
-	HeatingCable                  int    `json:"1A0C"` // Bool
-	CrankCaseHeater               int    `json:"1A0D"` // Bool
-	Alarm                         int    `json:"1A20"` // Bool
-	PumpRadiator2                 int    `json:"1A21"` // Bool
-	WarmWaterSetpoint             number `json:"0111"` // Degrees /10
-	HeatingSetpoint               number `json:"0107"` // Degrees /10
-	HeatingSetpoint2              number `json:"0120"` // Degrees /10
-	RoomTempSetpoint              number `json:"0203"` // Degrees /10
-	HeatSet1CurveL                number `json:"0205"` // Degrees /10
-	HeatSet2CurveR                number `json:"0206"` // Degrees /10
-	HeatSet1CurveL2               number `json:"0222"` // Degrees /10
-	HeatSet2CurveR2               number `json:"0223"` // Degrees /10
-	PoolTempSetpoint              number `json:"0219"` // Degrees /10
-	CollectedPulsesMeter1         int    `json:"AFF1"`
-	CollectedPulsesMeter2         int    `json:"AFF2"`
-	SuppliedEnergyHeating         int    `json:"5C52"`
-	SuppliedEnergyHotwater        int    `json:"5C53"`
-	CompressorConsumptionHeating  int    `json:"5C55"`
-	CompressorConsumptionHotwater int    `json:"5C56"`
-	AuxConsumptionHeating         int    `json:"5C58"`
-	AuxConsumptionHotwater        int    `json:"5C59"`
+	RoomSensorInfluence           number        `json:"2204"` // Number /10
+	AddHeatStatus                 int           `json:"3104"`
+	ExtraWarmWater                int           `json:"6209"` // Hours
+	RadiatorForward               number        `json:"0002"` // Degrees /10
+	HeatCarrierReturn             number        `json:"0003"` // Degrees /10
+	HeatCarrierForward            number        `json:"0004"` // Degrees /10
+	BrineIn                       number        `json:"0005"` // Degrees /10
+	BrineOut                      number        `json:"0006"` // Degrees /10
+	Outdoor                       number        `json:"0007"` // Degrees /10
+	Indoor                        number        `json:"0008"` // Degrees /10
+	WarmWater1Top                 number        `json:"0009"` // Degrees /10
+	HotGasCompressor              number        `json:"000B"` // Degrees /10
+	AirIntake                     number        `json:"000E"` // Degrees /10
+	Pool                          number        `json:"0011"` // Degrees /10
+	RadiatorForward2              number        `json:"0020"` // Degrees /10
+	Indoor2                       number        `json:"0021"` // Degrees /10
+	Compressor                    int           `json:"1A01"` // Bool
+	PumpColdCircuit               int           `json:"1A04"` // Bool
+	PumpHeatCircuit               int           `json:"1A05"` // Bool
+	PumpRadiator                  int           `json:"1A06"` // Bool
+	SwitchValve1                  int           `json:"1A07"` // Bool
+	SwitchValve2                  int           `json:"1A08"` // Bool
+	Fan                           int           `json:"1A09"` // Bool
+	HighPressostat                int           `json:"1A0A"` // Bool
+	LowPressostat                 int           `json:"1A0B"` // Bool
+	HeatingCable                  int           `json:"1A0C"` // Bool
+	CrankCaseHeater               int           `json:"1A0D"` // Bool
+	Alarm                         int           `json:"1A20"` // Bool
+	PumpRadiator2                 int           `json:"1A21"` // Bool
+	WarmWaterSetpoint             number        `json:"0111"` // Degrees /10
+	HeatingSetpoint               number        `json:"0107"` // Degrees /10
+	HeatingSetpoint2              number        `json:"0120"` // Degrees /10
+	RoomTempSetpoint              number        `json:"0203"` // Degrees /10
+	HeatSet1CurveL                number        `json:"0205"` // Degrees /10
+	HeatSet2CurveR                number        `json:"0206"` // Degrees /10
+	HeatSet1CurveL2               number        `json:"0222"` // Degrees /10
+	HeatSet2CurveR2               number        `json:"0223"` // Degrees /10
+	PoolTempSetpoint              number        `json:"0219"` // Degrees /10
+	CollectedPulsesMeter1         int           `json:"AFF1"`
+	CollectedPulsesMeter2         int           `json:"AFF2"`
+	SuppliedEnergyHeating         dividedby100  `json:"5C52"`
+	SuppliedEnergyHotwater        dividedby100  `json:"5C53"`
+	CompressorConsumptionHeating  dividedby1000 `json:"5C55"`
+	CompressorConsumptionHotwater dividedby1000 `json:"5C56"`
+	AuxConsumptionHeating         dividedby1000 `json:"5C58"`
+	AuxConsumptionHotwater        dividedby1000 `json:"5C59"`
 }
 
 // Valid tries to figure out if current state is "valid" as if it should be logged at all.

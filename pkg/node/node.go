@@ -590,7 +590,10 @@ func (n *Node) UpdateState(id string, newState devices.State) {
 		return
 	}
 
-	if diff := device.State.Diff(newState); len(diff) != 0 {
+	device.RLock()
+	diff := device.State.Diff(newState)
+	device.RUnlock()
+	if len(diff) != 0 {
 		device.Lock()
 		device.State.MergeWith(diff)
 		device.Unlock()

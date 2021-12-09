@@ -19,6 +19,12 @@ func TestHeatPumpState(t *testing.T) {
 		{`{"0007":123}`, `"Outdoor":12.3`},
 		{`{"1A01":1}`, `"Compressor":true`},
 		{`{"1A01":0}`, `"Compressor":false`},
+		{`{"5C52":844329}`, `"SuppliedEnergyHeating":8443.29`},
+		{`{"5C53":463482}`, `"SuppliedEnergyHotwater":4634.82`},
+		{`{"5C55":4758500}`, `"CompressorConsumptionHeating":4758.5`},
+		{`{"5C56":2736630}`, `"CompressorConsumptionHotwater":2736.63`},
+		{`{"5C58":3608}`, `"AuxConsumptionHeating":3.608`},
+		{`{"5C59":250314}`, `"AuxConsumptionHotwater":250.314`},
 	}
 
 	for _, tt := range tests {
