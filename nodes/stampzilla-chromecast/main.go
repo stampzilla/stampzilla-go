@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -17,68 +18,36 @@ func main() {
 
 	// node.OnConfig(updatedConfig)
 
-	stop := make(chan struct{})
+	ctx, cancel := context.WithCancel(context.Background())
 	node.OnShutdown(func() {
-		close(stop)
+		cancel()
 	})
 
-	err := node.Connect()
-	if err != nil {
+	if err := node.Connect(); err != nil {
 		logrus.Error(err)
 		return
 	}
 
 	discovery := discovery.NewService()
-	discovery.Periodic(time.Second * 10)
-	go discoveryListner(node, discovery, stop)
+	go discoveryListner(ctx, node, discovery)
+	discovery.Start(ctx, time.Second*10)
 
 	node.Wait()
 }
 
-func discoveryListner(node *node.Node, discovery *discovery.Service, stop chan struct{}) {
+func discoveryListner(ctx context.Context, node *node.Node, discovery *discovery.Service) {
 	for {
 		select {
 		case device := <-discovery.Found():
 			logrus.Debugf("New device discovered: %s", device.String())
 			d := NewChromecast(node, device)
 			state.Add(d)
-			go func() {
-				err := device.Connect()
-				if err != nil {
-					logrus.Error(err)
-				}
-			}()
-		case <-stop:
+			err := device.Connect(ctx)
+			if err != nil {
+				logrus.Error(err)
+			}
+		case <-ctx.Done():
 			return
 		}
 	}
 }
-
-// THis is called on each incomming command
-/*
-func processCommand(cmd protocol.Command) {
-	logrus.Info("Incoming command from server:", cmd)
-	if len(cmd.Args) == 0 {
-		logrus.Error("Missing argument 0 (which player?)")
-		return
-	}
-	player := state.GetByUUID(cmd.Args[0])
-	if player == nil {
-		logrus.Errorf("Player with id %s not found", cmd.Args[0])
-		return
-	}
-
-	switch cmd.Cmd {
-	case "play":
-		if len(cmd.Args) > 1 && strings.HasPrefix(cmd.Args[1], "http") {
-			player.PlayUrl(strings.Join(cmd.Args[1:], "/"), "")
-			return
-		}
-		player.Play()
-	case "pause":
-		player.Pause()
-	case "stop":
-		player.Stop()
-	}
-}
-*/
