@@ -18,7 +18,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jonaz/ginlogrus"
 	"github.com/jonaz/gograce"
-	"github.com/olahol/melody"
+	"github.com/lesismal/melody"
 	"github.com/rakyll/statik/fs"
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/ca"

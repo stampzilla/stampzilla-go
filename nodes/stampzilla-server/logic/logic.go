@@ -176,6 +176,7 @@ func (l *Logic) EvaluateRules(ctx context.Context) {
 	}
 }
 
+// runFor waits duration before rule is executed. Cancels the times if the rule changes current state.
 func (l *Logic) runFor(ctx context.Context, rule *Rule, evaluation bool) {
 	// TODO implement for 5m here. Do not run or set active until 5m passed.
 	// go run sleep 5m. cancel go routine if we have new evaluation. After 5m run evaluateRule again before rule.Run
@@ -212,13 +213,12 @@ func (l *Logic) runFor(ctx context.Context, rule *Rule, evaluation bool) {
 				return
 			}
 
-			logrus.Info("Rule: ", rule.Name(), " (", rule.Uuid(), ") - running actions after for: ", rule.For())
-
 			l.onReportState(rule.Uuid(), map[string]interface{}{
 				"pending": false,
 				"active":  true,
 			})
 			rule.SetActive(true)
+			logrus.Info("Rule: ", rule.Name(), " (", rule.Uuid(), ") - running actions after for: ", rule.For())
 			rule.Run(l.StateStore, l.WebsocketSender, l.onTriggerDestination)
 		}()
 		return

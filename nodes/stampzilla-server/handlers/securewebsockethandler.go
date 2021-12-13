@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/olahol/melody"
+	"github.com/lesismal/melody"
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/ca"
 	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/interfaces"

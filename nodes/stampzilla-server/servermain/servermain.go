@@ -11,7 +11,7 @@ import (
 	"path"
 	"strconv"
 
-	"github.com/olahol/melody"
+	"github.com/lesismal/melody"
 	"github.com/onrik/logrus/filename"
 	"github.com/sirupsen/logrus"
 	"github.com/stamp/mdns"

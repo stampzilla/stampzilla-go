@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/olahol/melody"
+	"github.com/lesismal/melody"
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
 	stypes "github.com/stampzilla/stampzilla-go/v2/pkg/types"
@@ -244,7 +244,7 @@ func TestEvaluateRulesWithFor(t *testing.T) {
 
 	time.Sleep(10 * time.Millisecond)
 	assert.Equal(t, false, l.Rules[r.Uuid()].Active())
-	time.Sleep(20 * time.Millisecond)
+	time.Sleep(25 * time.Millisecond)
 	assert.Equal(t, true, l.Rules[r.Uuid()].Active())
 
 	l.updateDevice(&devices.Device{
@@ -332,7 +332,7 @@ func TestEvaluateRulesWithForFlapping(t *testing.T) {
 	r := l.AddRule("test")
 	r.Expression_ = `devices["node.id"].on == true`
 	r.Enabled = true
-	r.For_ = stypes.Duration(time.Millisecond * 40)
+	r.For_ = stypes.Duration(time.Millisecond * 50)
 	r.Actions_ = []string{
 		"uuid",
 	}
@@ -345,7 +345,7 @@ func TestEvaluateRulesWithForFlapping(t *testing.T) {
 	})
 	l.EvaluateRules(context.Background())
 
-	time.Sleep(30 * time.Millisecond)
+	time.Sleep(25 * time.Millisecond)
 	l.updateDevice(&devices.Device{
 		ID: devID,
 		State: devices.State{
@@ -365,7 +365,7 @@ func TestEvaluateRulesWithForFlapping(t *testing.T) {
 
 	l.Wait()
 	diff := time.Now().Sub(now)
-	if diff < time.Millisecond*40 {
+	if diff < time.Millisecond*50 {
 		t.Error("Expected to sleep in the action for at least 40ms but only slept: ", diff)
 	}
 
@@ -374,4 +374,119 @@ func TestEvaluateRulesWithForFlapping(t *testing.T) {
 
 	l.Wait()
 	assert.Equal(t, int64(1), syncer.Count())
+}
+
+func TestEvaluateRulesWithForFlapping2(t *testing.T) {
+	logrus.SetFormatter(&logrus.TextFormatter{TimestampFormat: time.RFC3339Nano, FullTimestamp: true})
+	logrus.SetLevel(logrus.DebugLevel)
+	syncer := NewMockSender()
+
+	devID := devices.ID{Node: "node", ID: "id"}
+	savedState := NewSavedStateStore()
+	savedState.State["uuid"] = &SavedState{
+		Name: "testname",
+		UUID: "uuid",
+		State: map[devices.ID]devices.State{
+			devID: {
+				"on": true,
+			},
+		},
+	}
+	l := New(savedState, syncer)
+	r := l.AddRule("test")
+	r.Expression_ = `devices["node.id"].on == false`
+	r.Enabled = true
+	r.For_ = stypes.Duration(time.Millisecond * 100)
+	r.Actions_ = []string{
+		"uuid",
+	}
+
+	l.updateDevice(&devices.Device{
+		ID: devID,
+		State: devices.State{
+			"on": false,
+		},
+	})
+	l.EvaluateRules(context.Background()) // rule active
+
+	time.Sleep(25 * time.Millisecond)
+	l.updateDevice(&devices.Device{
+		ID: devID,
+		State: devices.State{
+			"on": true,
+		},
+	})
+	l.EvaluateRules(context.Background()) // rule not active
+
+	l.updateDevice(&devices.Device{
+		ID: devID,
+		State: devices.State{
+			"on": false,
+		},
+	})
+	l.EvaluateRules(context.Background()) // rule active again
+	time.Sleep(70 * time.Millisecond)
+
+	// 100 ms has not passed since last time rule went active so should be false and 0 here
+	logrus.Infof("%#v", l.Rules[r.Uuid()])
+	assert.Equal(t, false, l.Rules[r.Uuid()].Active())
+	assert.Equal(t, int64(0), syncer.Count())
+}
+
+func TestEvaluateRulesWithForTwoUpdatesSameStateStillPending(t *testing.T) {
+	logrus.SetFormatter(&logrus.TextFormatter{TimestampFormat: time.RFC3339Nano, FullTimestamp: true})
+	logrus.SetLevel(logrus.DebugLevel)
+	syncer := NewMockSender()
+
+	devID := devices.ID{Node: "node", ID: "id"}
+	savedState := NewSavedStateStore()
+	savedState.State["uuid"] = &SavedState{
+		Name: "testname",
+		UUID: "uuid",
+		State: map[devices.ID]devices.State{
+			devID: {
+				"on": false,
+			},
+		},
+	}
+	l := New(savedState, syncer)
+	r := l.AddRule("test")
+	r.Expression_ = `devices["node.id"].on == true`
+	r.Enabled = true
+	r.For_ = stypes.Duration(time.Millisecond * 60)
+	r.Actions_ = []string{
+		"uuid",
+	}
+
+	l.updateDevice(&devices.Device{
+		ID: devID,
+		State: devices.State{
+			"on": true,
+		},
+	})
+	l.EvaluateRules(context.Background())
+
+	time.Sleep(10 * time.Millisecond)
+	l.updateDevice(&devices.Device{
+		ID: devID,
+		State: devices.State{
+			"on": true,
+		},
+	})
+	l.EvaluateRules(context.Background())
+
+	time.Sleep(60 * time.Millisecond)
+	assert.Equal(t, true, l.Rules[r.Uuid()].Active())
+	assert.Equal(t, int64(1), syncer.Count())
+
+	l.updateDevice(&devices.Device{
+		ID: devID,
+		State: devices.State{
+			"on": false,
+		},
+	})
+	l.EvaluateRules(context.Background()) // rule not active
+	l.Wait()
+	assert.Equal(t, false, l.Rules[r.Uuid()].Active())
+	assert.Equal(t, false, l.Rules[r.Uuid()].Pending())
 }
