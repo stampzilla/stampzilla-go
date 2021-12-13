@@ -1,6 +1,6 @@
 package models
 
-import "github.com/olahol/melody"
+import "github.com/lesismal/melody"
 
 type Connection struct {
 	Type       string                 `json:"type"`

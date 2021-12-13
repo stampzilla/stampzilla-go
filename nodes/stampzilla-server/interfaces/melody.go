@@ -10,7 +10,7 @@ type MelodySession interface {
 	CloseWithMsg(msg []byte) error
 	Get(key string) (value interface{}, exists bool)
 	IsClosed() bool
-	MustGet(key string) interface{}
+	//MustGet(key string) interface{} // removed in github.com/lesismal/melody fork
 	Set(key string, value interface{})
 	WriteBinary(msg []byte) error
 }

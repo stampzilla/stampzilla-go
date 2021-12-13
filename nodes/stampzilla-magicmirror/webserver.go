@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/olahol/melody"
+	"github.com/lesismal/melody"
 	"github.com/rakyll/statik/fs"
 	"github.com/sirupsen/logrus"
 	_ "github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-magicmirror/statik"

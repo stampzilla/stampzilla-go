@@ -183,6 +183,8 @@ github.com/leodido/go-urn v1.1.0/go.mod h1:+cyI34gQWZcE1eQU7NVgKkkzdXDQHr1dBMtdA
 github.com/leodido/go-urn v1.2.0/go.mod h1:+8+nEpDfqqsY+g338gtMEUOtuK+4dEMhiQEgxpxOKII=
 github.com/leodido/go-urn v1.2.1 h1:BqpAaACuzVSgi/VLzGZIobT2z4v53pjosyNd9Yv6n/w=
 github.com/leodido/go-urn v1.2.1/go.mod h1:zt4jvISO2HfUBqxjfIshjdMTYS56ZS/qv49ictyFfxY=
+github.com/lesismal/melody v0.0.0-20210520115724-c116958ce5fc h1:A9C2hpma3vbWKYQLhWG/UZUFpOjHTA1PvDgKUHTmpgA=
+github.com/lesismal/melody v0.0.0-20210520115724-c116958ce5fc/go.mod h1:Xo2YxPyd/5gsAJ1K9tzF2nAo1247Fm/A06xedyqk0AQ=
 github.com/llgcode/draw2d v0.0.0-20190810100245-79e59b6b8fbc h1:ZvNhCJfRtl03A0VOIfvO9W22/0b6dmn1APa4Q6j9oHM=
 github.com/llgcode/draw2d v0.0.0-20190810100245-79e59b6b8fbc/go.mod h1:mVa0dA29Db2S4LVqDYLlsePDzRJLDfdhVZiI15uY0FA=
 github.com/llgcode/ps v0.0.0-20150911083025-f1443b32eedb h1:61ndUreYSlWFeCY44JxDDkngVoI7/1MVhEl98Nm0KOk=
@@ -212,8 +214,6 @@ github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742/go.mod h1:bx2lN
 github.com/modern-go/reflect2 v1.0.1/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
 github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9Gz0M=
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
-github.com/olahol/melody v0.0.0-20180227134253-7bd65910e5ab h1:2fsluM+sAZRIQtvloPaokkWWjV8strYfmXsDCtZMqt0=
-github.com/olahol/melody v0.0.0-20180227134253-7bd65910e5ab/go.mod h1:3lo03f1jM3KFUG/rsujuLB1rBmlvIzVM3SCqbuHqsBU=
 github.com/onrik/logrus v0.4.1 h1:290kCFJ6qtyNfX4YJsnOEpFWzOBCJF9rTQ0pFThiFrA=
 github.com/onrik/logrus v0.4.1/go.mod h1:qfe9NeZVAJfIxviw3cYkZo3kvBtLoPRJriAO8zl7qTk=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
@@ -253,8 +253,6 @@ github.com/stamp/hid v0.0.0-20190105143849-bc55d7d13ce1 h1:BG7MhC3qshAG6YSA1JiTF
 github.com/stamp/hid v0.0.0-20190105143849-bc55d7d13ce1/go.mod h1:8a9qaZSBHmyhaqWfYpMnsvd4paEG6AGdl1TAy+gQkd4=
 github.com/stamp/mdns v0.0.0-20190125083120-df204ac59ca1 h1:jyz3mRLWb5vddsc4uJ2phQFBRLoT1kCqWDI6EPJeSBw=
 github.com/stamp/mdns v0.0.0-20190125083120-df204ac59ca1/go.mod h1:9mFtaGN6WXY4xq6Nb2tbURezOfVh0KX2KgbpaWwcoiA=
-github.com/stampzilla/gocast v0.0.0-20201206204400-b3419c6ce229 h1:4bSlO/UONAGJXyL2AVvgD6hvG926DpJibvfbUI9kZjM=
-github.com/stampzilla/gocast v0.0.0-20201206204400-b3419c6ce229/go.mod h1:ijUrGfa2wq9jy13VvOIbFB8o5dIQ8j0IZ5CzPl6wFhQ=
 github.com/stampzilla/gocast v0.5.0 h1:TObu7uaFpKNr6cSCY1c6uG2/YYJoXBAxLbrXRhsN814=
 github.com/stampzilla/gocast v0.5.0/go.mod h1:ijUrGfa2wq9jy13VvOIbFB8o5dIQ8j0IZ5CzPl6wFhQ=
 github.com/stampzilla/gozwave v0.0.0-20190221183844-576012815e01 h1:GRRheWNWtlXb+948wNX/bCQoLteqNi5B8Lx56cTDgp8=

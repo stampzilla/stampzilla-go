@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/olahol/melody"
+	"github.com/lesismal/melody"
 	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/interfaces"
 )
 

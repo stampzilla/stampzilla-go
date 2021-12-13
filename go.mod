@@ -26,9 +26,9 @@ require (
 	github.com/jonaz/goenocean v0.0.0-20190218201525-96fde8f44745
 	github.com/jonaz/gograce v0.5.0
 	github.com/koding/multiconfig v0.0.0-20171124222453-69c27309b2d7
+	github.com/lesismal/melody v0.0.0-20210520115724-c116958ce5fc
 	github.com/llgcode/draw2d v0.0.0-20190810100245-79e59b6b8fbc
 	github.com/micro/mdns v0.3.0
-	github.com/olahol/melody v0.0.0-20180227134253-7bd65910e5ab
 	github.com/onrik/logrus v0.4.1
 	github.com/pkg/errors v0.8.1
 	github.com/posener/wstest v0.0.0-20180217133618-28272a7ea048
