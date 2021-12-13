@@ -12,7 +12,7 @@ import (
 )
 
 var httpClient = &http.Client{
-	Timeout: time.Second * 10,
+	Timeout: time.Second * 20,
 }
 
 var pricesStore = NewPrices()

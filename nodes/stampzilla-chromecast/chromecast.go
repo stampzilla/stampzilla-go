@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -214,8 +215,7 @@ func (c *Chromecast) Event(node *node.Node) func(event events.Event) {
 		case events.ReceiverStatus:
 			newState["isStandBy"] = data.Status.IsStandBy
 			newState["isActiveInput"] = data.Status.IsActiveInput
-			newState["volume"] = data.Status.Volume.Level
-			newState["volume"] = data.Status.Volume.Level
+			newState["volume"] = math.Round(data.Status.Volume.Level*100) / 100
 			newState["muted"] = data.Status.Volume.Muted
 		case events.Media:
 			if data.PlayerState == "PLAYING" {
@@ -253,7 +253,6 @@ func (c *Chromecast) Event(node *node.Node) func(event events.Event) {
 				}
 			*/
 
-		// gocast.MediaEvent:
 		default:
 			logrus.Warnf("unexpected event %T: %#v\n", data, data)
 		}

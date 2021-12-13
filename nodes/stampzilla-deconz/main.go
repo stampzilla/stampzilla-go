@@ -123,7 +123,12 @@ func reader(ctx context.Context, node *node.Node, api *API) {
 			return
 		case data := <-wsClient.Read():
 			event := &WsEvent{}
-			json.Unmarshal(data, event)
+			err := json.Unmarshal(data, event)
+			if err != nil {
+				logrus.Error(err)
+				continue
+			}
+
 			logrus.Tracef("event: %#v\n", event)
 
 			if event.Type != "event" {
@@ -134,9 +139,17 @@ func reader(ctx context.Context, node *node.Node, api *API) {
 			if dev == nil {
 				switch event.Resource {
 				case "sensors":
-					syncSensors(node, api)
+					err = syncSensors(node, api)
+					if err != nil {
+						logrus.Error(err)
+						continue
+					}
 				case "lights":
-					syncLights(node, api)
+					err = syncLights(node, api)
+					if err != nil {
+						logrus.Error(err)
+						continue
+					}
 				}
 				continue
 			}
@@ -186,6 +199,7 @@ func reader(ctx context.Context, node *node.Node, api *API) {
 }
 
 func configChanged(parentCtx context.Context, changed chan struct{}, node *node.Node, api *API) {
+	var err error
 	for {
 		var ctx context.Context
 		var cancel context.CancelFunc
@@ -193,8 +207,14 @@ func configChanged(parentCtx context.Context, changed chan struct{}, node *node.
 		case <-parentCtx.Done():
 			return
 		case <-changed:
-			syncLights(node, api)
-			syncSensors(node, api)
+			err = syncLights(node, api)
+			if err != nil {
+				logrus.Error(err)
+			}
+			err = syncSensors(node, api)
+			if err != nil {
+				logrus.Error(err)
+			}
 			if cancel != nil {
 				cancel()
 			}

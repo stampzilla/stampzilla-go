@@ -15,6 +15,11 @@ func fetchAndCalculate(config *Config, node *node.Node) {
 	prices, err := fetchPrices(config.Token)
 	if err != nil {
 		logrus.Error(err)
+		curr := pricesStore.Current()
+		if curr != nil { // update state if we have cached hour and API call fails.
+			logrus.Errorf("using cached value for Price: %#v", curr)
+			node.UpdateState("1", pricesStore.State())
+		}
 		return
 	}
 
@@ -46,11 +51,6 @@ func fetchPrices(token string) (*PriceInfo, error) {
     homes {
       currentSubscription{
         priceInfo{
-          current{
-            total
-            startsAt
-            level
-          }
           today {
             total
             startsAt
