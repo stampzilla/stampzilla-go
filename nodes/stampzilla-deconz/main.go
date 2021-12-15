@@ -161,6 +161,20 @@ func reader(ctx context.Context, node *node.Node, api *API) {
 			if event.Resource == "sensors" {
 				models.SensorToDeviceState(event.State, newState)
 			}
+			/* trying to figure out: https://github.com/stampzilla/stampzilla-go/issues/235
+			{
+			    "e": "changed",
+			    "id": "7",
+			    "r": "lights",
+			    "state": {
+			        "alert": null,
+			        "on": true,
+			        "reachable": true
+			    },
+			    "t": "event",
+			    "uniqueid": "00:0d:6f:ff:fe:ba:96:04-01"
+			}
+			*/
 
 			// reachable again
 			//{"e":"changed","id":"1","r":"lights","state":{"reachable":true},"t":"event","uniqueid":"00:0b:57:ff:fe:c0:28:82-01"}
