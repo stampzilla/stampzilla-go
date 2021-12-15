@@ -24,7 +24,7 @@ func TestUpdateStateFromUDP(t *testing.T) {
 	err := writeUDP(config.EDPPort)
 	assert.NoError(t, err)
 
-	e2e.WaitFor(t, 1*time.Second, "we should have 1 destination", func() bool {
+	e2e.WaitFor(t, 1*time.Second, "we should have 1 device", func() bool {
 		return len(main.Store.GetDevices().All()) == 1
 	})
 	//spew.Dump(main.Store.Devices.All())
