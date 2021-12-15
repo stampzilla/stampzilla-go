@@ -15,35 +15,92 @@ import (
 )
 
 func main() {
+	wg, node, _ := start()
+	if node == nil {
+		return
+	}
+	node.Wait()
+	wg.Wait()
+}
+
+func start() (*sync.WaitGroup, *node.Node, chan string) {
 	node := node.New("spc")
 	connectToPort := make(chan string)
 	node.OnConfig(updatedConfig(connectToPort))
-	err := node.Connect()
-	if err != nil {
+	if err := node.Connect(); err != nil {
 		logrus.Error(err)
-		return
+		return nil, nil, nil
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	wg := startListen(ctx, node, connectToPort)
+	data := make(chan []byte, 100)
+	wg := &sync.WaitGroup{}
+	syncWorker(ctx, wg, data, node)
+	startListen(ctx, wg, connectToPort, data)
 
 	node.OnShutdown(func() {
 		cancel()
 	})
 
-	node.Wait()
-	wg.Wait()
+	return wg, node, connectToPort
 }
 
-func startListen(ctx context.Context, node *node.Node, connectToPort chan string) *sync.WaitGroup {
-	wg := &sync.WaitGroup{}
+func syncWorker(ctx context.Context, wg *sync.WaitGroup, data chan []byte, node *node.Node) {
+	wg.Add(1)
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case d := <-data:
+				err := decodeAndSync(d, node)
+				if err != nil {
+					logrus.Error(err)
+					return
+				}
+			}
+		}
+	}()
+}
 
+func decodeAndSync(buf []byte, node *node.Node) error {
+	logrus.Debug("string", string(buf))
+	if logrus.GetLevel() >= logrus.DebugLevel {
+		fmt.Println(hex.Dump(buf)) // nolint
+	}
+	pkg, err := edp.Decode(buf)
+	if err != nil {
+		return fmt.Errorf("error decodingn pkg: %w", err)
+	}
+
+	dev := node.GetDevice(pkg.ID)
+	newDev := edp.GenerateDevice(pkg)
+
+	if dev == nil && newDev != nil {
+		node.AddOrUpdate(newDev)
+		return nil
+	}
+
+	if newDev == nil {
+		logrus.Warnf("unsupported packet class %s data: %s", pkg.Class, string(buf[23:]))
+		return nil
+	}
+	node.UpdateState(pkg.ID, newDev.State)
+	return nil
+}
+
+func startListen(ctx context.Context, wg *sync.WaitGroup, connectToPort chan string, data chan []byte) {
 	listen := func(port string) net.PacketConn {
 		logrus.Infof("started udp4 server on %s", port)
 		l, err := net.ListenPacket("udp4", ":"+port)
 		if err != nil {
 			logrus.Error(err)
 			return nil
+		}
+		if c, ok := l.(*net.UDPConn); ok {
+			rb := 1024 * 1024
+			logrus.Infof("setting ReadBuffer on udp conn to: %d", rb)
+			c.SetReadBuffer(rb)
 		}
 		wg.Add(1)
 		go func() {
@@ -58,30 +115,7 @@ func startListen(ctx context.Context, node *node.Node, connectToPort chan string
 					logrus.Error(err)
 					continue
 				}
-				logrus.Debug("string", string(buf[0:n]))
-				if logrus.GetLevel() >= logrus.DebugLevel {
-					fmt.Println(hex.Dump(buf[0:n]))
-				}
-				pkg, err := edp.Decode(buf[0:n])
-				if err != nil {
-					logrus.Error(err)
-					continue
-				}
-
-				dev := node.GetDevice(pkg.ID)
-				newDev := edp.GenerateDevice(pkg)
-
-				if dev == nil && newDev != nil {
-					node.AddOrUpdate(newDev)
-					continue
-				}
-
-				if newDev == nil {
-					logrus.Warnf("unsupported packet class %s data: %s", pkg.Class, string(buf[23:n]))
-					continue
-				}
-
-				node.UpdateState(pkg.ID, newDev.State)
+				data <- buf[0:n]
 			}
 		}()
 		return l
@@ -108,8 +142,6 @@ func startListen(ctx context.Context, node *node.Node, connectToPort chan string
 			}
 		}
 	}()
-
-	return wg
 }
 
 var config = &Config{}
@@ -121,11 +153,10 @@ func updatedConfig(connectToPort chan string) node.OnFunc {
 		newConf := &Config{}
 		err := json.Unmarshal(data, newConf)
 		if err != nil {
-			return err
+			return fmt.Errorf("error decoding json config: %w", err)
 		}
 
 		if newConf.EDPPort != config.EDPPort {
-			fmt.Println("ip changed. lets connect to that instead")
 			logrus.Infof("got new EDPPort from config %s", newConf.EDPPort)
 			connectToPort <- newConf.EDPPort
 		}
