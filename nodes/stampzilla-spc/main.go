@@ -48,6 +48,7 @@ func start() (*sync.WaitGroup, *node.Node, chan string) {
 func syncWorker(ctx context.Context, wg *sync.WaitGroup, data chan []byte, node *node.Node) {
 	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		for {
 			select {
 			case <-ctx.Done():
