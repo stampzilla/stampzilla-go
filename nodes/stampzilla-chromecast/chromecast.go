@@ -74,7 +74,7 @@ func (c *Chromecast) Stop() {
 	c.mediaHandler.Stop()
 }
 
-func (c *Chromecast) PlayUrl(url string, contentType string) {
+func (c *Chromecast) PlayURL(url string, contentType string) {
 	err := c.Device.ReceiverHandler.LaunchApp(gocast.AppMedia)
 	if err != nil && err != handlers.ErrAppAlreadyLaunched {
 		logrus.Error(err)
@@ -136,15 +136,21 @@ func (c *Chromecast) Event(node *node.Node) func(event events.Event) {
 			dev := node.GetDevice(c.Uuid())
 			if dev == nil {
 				dev = &devices.Device{
-					Type:  "mediaplayer",
-					ID:    devices.ID{ID: c.Uuid()},
-					State: devices.State{},
+					Type:   "mediaplayer",
+					ID:     devices.ID{ID: c.Uuid()},
+					State:  devices.State{},
+					Online: true,
+					Name:   c.Name(),
 				}
+				node.AddOrUpdate(dev)
+				break
 			}
 
-			dev.Name = c.Name()
-			dev.Online = true
-			node.AddOrUpdate(dev)
+			if dev.Name != c.Name() {
+				dev.Name = c.Name()
+				node.SyncDevice(c.Uuid())
+			}
+			node.SetDeviceOnline(c.Uuid(), true)
 
 			newState["playing"] = false
 			newState["app"] = ""
@@ -158,10 +164,11 @@ func (c *Chromecast) Event(node *node.Node) func(event events.Event) {
 					ID:    devices.ID{ID: c.Uuid()},
 					State: devices.State{},
 				}
+				node.AddOrUpdate(dev)
+				break
 			}
 
-			dev.Online = false
-			node.AddOrUpdate(dev)
+			node.SetDeviceOnline(c.Uuid(), false)
 
 			newState["playing"] = false
 			newState["app"] = ""
