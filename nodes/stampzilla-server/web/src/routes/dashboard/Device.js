@@ -145,6 +145,21 @@ class Device extends Component {
     this.setState({ modalIsOpen: false });
   };
 
+  onAdd = () => (edit) => {
+    // do nothing on add. Will add new state variable with null value. When we edit the value onEdit will publish it to the server.
+  };
+
+  // TODO decouple modal from device state when editing so we dont get interrupted when new state is received on websocket.
+  onEdit = () => (edit) => {
+    const updatedDevice = edit.updated_src;
+    write({
+      type: 'state-change',
+      body: {
+        [updatedDevice.id]: updatedDevice,
+      },
+    });
+  };
+
   render() {
     const { modalIsOpen, isValid, formData } = this.state;
     const { device } = this.props;
@@ -267,6 +282,8 @@ class Device extends Component {
               <ReactJson
                 name={false}
                 theme="solarized"
+                onEdit={this.onEdit()}
+                onAdd={this.onAdd()}
                 src={device && device.toJS()}
                 displayDataTypes={false}
                 displayObjectSize={false}
