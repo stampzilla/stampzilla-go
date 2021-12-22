@@ -1,4 +1,4 @@
-stampzilla-go [![Build Status](https://travis-ci.org/stampzilla/stampzilla-go.svg?branch=master)](https://travis-ci.org/stampzilla/stampzilla-go) [![codecov](https://codecov.io/gh/stampzilla/stampzilla-go/branch/master/graph/badge.svg)](https://codecov.io/gh/stampzilla/stampzilla-go) [![Go Report Card](https://goreportcard.com/badge/github.com/stampzilla/stampzilla-go)](https://goreportcard.com/report/github.com/stampzilla/stampzilla-go)
+stampzilla-go [![Build Status](https://app.travis-ci.com/stampzilla/stampzilla-go.svg?branch=master&status=started)](https://travis-ci.org/stampzilla/stampzilla-go) [![codecov](https://codecov.io/gh/stampzilla/stampzilla-go/branch/master/graph/badge.svg)](https://codecov.io/gh/stampzilla/stampzilla-go) [![Go Report Card](https://goreportcard.com/badge/github.com/stampzilla/stampzilla-go)](https://goreportcard.com/report/github.com/stampzilla/stampzilla-go)
 =============
 
 Awesome homeautomation software written in Go and React
