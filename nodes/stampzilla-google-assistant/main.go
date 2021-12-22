@@ -133,7 +133,7 @@ func requestSync(apiKey string) {
 	}
 	u := fmt.Sprintf("https://homegraph.googleapis.com/v1/devices:requestSync?key=%s", apiKey)
 
-	body := bytes.NewBufferString("{agent_user_id: \"agentuserid\"}")
+	body := bytes.NewBufferString("{agentUserId: \"agentuserid\"}")
 	req, err := http.NewRequest("POST", u, body)
 	if err != nil {
 		logrus.Error("requestsync: ", err)
