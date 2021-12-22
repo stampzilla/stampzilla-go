@@ -128,7 +128,7 @@ func (shh *SmartHomeHandler) executeHandler(req *googleassistant.Request) *googl
 						dev.State["on"] = true
 						onCommand.IDs = append(onCommand.IDs, googleDev.ID)
 					} else {
-						offCommand.IDs = append(onCommand.IDs, googleDev.ID)
+						offCommand.IDs = append(offCommand.IDs, googleDev.ID)
 						logrus.Infof("Turning device %s (%s) off", dev.Name, dev.ID)
 						dev.State["on"] = false
 					}
@@ -232,17 +232,27 @@ func (shh *SmartHomeHandler) queryHandler(req *googleassistant.Request) *googlea
 			logrus.Error(err)
 			continue
 		}
+
+		googleDev := map[string]interface{}{
+			"online": false,
+			"status": "SUCCESS",
+		}
+
 		dev := shh.deviceList.Get(devID)
 		if dev == nil {
+			// we must add it always otherwise google says: JSON response does not include device.
+			resp.Payload.Devices[devID.String()] = googleDev
 			continue
 		}
-		resp.Payload.Devices[devID.String()] = map[string]interface{}{
-			"on":     dev.State["on"],
-			"online": dev.Online,
-		}
+
+		googleDev["online"] = true
+		googleDev["on"] = dev.State["on"]
+
 		dev.State.Float("brightness", func(bri float64) {
-			resp.Payload.Devices[devID.String()]["brightness"] = int(math.Round(bri * 100.0))
+			googleDev["brightness"] = int(math.Round(bri * 100.0))
 		})
+
+		resp.Payload.Devices[devID.String()] = googleDev
 	}
 	return resp
 }

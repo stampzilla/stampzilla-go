@@ -42,7 +42,6 @@ func (s *JSONStorage) Close() {
 }
 
 func (s *JSONStorage) LoadFromDisk(filename string) {
-
 	file, err := os.Open(filename)
 	if err != nil {
 		logrus.Error(err)
@@ -55,10 +54,8 @@ func (s *JSONStorage) LoadFromDisk(filename string) {
 	dec.Decode(s)
 
 	s.RWMutex.Unlock()
-
 }
 func (s *JSONStorage) saveToDisk(filename string) {
-
 	file, err := os.Create(filename)
 	if err != nil {
 		logrus.Error(err)
