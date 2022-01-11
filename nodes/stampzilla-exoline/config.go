@@ -11,6 +11,7 @@ type Variables struct {
 	LoadNumber int    `json:"loadNumber"`
 	Cell       int    `json:"cell"`
 	Type       string `json:"type"`
+	Write      bool   `json:"write"`
 }
 
 func NewConfig() *Config {

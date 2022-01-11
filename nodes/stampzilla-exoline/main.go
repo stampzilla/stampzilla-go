@@ -26,6 +26,28 @@ func main() {
 		logrus.Error(err)
 		return
 	}
+
+	node.OnRequestStateChange(func(state devices.State, device *devices.Device) error {
+		var err error
+
+		for _, va := range config.Variables {
+			if !va.Write {
+				continue
+			}
+
+			switch va.Type {
+			case "int":
+				state.Float(va.Name, func(f float64) { // all json numbers are float64 in go
+					err = set(config, va, f)
+				})
+			}
+			if err != nil {
+				return err
+			}
+		}
+
+		return err
+	})
 	logrus.Info("Waiting for config from server")
 	err = wait()
 	if err != nil {
@@ -116,4 +138,34 @@ func fetch(config *Config) (devices.State, error) {
 	}
 
 	return state, nil
+}
+func set(config *Config, v Variables, val float64) error {
+	var dialer net.Dialer
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	conn, err := dialer.DialContext(ctx, "tcp", config.Host)
+	if err != nil {
+		return fmt.Errorf("failed to dial: %w", err)
+	}
+	defer conn.Close()
+	buf := bufio.NewReader(conn)
+
+	switch v.Type {
+	case "float":
+		// TODO SRP Set real segment var.
+		return fmt.Errorf("not implemented yet")
+	case "bool":
+		//TODO SLP Set logic segment var.
+		return fmt.Errorf("not implemented yet")
+	case "int":
+		i := int(val)
+		err = exoline.SXP(buf, conn, v.LoadNumber, v.Cell, i)
+		logrus.Infof("sending SXP to ln: %d cell: %d val: %d", v.LoadNumber, v.Cell, i)
+	}
+	if err != nil {
+		return fmt.Errorf("error setting %s: %w", v.Name, err)
+	}
+
+	return nil
 }
