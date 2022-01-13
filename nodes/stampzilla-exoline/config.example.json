@@ -4,64 +4,70 @@
     "variables": [
         {
             "name": "ExtractAir",
-			"loadNumber": 58,
-			"cell": 585,
+            "loadNumber": 58,
+            "cell": 585,
             "type": "float"
         },
         {
             "name": "OutdoorAir",
-			"loadNumber": 58,
-			"cell": 579,
+            "loadNumber": 58,
+            "cell": 579,
             "type": "float"
         },
         {
             "name": "ExhaustAir",
-			"loadNumber": 58,
-			"cell": 588,
+            "loadNumber": 58,
+            "cell": 588,
             "type": "float"
         },
         {
             "name": "SupplyAir",
-			"loadNumber": 58,
-			"cell": 582,
+            "loadNumber": 58,
+            "cell": 582,
             "type": "float"
         },
         {
             "name": "SetSupplyAir",
-			"loadNumber": 4,
-			"cell": 8,
+            "loadNumber": 4,
+            "cell": 8,
             "type": "float"
         },
         {
             "name": "HeatingValve",
-			"loadNumber": 4,
-			"cell": 60,
+            "loadNumber": 4,
+            "cell": 60,
             "type": "float"
         },
         {
             "name": "CoolingValve",
-			"loadNumber": 4,
-			"cell": 63,
+            "loadNumber": 4,
+            "cell": 63,
             "type": "float"
         },
         {
             "name": "Bypass",
-			"loadNumber": 4,
-			"cell": 66,
+            "loadNumber": 4,
+            "cell": 66,
             "type": "float"
         },
         {
             "name": "SupplyFan",
-			"loadNumber": 4,
-			"cell": 69,
+            "loadNumber": 4,
+            "cell": 69,
             "type": "float"
         },
         {
             "name": "ExtractFan",
-			"loadNumber": 4,
-			"cell": 72,
+            "loadNumber": 4,
+            "cell": 72,
             "type": "float"
+        },
+        {
+            "name": "FanMode",
+            "loadNumber": 4,
+            "cell": 42,
+            "type": "int",
+            "write": true
         }
-
     ]
 }

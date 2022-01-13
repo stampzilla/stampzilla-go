@@ -2,6 +2,7 @@ package exoline
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -9,6 +10,14 @@ import (
 
 	"github.com/sirupsen/logrus"
 )
+
+func Float64bytes(float float64) []byte {
+	bits := math.Float64bits(float)
+	//TODO to be able to SRP Set real segment var. make sure its 4 bytes (32 uint)
+	bytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(bytes, bits)
+	return bytes
+}
 
 func AsRoundedFloat(data []byte) (float64, error) {
 	// this works OK according to protocol example:
@@ -27,6 +36,15 @@ func generateMsg(op, ln, cell int) []byte {
 	addr[5] = byte(ln)
 	addr[6] = byte(cell / 60)
 	addr[7] = byte(cell % 60)
+	return addr
+}
+func generateWriteMsg(op, ln, cell, value int) []byte {
+	// addr[3] seems to be 0x05 for writing
+	addr := []byte{0xff, 0x1e, 0xc8, 0x05, byte(op), 0x04, 0x08, 0x00, 0x00}
+	addr[5] = byte(ln)
+	addr[6] = byte(cell / 60)
+	addr[7] = byte(cell % 60)
+	addr[8] = byte(value)
 	return addr
 }
 
@@ -69,6 +87,19 @@ func RXP(buf *bufio.Reader, w io.Writer, ln, cell int) (int, error) {
 		return 0, fmt.Errorf("wrong length on RXP expected 1 byte")
 	}
 	return int(p[0]), nil
+}
+
+// SXP send index segment.
+func SXP(buf *bufio.Reader, w io.Writer, ln, cell, val int) error {
+	addr := generateWriteMsg(0xb0, ln, cell, val)
+	b, err := Send(buf, w, addr)
+	if err != nil {
+		return err
+	}
+	if !bytes.Equal(b, []byte{0x3d, 0x1, 0x0, 0x1, 0x3e}) {
+		return fmt.Errorf("error response after SXP")
+	}
+	return nil
 }
 
 func Send(buf *bufio.Reader, w io.Writer, data []byte) (Message, error) {

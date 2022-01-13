@@ -65,6 +65,7 @@ func main() {
 	boolPtr := flag.Bool("t", false, "print temperatures")
 	ln := flag.Int("ln", 0, "load number")
 	cell := flag.Int("cell", 0, "cell")
+	val := flag.Int("val", 1, "val if setting stuff")
 	op := flag.String("operation", "RRP", "read operation")
 	flag.Parse()
 
@@ -79,6 +80,8 @@ func main() {
 			resp, err = exoline.RLP(buf, conn, *ln, *cell) // OutDoorTemp
 		case "RXP": // Read logic segment var.
 			resp, err = exoline.RXP(buf, conn, *ln, *cell) // OutDoorTemp
+		case "SXP": // Read logic segment var.
+			err = exoline.SXP(buf, conn, *ln, *cell, *val) // OutDoorTemp
 		}
 
 		if err != nil {
