@@ -122,9 +122,11 @@ func onDevices(config *Config, deviceList *devices.List) func(data json.RawMessa
 			deviceList.Remove(id)
 		}
 
-		if changes > 0 {
-			requestSync(config.APIKey)
-		}
+		// Disabled because when stampzilla is restarted it will requestSync and google will delete all the devices in the cloud :(
+		// TODO think of something smarter here! For now use the voice to ask google to sync devices.
+		//if changes > 0 {
+		//requestSync(config.APIKey)
+		//}
 		return nil
 	}
 }
