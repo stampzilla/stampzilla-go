@@ -22,6 +22,7 @@ const titles = {
   wirepusher: 'WirePusher ID',
   pushbullet: 'Device identifier',
   nx: 'Associated camera',
+  pushover: 'User key',
 };
 
 const schema = fromJS({
@@ -34,7 +35,7 @@ const schema = fromJS({
     type: {
       title: 'Type',
       type: 'string',
-      enum: ['file', 'email', 'webhook', 'wirepusher', 'pushbullet', 'nx'],
+      enum: ['file', 'email', 'webhook', 'wirepusher', 'pushbullet', 'nx', 'pushover'],
       enumNames: [
         'Filename',
         'Email',
@@ -42,6 +43,7 @@ const schema = fromJS({
         'WirePusher ID',
         'Pushbullet device identifier',
         'Nx Witness Generic Event',
+        'PushOver user key',
       ],
     },
     sender: {},
@@ -142,7 +144,7 @@ class Destination extends Component {
           sender: uuid,
         }))
         .catch(() => this.setState({
-          destinations: {},
+          destinations: null,
           sender: uuid,
         }));
     }
@@ -252,6 +254,9 @@ class Destination extends Component {
       patchedSchema.properties.destinations.items.enumNames = Object.values(
         destinations,
       );
+    } else {
+      delete patchedSchema.properties.destinations.items.enum;
+      delete patchedSchema.properties.destinations.items.enumNames;
     }
 
     return (

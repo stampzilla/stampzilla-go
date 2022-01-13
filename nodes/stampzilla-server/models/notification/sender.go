@@ -11,6 +11,7 @@ import (
 	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/notification/file"
 	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/notification/nx"
 	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/notification/pushbullet"
+	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/notification/pushover"
 	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/notification/webhook"
 	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/notification/wirepusher"
 )
@@ -69,6 +70,8 @@ func NewSender(t string, p json.RawMessage) SenderInterface {
 		return nx.New(p)
 	case "wirepusher":
 		return wirepusher.New(p)
+	case "pushover":
+		return pushover.New(p)
 	}
 
 	return nil
