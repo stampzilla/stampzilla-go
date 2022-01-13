@@ -16,7 +16,6 @@ import Editor from '../../components/editor';
 
 const schema = fromJS({
   type: 'object',
-  required: ['name'],
   properties: {
     name: {
       type: 'string',
@@ -25,7 +24,7 @@ const schema = fromJS({
     type: {
       title: 'Type of sender',
       type: 'string',
-      enum: ['file', 'email', 'webhook', 'wirepusher', 'pushbullet', 'nx'],
+      enum: ['file', 'email', 'webhook', 'wirepusher', 'pushbullet', 'nx', 'pushover'],
       enumNames: [
         'Logfile writer',
         'Email',
@@ -33,6 +32,7 @@ const schema = fromJS({
         'WirePusher',
         'Pushbullet',
         'Nx Witness Event',
+        'PushOver',
       ],
     },
   },
@@ -119,6 +119,20 @@ const typeSchema = {
       token: {
         'ui:help':
           "The Pushbullet API lets you send/receive pushes and do everything else the official Pushbullet clients can do. To access the API you'll need an access token so the server knows who you are. You can get one from your Account Settings page.",
+      },
+    },
+  },
+  pushover: {
+    schema: {
+      token: {
+        title: 'API access token',
+        type: 'string',
+      },
+    },
+    uiSchema: {
+      token: {
+        'ui:help':
+          'Pushover api app token',
       },
     },
   },

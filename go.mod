@@ -19,6 +19,7 @@ require (
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.4.2
+	github.com/gregdel/pushover v1.1.0
 	github.com/influxdata/influxdb1-client v0.0.0-20190809212627-fc22c7df067e
 	github.com/itchyny/volume-go v0.0.0
 	github.com/jonaz/cron v0.0.0-20190121203350-e9ab53dd31db
