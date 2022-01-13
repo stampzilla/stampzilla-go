@@ -92,11 +92,21 @@ func onDevices(config *Config, deviceList *devices.List) func(data json.RawMessa
 			}
 
 			if old.Name != dev.Name {
+				old.Lock()
 				old.Name = dev.Name
+				old.Unlock()
 				changes++
 			}
+
 			if old.Alias != dev.Alias {
+				old.Lock()
 				old.Alias = dev.Alias
+				old.Unlock()
+				changes++
+			}
+
+			if old.Online != dev.Online {
+				old.SetOnline(dev.Online)
 				changes++
 			}
 		}
