@@ -45,7 +45,7 @@ require (
 	github.com/urfave/cli v1.22.1
 	github.com/vapourismo/knx-go v0.0.0-20200924173532-6ed2bf1e51e6
 	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e
-	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
+	google.golang.org/genproto v0.0.0-20220114172242-44263ffb69e1
 	software.sslmate.com/src/go-pkcs12 v0.0.0-20200619203921-c9ed90bd32dc
 )
 
@@ -98,7 +98,6 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20211209171907-798191bca915 // indirect
 	golang.org/x/text v0.3.7 // indirect
-	google.golang.org/grpc v1.27.1 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
