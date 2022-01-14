@@ -43,6 +43,7 @@ type Prices struct {
 	mutex               sync.RWMutex
 	cheapestChargeStart time.Time
 	cheapestHour        time.Time
+	lastCalculated      time.Time
 }
 
 func NewPrices() *Prices {
@@ -118,6 +119,18 @@ func (p *Prices) HasTomorrowPricesYet() bool {
 	}
 
 	return false
+}
+
+func (p *Prices) SetLastCalculated(t time.Time) {
+	p.mutex.Lock()
+	p.lastCalculated = t
+	p.mutex.Unlock()
+}
+func (p *Prices) LastCalculated() time.Time {
+	p.mutex.Lock()
+	t := p.lastCalculated
+	p.mutex.Unlock()
+	return t
 }
 
 func (p *Prices) calculateBestChargeHours(dur time.Duration) time.Time {

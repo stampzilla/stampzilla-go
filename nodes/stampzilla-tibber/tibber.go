@@ -33,12 +33,14 @@ func fetchAndCalculate(config *Config, node *node.Node) {
 
 	pricesStore.ClearOld()
 
-	if pricesStore.HasTomorrowPricesYet() {
+	if pricesStore.HasTomorrowPricesYet() && !pricesStore.LastCalculated().Truncate(24*time.Hour).Equal(time.Now().Truncate(24*time.Hour)) {
 		cheapestStartTime := pricesStore.calculateBestChargeHours(config.carChargeDuration)
 		pricesStore.SetCheapestChargeStart(cheapestStartTime)
 
 		cheapestHour := pricesStore.calculateBestChargeHours(1 * time.Hour)
 		pricesStore.SetCheapestHour(cheapestHour)
+
+		pricesStore.SetLastCalculated(time.Now())
 	}
 
 	node.UpdateState("1", pricesStore.State())
