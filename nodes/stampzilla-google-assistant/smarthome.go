@@ -122,23 +122,25 @@ func (shh *SmartHomeHandler) executeHandler(req *googleassistant.Request) *googl
 					deviceOffline.IDs = append(deviceOffline.IDs, googleDev.ID)
 					continue
 				}
+
+				newState := make(devices.State)
 				if v.Command == googleassistant.CommandOnOff {
 					if v.Params.On {
 						logrus.Infof("Turning device %s (%s) on ", dev.Name, dev.ID)
-						dev.State["on"] = true
+						newState["on"] = true
 						onCommand.IDs = append(onCommand.IDs, googleDev.ID)
 					} else {
 						offCommand.IDs = append(offCommand.IDs, googleDev.ID)
 						logrus.Infof("Turning device %s (%s) off", dev.Name, dev.ID)
-						dev.State["on"] = false
+						newState["on"] = false
 					}
-					affectedDevs[devID] = dev
 				}
 				if v.Command == googleassistant.CommandBrightnessAbsolute {
 					bri := v.Params.Brightness
 					logrus.Infof("Dimming device %s (%s) to %d", dev.Name, dev.ID, bri)
-					dev.State["brightness"] = float64(bri) / 100.0
-					affectedDevs[devID] = dev
+
+					newState["brightness"] = float64(bri) / 100.0
+
 					if _, ok := levelCommands[v.Params.Brightness]; !ok {
 						levelCommands[bri] = googleassistant.ResponseCommand{
 							States: googleassistant.ResponseStates{
@@ -151,11 +153,21 @@ func (shh *SmartHomeHandler) executeHandler(req *googleassistant.Request) *googl
 					lvlCmd.IDs = append(lvlCmd.IDs, googleDev.ID)
 					levelCommands[bri] = lvlCmd
 				}
+
+				if len(newState) > 0 {
+					affectedDevs[devID] = &devices.Device{
+						State: newState,
+						ID:    devID,
+					}
+				}
 			}
 		}
 	}
 
-	shh.node.WriteMessage("state-change", affectedDevs)
+	err := shh.node.WriteMessage("state-change", affectedDevs)
+	if err != nil {
+		logrus.Error("error writing state-change: ", err)
+	}
 
 	for _, v := range levelCommands {
 		resp.Payload.Commands = append(resp.Payload.Commands, v)
