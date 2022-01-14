@@ -252,7 +252,7 @@ func (wsh *secureWebsocketHandler) MessageFromUser(s interfaces.MelodySession, m
 		}).Debug("Received new node configuration")
 
 		wsh.Store.AddOrUpdateNode(node)
-		err = wsh.Store.SaveNodes()
+		err = wsh.Store.SaveNode(wsh.Store.GetNode(node.UUID))
 		if err != nil {
 			return nil, err
 		}
