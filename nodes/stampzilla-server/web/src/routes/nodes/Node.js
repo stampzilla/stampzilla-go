@@ -24,13 +24,18 @@ const JsonWidget = (props) => {
   return (
     <JSONInput
       placeholder={typeof parsedValue === 'object' ? parsedValue : undefined}
-      onChange={({ jsObject }) => onChange(jsObject && JSON.stringify(jsObject))}
+      onBlur={({ json, error }) => {
+        if (error !== false) { // Dont send new data to form if its not valid waitAfterKeyPress will make sure error msg is shown after 1 sec.
+          return;
+        }
+        onChange(json);
+      }}
       theme="dark_vscode_tribute"
       locale={locale}
       height="550px"
       width="100%"
       reset={false}
-      waitAfterKeyPress={60000}
+      waitAfterKeyPress={1000}
     />
   );
 };
@@ -59,10 +64,14 @@ const uiSchema = {
 };
 
 class Node extends Component {
-  state = {
-    isValid: true,
-    formData: {},
-  };
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      isValid: true,
+      formData: {},
+    };
+  }
 
   componentDidMount = () => {
     this.componentWillReceiveProps(this.props);
