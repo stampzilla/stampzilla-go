@@ -137,8 +137,34 @@ module.exports = (env, argv) => {
       ],
     },
     devServer: {
+      open: true,
       overlay: true,
       historyApiFallback: true,
+      http2: true,
+      proxy: {
+        // the ones configures in webserver.Init
+        '/ws': {
+          target: 'https://localhost:6443',
+          secure: false,
+          ws: true,
+        },
+        '/register': {
+          target: 'https://localhost:6443',
+          secure: false,
+        },
+        '/login': {
+          target: 'https://localhost:6443',
+          secure: false,
+        },
+        '/logout': {
+          target: 'https://localhost:6443',
+          secure: false,
+        },
+        '/cert': {
+          target: 'https://localhost:6443',
+          secure: false,
+        },
+      },
     },
     plugins: [
       new HtmlWebPackPlugin({
