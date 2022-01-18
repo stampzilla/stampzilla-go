@@ -33,7 +33,7 @@ class Automation extends Component {
 
   render() {
     const {
-      rules, schedules, rulesState, schedulesState,
+      rules, schedules, rulesState, schedulesState, savedstates
     } = this.props;
 
     return (
@@ -125,6 +125,46 @@ class Automation extends Component {
                 </tbody>
               </table>
             </Card>
+            <Card
+              title="Scenes"
+              bodyClassName="p-0"
+              toolbar={[
+                {
+                  icon: 'fa fa-plus',
+                  className: 'btn-secondary',
+                  onClick: this.onClickNode('savedstates/create'),
+                },
+              ]}
+            >
+              <table className="table table-striped table-valign-middle">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th style={{ width: 200 }}>Number of actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {savedstates
+                    && savedstates
+                      .sort((a, b) => a.get('name').localeCompare(b.get('name')))
+                      .map((n) => (
+                        <tr
+                          key={n.get('uuid')}
+                          style={{ cursor: 'pointer' }}
+                          onClick={this.onClickNode(
+                            `savedstates/${n.get('uuid')}`,
+                          )}
+                        >
+                          <td>{n.get('name')}</td>
+                          <td>{n.get('state') ? n.get('state').size || 0: 0}</td>
+                        </tr>
+                      ))
+                      .valueSeq()
+                      .toArray()}
+                </tbody>
+              </table>
+            </Card>
+
           </div>
         </div>
       </>
@@ -137,6 +177,7 @@ const mapToProps = (state) => ({
   rulesState: state.getIn(['rules', 'state']),
   schedules: state.getIn(['schedules', 'list']),
   schedulesState: state.getIn(['schedules', 'state']),
+  savedstates: state.getIn(['savedstates', 'list']),
 });
 
 export default connect(mapToProps)(Automation);

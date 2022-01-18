@@ -113,7 +113,7 @@ class SavedStatePicker extends React.Component {
     const { savedstates, options } = this.props;
 
     return (
-      <React.Fragment>
+      <>
         <div
           className="btn btn-secondary btn-block"
           onClick={this.openModal()}
@@ -319,7 +319,7 @@ or
             </div>
           </div>
         </Modal>
-      </React.Fragment>
+      </>
     );
   }
 }
@@ -332,5 +332,5 @@ const mapStateToProps = state => ({
 export const ConnectedSavedStatePicker = connect(mapStateToProps)(
   SavedStatePicker,
 );
-const SavedStateWidget = props => <ConnectedSavedStatePicker {...props} />;
+const SavedStateWidget = (props) => <ConnectedSavedStatePicker {...props} />;
 export default SavedStateWidget;

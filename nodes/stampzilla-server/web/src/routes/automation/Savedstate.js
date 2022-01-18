@@ -1,15 +1,17 @@
-import React, { Component } from 'react';
+import React, { Component,useState } from 'react';
 import { Button } from 'reactstrap';
 import { connect } from 'react-redux';
 import Form from 'react-jsonschema-form';
+import Switch from 'react-switch';
+import Select from 'react-select';
 
-import { add, save } from '../../ducks/schedules';
+import StateWidget from './components/StateWidget';
+import { add, save } from '../../ducks/savedstates';
 import Card from '../../components/Card';
-import SavedStateWidget from './components/SavedStatePicker';
 import {
   ArrayFieldTemplate,
-  CustomCheckbox,
   ObjectFieldTemplate,
+  IconButton,
 } from '../../components/formComponents';
 
 const schema = {
@@ -20,56 +22,25 @@ const schema = {
       type: 'string',
       title: 'Name',
     },
-    enabled: {
-      type: 'boolean',
-      title: 'Enabled',
-      description: 'Turn on and off this schedule',
-    },
-    when: {
-      type: 'string',
-      title: 'When',
-      description: 'Cron formated when line [second minute hour day month dow]',
-    },
-    expression: {
-      type: 'string',
-      title: 'Expression',
-      description: 'expression that must evaluate to true for the schedule to run. Same syntax as for rules',
-    },
-    actions: {
-      type: 'array',
-      title: 'Actions',
-      items: {
-        type: 'string',
-      },
+    state: {
+      type: 'object',
+      title: 'State',
     },
   },
 };
 const uiSchema = {
-  config: {
-    'ui:options': {
-      rows: 15,
-    },
-  },
-  actions: {
-    items: {
-      'ui:widget': 'SavedStateWidget',
-      'ui:options': {
-        hideDelay: true,
-      },
-    },
+  state: {
+    'ui:field': 'StateWidget',
   },
 };
 
-class Schedule extends Component {
+class Savedstate extends Component {
   constructor(props) {
     super();
 
-    const { schedules, match } = props;
-    const schedule = schedules.find(n => n.get('uuid') === match.params.uuid);
-    const formData = schedule && schedule.toJS();
-    if (formData && formData.actions == null) {
-      formData.actions = [];
-    }
+    const { savedstates, match } = props;
+    const savedstate = savedstates.find(n => n.get('uuid') === match.params.uuid);
+    const formData = savedstate && savedstate.toJS();
     this.state = {
       formData,
       isValid: true,
@@ -77,16 +48,16 @@ class Schedule extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    const { schedules, match } = nextProps;
+    const { savedstates, match } = nextProps;
     if (
       !this.props
       || match.params.uuid !== this.props.match.params.uuid
-      || schedules !== this.props.schedules
+      || savedstates !== this.props.savedstates
     ) {
-      const schedule = schedules.find(n => n.get('uuid') === match.params.uuid);
-      const formData = schedule && schedule.toJS();
-      if (formData && formData.actions == null) {
-        formData.actions = [];
+      const savedstate = savedstates.find(n => n.get('uuid') === match.params.uuid);
+      const formData = savedstate && savedstate.toJS();
+      if (formData && formData.state == null) {
+        formData.state = {};
       }
       this.setState({
         formData,
@@ -115,6 +86,26 @@ class Schedule extends Component {
     history.push('/aut');
   };
 
+  getDevicesArray() {
+    const { devices } = this.props;
+    const devs = devices.toJS();
+    return devs && Object.keys(devs).map((key) => {
+      return { value: devs[key].id, label: devs[key].name };
+    });
+  }
+
+  onAddDevice = (dev) => (e) => {
+	  if (!this.state.newDeviceId){
+		  return;
+	  }
+
+	  this.setState(prevState => ({ formData:{ ...prevState.formData,
+		  state: { ...prevState.formData.state, [prevState.newDeviceId]: {} }
+		  }
+	  })
+	  );
+  }
+
   render() {
     const { match } = this.props;
 
@@ -123,7 +114,7 @@ class Schedule extends Component {
         <div className="row">
           <div className="col-md-12">
             <Card
-              title={match.params.uuid ? 'Edit schedule ' : 'New schedule'}
+              title={match.params.uuid ? 'Edit scene' : 'New Scene'}
               bodyClassName="p-0"
             >
               <div className="card-body">
@@ -138,11 +129,10 @@ class Schedule extends Component {
                   // onError={log('errors')}
                   // disabled={this.props.disabled}
                   // transformErrors={this.props.transformErrors}
-                  ObjectFieldTemplate={ObjectFieldTemplate}
-                  ArrayFieldTemplate={ArrayFieldTemplate}
-                  widgets={{
-                    CheckboxWidget: CustomCheckbox,
-                    SavedStateWidget,
+                  // ObjectFieldTemplate={ObjectFieldTemplate}
+                  // ArrayFieldTemplate={ArrayFieldTemplate}
+                  fields={{
+                    StateWidget,
                   }}
                 >
                   <button
@@ -153,6 +143,31 @@ class Schedule extends Component {
                     type="submit"
                   />
                 </Form>
+
+			<div className="container pt-5 mx-0">
+				<div className="row">
+					<div className="col">
+						<Select 
+							//getOptionLabel={option => option.get('name') }
+							//getOptionValue={option => option.get('id')}
+							options={this.getDevicesArray()}
+							onChange={(e) => {
+								this.setState({newDeviceId: e.value})
+							}}
+
+						/>
+					</div>
+					<div className="col">
+						<Button
+						  color="primary"
+                          onClick={this.onAddDevice()}
+						>
+						  {'Add'}
+						</Button>
+					</div>
+				</div>
+			</div>
+
               </div>
               <div className="card-footer">
                 <Button
@@ -171,8 +186,9 @@ class Schedule extends Component {
   }
 }
 
-const mapToProps = state => ({
-  schedules: state.getIn(['schedules', 'list']),
+const mapToProps = (state) => ({
+  devices: state.getIn(['devices', 'list']),
+  savedstates: state.getIn(['savedstates', 'list']),
 });
 
-export default connect(mapToProps)(Schedule);
+export default connect(mapToProps)(Savedstate);

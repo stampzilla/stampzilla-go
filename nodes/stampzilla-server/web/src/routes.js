@@ -11,6 +11,7 @@ import Nodes from './routes/nodes';
 import Node from './routes/nodes/Node';
 import Rule from './routes/automation/Rule';
 import Schedule from './routes/automation/Schedule';
+import Savedstate from './routes/automation/Savedstate';
 import Alerts from './routes/alerts';
 import Security from './routes/security';
 import Trigger from './routes/alerts/Trigger';
@@ -30,6 +31,8 @@ const Routes = () => (
       component={withBoudary(Schedule)}
     />
     <Route exact path="/aut/schedule/:uuid" component={withBoudary(Schedule)} />
+    <Route exact path="/aut/savedstates/create" component={withBoudary(Savedstate)} />
+    <Route exact path="/aut/savedstates/:uuid" component={withBoudary(Savedstate)} />
     <Route exact path="/persons" component={withBoudary(Persons)} />
     <Route path="/persons/:uuid" component={withBoudary(Person)} />
     <Route exact path="/nodes" component={withBoudary(Nodes)} />

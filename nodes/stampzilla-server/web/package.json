@@ -5,9 +5,9 @@
     "main": "index.js",
     "scripts": {
         "build": "webpack --mode production",
-		"devserver": "concurrently \"npm run dev\" \"npm run server\" ",
+        "devserver": "concurrently \"npm run dev\" \"npm run server\" ",
         "dev": "webpack serve --mode development --env development --port 8085 --host 0.0.0.0 --hot",
-		"server": "cd .. && go run . -proxytlsport 8085",
+        "server": "cd .. && go run . -proxytlsport 8085",
         "lint": "eslint src/**",
         "lint-fix": "eslint --fix src/**",
         "analyze": "webpack -p --profile --json > stats.json && webpack-bundle-analyzer stats.json build"
@@ -89,6 +89,7 @@
         "react-redux": "^7.2.6",
         "react-router": "^5.2.1",
         "react-router-dom": "^5.3.0",
+        "react-select": "^5.2.2",
         "react-switch": "^5.0.1",
         "react-toastify": "^6.2.0",
         "reactstrap": "^8.10.1",

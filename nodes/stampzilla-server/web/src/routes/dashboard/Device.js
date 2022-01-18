@@ -23,6 +23,7 @@ export const traitNames = {
   ColorSetting: 'Temperature',
   OnOff: 'Power',
   Volume: 'Volume',
+  TemperatureControl: 'Temperature',
 };
 
 export const traitStates = {
@@ -30,6 +31,7 @@ export const traitStates = {
   ColorSetting: 'temperature',
   OnOff: 'on',
   Volume: 'volume',
+  TemperatureControl: 'temperature',
 };
 
 const icons = {

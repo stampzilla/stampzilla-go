@@ -65,6 +65,16 @@ func main() {
 			"on": false,
 		},
 	}
+	dev6 := &devices.Device{
+		Name:   "heatpump",
+		Type:   "sensor",
+		ID:     devices.ID{ID: "5"},
+		Online: true,
+		Traits: []string{"TemperatureControl"},
+		State: devices.State{
+			"temperature": 22.0,
+		},
+	}
 
 	node.OnRequestStateChange(func(state devices.State, device *devices.Device) error {
 		logrus.Info("OnRequestStateChange:", state, device.ID)
@@ -121,6 +131,7 @@ func main() {
 	node.AddOrUpdate(dev3)
 	node.AddOrUpdate(dev4)
 	node.AddOrUpdate(dev5)
+	node.AddOrUpdate(dev6)
 
 	node.Wait()
 }

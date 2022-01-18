@@ -95,7 +95,7 @@ CustomCheckbox.propTypes = {
   onChange: PropTypes.func,
 };
 
-const IconButton = (props) => {
+export const IconButton = (props) => {
   const {
     type = 'default', icon, className, ...otherProps
   } = props;
