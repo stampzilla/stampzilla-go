@@ -9,7 +9,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/ca"
-	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/helpers"
 	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/interfaces"
 	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models"
 	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/store"
@@ -75,22 +74,7 @@ func (wsh *insecureWebsocketHandler) Message(s interfaces.MelodySession, msg *mo
 
 func (wsh *insecureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.Request, keys map[string]interface{}) error {
 	logrus.Debug("ws handle insecure connect")
-	tlsport := wsh.Config.TLSPort
-	if wsh.Config.ProxyTLSPort != "" {
-		tlsport = wsh.Config.ProxyTLSPort
-	}
-	msg, err := models.NewMessage("server-info", models.ServerInfo{
-		Name:       wsh.Config.Name,
-		UUID:       wsh.Config.UUID,
-		TLSPort:    tlsport,
-		Port:       wsh.Config.Port,
-		Init:       wsh.Store.CountAdmins() < 1,
-		AllowLogin: helpers.IsPrivateIP(r.RemoteAddr),
-	})
-	if err != nil {
-		return err
-	}
-	return msg.WriteTo(s)
+	return nil
 }
 
 func (wsh *insecureWebsocketHandler) Disconnect(s interfaces.MelodySession) error {
