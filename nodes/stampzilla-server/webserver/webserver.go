@@ -84,7 +84,13 @@ func (ws *Webserver) Init(requireAuth bool) *gin.Engine {
 		r.GET("/logout", ws.handleLogout())
 	}
 
-	statikFS, err := fs.New()
+	var statikFS http.FileSystem
+	var err error
+	if ws.Config.StaticRoot != "" {
+		statikFS = http.Dir(ws.Config.StaticRoot)
+	} else {
+		statikFS, err = fs.New()
+	}
 	if err == nil { // we only service GUI if statik files can be found
 		r.GET("/service-worker.js", gin.WrapH(http.FileServer(statikFS)))
 		r.GET("/assets/*all", gin.WrapH(http.FileServer(statikFS)))
@@ -139,10 +145,14 @@ func cspMiddleware() gin.HandlerFunc {
 
 func (ws *Webserver) handleConnect(requireAuth bool) func(s *melody.Session) {
 	return func(s *melody.Session) {
+		tlsport := ws.Config.TLSPort
+		if ws.Config.ProxyTLSPort != "" {
+			tlsport = ws.Config.ProxyTLSPort
+		}
 		msg, err := models.NewMessage("server-info", models.ServerInfo{
 			Name:       ws.Config.Name,
 			UUID:       ws.Config.UUID,
-			TLSPort:    ws.Config.TLSPort,
+			TLSPort:    tlsport,
 			Port:       ws.Config.Port,
 			Init:       ws.Store.CountAdmins() < 1,
 			AllowLogin: helpers.IsPrivateIP(s.Request.RemoteAddr),
@@ -432,6 +442,7 @@ func (ws *Webserver) handleLogin() func(c *gin.Context) {
 func (ws *Webserver) login(c *gin.Context, user *persons.Person) error {
 	session := sessions.Default(c)
 	// TODO make this configurable? must use this if running server and ui with npm run dev
+	// or just use proxy in npm run?
 	//session.Options(sessions.Options{
 	//SameSite: http.SameSiteNoneMode,
 	//Secure:   true,

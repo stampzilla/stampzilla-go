@@ -75,10 +75,14 @@ func (wsh *insecureWebsocketHandler) Message(s interfaces.MelodySession, msg *mo
 
 func (wsh *insecureWebsocketHandler) Connect(s interfaces.MelodySession, r *http.Request, keys map[string]interface{}) error {
 	logrus.Debug("ws handle insecure connect")
+	tlsport := wsh.Config.TLSPort
+	if wsh.Config.ProxyTLSPort != "" {
+		tlsport = wsh.Config.ProxyTLSPort
+	}
 	msg, err := models.NewMessage("server-info", models.ServerInfo{
 		Name:       wsh.Config.Name,
 		UUID:       wsh.Config.UUID,
-		TLSPort:    wsh.Config.TLSPort,
+		TLSPort:    tlsport,
 		Port:       wsh.Config.Port,
 		Init:       wsh.Store.CountAdmins() < 1,
 		AllowLogin: helpers.IsPrivateIP(r.RemoteAddr),

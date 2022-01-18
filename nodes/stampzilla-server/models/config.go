@@ -21,6 +21,12 @@ type Config struct {
 
 	// Version is used as command line flag to print version
 	Version bool `json:"version,omitempty" flagUsage:"show the version of the app without starting"`
+
+	// StaticRoot can be used to set directory for the web ui. defaults to the one compiled with statik in statik folder. used for dev purposes.
+	StaticRoot string `json:"staticRoot"`
+
+	// ProxyTLSPort is used to signal the insecurewebsocket port to advertise a tlsport on a proxy
+	ProxyTLSPort string `json:"proxyTLSPort"`
 }
 
 // Save writes the config as json to specified filename.
