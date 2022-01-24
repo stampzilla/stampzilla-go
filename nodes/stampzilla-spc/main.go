@@ -57,7 +57,6 @@ func syncWorker(ctx context.Context, wg *sync.WaitGroup, data chan []byte, node 
 				err := decodeAndSync(d, node)
 				if err != nil {
 					logrus.Error(err)
-					return
 				}
 			}
 		}
@@ -71,7 +70,7 @@ func decodeAndSync(buf []byte, node *node.Node) error {
 	}
 	pkg, err := edp.Decode(buf)
 	if err != nil {
-		return fmt.Errorf("error decodingn pkg: %w", err)
+		return fmt.Errorf("error decoding pkg: %w", err)
 	}
 
 	dev := node.GetDevice(pkg.ID)
@@ -101,7 +100,10 @@ func startListen(ctx context.Context, wg *sync.WaitGroup, connectToPort chan str
 		if c, ok := l.(*net.UDPConn); ok {
 			rb := 1024 * 1024
 			logrus.Infof("setting ReadBuffer on udp conn to: %d", rb)
-			c.SetReadBuffer(rb)
+			err := c.SetReadBuffer(rb)
+			if err != nil {
+				logrus.Error(err)
+			}
 		}
 		wg.Add(1)
 		go func() {
