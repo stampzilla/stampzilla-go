@@ -20,13 +20,15 @@ type Response struct {
 }
 
 type CurrentSubscription struct {
-	PriceInfo *PriceInfo `json:"priceInfo"`
+	PriceRating *PriceRating `json:"priceRating"`
 }
 
-type PriceInfo struct {
-	Current  Price   `json:"current"`
-	Today    []Price `json:"today"`
-	Tomorrow []Price `json:"tomorrow"`
+type PriceRating struct {
+	Hourly Hourly `json:"hourly"`
+}
+
+type Hourly struct {
+	Entries []Price `json:"entries"`
 }
 
 type Price struct {
@@ -35,7 +37,7 @@ type Price struct {
 	Energy   float64   `json:"energy"`
 	Tax      float64   `json:"tax"`
 	Currency string    `json:"currency"`
-	StartsAt time.Time `json:"startsAt"`
+	Time     time.Time `json:"time"`
 }
 
 type Prices struct {
@@ -54,7 +56,7 @@ func NewPrices() *Prices {
 
 func (p *Prices) Add(price Price) {
 	p.mutex.Lock()
-	p.prices[price.StartsAt] = price
+	p.prices[price.Time] = price
 	p.mutex.Unlock()
 }
 
@@ -215,9 +217,10 @@ func (p *Prices) State() devices.State {
 		state["cheapestHour"] = true
 	}
 
-	state["priceExpensive"] = false
-	if current.Level == "EXPENSIVE" || current.Level == "VERY_EXPENSIVE" {
+	if current.Level == "HIGH" {
 		state["priceExpensive"] = true
+	} else {
+		state["priceExpensive"] = false
 	}
 
 	state["priceLevel"] = p.priceToInt(current.Level)
@@ -228,15 +231,11 @@ func (p *Prices) State() devices.State {
 // PriceToInt converts tibbers enum values to ints.
 func (p *Prices) priceToInt(s string) int {
 	switch s {
-	case "VERY_EXPENSIVE":
-		return 5
-	case "EXPENSIVE":
-		return 4
-	case "NORMAL":
+	case "HIGH":
 		return 3
-	case "CHEAP":
+	case "NORMAL":
 		return 2
-	case "VERY_CHEAP":
+	case "LOW":
 		return 1
 	}
 

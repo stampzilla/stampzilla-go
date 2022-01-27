@@ -9,12 +9,12 @@ import (
 )
 
 func newPrice(t1 time.Time, level string) Price {
-	return Price{StartsAt: t1, Level: level}
+	return Price{Time: t1, Level: level}
 }
 
 func newPriceTotal(hour int, total float64) Price {
 	t1 := time.Date(2020, 10, 10, hour, 0, 0, 0, time.UTC)
-	return Price{StartsAt: t1.Truncate(time.Hour), Total: total}
+	return Price{Time: t1.Truncate(time.Hour), Total: total}
 }
 
 func TestClearOld(t *testing.T) {

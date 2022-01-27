@@ -23,11 +23,10 @@ func fetchAndCalculate(config *Config, node *node.Node) {
 		return
 	}
 
-	for _, p := range prices.Today {
-		pricesStore.Add(p)
-	}
-
-	for _, p := range prices.Tomorrow {
+	for _, p := range prices {
+		if time.Now().Add(time.Hour * -1).After(p.Time) {
+			continue
+		}
 		pricesStore.Add(p)
 	}
 
@@ -39,6 +38,7 @@ func fetchAndCalculate(config *Config, node *node.Node) {
 
 		cheapestHour := pricesStore.calculateBestChargeHours(1 * time.Hour)
 		pricesStore.SetCheapestHour(cheapestHour)
+		logrus.Infof("cheapestHour is: %s", cheapestHour)
 
 		pricesStore.SetLastCalculated(time.Now())
 	}
@@ -46,22 +46,22 @@ func fetchAndCalculate(config *Config, node *node.Node) {
 	node.UpdateState("1", pricesStore.State())
 }
 
-func fetchPrices(token string) (*PriceInfo, error) {
+func fetchPrices(token string) ([]Price, error) {
 	query := `
 {
   viewer {
     homes {
       currentSubscription{
-        priceInfo{
-          today {
-            total
-            startsAt
-            level
-          }
-          tomorrow {
-            total
-            startsAt
-            level
+        priceRating{
+          hourly {
+            entries {
+              total
+              time
+              level
+              energy
+              difference
+              tax
+            }
           }
         }
       }
@@ -101,5 +101,5 @@ func fetchPrices(token string) (*PriceInfo, error) {
 	if len(response.Data.Viewer.Homes) == 0 {
 		return nil, fmt.Errorf("no homes found in response")
 	}
-	return response.Data.Viewer.Homes[0].CurrentSubscription.PriceInfo, nil
+	return response.Data.Viewer.Homes[0].CurrentSubscription.PriceRating.Hourly.Entries, nil
 }
