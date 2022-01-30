@@ -119,7 +119,7 @@ class Schedule extends Component {
     const { match } = this.props;
 
     return (
-      <React.Fragment>
+      <>
         <div className="row">
           <div className="col-md-12">
             <Card
@@ -166,7 +166,7 @@ class Schedule extends Component {
             </Card>
           </div>
         </div>
-      </React.Fragment>
+      </>
     );
   }
 }

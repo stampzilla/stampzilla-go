@@ -8,7 +8,7 @@ import Trait from '../../dashboard/Trait';
 import { traitPriority, traitNames, traitStates } from '../../dashboard/Device';
 
 // List of traits that is used to filter out useable devices
-const traits = ['OnOff', 'Brightness', 'ColorSetting'];
+const traits = ['OnOff', 'Brightness', 'ColorSetting', 'TemperatureControl'];
 
 const checkBox = ({
   device, trait, checked, onChange,
