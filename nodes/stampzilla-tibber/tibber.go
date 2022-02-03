@@ -23,8 +23,9 @@ func fetchAndCalculate(config *Config, node *node.Node) {
 		return
 	}
 
+	now := time.Now()
 	for _, p := range prices {
-		if time.Now().Add(time.Hour * -1).After(p.Time) {
+		if now.Add(time.Hour * -24).After(p.Time) {
 			continue
 		}
 		pricesStore.Add(p)
@@ -32,11 +33,16 @@ func fetchAndCalculate(config *Config, node *node.Node) {
 
 	pricesStore.ClearOld()
 
-	if pricesStore.HasTomorrowPricesYet() && !pricesStore.LastCalculated().Truncate(24*time.Hour).Equal(time.Now().Truncate(24*time.Hour)) {
-		cheapestStartTime := pricesStore.calculateBestChargeHours(config.carChargeDuration)
+	if pricesStore.HasTomorrowPricesYet() && !pricesStore.LastCalculated().Truncate(24*time.Hour).Equal(now.Truncate(24*time.Hour)) {
+		c := pricesStore.Current()
+
+		cheapestStartTime := pricesStore.calculateBestChargeHours(c.Time, config.carChargeDuration)
 		pricesStore.SetCheapestChargeStart(cheapestStartTime)
 
-		cheapestHour := pricesStore.calculateBestChargeHours(1 * time.Hour)
+		cheapestHour := pricesStore.calculateCheapestHour(
+			now.Truncate(24*time.Hour).Add(time.Hour*18),                  // today plus 18 is 19:00 CET
+			now.Add(24*time.Hour).Truncate(24*time.Hour).Add(time.Hour*8), // tomorrow 00 plus 8 hours is 09:00 CET
+		)
 		pricesStore.SetCheapestHour(cheapestHour)
 		logrus.Infof("cheapestHour is: %s", cheapestHour)
 
