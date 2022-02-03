@@ -267,15 +267,15 @@ func (p *Prices) State() devices.State {
 }
 
 func (p *Prices) calculateLevel(t time.Time, total float64) (diff float64, lvl int) {
-	p.mutex.RLock()
 	tot := 0.0
 	totCnt := 0.0
+	p.mutex.RLock()
 	for _, v := range p.prices {
-		if t.Add(time.Hour * -24).After(v.Time) {
+		if t.Add(time.Hour*-24).After(v.Time) || v.Time.After(t) {
 			continue
 		}
 		tot += v.Total
-		totCnt = totCnt + 1.0
+		totCnt += 1.0
 	}
 	p.mutex.RUnlock()
 	average := tot / totCnt
