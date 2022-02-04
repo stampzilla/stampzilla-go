@@ -20,7 +20,7 @@ func newPriceTotal(hour int, total float64) Price {
 func TestClearOld(t *testing.T) {
 	t.Parallel()
 	price1 := newPrice(time.Now(), "")
-	price2 := newPrice(time.Now().Add(-1*time.Hour), "")
+	price2 := newPrice(time.Now().Add(-24*time.Hour), "")
 
 	prices := NewPrices()
 	prices.Add(price1)
@@ -152,7 +152,8 @@ func TestCalculateBestChargeHours(t *testing.T) {
 			for _, v := range tt.hoursPrice {
 				prices.Add(newPriceTotal(v.hour, v.price))
 			}
-			cheapestStartTime := prices.calculateBestChargeHours(6 * time.Hour)
+			start := time.Date(2020, 10, 10, 0, 0, 0, 0, time.UTC)
+			cheapestStartTime := prices.calculateBestChargeHours(start, 6*time.Hour)
 
 			t.Log("cheapestStartTime", cheapestStartTime)
 			expected := time.Date(2020, 10, 10, tt.exp, 0, 0, 0, time.UTC)
@@ -206,9 +207,69 @@ func TestCheapestSingleHour(t *testing.T) {
 			for _, v := range tt.hoursPrice {
 				prices.Add(newPriceTotal(v.hour, v.price))
 			}
-			cheapestStartTime := prices.calculateBestChargeHours(1 * time.Hour)
+			start := time.Date(2020, 10, 10, 0, 0, 0, 0, time.UTC)
+			end := time.Date(2020, 10, 10, 16, 0, 0, 0, time.UTC)
+			cheapestStartTime := prices.calculateCheapestHour(start, end)
 			expected := time.Date(2020, 10, 10, tt.exp, 0, 0, 0, time.UTC)
 			assert.Equal(t, expected, cheapestStartTime)
 		})
 	}
+}
+
+func TestCalculateLevel(t *testing.T) {
+	t.Parallel()
+
+	hoursPrice := []struct {
+		hour  int
+		price float64
+	}{
+		{0, 0.5},
+		{1, 0.4},
+		{2, 0.6},
+		{3, 0.5},
+		{4, 0.5},
+		{5, 0.1},
+		{6, 1},
+		{7, 1},
+		{8, 5},
+		{9, 5},
+		{10, 1},
+		{11, 1},
+		{12, 1},
+		{13, 1},
+		{14, 1},
+		{15, 1},
+		{16, 1.5},
+		{17, 1.5},
+		{18, 1.5},
+		{19, 1.5},
+		{20, 0.9},
+		{21, 0.9},
+		{22, 0.9},
+		{23, 0.9},
+		{24, 0.9},
+		{25, 0.9},
+		{26, 1.4},
+		{27, 2.9},
+	}
+
+	prices := NewPrices()
+	for _, v := range hoursPrice {
+		prices.Add(newPriceTotal(v.hour, v.price))
+	}
+
+	t1 := time.Date(2020, 10, 10, 25, 0, 0, 0, time.UTC)
+	_, lvl := prices.calculateLevel(t1, 0.9)
+	t.Log("level: ", lvl)
+	assert.Equal(t, 1, lvl)
+
+	t1 = time.Date(2020, 10, 10, 26, 0, 0, 0, time.UTC)
+	_, lvl = prices.calculateLevel(t1, 1.4)
+	t.Log("level: ", lvl)
+	assert.Equal(t, 2, lvl)
+
+	t1 = time.Date(2020, 10, 10, 27, 0, 0, 0, time.UTC)
+	_, lvl = prices.calculateLevel(t1, 2.9)
+	t.Log("level: ", lvl)
+	assert.Equal(t, 3, lvl)
 }

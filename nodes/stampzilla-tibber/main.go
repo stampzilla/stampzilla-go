@@ -31,7 +31,7 @@ func start() {
 		logrus.Error(err)
 		return
 	}
-	logrus.Info("Waiting for config from serverG")
+	logrus.Info("Waiting for config from server")
 	err = wait()
 	if err != nil {
 		logrus.Error(err)

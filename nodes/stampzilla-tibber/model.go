@@ -99,6 +99,23 @@ func (p *Prices) Last() time.Time {
 	return ss[0]
 }
 
+func (p *Prices) calculateCheapestHour(from, to time.Time) time.Time {
+	ss := []Price{}
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	for _, t := range p.prices {
+		if t.Time.Before(from) || t.Time.After(to) {
+			continue
+		}
+		ss = append(ss, t)
+	}
+	sort.Slice(ss, func(i, j int) bool {
+		return ss[i].Total < ss[j].Total
+	})
+
+	return ss[0].Time
+}
+
 func (p *Prices) Current() *Price {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
@@ -135,12 +152,15 @@ func (p *Prices) LastCalculated() time.Time {
 	return t
 }
 
-func (p *Prices) calculateBestChargeHours(dur time.Duration) time.Time {
+func (p *Prices) calculateBestChargeHours(start time.Time, dur time.Duration) time.Time {
 	dur = dur.Round(time.Hour)
 	sumPriceForTimePlusDur := make(map[time.Time]float64)
 	last := p.Last().Add(time.Hour * 1)
 	p.mutex.Lock()
 	for t := range p.prices {
+		if start.After(t) {
+			continue // only calculate on future prices not the past 24h
+		}
 		var d time.Duration
 		priceSum := 0.0
 		for d < dur {
@@ -180,11 +200,27 @@ func (p *Prices) calculateBestChargeHours(dur time.Duration) time.Time {
 func (p *Prices) ClearOld() {
 	p.mutex.Lock()
 	for t := range p.prices {
-		if time.Now().Add(time.Hour * -1).After(t) {
+		if time.Now().Add(time.Hour * -24).After(t) {
 			delete(p.prices, t)
 		}
 	}
 	p.mutex.Unlock()
+}
+func (p *Prices) SortedByTime() []Price {
+	p.mutex.Lock()
+	prices := make([]Price, len(p.prices))
+	i := 0
+	for _, v := range p.prices {
+		prices[i] = v
+		i++
+	}
+	p.mutex.Unlock()
+
+	sort.Slice(prices, func(i, j int) bool {
+		return prices[i].Time.Before(prices[j].Time)
+	})
+
+	return prices
 }
 
 func isSameHourAndDay(t1, t2 time.Time) bool {
@@ -217,27 +253,47 @@ func (p *Prices) State() devices.State {
 		state["cheapestHour"] = true
 	}
 
-	if current.Level == "HIGH" {
+	diff, lvl := p.calculateLevel(current.Time, current.Total)
+	state["priceLevel"] = lvl
+	state["priceDiff"] = diff
+
+	if lvl == 3 {
 		state["priceExpensive"] = true
 	} else {
 		state["priceExpensive"] = false
 	}
 
-	state["priceLevel"] = p.priceToInt(current.Level)
-
 	return state
 }
 
-// PriceToInt converts tibbers enum values to ints.
-func (p *Prices) priceToInt(s string) int {
-	switch s {
-	case "HIGH":
-		return 3
-	case "NORMAL":
-		return 2
-	case "LOW":
-		return 1
+func (p *Prices) calculateLevel(t time.Time, total float64) (diff float64, lvl int) {
+	tot := 0.0
+	totCnt := 0.0
+	p.mutex.RLock()
+	for _, v := range p.prices {
+		if t.Add(time.Hour*-24).After(v.Time) || v.Time.After(t) {
+			continue
+		}
+		tot += v.Total
+		totCnt += 1.0
+	}
+	p.mutex.RUnlock()
+	average := tot / totCnt
+
+	switch {
+	case total >= average*1.20:
+		lvl = 3 // HIGH
+	case total <= average*0.90:
+		lvl = 1 // LOW
+	default:
+		lvl = 2 // NORMAL
 	}
 
-	return 0
+	diff = total / average
+
+	//fmt.Println("avg: ", average)
+	//fmt.Println("price: ", total)
+	//fmt.Println("diff: ", diff)
+	//fmt.Println("lvl: ", lvl)
+	return
 }
