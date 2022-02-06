@@ -1,18 +1,12 @@
-import React, { Component,useState } from 'react';
+import React, { Component } from 'react';
 import { Button } from 'reactstrap';
 import { connect } from 'react-redux';
 import Form from 'react-jsonschema-form';
-import Switch from 'react-switch';
 import Select from 'react-select';
 
 import StateWidget from './components/StateWidget';
-import { add, save } from '../../ducks/savedstates';
+import { add, save, remove } from '../../ducks/savedstates';
 import Card from '../../components/Card';
-import {
-  ArrayFieldTemplate,
-  ObjectFieldTemplate,
-  IconButton,
-} from '../../components/formComponents';
 
 const schema = {
   type: 'object',
@@ -39,7 +33,7 @@ class Savedstate extends Component {
     super();
 
     const { savedstates, match } = props;
-    const savedstate = savedstates.find(n => n.get('uuid') === match.params.uuid);
+    const savedstate = savedstates.find((n) => n.get('uuid') === match.params.uuid);
     const formData = savedstate && savedstate.toJS();
     this.state = {
       formData,
@@ -54,7 +48,7 @@ class Savedstate extends Component {
       || match.params.uuid !== this.props.match.params.uuid
       || savedstates !== this.props.savedstates
     ) {
-      const savedstate = savedstates.find(n => n.get('uuid') === match.params.uuid);
+      const savedstate = savedstates.find((n) => n.get('uuid') === match.params.uuid);
       const formData = savedstate && savedstate.toJS();
       if (formData && formData.state == null) {
         formData.state = {};
@@ -65,6 +59,11 @@ class Savedstate extends Component {
     }
   }
 
+  onBackClick = () => {
+    const { history } = this.props;
+    history.push('/aut');
+  };
+
   onChange = () => (data) => {
     const { errors, formData } = data;
     this.setState({
@@ -72,6 +71,15 @@ class Savedstate extends Component {
       formData,
     });
   };
+
+  onRemove = () => {
+    if (confirm('Are you sure?')) {
+      const { match, dispatch } = this.props;
+      dispatch(remove(match.params.uuid));
+      this.onBackClick();
+    }
+  };
+
 
   onSubmit = () => ({ formData }) => {
     const { dispatch } = this.props;
@@ -89,21 +97,18 @@ class Savedstate extends Component {
   getDevicesArray() {
     const { devices } = this.props;
     const devs = devices.toJS();
-    return devs && Object.keys(devs).map((key) => {
-      return { value: devs[key].id, label: devs[key].name };
-    });
+    return devs && Object.keys(devs).map((key) => ({ value: devs[key].id, label: devs[key].name }));
   }
 
-  onAddDevice = (dev) => (e) => {
-	  if (!this.state.newDeviceId){
-		  return;
-	  }
+  onAddDevice = () => () => {
+    if (!this.state.newDeviceId) {
+      return;
+    }
 
-	  this.setState(prevState => ({ formData:{ ...prevState.formData,
-		  state: { ...prevState.formData.state, [prevState.newDeviceId]: {} }
-		  }
-	  })
-	  );
+    this.setState((prevState) => ({ formData: {
+      ...prevState.formData,
+      state: { ...prevState.formData.state, [prevState.newDeviceId]: {} },
+    } }));
   }
 
   render() {
@@ -144,38 +149,48 @@ class Savedstate extends Component {
                   />
                 </Form>
 
-			<div className="container pt-5 mx-0">
-				<div className="row">
-					<div className="col">
-						<Select 
-							//getOptionLabel={option => option.get('name') }
-							//getOptionValue={option => option.get('id')}
-							options={this.getDevicesArray()}
-							onChange={(e) => {
-								this.setState({newDeviceId: e.value})
-							}}
+                <div className="container pt-5 mx-0">
+                  <div className="row">
+                    <div className="col">
+                      <Select
+                        options={this.getDevicesArray()}
+                        onChange={(e) => {
+                          this.setState({ newDeviceId: e.value });
+                        }}
 
-						/>
-					</div>
-					<div className="col">
-						<Button
-						  color="primary"
-                          onClick={this.onAddDevice()}
-						>
-						  {'Add'}
-						</Button>
-					</div>
-				</div>
-			</div>
+                      />
+                    </div>
+                    <div className="col">
+                      <Button
+                        color="primary"
+                        onClick={this.onAddDevice()}
+                      >
+                        Add
+                      </Button>
+                    </div>
+                  </div>
+                </div>
 
               </div>
               <div className="card-footer">
+                <Button color="secondary" onClick={this.onBackClick}>
+                  Back
+                </Button>
+                <Button
+                  color="danger"
+                  disabled={this.props.disabled}
+                  onClick={this.onRemove}
+                  className="ml-2 btn-sm"
+                >
+                  Remove
+                </Button>
                 <Button
                   color="primary"
                   disabled={!this.state.isValid || this.props.disabled}
                   onClick={() => this.submitButton.click()}
+                  className="float-right"
                 >
-                  {'Save'}
+                  Save
                 </Button>
               </div>
             </Card>
