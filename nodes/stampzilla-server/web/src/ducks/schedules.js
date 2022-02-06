@@ -4,7 +4,7 @@ import { v4 as makeUUID } from 'uuid';
 
 const c = defineAction(
   'schedules',
-  ['ADD', 'SAVE', 'UPDATE', 'UPDATE_STATE'],
+  ['ADD', 'SAVE', 'REMOVE', 'UPDATE', 'UPDATE_STATE'],
 );
 
 const defaultState = Map({
@@ -18,6 +18,9 @@ export function add(schedule) {
 }
 export function save(schedule) {
   return { type: c.SAVE, schedule };
+}
+export function remove(uuid) {
+  return { type: c.REMOVE, uuid };
 }
 export function update(schedules) {
   return { type: c.UPDATE, schedules };
@@ -48,6 +51,9 @@ export default function reducer(state = defaultState, action) {
     case c.SAVE: {
       return state
         .mergeIn(['list', action.schedule.uuid], fromJS(action.schedule));
+    }
+    case c.REMOVE: {
+      return state.deleteIn(['list', action.uuid]);
     }
     case c.UPDATE: {
       return state

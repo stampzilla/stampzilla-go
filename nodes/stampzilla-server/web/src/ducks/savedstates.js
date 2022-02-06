@@ -2,7 +2,7 @@ import { Map, fromJS } from 'immutable';
 import { defineAction } from 'redux-define';
 import { v4 as makeUUID } from 'uuid';
 
-const c = defineAction('savedstates', ['ADD', 'SAVE', 'UPDATE']);
+const c = defineAction('savedstates', ['ADD', 'SAVE', 'UPDATE', 'REMOVE']);
 
 const defaultState = Map({
   list: Map(),
@@ -15,6 +15,9 @@ export function add(states) {
 export function save(state) {
   return { type: c.SAVE, state };
 }
+export function remove(uuid) {
+  return { type: c.REMOVE, uuid };
+}
 export function update(states) {
   return { type: c.UPDATE, states };
 }
@@ -22,7 +25,7 @@ export function update(states) {
 // Subscribe to channels and register the action for the packages
 export function subscribe(dispatch) {
   return {
-    savedstates: states => dispatch(update(states)),
+    savedstates: (states) => dispatch(update(states)),
   };
 }
 
@@ -38,6 +41,9 @@ export default function reducer(state = defaultState, action) {
     }
     case c.SAVE: {
       return state.mergeIn(['list', action.state.uuid], fromJS(action.state));
+    }
+    case c.REMOVE: {
+      return state.deleteIn(['list', action.uuid]);
     }
     case c.UPDATE: {
       return state.set('list', fromJS(action.states));

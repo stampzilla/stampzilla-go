@@ -3,7 +3,7 @@ import { Button } from 'reactstrap';
 import { connect } from 'react-redux';
 import Form from 'react-jsonschema-form';
 
-import { add, save } from '../../ducks/schedules';
+import { add, save, remove } from '../../ducks/schedules';
 import Card from '../../components/Card';
 import SavedStateWidget from './components/SavedStatePicker';
 import {
@@ -94,12 +94,25 @@ class Schedule extends Component {
     }
   }
 
+  onBackClick = () => {
+    const { history } = this.props;
+    history.push('/aut');
+  };
+
   onChange = () => (data) => {
     const { errors, formData } = data;
     this.setState({
       isValid: errors.length === 0,
       formData,
     });
+  };
+
+  onRemove = () => {
+    if (confirm('Are you sure?')) {
+      const { match, dispatch } = this.props;
+      dispatch(remove(match.params.uuid));
+      this.onBackClick();
+    }
   };
 
   onSubmit = () => ({ formData }) => {
@@ -155,10 +168,22 @@ class Schedule extends Component {
                 </Form>
               </div>
               <div className="card-footer">
+                <Button color="secondary" onClick={this.onBackClick}>
+                  Back
+                </Button>
+                <Button
+                  color="danger"
+                  disabled={this.props.disabled}
+                  onClick={this.onRemove}
+                  className="ml-2 btn-sm"
+                >
+                  Remove
+                </Button>
                 <Button
                   color="primary"
                   disabled={!this.state.isValid || this.props.disabled}
                   onClick={() => this.submitButton.click()}
+                  className="float-right"
                 >
                   {'Save'}
                 </Button>
