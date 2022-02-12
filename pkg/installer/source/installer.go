@@ -71,7 +71,7 @@ func GoGet(url string) error {
 		return fmt.Errorf("LookPath Error: %s", err.Error())
 	}
 
-	//_, err = Run(gobin, "get", "-u", "-d", "github.com/stampzilla/stampzilla-go")
+	// _, err = Run(gobin, "get", "-u", "-d", "github.com/stampzilla/stampzilla-go")
 	gitDir := filepath.Join("/home", "stampzilla", "go", "src", "github.com", "stampzilla", "stampzilla-go")
 	if _, err := os.Stat(gitDir); os.IsNotExist(err) {
 		_, err = Run("git", "clone", "https://github.com/stampzilla/stampzilla-go.git", gitDir)
@@ -99,12 +99,13 @@ func getArgs(binName string) []string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	os.Setenv("TRAVIS_COMMIT", hash)
+
+	version := "src-" + hash[0:8] // set version to src-githash if we use src build to install
 
 	m := []string{
 		"build",
 		"-ldflags",
-		"-X github.com/stampzilla/stampzilla-go/v2/pkg/build.Version=" + os.Getenv("TRAVIS_TAG") + ` -X "github.com/stampzilla/stampzilla-go/v2/pkg/build.BuildTime=` + time.Now().Format(time.RFC3339) + `" -X github.com/stampzilla/stampzilla-go/v2/pkg/build.Commit=` + os.Getenv("TRAVIS_COMMIT"),
+		"-X github.com/stampzilla/stampzilla-go/v2/pkg/build.Version=" + version + ` -X "github.com/stampzilla/stampzilla-go/v2/pkg/build.BuildTime=` + time.Now().Format(time.RFC3339) + `" -X github.com/stampzilla/stampzilla-go/v2/pkg/build.Commit=` + hash,
 		"-o",
 		filepath.Join("/home", "stampzilla", "go", "bin", binName),
 		filepath.Join("/home", "stampzilla", "go", "src", "github.com", "stampzilla", "stampzilla-go", "nodes", binName),

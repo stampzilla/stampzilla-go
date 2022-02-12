@@ -203,7 +203,7 @@ func (d *List) Get(id ID) *Device {
 // func (d *List) GetUnique(id string) *Device {
 // d.RLock()
 // defer d.RUnlock()
-//return d.devices[id]
+// return d.devices[id]
 //}
 
 // All get all devices.

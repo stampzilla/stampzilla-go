@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -257,7 +258,7 @@ func (t *cliHandler) SelfUpdate(c *cli.Context) error {
 
 	err = os.Rename(binPath, binPath+".backup")
 	if err != nil {
-		return fmt.Errorf(`%v
+		return fmt.Errorf(`%w
 Possible solutions:
 1: sudo stampzilla self-update
 2: put the binary in ~/bin and make sure you have full permissions and the directory is in your PATH`, err)
@@ -329,9 +330,8 @@ func getRunner(c *cli.Context) runner.Runner {
 	return &runner.Bare{}
 }
 
-func requireRoot() { // {{{
+func requireRoot() {
 	if os.Getuid() != 0 {
-		fmt.Println("You must be root to run this")
-		os.Exit(1)
+		log.Fatal("must be root to run this")
 	}
-} // }}}
+}
