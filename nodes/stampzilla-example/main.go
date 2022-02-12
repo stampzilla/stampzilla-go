@@ -68,7 +68,7 @@ func main() {
 	dev6 := &devices.Device{
 		Name:   "heatpump",
 		Type:   "sensor",
-		ID:     devices.ID{ID: "5"},
+		ID:     devices.ID{ID: "6"},
 		Online: true,
 		Traits: []string{"TemperatureControl"},
 		State: devices.State{

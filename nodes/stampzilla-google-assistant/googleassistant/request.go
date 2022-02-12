@@ -59,11 +59,11 @@ type Payload struct {
 	Commands []struct {
 		Devices []struct {
 			ID string `json:"id"`
-			//CustomData struct {
-			//FooValue int    `json:"fooValue"`
-			//BarValue bool   `json:"barValue"`
-			//BazValue string `json:"bazValue"`
-			//} `json:"customData"`
+			// CustomData struct {
+			// FooValue int    `json:"fooValue"`
+			// BarValue bool   `json:"barValue"`
+			// BazValue string `json:"bazValue"`
+			// } `json:"customData"`
 		} `json:"devices"`
 		Execution []struct {
 			Command string `json:"command"`
@@ -75,11 +75,11 @@ type Payload struct {
 	} `json:"commands"`
 	Devices []struct {
 		ID string `json:"id"`
-		//CustomData struct {
-		//FooValue int    `json:"fooValue"`
-		//BarValue bool   `json:"barValue"`
-		//BazValue string `json:"bazValue"`
-		//} `json:"customData"`
+		// CustomData struct {
+		// FooValue int    `json:"fooValue"`
+		// BarValue bool   `json:"barValue"`
+		// BazValue string `json:"bazValue"`
+		// } `json:"customData"`
 	} `json:"devices"`
 }
 

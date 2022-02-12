@@ -200,9 +200,9 @@ func (d *List) Get(id ID) *Device {
 	return d.devices[id]
 }
 
-//func (d *List) GetUnique(id string) *Device {
-//d.RLock()
-//defer d.RUnlock()
+// func (d *List) GetUnique(id string) *Device {
+// d.RLock()
+// defer d.RUnlock()
 //return d.devices[id]
 //}
 

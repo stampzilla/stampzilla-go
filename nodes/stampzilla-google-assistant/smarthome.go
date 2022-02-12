@@ -54,12 +54,12 @@ func (shh *SmartHomeHandler) smartHomeActionHandler(oauth2server *osin.Server) f
 		dec := json.NewDecoder(c.Request.Body)
 		defer c.Request.Body.Close()
 
-		//body, err := ioutil.ReadAll(c.Request.Body)
-		//if err != nil {
-		//logrus.Error(err)
-		//return
+		// body, err := ioutil.ReadAll(c.Request.Body)
+		// if err != nil {
+		// logrus.Error(err)
+		// return
 		//}
-		//logrus.Info(string(body))
+		// logrus.Info(string(body))
 
 		r := &googleassistant.Request{}
 
@@ -214,14 +214,14 @@ func (shh *SmartHomeHandler) syncHandler(req *googleassistant.Request) *googleas
 			Traits: []string{
 				"action.devices.traits.OnOff",
 				"action.devices.traits.Brightness",
-				//"action.devices.traits.ColorTemperature",
-				//"action.devices.traits.ColorSpectrum",
+				// "action.devices.traits.ColorTemperature",
+				// "action.devices.traits.ColorSpectrum",
 			},
 			//Attributes: googleassistant.DeviceAttributes{
 			//ColorModel:      "RGB",
 			//TemperatureMinK: 2000,
 			//TemperatureMaxK: 6500,
-			//},
+			// },
 		}
 		if dev.Alias != "" {
 			rdev.Name.Name = dev.Alias

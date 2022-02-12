@@ -34,7 +34,7 @@ func main() {
 	}
 
 	wait()
-	node.On("devices", onDevices(config, deviceList))
+	node.On("devices", onDevices(deviceList))
 
 	g := gin.Default()
 
@@ -74,7 +74,7 @@ func main() {
 	<-done
 }
 
-func onDevices(config *Config, deviceList *devices.List) func(data json.RawMessage) error {
+func onDevices(deviceList *devices.List) func(data json.RawMessage) error {
 	return func(data json.RawMessage) error {
 		list := devices.NewList()
 		err := json.Unmarshal(data, list)
@@ -109,6 +109,16 @@ func onDevices(config *Config, deviceList *devices.List) func(data json.RawMessa
 				old.SetOnline(dev.Online)
 				changes++
 			}
+
+			// sync state if changed
+			old.RLock()
+			diff := old.State.Diff(dev.State)
+			old.RUnlock()
+			if len(diff) != 0 {
+				old.Lock()
+				old.State.MergeWith(diff)
+				old.Unlock()
+			}
 		}
 
 		toRemove := []devices.ID{}
@@ -124,8 +134,8 @@ func onDevices(config *Config, deviceList *devices.List) func(data json.RawMessa
 
 		// Disabled because when stampzilla is restarted it will requestSync and google will delete all the devices in the cloud :(
 		// TODO think of something smarter here! For now use the voice to ask google to sync devices.
-		//if changes > 0 {
-		//requestSync(config.APIKey)
+		// if changes > 0 {
+		// requestSync(config.APIKey)
 		//}
 		return nil
 	}

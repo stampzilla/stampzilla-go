@@ -18,17 +18,17 @@ type Device struct {
 	Traits          []string   `json:"traits"`
 	Name            DeviceName `json:"name"`
 	WillReportState bool       `json:"willReportState"`
-	//DeviceInfo      struct {
-	//Manufacturer string `json:"manufacturer"`
-	//Model        string `json:"model"`
-	//HwVersion    string `json:"hwVersion"`
-	//SwVersion    string `json:"swVersion"`
-	//} `json:"deviceInfo"`
-	//CustomData struct {
-	//FooValue int    `json:"fooValue"`
-	//BarValue bool   `json:"barValue"`
-	//BazValue string `json:"bazValue"`
-	//} `json:"customData"`
+	// DeviceInfo      struct {
+	// Manufacturer string `json:"manufacturer"`
+	// Model        string `json:"model"`
+	// HwVersion    string `json:"hwVersion"`
+	// SwVersion    string `json:"swVersion"`
+	// } `json:"deviceInfo"`
+	// CustomData struct {
+	// FooValue int    `json:"fooValue"`
+	// BarValue bool   `json:"barValue"`
+	// BazValue string `json:"bazValue"`
+	// } `json:"customData"`
 	Attributes DeviceAttributes `json:"attributes,omitempty"`
 }
 

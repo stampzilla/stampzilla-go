@@ -9,14 +9,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-//func main() {
-//ip, port, err := queryMDNS()
-//if err != nil {
+// func main() {
+// ip, port, err := queryMDNS()
+// if err != nil {
 //logrus.Error(err)
 //return
 //}
 
-//logrus.Infof("Found %s:%d", ip, port)
+// logrus.Infof("Found %s:%d", ip, port)
 //}
 
 func queryMDNS() (string, string, string) {
