@@ -20,16 +20,16 @@ func GetReleases() []*github.RepositoryRelease {
 
 	// url := "https://api.github.com/repos/stampzilla/stampzilla-go/releases"
 
-	//req, err := http.NewRequest("GET", url, nil)
-	//if err != nil {
+	// req, err := http.NewRequest("GET", url, nil)
+	// if err != nil {
 	//log.Fatal("NewRequest: ", err)
 	//return []Release{}
 	//}
 
 	// client := &http.Client{}
 
-	//resp, err := client.Do(req)
-	//if err != nil {
+	// resp, err := client.Do(req)
+	// if err != nil {
 	//log.Fatal("Do: ", err)
 	//return []Release{}
 	//}
@@ -38,8 +38,8 @@ func GetReleases() []*github.RepositoryRelease {
 
 	// var releases []Release
 
-	//if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
-	//log.Println(err)
+	// if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
+	// log.Println(err)
 	//}
 
 	// return releases

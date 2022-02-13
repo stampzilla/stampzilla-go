@@ -32,6 +32,7 @@ class Nodes extends Component {
                     <th>Name</th>
                     <th>Type</th>
                     <th>Version</th>
+                    <th>Build time</th>
                     <th>Identity</th>
                   </tr>
                 </thead>
@@ -83,6 +84,7 @@ class Nodes extends Component {
                         <td>{n.get('name')}</td>
                         <td>{n.get('type')}</td>
                         {n.get('build') ? (<td>{n.get('build').get('Version')}</td>) : (<td></td>)}
+                        {n.get('build') ? (<td>{n.get('build').get('BuildTime')}</td>) : (<td></td>)}
                         <td>
                           <small>{n.get('uuid')}</small>
                         </td>
