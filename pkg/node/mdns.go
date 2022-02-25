@@ -5,15 +5,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/micro/mdns"
+	"github.com/hashicorp/mdns"
 	"github.com/sirupsen/logrus"
 )
 
 // func main() {
 // ip, port, err := queryMDNS()
 // if err != nil {
-//logrus.Error(err)
-//return
+// logrus.Error(err)
+// return
 //}
 
 // logrus.Infof("Found %s:%d", ip, port)

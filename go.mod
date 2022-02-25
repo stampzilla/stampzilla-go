@@ -20,6 +20,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/gregdel/pushover v1.1.0
+	github.com/hashicorp/mdns v1.0.5
 	github.com/influxdata/influxdb1-client v0.0.0-20190809212627-fc22c7df067e
 	github.com/itchyny/volume-go v0.0.0
 	github.com/jonaz/cron v0.0.0-20190121203350-e9ab53dd31db
@@ -29,7 +30,6 @@ require (
 	github.com/koding/multiconfig v0.0.0-20171124222453-69c27309b2d7
 	github.com/lesismal/melody v0.0.0-20210520115724-c116958ce5fc
 	github.com/llgcode/draw2d v0.0.0-20190810100245-79e59b6b8fbc
-	github.com/micro/mdns v0.3.0
 	github.com/onrik/logrus v0.4.1
 	github.com/pkg/errors v0.8.1
 	github.com/posener/wstest v0.0.0-20180217133618-28272a7ea048
@@ -79,7 +79,8 @@ require (
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mattn/go-colorable v0.1.4 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
-	github.com/miekg/dns v1.1.3 // indirect
+	github.com/micro/mdns v0.3.0 // indirect
+	github.com/miekg/dns v1.1.41 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/onsi/ginkgo v1.10.2 // indirect
@@ -95,12 +96,13 @@ require (
 	golang.org/x/image v0.0.0-20180708004352-c73c2afc3b81 // indirect
 	golang.org/x/mobile v0.0.0-20180806140643-507816974b79 // indirect
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20211209171907-798191bca915 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
+
+replace github.com/hashicorp/mdns => github.com/jonaz/mdns v0.0.0-20220225212800-0d33a91f9c6b
 
 //replace github.com/stampzilla/gocast => /home/jonaz/go/src/github.com/stampzilla/gocast
