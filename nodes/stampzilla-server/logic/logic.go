@@ -201,11 +201,20 @@ func (l *Logic) runFor(ctx context.Context, rule *Rule, evaluation bool) {
 				"pending": true,
 			})
 			logrus.Debug("Rule: ", rule.Name(), " (", rule.Uuid(), ") - sleeping for: ", rule.For())
+
+			delay := time.NewTimer(time.Duration(rule.For()))
+
 			select {
-			case <-time.After(time.Duration(rule.For())):
+			case <-delay.C:
 			case <-ctx.Done():
+				if !delay.Stop() {
+					<-delay.C
+				}
 				return
 			case <-rule.stop:
+				if !delay.Stop() {
+					<-delay.C
+				}
 				return
 			}
 

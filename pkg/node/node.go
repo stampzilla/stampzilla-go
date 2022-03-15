@@ -551,12 +551,19 @@ func (n *Node) syncWorker() {
 		max := time.NewTimer(10 * time.Millisecond)
 	outer:
 		for {
+			delay := time.NewTimer(time.Millisecond * 1)
 			select {
 			case id := <-n.sendUpdate:
+				if !delay.Stop() {
+					<-delay.C
+				}
 				que = append(que, id)
-			case <-time.After(1 * time.Millisecond):
+			case <-delay.C:
 				break outer
 			case <-max.C:
+				if !delay.Stop() {
+					<-delay.C
+				}
 				break outer
 			}
 		}
