@@ -157,12 +157,17 @@ func (ws *websocketClient) Read() <-chan []byte {
 
 func (ws *websocketClient) WriteMessage(messageType int, data []byte) error {
 	errCh := make(chan error, 1)
+
+	delay := time.NewTimer(time.Millisecond * 10)
 	select {
 	case ws.write <- func() {
 		err := ws.conn.WriteMessage(messageType, data)
 		errCh <- err
 	}:
-	case <-time.After(time.Millisecond * 10):
+		if !delay.Stop() {
+			<-delay.C
+		}
+	case <-delay.C:
 		errCh <- fmt.Errorf("websocket: no one listening on write channel")
 	}
 	return <-errCh
@@ -171,12 +176,16 @@ func (ws *websocketClient) WriteMessage(messageType int, data []byte) error {
 // WriteJSON writes interface{} encoded as JSON to our connection.
 func (ws *websocketClient) WriteJSON(v interface{}) error {
 	errCh := make(chan error, 1)
+	delay := time.NewTimer(time.Millisecond * 10)
 	select {
 	case ws.write <- func() {
 		err := ws.conn.WriteJSON(v)
 		errCh <- err
 	}:
-	case <-time.After(time.Millisecond * 10):
+		if !delay.Stop() {
+			<-delay.C
+		}
+	case <-delay.C:
 		errCh <- fmt.Errorf("websocket: no one listening on write channel")
 	}
 	return <-errCh

@@ -105,23 +105,32 @@ func (c *Chromecast) PlayURL(url string, contentType string) {
 }
 
 func (c *Chromecast) waitForAppLaunch(app string) error {
+
+	delay := time.NewTimer(time.Second * 20)
 	select {
 	case launchedApp := <-c.appLaunch:
+		if !delay.Stop() {
+			<-delay.C
+		}
 		if app == launchedApp {
 			return nil
 		}
 		return fmt.Errorf("Wrong app launched. Expected %s got %s", app, launchedApp)
-	case <-time.After(time.Second * 20):
+	case <-delay.C:
 		return fmt.Errorf("timeout waiting for app launch after 20 seconds")
 	}
 }
 
 func (c *Chromecast) appLaunched(app string) {
+	delay := time.NewTimer(time.Second * 2)
 	select {
 	case c.appLaunch <- app:
-		logrus.Info("Notified c.appLaunch")
-	case <-time.After(time.Second * 2):
-		logrus.Info("No one is waiting for appLaunch event")
+		if !delay.Stop() {
+			<-delay.C
+		}
+		logrus.Debug("Notified c.appLaunch")
+	case <-delay.C:
+		logrus.Debug("No one is waiting for appLaunch event")
 	}
 }
 
@@ -192,13 +201,13 @@ func (c *Chromecast) Event(node *node.Node) func(event events.Event) {
 
 			// If the app supports media controls lets subscribe to it
 			if data.HasNamespace("urn:x-cast:com.google.cast.media") {
-				logrus.Info(c.Name(), "- Subscribe cast.tp.connection:", data.DisplayName, "(", data.AppID, ")")
+				logrus.Debug(c.Name(), "- Subscribe cast.tp.connection:", data.DisplayName, "(", data.AppID, ")")
 				c.Subscribe("urn:x-cast:com.google.cast.tp.connection", data.TransportId, c.mediaConnectionHandler)
-				logrus.Info(c.Name(), "- Subscribe cast.media:", data.DisplayName, "(", data.AppID, ")")
+				logrus.Debug(c.Name(), "- Subscribe cast.media:", data.DisplayName, "(", data.AppID, ")")
 				c.Subscribe("urn:x-cast:com.google.cast.media", data.TransportId, c.mediaHandler)
 			}
 			c.appLaunched(data.AppID)
-			logrus.Info(c.Name(), "- Notifying appLanunched:", data.DisplayName, "(", data.AppID, ")")
+			logrus.Debug(c.Name(), "- Notifying appLanunched:", data.DisplayName, "(", data.AppID, ")")
 
 		case events.AppStopped:
 			logrus.Info(c.Name(), "- App stopped:", data.DisplayName, "(", data.AppID, ")")
@@ -230,35 +239,6 @@ func (c *Chromecast) Event(node *node.Node) func(event events.Event) {
 			} else {
 				newState["playing"] = false
 			}
-
-			/*
-				if data.PlayerState == "IDLE" {
-					c.Media.Title = c.PrimaryApp
-					c.Media.SubTitle = ""
-					c.Media.Thumb = ""
-					c.Media.Url = ""
-					c.Media.Duration = 0
-				}
-
-				if data.Media != nil {
-					c.Media.Title = c.PrimaryApp
-					if data.Media.MetaData.Title != "" {
-						c.Media.Title = data.Media.MetaData.Title
-					}
-					if c.IsIdleScreen {
-						c.Media.Title = ""
-					}
-
-					c.Media.SubTitle = data.Media.MetaData.SubTitle
-					c.Media.Url = data.Media.ContentId
-					c.Media.Duration = data.Media.Duration
-					if len(data.Media.MetaData.Images) > 0 {
-						c.Media.Thumb = data.Media.MetaData.Images[0].Url
-					} else {
-						c.Media.Thumb = ""
-					}
-				}
-			*/
 
 		default:
 			logrus.Warnf("unexpected event %T: %#v\n", data, data)

@@ -73,9 +73,14 @@ func (tunnel *tunnel) Send(event knx.GroupEvent) error {
 		event: event,
 		error: errCh,
 	}
+
+	delay := time.NewTimer(time.Second * 5)
 	select {
 	case tunnel.send <- s:
-	case <-time.After(time.Second * 5):
+		if !delay.Stop() {
+			<-delay.C
+		}
+	case <-delay.C:
 		return fmt.Errorf("timeout sending after 5 seconds")
 	}
 	return <-errCh
@@ -87,9 +92,13 @@ func (tunnel *tunnel) SendWait(event knx.GroupEvent) error {
 		event: event,
 		error: errCh,
 	}
+	delay := time.NewTimer(time.Second * 5)
 	select {
 	case tunnel.send <- s:
-	case <-time.After(time.Second * 5):
+		if !delay.Stop() {
+			<-delay.C
+		}
+	case <-delay.C:
 		return fmt.Errorf("timeout sending after 5 seconds")
 	}
 
@@ -98,12 +107,15 @@ func (tunnel *tunnel) SendWait(event knx.GroupEvent) error {
 		return err
 	}
 
-	after := time.After(time.Millisecond * 500)
+	delay2 := time.NewTimer(time.Millisecond * 500)
 	for {
 		select {
-		case <-after:
+		case <-delay2.C:
 			return fmt.Errorf("timeout waiting for response after 500ms")
 		case addr := <-tunnel.receive:
+			if !delay2.Stop() {
+				<-delay2.C
+			}
 			if addr == event.Destination {
 				return nil
 			}

@@ -86,10 +86,14 @@ func (n *Nibe) Read(reg uint16) (uint16, error) {
 		result:   result,
 	}
 
+	delay := time.NewTimer(time.Second * 5)
 	select {
 	case res := <-result:
+		if !delay.Stop() {
+			<-delay.C
+		}
 		return res, nil
-	case <-time.After(time.Second * 5):
+	case <-delay.C:
 		return 0, fmt.Errorf("Timeout")
 	}
 }
@@ -102,10 +106,14 @@ func (n *Nibe) Write(reg uint16, value int16) (uint16, error) {
 		result:   result,
 	}
 
+	delay := time.NewTimer(time.Second * 5)
 	select {
 	case res := <-result:
+		if !delay.Stop() {
+			<-delay.C
+		}
 		return res, nil
-	case <-time.After(time.Second * 5):
+	case <-delay.C:
 		return 0, fmt.Errorf("Timeout")
 	}
 }
