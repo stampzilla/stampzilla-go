@@ -205,28 +205,22 @@ func getDailyCelFunc() *functions.Overload {
 	return &functions.Overload{
 		Operator: "daily_string_string",
 		Binary: func(from ref.Val, to ref.Val) ref.Val {
-			now := time.Now().UTC()
-			z, _ := now.Zone()
-			loc, err := time.LoadLocation(z)
+			now := time.Now()
+			start, err := time.Parse("15:04", from.Value().(string))
 			if err != nil {
 				return types.NewErr(err.Error())
 			}
-			start, err := time.ParseInLocation("15:04", from.Value().(string), loc)
-			if err != nil {
-				return types.NewErr(err.Error())
-			}
-			end, err := time.ParseInLocation("15:04", to.Value().(string), loc)
+			end, err := time.Parse("15:04", to.Value().(string))
 			if err != nil {
 				return types.NewErr(err.Error())
 			}
 
-			today := now.Truncate(24 * time.Hour)
-			n := start.Truncate(24 * time.Hour).Add(now.Sub(today))
-
-			if inTimeSpan(start, end, n) {
-				return types.Bool(true)
+			n, err := time.Parse("15:04", now.Format("15:04"))
+			if err != nil {
+				return types.NewErr(err.Error())
 			}
-			return types.Bool(false)
+
+			return types.Bool(inTimeSpan(start, end, n))
 		},
 	}
 }
@@ -312,10 +306,10 @@ func (r *Rule) SyncActions(actions ActionStore) {
 }
 */
 
-//func (r *Rule) MarshalJSON() ([]byte, error) {
-//r.RLock()
-//defer r.RUnlock()
-//type LocalRule Rule
+// func (r *Rule) MarshalJSON() ([]byte, error) {
+// r.RLock()
+// defer r.RUnlock()
+// type LocalRule Rule
 ////TODO find a way to solve call of LocalRule copies lock value: logic.Rule (vet)
-//return json.Marshal(LocalRule(*r))
+// return json.Marshal(LocalRule(*r))
 //}
