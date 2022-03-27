@@ -101,6 +101,15 @@ func TestEval(t *testing.T) {
 			Expression: `daily("00:00", "00:01") && devices["node.id"].on == true`,
 			Expected:   false, // Yes this will fail between 00:00 and 00:01. TODO implement some nowFunc which we can overwride in tests
 		},
+		/*
+			{
+				State: devices.State{
+					"on": true,
+				},
+				Expression: `daily("17:00", "22:00") && devices["node.id"].on == true`,
+				Expected:   false, // Yes this will fail between 00:00 and 00:01. TODO implement some nowFunc which we can overwride in tests
+			},
+		*/
 	}
 
 	for _, v := range tests {
