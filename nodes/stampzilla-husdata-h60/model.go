@@ -68,9 +68,6 @@ func (ss *number) UnmarshalJSON(data []byte) error {
 }
 
 type HeatPump struct {
-	RoomSensorInfluence           number        `json:"2204"` // Number /10
-	AddHeatStatus                 int           `json:"3104"`
-	ExtraWarmWater                int           `json:"6209"` // Hours
 	RadiatorForward               number        `json:"0002"` // Degrees /10
 	HeatCarrierReturn             number        `json:"0003"` // Degrees /10
 	HeatCarrierForward            number        `json:"0004"` // Degrees /10
@@ -97,14 +94,21 @@ type HeatPump struct {
 	CrankCaseHeater               int           `json:"1A0D"` // Bool
 	Alarm                         int           `json:"1A20"` // Bool
 	PumpRadiator2                 int           `json:"1A21"` // Bool
+	AddHeatStatus                 int           `json:"3104"`
 	WarmWaterSetpoint             number        `json:"0111"` // Degrees /10
 	HeatingSetpoint               number        `json:"0107"` // Degrees /10
 	HeatingSetpoint2              number        `json:"0120"` // Degrees /10
 	RoomTempSetpoint              number        `json:"0203"` // Degrees /10
+	RoomSensorInfluence           number        `json:"2204"` // Number /10
 	HeatSet1CurveL                number        `json:"0205"` // Degrees /10
 	HeatSet2CurveR                number        `json:"0206"` // Degrees /10
 	HeatSet1CurveL2               number        `json:"0222"` // Degrees /10
 	HeatSet2CurveR2               number        `json:"0223"` // Degrees /10
+	ExtraWarmWater                int           `json:"6209"` // Hours
+	WarmWaterProgram              int           `json:"2213"`
+	ExternalControl               int           `json:"2233"`
+	ExternalControl2              int           `json:"2234"`
+	OutdoorTempOffset             number        `json:"0217"`
 	PoolTempSetpoint              number        `json:"0219"` // Degrees /10
 	CollectedPulsesMeter1         int           `json:"AFF1"`
 	CollectedPulsesMeter2         int           `json:"AFF2"`
