@@ -31,7 +31,7 @@ func (d *Destination) Equal(dest *Destination) bool {
 	}
 	// TODO: compare!
 	// if d.Labels != dest.Labels {
-	//return false
+	// return false
 	//}
 	if d.Sender != dest.Sender {
 		return false

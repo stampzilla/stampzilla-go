@@ -35,10 +35,15 @@ func main() {
 				continue
 			}
 
-			switch va.Type {
+			v := va
+			switch v.Type {
+			case "float":
+				state.Float(va.Name, func(f float64) {
+					err = set(config, v, f)
+				})
 			case "int":
 				state.Float(va.Name, func(f float64) { // all json numbers are float64 in go
-					err = set(config, va, f)
+					err = set(config, v, f)
 				})
 			}
 			if err != nil {
@@ -153,10 +158,10 @@ func set(config *Config, v Variables, val float64) error {
 
 	switch v.Type {
 	case "float":
-		// TODO SRP Set real segment var.
-		return fmt.Errorf("not implemented yet")
+		err = exoline.SRP(buf, conn, v.LoadNumber, v.Cell, val)
+		logrus.Infof("sending SRP to ln: %d cell: %d val: %f", v.LoadNumber, v.Cell, val)
 	case "bool":
-		//TODO SLP Set logic segment var.
+		// TODO SLP Set logic segment var.
 		return fmt.Errorf("not implemented yet")
 	case "int":
 		i := int(val)

@@ -40,12 +40,12 @@ func main() {
 	// read(buff)
 	// os.Exit(0)
 
-	//data := []byte{0x3d, 0x5, 0x0, 0xff, 0x1b, 0x41, 0x92, 0x3e}
-	//value := data[3 : len(data)-2]
-	//if len(value) == 3 {
-	//value = append(value, 0)
-	//copy(value[1:], value)
-	//value[0] = 0x00
+	// data := []byte{0x3d, 0x5, 0x0, 0xff, 0x1b, 0x41, 0x92, 0x3e}
+	// value := data[3 : len(data)-2]
+	// if len(value) == 3 {
+	// value = append(value, 0)
+	// copy(value[1:], value)
+	// value[0] = 0x00
 	//}
 
 	// fmt.Println(decodeInt(value))
@@ -129,7 +129,7 @@ func compileMsg(b []byte) []byte {
 		}
 	}
 
-	//[]byte{0x3c, 0xff, 0x1e, 0xc8, 0x04, 0xb6, 0x03, 0x02, 0x0c, 0x96, 0x3e}
+	// []byte{0x3c, 0xff, 0x1e, 0xc8, 0x04, 0xb6, 0x03, 0x02, 0x0c, 0x96, 0x3e}
 	msg := []byte{0x3c}
 
 	for _, a := range b {
@@ -193,16 +193,16 @@ func read(buf *bufio.Reader) {
 	}
 	// fmt.Println()
 
-	//if msg[1] != 0x05 && msg[2] != 0x00 {
-	//return
+	// if msg[1] != 0x05 && msg[2] != 0x00 {
+	// return
 	//}
 
 	f, _ := decodeFloat(msg[3 : len(msg)-2])
-	//if err != nil {
-	//if err != nil {
-	//return
+	// if err != nil {
+	// if err != nil {
+	// return
 	//}
-	//return
+	// return
 	//}
 	if f != 0.0 {
 		fmt.Print(" decode float:", f)

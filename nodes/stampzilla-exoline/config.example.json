@@ -30,7 +30,8 @@
             "name": "SetSupplyAir",
             "loadNumber": 4,
             "cell": 8,
-            "type": "float"
+            "type": "float",
+			"write": true
         },
         {
             "name": "HeatingValve",
