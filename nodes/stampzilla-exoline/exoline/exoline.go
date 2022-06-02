@@ -11,11 +11,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func Float64bytes(float float64) []byte {
-	bits := math.Float64bits(float)
-	//TODO to be able to SRP Set real segment var. make sure its 4 bytes (32 uint)
-	bytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(bytes, bits)
+func FloatTobytes(float float64) []byte {
+	bits := math.Float32bits(float32(float))
+	bytes := make([]byte, 4)
+	binary.LittleEndian.PutUint32(bytes, bits)
 	return bytes
 }
 
@@ -38,13 +37,14 @@ func generateMsg(op, ln, cell int) []byte {
 	addr[7] = byte(cell % 60)
 	return addr
 }
-func generateWriteMsg(op, ln, cell, value int) []byte {
+
+func generateWriteMsg(op, ln, cell int, value []byte) []byte {
 	// addr[3] seems to be 0x05 for writing
-	addr := []byte{0xff, 0x1e, 0xc8, 0x05, byte(op), 0x04, 0x08, 0x00, 0x00}
+	addr := []byte{0xff, 0x1e, 0xc8, byte(4 + len(value)), byte(op), 0x04, 0x08, 0x00}
 	addr[5] = byte(ln)
 	addr[6] = byte(cell / 60)
 	addr[7] = byte(cell % 60)
-	addr[8] = byte(value)
+	addr = append(addr, value...)
 	return addr
 }
 
@@ -75,6 +75,20 @@ func RLP(buf *bufio.Reader, w io.Writer, ln, cell int) (bool, error) {
 	return false, nil
 }
 
+// SRP Set real segment var.
+func SRP(buf *bufio.Reader, w io.Writer, ln, cell int, val float64) error {
+	addr := generateWriteMsg(0x32, ln, cell, FloatTobytes(val))
+	b, err := Send(buf, w, addr)
+	if err != nil {
+		return err
+	}
+	// TODO verify this is working
+	if !bytes.Equal(b, []byte{0x3d, 0x1, 0x0, 0x1, 0x3e}) {
+		return fmt.Errorf("error response after SRP got: %s", PrintHex(b))
+	}
+	return nil
+}
+
 // RXP reads index segment var. (verified working).
 func RXP(buf *bufio.Reader, w io.Writer, ln, cell int) (int, error) {
 	addr := generateMsg(0x34, ln, cell)
@@ -91,7 +105,7 @@ func RXP(buf *bufio.Reader, w io.Writer, ln, cell int) (int, error) {
 
 // SXP send index segment.
 func SXP(buf *bufio.Reader, w io.Writer, ln, cell, val int) error {
-	addr := generateWriteMsg(0xb0, ln, cell, val)
+	addr := generateWriteMsg(0xb0, ln, cell, []byte{byte(val)})
 	b, err := Send(buf, w, addr)
 	if err != nil {
 		return err
@@ -181,7 +195,7 @@ func compileMsg(b []byte) []byte {
 		}
 	}
 
-	//[]byte{0x3c, 0xff, 0x1e, 0xc8, 0x04, 0xb6, 0x03, 0x02, 0x0c, 0x96, 0x3e}
+	// []byte{0x3c, 0xff, 0x1e, 0xc8, 0x04, 0xb6, 0x03, 0x02, 0x0c, 0x96, 0x3e}
 	msg := []byte{0x3c}
 
 	for _, a := range b {

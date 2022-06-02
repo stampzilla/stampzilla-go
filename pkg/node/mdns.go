@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/mdns"
 	"github.com/sirupsen/logrus"
@@ -30,7 +31,15 @@ func queryMDNS() (string, string, string) {
 			case <-ctx.Done():
 				return
 			default:
-				mdns.Lookup("_stampzilla._tcp", entriesCh)
+				// mdns.Lookup("_stampzilla._tcp", entriesCh)
+				params := mdns.DefaultParams("_stampzilla._tcp")
+				params.Entries = entriesCh
+				params.Timeout = time.Second * 5
+				params.DisableIPv6 = true
+				err := mdns.Query(params)
+				if err != nil {
+					logrus.Error(err)
+				}
 			}
 		}
 	}()

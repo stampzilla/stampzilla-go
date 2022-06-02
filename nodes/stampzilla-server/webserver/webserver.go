@@ -443,7 +443,7 @@ func (ws *Webserver) login(c *gin.Context, user *persons.Person) error {
 	session := sessions.Default(c)
 	// TODO make this configurable? must use this if running server and ui with npm run dev
 	// or just use proxy in npm run?
-	//session.Options(sessions.Options{
+	// session.Options(sessions.Options{
 	//SameSite: http.SameSiteNoneMode,
 	//Secure:   true,
 	//})
