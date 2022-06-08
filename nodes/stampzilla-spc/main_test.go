@@ -11,7 +11,7 @@ import (
 )
 
 func TestUpdateStateFromUDP(t *testing.T) {
-	//logrus.SetLevel(logrus.DebugLevel)
+	// logrus.SetLevel(logrus.DebugLevel)
 	main, _, cleanup := e2e.SetupWebsocketTest(t)
 	defer cleanup()
 	e2e.AcceptCertificateRequest(t, main)
@@ -27,8 +27,8 @@ func TestUpdateStateFromUDP(t *testing.T) {
 	e2e.WaitFor(t, 1*time.Second, "we should have 1 device", func() bool {
 		return len(main.Store.GetDevices().All()) == 1
 	})
-	//spew.Dump(main.Store.Devices.All())
-	//spew.Dump(node.Devices.All())
+	// spew.Dump(main.Store.Devices.All())
+	// spew.Dump(node.Devices.All())
 
 	// Assert that the device exists in the server after we got UDP packet
 	assert.Equal(t, "Zone Kök IR", main.Store.GetDevices().Get(devices.ID{ID: "zone.8", Node: node.UUID}).Name)
