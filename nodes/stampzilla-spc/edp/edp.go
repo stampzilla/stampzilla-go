@@ -11,9 +11,10 @@ import (
 )
 
 type Packet struct {
-	Zone     int
+	Area     int
 	ID       string
 	Name     string
+	UserName string
 	Class    string
 	Time     time.Time
 	SystemID int
@@ -27,29 +28,39 @@ func Decode(data []byte) (*Packet, error) {
 		return nil, err
 	}
 
-	name := bytes.Split(tmp[4], []byte{0xa6}) // this is ¦ in Kök IR¦ZONE¦1¦Larm
-	if len(name) < 3 {
-		return nil, fmt.Errorf("unsupported edp packet: %s", string(data))
-	}
-
-	zone, err := strconv.Atoi(string(name[2])) // TODO it might not always be zone in this one. Check for unsupported edp packet errors.
-	if err != nil {
-		return nil, err
-	}
-
 	t, err := time.Parse("15040502012006", string(tmp[1]))
 	if err != nil {
 		return nil, err
 	}
 
-	return &Packet{
+	extraInfo := bytes.Split(tmp[4], []byte{0xa6}) // this is ¦ in Kök IR¦ZONE¦1¦Larm
+
+	pkt := &Packet{
 		ID:       string(tmp[3]),
-		Name:     toUtf8(name[0]),
-		Zone:     zone,
+		Name:     toUtf8(extraInfo[0]),
 		Class:    string(tmp[2]),
 		SystemID: systemid,
 		Time:     t,
-	}, nil
+	}
+
+	if len(extraInfo) < 3 {
+		return pkt, nil
+	}
+
+	if len(extraInfo) == 4 && string(extraInfo[1]) == "ZONE" {
+		// [#1000|07442202062022|FA|1|Brandvarnare¦ZONE¦2¦Brandlarm||0]
+		i, err := strconv.Atoi(string(extraInfo[2]))
+		if err != nil {
+			return nil, err
+		}
+		pkt.Area = i
+	}
+	if len(extraInfo) == 3 {
+		// E2[#1000|19531104112020|OG|1|Larm¦Jonas¦1||0] disarm area
+		pkt.UserName = string(extraInfo[1])
+	}
+
+	return pkt, nil
 }
 
 func toUtf8(data []byte) string {
@@ -61,13 +72,15 @@ func toUtf8(data []byte) string {
 	return string(buf)
 }
 
-func GenerateDevice(pkg *Packet) *devices.Device {
+// GenerateDevice returns stampzilla device and area id if the packet had that.
+func GenerateDevice(pkg *Packet) (*devices.Device, *devices.Device) {
 	state := devices.State{}
 	var prefix string
+	var name string
+	var updateAreaDev bool
 
 	switch pkg.Class {
 	case "ZO": // open zone
-		// TODO call it on? or open? or triggered? or active? :)
 		state["on"] = true
 		prefix = "zone"
 	case "ZC": // close zone
@@ -84,8 +97,61 @@ func GenerateDevice(pkg *Packet) *devices.Device {
 	case "OG": // open area
 		state["armed"] = false
 		prefix = "area"
+	case "FA": // fire alarm
+		state["fire"] = true
+		prefix = "zone"
+		updateAreaDev = true
+	case "FR": // fire restoral
+		state["fire"] = false
+		prefix = "zone"
+		updateAreaDev = true
+	case "BA": // Burglary Alarm
+		state["alarm"] = true
+		prefix = "zone"
+		updateAreaDev = true
+	case "BV": // Burglary Verified
+		state["verified"] = true
+		prefix = "area"
+	case "BR": // Burglary Restoral
+		state["alarm"] = false
+		state["verified"] = false
+		prefix = "zone"
+		updateAreaDev = true
+	case "BT": // Burglary Trouble
+		state["error"] = true
+		prefix = "zone"
+	case "BJ": // Burglary Trouble Restore
+		state["error"] = false
+		prefix = "zone"
+	case "YS": // Communications Trouble
+		// [#1000|19480006062022|YS|1|Telelinjefel\xa61||0]
+		state["error"] = true
+		prefix = "modem"
+		name = "Modem"
+	case "YK": // Communications Restoral
+		// [#1000|21023306062022|YK|1|Telelinjefel \xe5terst\xe4llt\xa61||0]
+		state["error"] = false
+		prefix = "modem"
+		name = "Modem"
 	default:
-		return nil
+		return nil, nil
+	}
+
+	var areaDev *devices.Device
+
+	if updateAreaDev {
+		areaDev = &devices.Device{
+			Type: "sensor",
+			ID: devices.ID{
+				ID: "area." + strconv.Itoa(pkg.Area),
+			},
+			Online: true,
+			State:  state,
+		}
+	}
+
+	if name == "" {
+		name = fmt.Sprintf("%s %s", strings.Title(prefix), pkg.Name)
 	}
 
 	return &devices.Device{
@@ -93,8 +159,8 @@ func GenerateDevice(pkg *Packet) *devices.Device {
 		ID: devices.ID{
 			ID: prefix + "." + pkg.ID,
 		},
-		Name:   fmt.Sprintf("%s %s", strings.Title(prefix), pkg.Name),
+		Name:   name,
 		Online: true,
 		State:  state,
-	}
+	}, areaDev
 }

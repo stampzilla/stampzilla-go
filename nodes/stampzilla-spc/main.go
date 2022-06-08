@@ -74,7 +74,7 @@ func decodeAndSync(buf []byte, node *node.Node) error {
 	}
 
 	dev := node.GetDevice(pkg.ID)
-	newDev := edp.GenerateDevice(pkg)
+	newDev, areaDev := edp.GenerateDevice(pkg)
 
 	if dev == nil && newDev != nil {
 		node.AddOrUpdate(newDev)
@@ -85,7 +85,11 @@ func decodeAndSync(buf []byte, node *node.Node) error {
 		logrus.Warnf("unsupported packet class %s data: %s", pkg.Class, string(buf[23:]))
 		return nil
 	}
-	node.UpdateState(pkg.ID, newDev.State)
+
+	if areaDev != nil {
+		node.UpdateState(areaDev.ID.ID, areaDev.State)
+	}
+	node.UpdateState(newDev.ID.ID, newDev.State)
 	return nil
 }
 
