@@ -1,0 +1,23 @@
+{
+	"host": "192.168.13.42",
+	"port": "10001",
+	"devices": [
+		{
+			"name": "Electrical Meter",
+			"interval": "30s",
+			"primaryAddress": 1,
+			"Frames": {
+				"0": [
+					{
+						"id": 0,
+						"name": "total"
+					},
+					{
+						"id": 1,
+						"name": "current"
+					}
+				]
+			}
+		}
+	]
+}

@@ -94,7 +94,7 @@ func TestModemFail(t *testing.T) {
 	assert.Equal(t, "modem.1", dev1.ID.ID)
 	assert.Equal(t, "Modem", dev1.Name)
 	assert.Equal(t, true, dev1.State["error"])
-	//spew.Dump(dev1)
+	// spew.Dump(dev1)
 }
 func TestModemFailRestore(t *testing.T) {
 	str := []byte("[#1000|21023306062022|YK|1|Telelinjefel \xe5terst\xe4llt\xa61||0]")
@@ -108,5 +108,5 @@ func TestModemFailRestore(t *testing.T) {
 	assert.Equal(t, "modem.1", dev1.ID.ID)
 	assert.Equal(t, "Modem", dev1.Name)
 	assert.Equal(t, false, dev1.State["error"])
-	//spew.Dump(dev1)
+	// spew.Dump(dev1)
 }
