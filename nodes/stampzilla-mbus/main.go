@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"strconv"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/jonaz/gombus"
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
@@ -17,16 +19,38 @@ import (
 
 var configUpdated chan struct{}
 var worker = NewWorker()
+var debug bool
 
 func main() {
+	if os.Getenv("STAMPZILLA_DEBUG") != "" {
+		debug = true
+	}
 	start()
 }
 
 func start() {
 	config := NewConfig()
 
-	node := setupNode(config)
+	if debug {
+		file, err := os.Open("config.json")
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
 
+		err = json.NewDecoder(file).Decode(&config)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
+		spew.Dump("config: ", config)
+		node := setupNode(config)
+		worker.Start(context.Background(), 1)
+		startLoops(context.Background(), config, node)
+		select {}
+	}
+
+	node := setupNode(config)
 	wait := node.WaitForFirstConfig()
 
 	err := node.Connect()
@@ -40,7 +64,6 @@ func start() {
 		logrus.Error(err)
 		return
 	}
-
 	mainCtx, mainCancel := context.WithCancel(context.Background())
 	worker.Start(mainCtx, 1)
 
@@ -79,7 +102,9 @@ func startLoops(ctx context.Context, config *Config, node *node.Node) {
 			State:  make(devices.State),
 		}
 
-		node.AddOrUpdate(dev)
+		if !debug {
+			node.AddOrUpdate(dev)
+		}
 		go tickerLoop(ctx, config, node, d)
 	}
 }
@@ -99,9 +124,13 @@ func tickerLoop(ctx context.Context, config *Config, node *node.Node, mbusDevice
 			worker.Do(func() error {
 				newState, err := fetchState(config, mbusDevice)
 				if err != nil {
-					return fmt.Errorf("error fetching mbus data: %w", err)
+					return fmt.Errorf("error fetching mbus data from device %d: %w", mbusDevice.PrimaryAddress, err)
 				}
-				node.UpdateState(strconv.Itoa(mbusDevice.PrimaryAddress), newState)
+				if debug {
+					spew.Dump("state", newState)
+				} else {
+					node.UpdateState(strconv.Itoa(mbusDevice.PrimaryAddress), newState)
+				}
 				return nil
 			}, nil)
 		case <-ctx.Done():
@@ -135,6 +164,19 @@ func fetchState(config *Config, device Device) (devices.State, error) {
 	}
 	defer conn.Close()
 
+	_, err = conn.Write(gombus.SndNKE(uint8(device.PrimaryAddress)))
+	if err != nil {
+		return nil, err
+	}
+	err = conn.SetReadDeadline(time.Now().Add(1 * time.Second))
+	if err != nil {
+		return nil, err
+	}
+	_, err = gombus.ReadSingleCharFrame(conn)
+	if err != nil {
+		return nil, err
+	}
+
 	frame, err := gombus.ReadSingleFrame(conn, device.PrimaryAddress)
 	if err != nil {
 		return nil, err
@@ -149,10 +191,11 @@ func fetchState(config *Config, device Device) (devices.State, error) {
 	for _, f := range device.Frames {
 		for _, r := range f {
 			dataRecord := frame.DataRecords[r.Id]
+			key := fmt.Sprintf("%s_%s", r.Name, dataRecord.Unit.Unit)
 			if dataRecord.ValueString != "" {
-				state[r.Name+dataRecord.Unit.Unit] = dataRecord.ValueString
+				state[key] = dataRecord.ValueString
 			} else {
-				state[r.Name+dataRecord.Unit.Unit] = dataRecord.Value
+				state[key] = dataRecord.Value
 			}
 		}
 	}

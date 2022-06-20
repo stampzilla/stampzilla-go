@@ -1,23 +1,49 @@
 {
-	"host": "192.168.13.42",
-	"port": "10001",
-	"devices": [
-		{
-			"name": "Electrical Meter",
-			"interval": "30s",
-			"primaryAddress": 1,
-			"Frames": {
-				"0": [
-					{
-						"id": 0,
-						"name": "total"
-					},
-					{
-						"id": 1,
-						"name": "current"
-					}
-				]
-			}
-		}
-	]
+    "host": "192.168.13.42",
+    "port": "10001",
+    "devices": [
+        {
+            "name": "Electrical Meter",
+            "interval": "30s",
+            "primaryAddress": 1,
+            "Frames": {
+                "0": [
+                    {
+                        "id": 0,
+                        "name": "total"
+                    },
+                    {
+                        "id": 2,
+                        "name": "current"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "Coldwater",
+            "interval": "10s",
+            "primaryAddress": 2,
+            "Frames": {
+                "0": [
+                    {
+                        "id": 6,
+                        "name": "total"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "Hotwater",
+            "interval": "10s",
+            "primaryAddress": 3,
+            "Frames": {
+                "0": [
+                    {
+                        "id": 6,
+                        "name": "total"
+                    }
+                ]
+            }
+        }
+    ]
 }
