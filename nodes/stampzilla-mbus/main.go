@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"net"
 	"os"
 	"strconv"
 	"time"
@@ -18,7 +17,7 @@ import (
 )
 
 var configUpdated chan struct{}
-var worker = NewWorker()
+var worker *Worker
 var debug bool
 
 func main() {
@@ -30,6 +29,7 @@ func main() {
 
 func start() {
 	config := NewConfig()
+	worker = NewWorker(config)
 
 	if debug {
 		file, err := os.Open("config.json")
@@ -121,8 +121,8 @@ func tickerLoop(ctx context.Context, config *Config, node *node.Node, mbusDevice
 		select {
 		case <-ticker.C:
 			// this makes sure we only use the mbus connection 1 at a time.
-			worker.Do(func() error {
-				newState, err := fetchState(config, mbusDevice)
+			worker.Do(func(conn *gombus.Conn) error {
+				newState, err := fetchState(conn, mbusDevice)
 				if err != nil {
 					return fmt.Errorf("error fetching mbus data from device %d: %w", mbusDevice.PrimaryAddress, err)
 				}
@@ -132,7 +132,7 @@ func tickerLoop(ctx context.Context, config *Config, node *node.Node, mbusDevice
 					node.UpdateState(strconv.Itoa(mbusDevice.PrimaryAddress), newState)
 				}
 				return nil
-			}, nil)
+			})
 		case <-ctx.Done():
 			// just stop and we will be restarted
 			return
@@ -157,14 +157,8 @@ func updatedConfig(config *Config) func(data json.RawMessage) error {
 	}
 }
 
-func fetchState(config *Config, device Device) (devices.State, error) {
-	conn, err := gombus.Dial(net.JoinHostPort(config.Host, config.Port))
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
-
-	_, err = conn.Write(gombus.SndNKE(uint8(device.PrimaryAddress)))
+func fetchState(conn *gombus.Conn, device Device) (devices.State, error) {
+	_, err := conn.Write(gombus.SndNKE(uint8(device.PrimaryAddress)))
 	if err != nil {
 		return nil, err
 	}
