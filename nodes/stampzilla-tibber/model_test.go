@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sort"
 	"testing"
 	"time"
 
@@ -271,5 +272,77 @@ func TestCalculateLevel(t *testing.T) {
 	t1 = time.Date(2020, 10, 10, 27, 0, 0, 0, time.UTC)
 	_, lvl = prices.calculateLevel(t1, 2.9)
 	t.Log("level: ", lvl)
+	assert.Equal(t, 2, lvl)
+
+	t1 = time.Date(2020, 10, 10, 9, 0, 0, 0, time.UTC)
+	_, lvl = prices.calculateLevel(t1, 5.0)
+	t.Log("level: ", lvl)
 	assert.Equal(t, 3, lvl)
+
+	ss := []Price{}
+	for _, p := range prices.prices {
+		ss = append(ss, p)
+	}
+	sort.Slice(ss, func(i, j int) bool {
+		return ss[j].Time.After(ss[i].Time)
+	})
+
+	for _, p := range ss {
+		diff, lvl := prices.calculateLevel(p.Time, p.Total)
+		t.Logf("%s price: %f lvl: %d diff: %f\n", p.Time, p.Total, lvl, diff)
+	}
+}
+
+func TestCheapestTimes(t *testing.T) {
+	t.Parallel()
+
+	hoursPrice := []struct {
+		hour  int
+		price float64
+	}{
+		{0, 0.5},
+		{1, 0.4},
+		{2, 0.6},
+		{3, 0.5},
+		{4, 0.5},
+		{5, 0.1},
+		{6, 1},
+		{7, 1},
+		{8, 5},
+		{9, 5},
+		{10, 1},
+		{11, 1},
+		{12, 1},
+		{13, 1},
+		{14, 1},
+		{15, 1},
+		{16, 1.5},
+		{17, 1.5},
+		{18, 1.5},
+		{19, 1.5},
+		{20, 0.9},
+		{21, 0.9},
+		{22, 0.9},
+		{23, 0.9},
+		{24, 0.9},
+		{25, 0.9},
+		{26, 1.4},
+		{27, 2.9},
+	}
+
+	prices := NewPrices()
+	for _, v := range hoursPrice {
+		prices.Add(newPriceTotal(v.hour, v.price))
+	}
+	first := time.Date(2020, 10, 10, 0, 0, 0, 0, time.UTC)
+
+	c := prices.calculateCheapestTimes(first, 3, 5)
+	t.Log(c)
+	for _, e := range c {
+		t.Log(e)
+	}
+
+	assert.Equal(t, time.Date(2020, 10, 10, 5, 0, 0, 0, time.UTC), c[0])
+	assert.Equal(t, time.Date(2020, 10, 10, 10, 0, 0, 0, time.UTC), c[1])
+	assert.Equal(t, time.Date(2020, 10, 10, 20, 0, 0, 0, time.UTC), c[2])
 }
