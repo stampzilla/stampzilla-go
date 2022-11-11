@@ -312,7 +312,7 @@ func (p *Prices) calculateLevel(t time.Time, total float64) (diff float64, lvl i
 		ss := []Price{}
 		p.mutex.Lock()
 		for _, t := range p.prices {
-			if s.Add(time.Hour*-24).After(t.Time) || t.Time.After(s) {
+			if t.Time.Before(s) { // Only calculate min/max against future prices.
 				continue
 			}
 			ss = append(ss, t)
@@ -347,9 +347,9 @@ func (p *Prices) calculateLevel(t time.Time, total float64) (diff float64, lvl i
 	diff = max - min
 
 	switch {
-	case total >= max-diff*0.2:
+	case total >= max-diff*0.25:
 		lvl = 3 // HIGH
-	case total <= min+diff*0.2:
+	case total <= min+diff*0.25:
 		lvl = 1 // LOW
 	default:
 		lvl = 2 // NORMAL

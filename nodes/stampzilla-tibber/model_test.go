@@ -267,17 +267,72 @@ func TestCalculateLevel(t *testing.T) {
 	t1 = time.Date(2020, 10, 10, 26, 0, 0, 0, time.UTC)
 	_, lvl = prices.calculateLevel(t1, 1.4)
 	t.Log("level: ", lvl)
-	assert.Equal(t, 2, lvl)
+	assert.Equal(t, 1, lvl)
 
 	t1 = time.Date(2020, 10, 10, 27, 0, 0, 0, time.UTC)
 	_, lvl = prices.calculateLevel(t1, 2.9)
 	t.Log("level: ", lvl)
-	assert.Equal(t, 2, lvl)
+	assert.Equal(t, 3, lvl)
 
 	t1 = time.Date(2020, 10, 10, 9, 0, 0, 0, time.UTC)
 	_, lvl = prices.calculateLevel(t1, 5.0)
 	t.Log("level: ", lvl)
 	assert.Equal(t, 3, lvl)
+
+	ss := []Price{}
+	for _, p := range prices.prices {
+		ss = append(ss, p)
+	}
+	sort.Slice(ss, func(i, j int) bool {
+		return ss[j].Time.After(ss[i].Time)
+	})
+
+	for _, p := range ss {
+		diff, lvl := prices.calculateLevel(p.Time, p.Total)
+		t.Logf("%s price: %f lvl: %d diff: %f\n", p.Time, p.Total, lvl, diff)
+	}
+}
+func TestCalculateLevel2(t *testing.T) {
+	t.Parallel()
+
+	hoursPrice := []struct {
+		hour  int
+		price float64
+	}{
+		{0, 0.79},
+		{1, 0.704},
+		{2, 0.549},
+		{3, 0.693},
+		{4, 0.688},
+		{5, 0.697},
+		{6, 0.709},
+		{7, 0.713},
+		{8, 0.762},
+		{9, 0.841},
+		{10, 1.01},
+		{11, 1.11},
+		{12, 1.12},
+		{13, 1.11},
+		{14, 1.11},
+		{15, 1.11},
+		{16, 1.11},
+		{17, 1.12},
+		{18, 1.12},
+		{19, 1.06},
+		{20, 1.11},
+		{21, 1.10},
+		{22, 1.10},
+		{23, 1.12},
+		{24, 0.549},
+		{25, 0.693},
+		{26, 0.688},
+		{27, 0.697},
+	}
+
+	prices := NewPrices()
+	for _, v := range hoursPrice {
+		prices.Add(newPriceTotal(v.hour, v.price))
+	}
 
 	ss := []Price{}
 	for _, p := range prices.prices {
