@@ -276,8 +276,8 @@ github.com/stamp/hid v0.0.0-20190105143849-bc55d7d13ce1 h1:BG7MhC3qshAG6YSA1JiTF
 github.com/stamp/hid v0.0.0-20190105143849-bc55d7d13ce1/go.mod h1:8a9qaZSBHmyhaqWfYpMnsvd4paEG6AGdl1TAy+gQkd4=
 github.com/stamp/mdns v0.0.0-20190125083120-df204ac59ca1 h1:jyz3mRLWb5vddsc4uJ2phQFBRLoT1kCqWDI6EPJeSBw=
 github.com/stamp/mdns v0.0.0-20190125083120-df204ac59ca1/go.mod h1:9mFtaGN6WXY4xq6Nb2tbURezOfVh0KX2KgbpaWwcoiA=
-github.com/stampzilla/gocast v0.5.1 h1:81/EVzCb93j299eGk5Z7VBsUb/XTktseMhZMdvClJGI=
-github.com/stampzilla/gocast v0.5.1/go.mod h1:GzKoxcLnVePtQqhWWubC4tZkoBcpLsCTU4W9gXtdO9o=
+github.com/stampzilla/gocast v0.5.2 h1:4oTT42YA5egfsTxKLlmveDj4f0QVM+5mKf5tHr4+7Jw=
+github.com/stampzilla/gocast v0.5.2/go.mod h1:GzKoxcLnVePtQqhWWubC4tZkoBcpLsCTU4W9gXtdO9o=
 github.com/stampzilla/gozwave v0.0.0-20190221183844-576012815e01 h1:GRRheWNWtlXb+948wNX/bCQoLteqNi5B8Lx56cTDgp8=
 github.com/stampzilla/gozwave v0.0.0-20190221183844-576012815e01/go.mod h1:wlBQc7Be/mfObs+lwcTwSUss/xnjAoGmSHJGFDFe/mU=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
