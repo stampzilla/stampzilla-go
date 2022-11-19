@@ -38,7 +38,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stamp/hid v0.0.0-20190105143849-bc55d7d13ce1
 	github.com/stamp/mdns v0.0.0-20190125083120-df204ac59ca1
-	github.com/stampzilla/gocast v0.5.1
+	github.com/stampzilla/gocast v0.5.2
 	github.com/stampzilla/gozwave v0.0.0-20190221183844-576012815e01
 	github.com/stretchr/testify v1.7.0
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
