@@ -50,7 +50,7 @@ func build(n []string, update bool) error {
 			}
 		}
 
-		err := GoGet("github.com/stampzilla/stampzilla-go/v2/nodes/" + name)
+		err := GoGet(name)
 		if err != nil {
 			return err
 		}
@@ -61,17 +61,18 @@ func build(n []string, update bool) error {
 
 var gitDir = filepath.Join("/home", "stampzilla", "go", "src", "github.com", "stampzilla", "stampzilla-go")
 
-func GoGet(url string) error {
-	logrus.Info("building " + filepath.Base(url) + "... ")
+func GoGet(name string) error {
+	tmp := strings.Split(name, "@")
+	at := "master"
+	if len(tmp) == 2 {
+		name = tmp[0]
+		at = tmp[1]
+	}
+	logrus.Infof("building %s@%s", name, at)
 
 	pwd, _ := os.Getwd()
 	defer os.Chdir(pwd)
 	os.Chdir("/tmp")
-
-	gobin, err := exec.LookPath("go")
-	if err != nil {
-		return fmt.Errorf("LookPath Error: %s", err.Error())
-	}
 
 	// _, err = Run(gobin, "get", "-u", "-d", "github.com/stampzilla/stampzilla-go")
 	if _, err := os.Stat(gitDir); os.IsNotExist(err) {
@@ -82,16 +83,21 @@ func GoGet(url string) error {
 	}
 	os.Chdir(gitDir)
 
-	_, err = Run("git", "pull")
+	_, err := Run("git", "pull")
 	if err != nil {
 		return err
 	}
 
-	_, err = Run(gobin, "mod", "download")
+	_, err = Run("git", "checkout", at)
 	if err != nil {
 		return err
 	}
-	_, err = Run(gobin, getArgs(filepath.Base(url))...)
+
+	_, err = Run("go", "mod", "download")
+	if err != nil {
+		return err
+	}
+	_, err = Run("go", getArgs(name)...)
 	return err
 }
 
@@ -117,12 +123,9 @@ func Run(head string, parts ...string) (string, error) {
 	var err error
 	var out []byte
 
-	head, err = exec.LookPath(head)
-	if err != nil {
-		return "", err
-	}
-
 	cmd := exec.Command(head, parts...)
+
+	logrus.Debugf("running command: %s %s", head, strings.Join(parts, " "))
 
 	if current, iErr := user.Current(); iErr == nil && current.Username != "stampzilla" {
 		user, err := user.Lookup("stampzilla")
