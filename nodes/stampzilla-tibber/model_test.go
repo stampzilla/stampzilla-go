@@ -308,25 +308,28 @@ func TestCalculateLevel2(t *testing.T) {
 		{6, 0.709},
 		{7, 0.713},
 		{8, 0.762},
-		{9, 0.841},
-		{10, 1.01},
-		{11, 1.11},
-		{12, 1.12},
-		{13, 1.11},
-		{14, 1.11},
-		{15, 1.11},
+		{9, 2.0},
+		{10, 2.01},
+		{11, 2.11},
+		{12, 2.12},
+		{13, 2.11},
+		{14, 2.11},
+		{15, 2.11},
 		{16, 1.11},
-		{17, 1.12},
-		{18, 1.12},
-		{19, 1.06},
+		{17, 0.02}, // this is more than 12h before 30 so should not affect level which means 30 is level 1
+		{18, 1.01},
+		{19, 1.01},
 		{20, 1.11},
 		{21, 1.10},
 		{22, 1.10},
 		{23, 1.12},
-		{24, 0.549},
-		{25, 0.693},
-		{26, 0.688},
-		{27, 0.697},
+		{24, 1.549},
+		{25, 1.693},
+		{26, 1.688},
+		{27, 1.697},
+		{28, 1.697},
+		{29, 1.697},
+		{30, 0.5},
 	}
 
 	prices := NewPrices()
@@ -341,6 +344,11 @@ func TestCalculateLevel2(t *testing.T) {
 	sort.Slice(ss, func(i, j int) bool {
 		return ss[j].Time.After(ss[i].Time)
 	})
+
+	t1 := time.Date(2020, 10, 11, 6, 0, 0, 0, time.UTC)
+	_, lvl := prices.calculateLevel(t1, 0.5)
+	t.Log("level: ", lvl)
+	assert.Equal(t, 1, lvl)
 
 	for _, p := range ss {
 		diff, lvl := prices.calculateLevel(p.Time, p.Total)

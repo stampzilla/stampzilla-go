@@ -267,6 +267,9 @@ func (p *Prices) SortedByTime() []Price {
 func isSameHourAndDay(t1, t2 time.Time) bool {
 	return t1.Truncate(1 * time.Hour).Equal(t2.Truncate(1 * time.Hour))
 }
+func isSameDay(t1, t2 time.Time) bool {
+	return t1.Truncate(24 * time.Hour).Equal(t2.Truncate(24 * time.Hour))
+}
 
 func inTimeSpan(start, end, check time.Time) bool {
 	if start.Before(end) {
@@ -312,7 +315,9 @@ func (p *Prices) calculateLevel(t time.Time, total float64) (diff float64, lvl i
 		ss := []Price{}
 		p.mutex.Lock()
 		for _, t := range p.prices {
-			if t.Time.Before(s) { // Only calculate min/max against future prices.
+			// if t.Time.Before(s) { // Only calculate min/max against future prices.
+			// if !isSameDay(t.Time, s) { // only compare with those of the same date.
+			if t.Time.After(s.Add(12*time.Hour)) || t.Time.Before(s.Add(-12*time.Hour)) {
 				continue
 			}
 			ss = append(ss, t)
@@ -333,6 +338,7 @@ func (p *Prices) calculateLevel(t time.Time, total float64) (diff float64, lvl i
 				return ss[i].Total > ss[j].Total
 			}
 		})
+
 		return ss[0].Total
 	}
 
