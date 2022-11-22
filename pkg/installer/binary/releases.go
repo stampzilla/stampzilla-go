@@ -22,16 +22,16 @@ func GetReleases() []*github.RepositoryRelease {
 
 	// req, err := http.NewRequest("GET", url, nil)
 	// if err != nil {
-	//log.Fatal("NewRequest: ", err)
-	//return []Release{}
+	// log.Fatal("NewRequest: ", err)
+	// return []Release{}
 	//}
 
 	// client := &http.Client{}
 
 	// resp, err := client.Do(req)
 	// if err != nil {
-	//log.Fatal("Do: ", err)
-	//return []Release{}
+	// log.Fatal("Do: ", err)
+	// return []Release{}
 	//}
 
 	// defer resp.Body.Close()

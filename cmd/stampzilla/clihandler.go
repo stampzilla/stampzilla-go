@@ -21,7 +21,7 @@ import (
 	"github.com/stampzilla/stampzilla-go/v2/pkg/installer"
 	"github.com/stampzilla/stampzilla-go/v2/pkg/installer/binary"
 	"github.com/stampzilla/stampzilla-go/v2/pkg/runner"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 type cliHandler struct {
@@ -95,19 +95,19 @@ func (t *cliHandler) runInstaller(c *cli.Context, i installer.Installer) error {
 	}
 
 	if c.Bool("u") {
-		err = i.Update(c.Args()...)
+		err = i.Update(c.Args().Slice()...)
 	} else {
-		err = i.Install(c.Args()...)
+		err = i.Install(c.Args().Slice()...)
 	}
 	if err != nil {
 		return err
 	}
 
-	if c.GlobalBool("systemd") || c.GlobalBoolT("systemd") {
+	if c.Bool("systemd") {
 		r := &runner.Systemd{}
 		defer r.Close()
-		if len(c.Args()) > 0 {
-			for _, node := range c.Args() {
+		if c.Args().Len() > 0 {
+			for _, node := range c.Args().Slice() {
 				err := r.GenerateUnit(node)
 				if err != nil {
 					return err
@@ -136,14 +136,14 @@ func (t *cliHandler) Start(c *cli.Context) error {
 	requireRoot()
 	r := getRunner(c)
 	defer r.Close()
-	return r.Start(c.Args()...)
+	return r.Start(c.Args().Slice()...)
 }
 
 func (t *cliHandler) Stop(c *cli.Context) error {
 	requireRoot()
 	r := getRunner(c)
 	defer r.Close()
-	return r.Stop(c.Args()...)
+	return r.Stop(c.Args().Slice()...)
 }
 
 func (t *cliHandler) Restart(c *cli.Context) error {
@@ -151,7 +151,7 @@ func (t *cliHandler) Restart(c *cli.Context) error {
 	r := getRunner(c)
 	defer r.Close()
 
-	return r.Restart(c.Args()...)
+	return r.Restart(c.Args().Slice()...)
 }
 
 func (t *cliHandler) Status(c *cli.Context) error {
@@ -165,7 +165,7 @@ func (t *cliHandler) Disable(c *cli.Context) error {
 	requireRoot()
 	r := &runner.Systemd{}
 	defer r.Close()
-	return r.Disable(c.Args()...)
+	return r.Disable(c.Args().Slice()...)
 }
 
 func (t *cliHandler) Debug(c *cli.Context) error {
@@ -195,7 +195,7 @@ func (t *cliHandler) Log(c *cli.Context) error {
 	follow := c.Bool("f")
 
 	var cmd *exec.Cmd
-	if c.GlobalBool("systemd") || c.GlobalBoolT("systemd") {
+	if c.Bool("systemd") {
 		cmd = exec.Command("journalctl", "-u", runner.GetProcessName(c.Args().First()))
 		if follow {
 			cmd = exec.Command("journalctl", "-f", "-u", runner.GetProcessName(c.Args().First()))
@@ -322,7 +322,7 @@ func getNodesFromDisk() ([]string, error) {
 }
 
 func getRunner(c *cli.Context) runner.Runner {
-	if c.GlobalBool("systemd") || c.GlobalBoolT("systemd") {
+	if c.Bool("systemd") {
 		logrus.Debug("systemd enabled")
 		return &runner.Systemd{}
 	}

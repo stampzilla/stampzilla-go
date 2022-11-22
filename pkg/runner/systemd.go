@@ -218,6 +218,9 @@ WorkingDirectory=/etc/stampzilla/nodes/{{.Name}}
 WantedBy=multi-user.target
 `
 
+	tmp := strings.Split(name, "@")
+	name = tmp[0]
+
 	type td struct {
 		Name string
 	}
