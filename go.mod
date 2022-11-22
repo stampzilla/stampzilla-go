@@ -27,6 +27,7 @@ require (
 	github.com/jonaz/ginlogrus v0.0.0-20191118094232-2f4da50f5dd6
 	github.com/jonaz/goenocean v0.0.0-20190218201525-96fde8f44745
 	github.com/jonaz/gograce v0.5.0
+	github.com/jonaz/gombus v0.0.0-20220624105700-6fdec46046e8
 	github.com/koding/multiconfig v0.0.0-20171124222453-69c27309b2d7
 	github.com/lesismal/melody v0.0.0-20210520115724-c116958ce5fc
 	github.com/llgcode/draw2d v0.0.0-20190810100245-79e59b6b8fbc
@@ -40,7 +41,7 @@ require (
 	github.com/stamp/mdns v0.0.0-20190125083120-df204ac59ca1
 	github.com/stampzilla/gocast v0.5.2
 	github.com/stampzilla/gozwave v0.0.0-20190221183844-576012815e01
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.2
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 	github.com/urfave/cli v1.22.1
 	github.com/vapourismo/knx-go v0.0.0-20200924173532-6ed2bf1e51e6
@@ -96,11 +97,11 @@ require (
 	golang.org/x/image v0.0.0-20180708004352-c73c2afc3b81 // indirect
 	golang.org/x/mobile v0.0.0-20180806140643-507816974b79 // indirect
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
-	golang.org/x/sys v0.0.0-20211209171907-798191bca915 // indirect
+	golang.org/x/sys v0.0.0-20220622161953-175b2fd9d664 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace github.com/hashicorp/mdns => github.com/jonaz/mdns v0.0.0-20220225212800-0d33a91f9c6b

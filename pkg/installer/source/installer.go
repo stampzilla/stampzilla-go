@@ -59,6 +59,8 @@ func build(n []string, update bool) error {
 	return nil
 }
 
+var gitDir = filepath.Join("/home", "stampzilla", "go", "src", "github.com", "stampzilla", "stampzilla-go")
+
 func GoGet(url string) error {
 	logrus.Info("building " + filepath.Base(url) + "... ")
 
@@ -72,14 +74,13 @@ func GoGet(url string) error {
 	}
 
 	// _, err = Run(gobin, "get", "-u", "-d", "github.com/stampzilla/stampzilla-go")
-	gitDir := filepath.Join("/home", "stampzilla", "go", "src", "github.com", "stampzilla", "stampzilla-go")
 	if _, err := os.Stat(gitDir); os.IsNotExist(err) {
 		_, err = Run("git", "clone", "https://github.com/stampzilla/stampzilla-go.git", gitDir)
 		if err != nil {
 			return err
 		}
 	}
-	os.Chdir(filepath.Join("/home", "stampzilla", "go", "src", "github.com", "stampzilla", "stampzilla-go"))
+	os.Chdir(gitDir)
 
 	_, err = Run("git", "pull")
 	if err != nil {
@@ -95,14 +96,14 @@ func GoGet(url string) error {
 }
 
 func getArgs(binName string) []string {
-	hash, err := Run("git", "--git-dir", filepath.Join("/home", "stampzilla", "go", "src", "github.com", "stampzilla", "stampzilla-go", ".git"), "rev-parse", "--verify", "HEAD")
+	hash, err := Run("git", "--git-dir", filepath.Join(gitDir, ".git"), "rev-parse", "--verify", "HEAD")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	version := "src-" + hash[0:8] // set version to src-githash if we use src build to install
 
-	m := []string{
+	return []string{
 		"build",
 		"-ldflags",
 		"-X github.com/stampzilla/stampzilla-go/v2/pkg/build.Version=" + version + ` -X "github.com/stampzilla/stampzilla-go/v2/pkg/build.BuildTime=` + time.Now().Format(time.RFC3339) + `" -X github.com/stampzilla/stampzilla-go/v2/pkg/build.Commit=` + hash,
@@ -110,8 +111,6 @@ func getArgs(binName string) []string {
 		filepath.Join("/home", "stampzilla", "go", "bin", binName),
 		filepath.Join("/home", "stampzilla", "go", "src", "github.com", "stampzilla", "stampzilla-go", "nodes", binName),
 	}
-	// fmt.Println(strings.Join(m, "\n"))
-	return m
 }
 
 func Run(head string, parts ...string) (string, error) {
