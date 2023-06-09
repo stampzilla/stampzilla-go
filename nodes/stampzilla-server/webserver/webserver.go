@@ -446,7 +446,7 @@ func (ws *Webserver) login(c *gin.Context, user *persons.Person) error {
 	// session.Options(sessions.Options{
 	//SameSite: http.SameSiteNoneMode,
 	//Secure:   true,
-	//})
+	// })
 	session.Set("username", user.Username)
 	session.Set("is_admin", user.IsAdmin)
 	session.Set("id", user.UUID)
