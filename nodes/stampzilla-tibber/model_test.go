@@ -260,22 +260,22 @@ func TestCalculateLevel(t *testing.T) {
 	}
 
 	t1 := time.Date(2020, 10, 10, 25, 0, 0, 0, time.UTC)
-	_, lvl := prices.calculateLevel(t1, 0.9)
+	_, lvl, _, _ := prices.calculateLevel(t1, 0.9)
 	t.Log("level: ", lvl)
 	assert.Equal(t, 1, lvl)
 
 	t1 = time.Date(2020, 10, 10, 26, 0, 0, 0, time.UTC)
-	_, lvl = prices.calculateLevel(t1, 1.4)
+	_, lvl, _, _ = prices.calculateLevel(t1, 1.4)
 	t.Log("level: ", lvl)
 	assert.Equal(t, 1, lvl)
 
 	t1 = time.Date(2020, 10, 10, 27, 0, 0, 0, time.UTC)
-	_, lvl = prices.calculateLevel(t1, 2.9)
+	_, lvl, _, _ = prices.calculateLevel(t1, 2.9)
 	t.Log("level: ", lvl)
 	assert.Equal(t, 3, lvl)
 
 	t1 = time.Date(2020, 10, 10, 9, 0, 0, 0, time.UTC)
-	_, lvl = prices.calculateLevel(t1, 5.0)
+	_, lvl, _, _ = prices.calculateLevel(t1, 5.0)
 	t.Log("level: ", lvl)
 	assert.Equal(t, 3, lvl)
 
@@ -288,7 +288,7 @@ func TestCalculateLevel(t *testing.T) {
 	})
 
 	for _, p := range ss {
-		diff, lvl := prices.calculateLevel(p.Time, p.Total)
+		diff, lvl, _, _ := prices.calculateLevel(p.Time, p.Total)
 		t.Logf("%s price: %f lvl: %d diff: %f\n", p.Time, p.Total, lvl, diff)
 	}
 }
@@ -346,12 +346,12 @@ func TestCalculateLevel2(t *testing.T) {
 	})
 
 	t1 := time.Date(2020, 10, 11, 6, 0, 0, 0, time.UTC)
-	_, lvl := prices.calculateLevel(t1, 0.5)
+	_, lvl, _, _ := prices.calculateLevel(t1, 0.5)
 	t.Log("level: ", lvl)
 	assert.Equal(t, 1, lvl)
 
 	for _, p := range ss {
-		diff, lvl := prices.calculateLevel(p.Time, p.Total)
+		diff, lvl, _, _ := prices.calculateLevel(p.Time, p.Total)
 		t.Logf("%s price: %f lvl: %d diff: %f\n", p.Time, p.Total, lvl, diff)
 	}
 }

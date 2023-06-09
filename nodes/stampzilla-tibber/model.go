@@ -293,13 +293,19 @@ func (p *Prices) State() devices.State {
 	}
 
 	state["cheapestHour"] = false
-	if isSameHourAndDay(now, p.CheapestHour()) {
+	// if isSameHourAndDay(now, p.CheapestHour()) {
+	// 	state["cheapestHour"] = true
+	// }
+
+	diff, lvl, max, min := p.calculateLevel(current.Time, current.Total)
+	if current.Total == min {
 		state["cheapestHour"] = true
 	}
 
-	diff, lvl := p.calculateLevel(current.Time, current.Total)
 	state["priceLevel"] = lvl
 	state["priceDiff"] = diff
+	state["priceMax"] = max
+	state["priceMin"] = min
 
 	if lvl == 3 {
 		state["priceExpensive"] = true
@@ -310,7 +316,7 @@ func (p *Prices) State() devices.State {
 	return state
 }
 
-func (p *Prices) calculateLevel(t time.Time, total float64) (diff float64, lvl int) {
+func (p *Prices) calculateLevel(t time.Time, total float64) (diff float64, lvl int, max, min float64) {
 	findMinMax := func(s time.Time, min bool) float64 {
 		ss := []Price{}
 		p.mutex.Lock()
@@ -342,8 +348,8 @@ func (p *Prices) calculateLevel(t time.Time, total float64) (diff float64, lvl i
 		return ss[0].Total
 	}
 
-	min := findMinMax(t, true)
-	max := findMinMax(t, false)
+	min = findMinMax(t, true)
+	max = findMinMax(t, false)
 
 	if min == -1.0 || max == -1.0 {
 		lvl = 2
