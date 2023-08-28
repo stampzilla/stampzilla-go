@@ -128,7 +128,15 @@ func TestEval(t *testing.T) {
 				Expression_: v.Expression,
 			}
 			result, err := r.Eval(devs, rules)
-			assert.Equal(t, v.ExpectedErr, err)
+			if err != nil {
+				t.Log("error was: ", err)
+			}
+			if v.ExpectedErr != nil {
+
+				assert.Equal(t, v.ExpectedErr.Error(), err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
 			assert.Equal(t, v.Expected, result)
 		})
 	}
