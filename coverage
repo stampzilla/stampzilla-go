@@ -25,7 +25,7 @@ _generate_coverage_files() {
 
 _install_gover() {
   if [[ ! -x "${GOPATH}/bin/gover" ]] ; then
-    go get -u github.com/modocache/gover
+    go install github.com/modocache/gover@latest
   fi
 }
 
