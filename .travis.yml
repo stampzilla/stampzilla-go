@@ -6,7 +6,7 @@ addons:
       - libasound2-dev
 
 go:
-- 1.17
+- 1.20
 install:
 - go get -d -t -v ./...
 
@@ -30,4 +30,4 @@ deploy:
   on:
     tags: true
     repo: stampzilla/stampzilla-go
-    condition: $TRAVIS_GO_VERSION =~ ^1\.17
+    condition: $TRAVIS_GO_VERSION =~ ^1\.20
