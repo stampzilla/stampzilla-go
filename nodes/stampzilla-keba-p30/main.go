@@ -310,7 +310,12 @@ func parseAndSync(data2 []byte, data3 []byte, node *node.Node) error {
 	if data2 != nil {
 		state["on"] = 0
 		state["state"] = rep2.State
-		state["maxCurrent"] = float64(rep2.MaxCurr) / 1000.0
+		if rep2.MaxCurr != 0.0 {
+			state["maxCurrent"] = float64(rep2.MaxCurr) / 1000.0
+		} else {
+			state["maxCurrent"] = float64(rep2.CurrUser) / 1000.0
+
+		}
 		state["on"] = rep2.EnableUser == 1
 	}
 	if data3 != nil {
