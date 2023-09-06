@@ -313,9 +313,9 @@ func parseAndSync(data2 []byte, data3 []byte, node *node.Node) error {
 		state["maxCurr"] = float64(rep2.MaxCurr) / 1000.0
 	}
 	if data3 != nil {
-		state["phase1Amp"] = float64(rep3.I1) / 1000.0
-		state["phase2Amp"] = float64(rep3.I2) / 1000.0
-		state["phase3Amp"] = float64(rep3.I3) / 1000.0
+		state["L1_A"] = float64(rep3.I1) / 1000.0
+		state["L2_A"] = float64(rep3.I2) / 1000.0
+		state["L3_A"] = float64(rep3.I3) / 1000.0
 		state["currentSessionKwh"] = float64(rep3.EPres) / 10000.0
 		state["totalKwh"] = float64(rep3.ETotal) / 10000.0
 	}
