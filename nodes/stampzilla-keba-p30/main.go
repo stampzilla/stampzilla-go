@@ -105,6 +105,7 @@ func start() (*sync.WaitGroup, *node.Node, chan string) {
 	}()
 
 	go func() {
+		defer wg.Done()
 		ticker := time.NewTicker(time.Second * 30)
 		// logrus.Infof("Config OK. starting fetch loop for %s", dur)
 		for {
