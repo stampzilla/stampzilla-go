@@ -290,7 +290,6 @@ func parseAndSync(data2 []byte, data3 []byte, node *node.Node) error {
 	rep3 := &Report3{}
 
 	if data2 != nil {
-
 		err := json.Unmarshal(data2, rep2)
 		if err != nil {
 			return err
@@ -309,8 +308,10 @@ func parseAndSync(data2 []byte, data3 []byte, node *node.Node) error {
 	state := devices.State{}
 
 	if data2 != nil {
+		state["on"] = 0
 		state["state"] = rep2.State
-		state["maxCurr"] = float64(rep2.MaxCurr) / 1000.0
+		state["maxCurrent"] = float64(rep2.MaxCurr) / 1000.0
+		state["on"] = rep2.EnableUser == 1
 	}
 	if data3 != nil {
 		state["L1_A"] = float64(rep3.I1) / 1000.0
@@ -367,7 +368,7 @@ func startListen(ctx context.Context, wg *sync.WaitGroup, listenData chan []byte
 			logrus.Error(err)
 			continue
 		}
-		logrus.Debugf("got UDP message from %s", raddr.AddrPort().String())
+		logrus.Debugf("got UDP message from %s: %s", raddr.AddrPort().String(), string(buf[0:n]))
 		listenData <- buf[0:n]
 	}
 }
