@@ -105,6 +105,7 @@ func start() (*sync.WaitGroup, *node.Node, chan string) {
 	}()
 
 	go func() {
+		defer wg.Done()
 		ticker := time.NewTicker(time.Second * 30)
 		// logrus.Infof("Config OK. starting fetch loop for %s", dur)
 		for {
@@ -324,6 +325,7 @@ func parseAndSync(data2 []byte, data3 []byte, node *node.Node) error {
 		state["L3_A"] = float64(rep3.I3) / 1000.0
 		state["currentSessionKwh"] = float64(rep3.EPres) / 10000.0
 		state["totalKwh"] = float64(rep3.ETotal) / 10000.0
+		state["current_W"] = float64(rep3.P) / 1000.0
 	}
 
 	if dev == nil {
