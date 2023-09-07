@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/jonaz/gombus"
@@ -100,7 +101,7 @@ func (w *Worker) start(ctx context.Context) {
 				logrus.Error(err)
 			}
 
-			if os.IsTimeout(err) || errors.Is(err, io.EOF) {
+			if os.IsTimeout(err) || errors.Is(err, io.EOF) || errors.Is(err, syscall.EPIPE) {
 				w.reconnect <- struct{}{}
 			}
 		}
