@@ -308,7 +308,7 @@ func parseAndSync(data2 []byte, data3 []byte, node *node.Node) error {
 
 	state := devices.State{}
 
-	if data2 != nil {
+	if rep2.Serial != "" { // only do stuff if we got the data.
 		state["on"] = 0
 		state["state"] = rep2.State
 		if rep2.MaxCurr != 0.0 {
@@ -319,7 +319,7 @@ func parseAndSync(data2 []byte, data3 []byte, node *node.Node) error {
 		}
 		state["on"] = rep2.EnableUser == 1
 	}
-	if data3 != nil {
+	if rep3.Serial != "" { // only do stuff if we got the data.
 		state["L1_A"] = float64(rep3.I1) / 1000.0
 		state["L2_A"] = float64(rep3.I2) / 1000.0
 		state["L3_A"] = float64(rep3.I3) / 1000.0
@@ -362,6 +362,13 @@ func startListen(ctx context.Context, wg *sync.WaitGroup, listenData chan []byte
 	if err != nil {
 		return err
 	}
+	go func() {
+		<-ctx.Done()
+		err := l.Close()
+		if err != nil {
+			logrus.Error(err)
+		}
+	}()
 	for {
 		if ctx.Err() != nil {
 			return nil
