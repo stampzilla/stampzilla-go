@@ -30,9 +30,10 @@ func main() {
 }
 
 type sendRequest struct {
-	Msg  string
-	Resp chan []byte
-	Err  chan error
+	Msg                       string
+	Resp                      chan []byte
+	Err                       chan error
+	WaitForResponseContaining []byte
 }
 
 func start() (*sync.WaitGroup, *node.Node, chan string) {
@@ -52,7 +53,7 @@ func start() (*sync.WaitGroup, *node.Node, chan string) {
 		var err error
 		var resp []byte
 		state.Float("maxCurrent", func(v float64) {
-			resp, err = Send(sendData, fmt.Sprintf("currtime %.0f 1", v*1000.0))
+			resp, err = Send(sendData, fmt.Sprintf("currtime %.0f 1", v*1000.0), kebaOK)
 		})
 		if err != nil {
 			return err
@@ -65,9 +66,9 @@ func start() (*sync.WaitGroup, *node.Node, chan string) {
 
 		state.Bool("on", func(on bool) {
 			if on {
-				resp, err = Send(sendData, "ena 1")
+				resp, err = Send(sendData, "ena 1", kebaOK)
 			} else {
-				resp, err = Send(sendData, "ena 0")
+				resp, err = Send(sendData, "ena 0", kebaOK)
 			}
 		})
 
@@ -84,9 +85,6 @@ func start() (*sync.WaitGroup, *node.Node, chan string) {
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
-	node.OnShutdown(func() {
-		cancel()
-	})
 
 	syncWorker(ctx, wg, listenData, node, sendData, connectToIP)
 
@@ -97,7 +95,7 @@ func start() (*sync.WaitGroup, *node.Node, chan string) {
 			if ctx.Err() != nil {
 				return
 			}
-			err := startListen(ctx, wg, listenData)
+			err := startListen(ctx, listenData)
 			if err != nil {
 				logrus.Error("error start listening: ", err)
 			}
@@ -107,15 +105,14 @@ func start() (*sync.WaitGroup, *node.Node, chan string) {
 	go func() {
 		defer wg.Done()
 		ticker := time.NewTicker(time.Second * 30)
-		// logrus.Infof("Config OK. starting fetch loop for %s", dur)
 		for {
 			select {
 			case <-ticker.C:
-				d2, err := Send(sendData, "report 2")
+				d2, err := Send(sendData, "report 2", "Serial")
 				if err != nil {
 					logrus.Error(err)
 				}
-				d3, err := Send(sendData, "report 3")
+				d3, err := Send(sendData, "report 3", "Serial")
 				if err != nil {
 					logrus.Error(err)
 				}
@@ -127,6 +124,7 @@ func start() (*sync.WaitGroup, *node.Node, chan string) {
 			case <-node.Stopped():
 				ticker.Stop()
 				log.Println("Stopping keba-p30 node")
+				cancel()
 				return
 			}
 		}
@@ -149,9 +147,9 @@ func initSender(ip string) (*net.UDPConn, error) {
 	return conn, nil
 }
 
-func Send(sendData chan sendRequest, cmd string) ([]byte, error) {
+func Send(sendData chan sendRequest, cmd, responseShouldContain string) ([]byte, error) {
 	for i := 0; i < 3; i++ {
-		resp, err := send(sendData, cmd)
+		resp, err := send(sendData, cmd, responseShouldContain)
 		if err != nil && errors.Is(err, errTimeout) {
 			logrus.Error("timeout, retry in 5 sek")
 			time.Sleep(100 * time.Millisecond)
@@ -162,11 +160,14 @@ func Send(sendData chan sendRequest, cmd string) ([]byte, error) {
 	return nil, fmt.Errorf("failed after retries")
 }
 
-func send(sendData chan sendRequest, cmd string) ([]byte, error) {
+func send(sendData chan sendRequest, cmd, responseShouldContain string) ([]byte, error) {
 	req := sendRequest{
 		Msg:  cmd,
 		Err:  make(chan error),
 		Resp: make(chan []byte),
+	}
+	if responseShouldContain != "" {
+		req.WaitForResponseContaining = []byte(responseShouldContain)
 	}
 	sendData <- req
 	select {
@@ -198,16 +199,16 @@ func syncWorker(ctx context.Context, wg *sync.WaitGroup, listenData chan []byte,
 				}
 				go func() {
 					// this is the first connection after we get connectToIP
-					_, err := send(sendData, "i")
+					_, err := Send(sendData, "i", "")
 					if err != nil {
 						logrus.Error(err)
 					}
 
-					d2, err := send(sendData, "report 2")
+					d2, err := Send(sendData, "report 2", "Serial")
 					if err != nil {
 						logrus.Error(err)
 					}
-					d3, err := send(sendData, "report 3")
+					d3, err := Send(sendData, "report 3", "Serial")
 					if err != nil {
 						logrus.Error(err)
 					}
@@ -231,12 +232,18 @@ func syncWorker(ctx context.Context, wg *sync.WaitGroup, listenData chan []byte,
 				go func() {
 					tCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 					defer cancel()
-					select {
-					case resp := <-responseCh:
-						d.Resp <- resp
+					for {
+						select {
+						case resp := <-responseCh:
+							// TODO wait for correct response? if we send report X we need to wait for message with Serial in it?
+							if bytes.Contains(resp, d.WaitForResponseContaining) || len(d.WaitForResponseContaining) == 0 {
+								d.Resp <- resp
+								return
+							}
 
-					case <-tCtx.Done():
-						d.Err <- errTimeout
+						case <-tCtx.Done():
+							d.Err <- errTimeout
+						}
 					}
 				}()
 				logrus.Debugf("sending data: %s", d.Msg)
@@ -347,7 +354,7 @@ func parseAndSync(data2 []byte, data3 []byte, node *node.Node) error {
 	return nil
 }
 
-func startListen(ctx context.Context, wg *sync.WaitGroup, listenData chan []byte) error {
+func startListen(ctx context.Context, listenData chan []byte) error {
 
 	logrus.Infof("started udp4 listener on %s", kebaPort)
 	laddr, err := net.ResolveUDPAddr("udp4", ":"+kebaPort)
@@ -383,7 +390,11 @@ func startListen(ctx context.Context, wg *sync.WaitGroup, listenData chan []byte
 			continue
 		}
 		logrus.Debugf("got UDP message from %s: %s", raddr.AddrPort().String(), string(buf[0:n]))
-		listenData <- buf[0:n]
+		select {
+		case listenData <- buf[0:n]:
+		default:
+			logrus.Error("no one listening to listenData")
+		}
 	}
 }
 
@@ -412,8 +423,10 @@ type Config struct {
 	IP string
 }
 
+const kebaOK = "TCH-OK: done"
+
 func expectOKResponse(res []byte) error {
-	if bytes.Equal(res, []byte("TCH-OK: done")) {
+	if bytes.Equal(res, []byte(kebaOK)) {
 		return nil
 	}
 	return fmt.Errorf("expected TCH-OK, got: %s", string(res))
