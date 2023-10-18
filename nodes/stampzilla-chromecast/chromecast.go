@@ -105,7 +105,6 @@ func (c *Chromecast) PlayURL(url string, contentType string) {
 }
 
 func (c *Chromecast) waitForAppLaunch(app string) error {
-
 	delay := time.NewTimer(time.Second * 20)
 	select {
 	case launchedApp := <-c.appLaunch:

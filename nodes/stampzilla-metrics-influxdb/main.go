@@ -55,7 +55,7 @@ func main() {
 func onNodes(queueChan chan func()) func(data json.RawMessage) error {
 	return func(data json.RawMessage) error {
 		logrus.Info("Received nodes data")
-		nodes := make(map[string]models.Node)
+		nodes := make(map[string]*models.Node)
 		err := json.Unmarshal(data, &nodes)
 		if err != nil {
 			logrus.WithFields(logrus.Fields{

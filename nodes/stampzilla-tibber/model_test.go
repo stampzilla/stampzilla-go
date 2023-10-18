@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sort"
 	"testing"
 	"time"
 
@@ -259,17 +260,152 @@ func TestCalculateLevel(t *testing.T) {
 	}
 
 	t1 := time.Date(2020, 10, 10, 25, 0, 0, 0, time.UTC)
-	_, lvl := prices.calculateLevel(t1, 0.9)
+	_, lvl, _, _ := prices.calculateLevel(t1, 0.9)
 	t.Log("level: ", lvl)
 	assert.Equal(t, 1, lvl)
 
 	t1 = time.Date(2020, 10, 10, 26, 0, 0, 0, time.UTC)
-	_, lvl = prices.calculateLevel(t1, 1.4)
+	_, lvl, _, _ = prices.calculateLevel(t1, 1.4)
 	t.Log("level: ", lvl)
-	assert.Equal(t, 2, lvl)
+	assert.Equal(t, 1, lvl)
 
 	t1 = time.Date(2020, 10, 10, 27, 0, 0, 0, time.UTC)
-	_, lvl = prices.calculateLevel(t1, 2.9)
+	_, lvl, _, _ = prices.calculateLevel(t1, 2.9)
 	t.Log("level: ", lvl)
 	assert.Equal(t, 3, lvl)
+
+	t1 = time.Date(2020, 10, 10, 9, 0, 0, 0, time.UTC)
+	_, lvl, _, _ = prices.calculateLevel(t1, 5.0)
+	t.Log("level: ", lvl)
+	assert.Equal(t, 3, lvl)
+
+	ss := []Price{}
+	for _, p := range prices.prices {
+		ss = append(ss, p)
+	}
+	sort.Slice(ss, func(i, j int) bool {
+		return ss[j].Time.After(ss[i].Time)
+	})
+
+	for _, p := range ss {
+		diff, lvl, _, _ := prices.calculateLevel(p.Time, p.Total)
+		t.Logf("%s price: %f lvl: %d diff: %f\n", p.Time, p.Total, lvl, diff)
+	}
+}
+func TestCalculateLevel2(t *testing.T) {
+	t.Parallel()
+
+	hoursPrice := []struct {
+		hour  int
+		price float64
+	}{
+		{0, 0.79},
+		{1, 0.704},
+		{2, 0.549},
+		{3, 0.693},
+		{4, 0.688},
+		{5, 0.697},
+		{6, 0.709},
+		{7, 0.713},
+		{8, 0.762},
+		{9, 2.0},
+		{10, 2.01},
+		{11, 2.11},
+		{12, 2.12},
+		{13, 2.11},
+		{14, 2.11},
+		{15, 2.11},
+		{16, 1.11},
+		{17, 0.02}, // this is more than 12h before 30 so should not affect level which means 30 is level 1
+		{18, 1.01},
+		{19, 1.01},
+		{20, 1.11},
+		{21, 1.10},
+		{22, 1.10},
+		{23, 1.12},
+		{24, 1.549},
+		{25, 1.693},
+		{26, 1.688},
+		{27, 1.697},
+		{28, 1.697},
+		{29, 1.697},
+		{30, 0.5},
+	}
+
+	prices := NewPrices()
+	for _, v := range hoursPrice {
+		prices.Add(newPriceTotal(v.hour, v.price))
+	}
+
+	ss := []Price{}
+	for _, p := range prices.prices {
+		ss = append(ss, p)
+	}
+	sort.Slice(ss, func(i, j int) bool {
+		return ss[j].Time.After(ss[i].Time)
+	})
+
+	t1 := time.Date(2020, 10, 11, 6, 0, 0, 0, time.UTC)
+	_, lvl, _, _ := prices.calculateLevel(t1, 0.5)
+	t.Log("level: ", lvl)
+	assert.Equal(t, 1, lvl)
+
+	for _, p := range ss {
+		diff, lvl, _, _ := prices.calculateLevel(p.Time, p.Total)
+		t.Logf("%s price: %f lvl: %d diff: %f\n", p.Time, p.Total, lvl, diff)
+	}
+}
+
+func TestCheapestTimes(t *testing.T) {
+	t.Parallel()
+
+	hoursPrice := []struct {
+		hour  int
+		price float64
+	}{
+		{0, 0.5},
+		{1, 0.4},
+		{2, 0.6},
+		{3, 0.5},
+		{4, 0.5},
+		{5, 0.1},
+		{6, 1},
+		{7, 1},
+		{8, 5},
+		{9, 5},
+		{10, 1},
+		{11, 1},
+		{12, 1},
+		{13, 1},
+		{14, 1},
+		{15, 1},
+		{16, 1.5},
+		{17, 1.5},
+		{18, 1.5},
+		{19, 1.5},
+		{20, 0.9},
+		{21, 0.9},
+		{22, 0.9},
+		{23, 0.9},
+		{24, 0.9},
+		{25, 0.9},
+		{26, 1.4},
+		{27, 2.9},
+	}
+
+	prices := NewPrices()
+	for _, v := range hoursPrice {
+		prices.Add(newPriceTotal(v.hour, v.price))
+	}
+	first := time.Date(2020, 10, 10, 0, 0, 0, 0, time.UTC)
+
+	c := prices.calculateCheapestTimes(first, 3, 5)
+	t.Log(c)
+	for _, e := range c {
+		t.Log(e)
+	}
+
+	assert.Equal(t, time.Date(2020, 10, 10, 5, 0, 0, 0, time.UTC), c[0])
+	assert.Equal(t, time.Date(2020, 10, 10, 10, 0, 0, 0, time.UTC), c[1])
+	assert.Equal(t, time.Date(2020, 10, 10, 20, 0, 0, 0, time.UTC), c[2])
 }

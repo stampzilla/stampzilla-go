@@ -152,6 +152,47 @@ func (p *Prices) LastCalculated() time.Time {
 	return t
 }
 
+// calculateCheapestTimes tries to find the cheapest <count> times with the constraint that it needs to be at least <hoursBetween> the X times.
+func (p *Prices) calculateCheapestTimes(start time.Time, count int, hoursBetween int) []time.Time {
+	// TODO use this function. perhaps new object in config that we can configure count and hoursBetween Cheapest<count>Hours<between>
+	ret := []time.Time{}
+	findCheapest := func(from, to time.Time) time.Time {
+		ss := []Price{}
+		p.mutex.Lock()
+		for _, t := range p.prices {
+			if t.Time.Before(from) || t.Time.After(to) {
+				continue
+			}
+			ss = append(ss, t)
+		}
+		p.mutex.Unlock()
+
+		if len(ss) == 0 {
+			return time.Time{}
+		}
+
+		sort.Slice(ss, func(i, j int) bool {
+			if ss[i].Total == ss[j].Total {
+				return ss[j].Time.After(ss[i].Time)
+			}
+			return ss[i].Total < ss[j].Total
+		})
+		return ss[0].Time
+	}
+
+	var next = findCheapest(start, start.Add(time.Hour*time.Duration(hoursBetween)))
+	ret = append(ret, next)
+	for i := 0; i < count-1; i++ {
+		next = findCheapest(
+			next.Add(time.Hour*time.Duration(hoursBetween)),
+			next.Add(time.Hour*time.Duration(hoursBetween*2)),
+		)
+		ret = append(ret, next)
+	}
+
+	return ret
+}
+
 func (p *Prices) calculateBestChargeHours(start time.Time, dur time.Duration) time.Time {
 	dur = dur.Round(time.Hour)
 	sumPriceForTimePlusDur := make(map[time.Time]float64)
@@ -226,6 +267,9 @@ func (p *Prices) SortedByTime() []Price {
 func isSameHourAndDay(t1, t2 time.Time) bool {
 	return t1.Truncate(1 * time.Hour).Equal(t2.Truncate(1 * time.Hour))
 }
+func isSameDay(t1, t2 time.Time) bool {
+	return t1.Truncate(24 * time.Hour).Equal(t2.Truncate(24 * time.Hour))
+}
 
 func inTimeSpan(start, end, check time.Time) bool {
 	if start.Before(end) {
@@ -249,13 +293,19 @@ func (p *Prices) State() devices.State {
 	}
 
 	state["cheapestHour"] = false
-	if isSameHourAndDay(now, p.CheapestHour()) {
+	// if isSameHourAndDay(now, p.CheapestHour()) {
+	// 	state["cheapestHour"] = true
+	// }
+
+	diff, lvl, max, min := p.calculateLevel(current.Time, current.Total)
+	if current.Total == min {
 		state["cheapestHour"] = true
 	}
 
-	diff, lvl := p.calculateLevel(current.Time, current.Total)
 	state["priceLevel"] = lvl
 	state["priceDiff"] = diff
+	state["priceMax"] = max
+	state["priceMin"] = min
 
 	if lvl == 3 {
 		state["priceExpensive"] = true
@@ -266,34 +316,56 @@ func (p *Prices) State() devices.State {
 	return state
 }
 
-func (p *Prices) calculateLevel(t time.Time, total float64) (diff float64, lvl int) {
-	tot := 0.0
-	totCnt := 0.0
-	p.mutex.RLock()
-	for _, v := range p.prices {
-		if t.Add(time.Hour*-24).After(v.Time) || v.Time.After(t) {
-			continue
+func (p *Prices) calculateLevel(t time.Time, total float64) (diff float64, lvl int, max, min float64) {
+	findMinMax := func(s time.Time, min bool) float64 {
+		ss := []Price{}
+		p.mutex.Lock()
+		for _, t := range p.prices {
+			// if t.Time.Before(s) { // Only calculate min/max against future prices.
+			// if !isSameDay(t.Time, s) { // only compare with those of the same date.
+			if t.Time.After(s.Add(12*time.Hour)) || t.Time.Before(s.Add(-12*time.Hour)) {
+				continue
+			}
+			ss = append(ss, t)
 		}
-		tot += v.Total
-		totCnt += 1.0
+		p.mutex.Unlock()
+
+		if len(ss) == 0 {
+			return -1.0
+		}
+
+		sort.Slice(ss, func(i, j int) bool {
+			if ss[i].Total == ss[j].Total {
+				return ss[j].Time.After(ss[i].Time)
+			}
+			if min {
+				return ss[i].Total < ss[j].Total
+			} else {
+				return ss[i].Total > ss[j].Total
+			}
+		})
+
+		return ss[0].Total
 	}
-	p.mutex.RUnlock()
-	average := tot / totCnt
+
+	min = findMinMax(t, true)
+	max = findMinMax(t, false)
+
+	if min == -1.0 || max == -1.0 {
+		lvl = 2
+		return
+	}
+
+	diff = max - min
 
 	switch {
-	case total >= average*1.20:
+	case total >= max-diff*0.25:
 		lvl = 3 // HIGH
-	case total <= average*0.90:
+	case total <= min+diff*0.25:
 		lvl = 1 // LOW
 	default:
 		lvl = 2 // NORMAL
 	}
 
-	diff = total / average
-
-	//fmt.Println("avg: ", average)
-	//fmt.Println("price: ", total)
-	//fmt.Println("diff: ", diff)
-	//fmt.Println("lvl: ", lvl)
 	return
 }
