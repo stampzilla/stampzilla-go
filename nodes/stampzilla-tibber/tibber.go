@@ -186,7 +186,7 @@ func reconnectWS(ctx context.Context, u, token, homeID string, cb updateStateFun
 			logrus.Errorf("connectWs err %s reconnecting in %s", err, time.Second*10+time.Duration(i))
 		}
 
-		time.Sleep(time.Second*10 + time.Duration(i))
+		time.Sleep(time.Second*10 + time.Duration(i)*time.Second)
 	}
 }
 
