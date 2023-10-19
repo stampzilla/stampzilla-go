@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
@@ -193,6 +194,7 @@ func reconnectWS(ctx context.Context, u, token, homeID string, cb updateStateFun
 
 func connectWS(ctx context.Context, u, token, homeID string, cb updateStateFunc) error {
 
+	logrus.Infof("connecting to tibber websocket: %s", u)
 	c, _, err := websocket.Dial(ctx, u, &websocket.DialOptions{Subprotocols: []string{"graphql-transport-ws"}, HTTPHeader: http.Header{
 		"User-Agent": {"stampzilla/2 stampzilla-tibber/2"},
 	}})
@@ -239,11 +241,25 @@ func connectWS(ctx context.Context, u, token, homeID string, cb updateStateFunc)
 		return fmt.Errorf("error writing: %w", err)
 	}
 
+	var lastData int64
+	go func() {
+		defer c.Close(websocket.StatusNormalClosure, "no data timeout")
+		for {
+			t := time.Unix(atomic.LoadInt64(&lastData), 0)
+			if time.Since(t) > time.Minute {
+				return
+			}
+			time.Sleep(time.Second)
+		}
+	}()
+
 	for {
 		err = wsjson.Read(ctx, c, resp)
 		if err != nil {
 			return fmt.Errorf("error reading json: %w", err)
 		}
+
+		atomic.StoreInt64(&lastData, time.Now().Unix())
 		data := &DataPayload{}
 		err := json.Unmarshal(resp.Payload, data)
 		if err != nil {
