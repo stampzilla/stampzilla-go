@@ -248,6 +248,10 @@ func connectWS(ctx context.Context, u, token, homeID string, cb updateStateFunc)
 		if err != nil {
 			return fmt.Errorf("error unmarshal json: %w", err)
 		}
+		if resp.Type != "next" {
+			logrus.Warnf("expected response type 'next' got: %s payload: %s", resp.Type, string(resp.Payload))
+			continue
+		}
 		cb(data)
 	}
 }

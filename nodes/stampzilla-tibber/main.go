@@ -51,6 +51,7 @@ func start() {
 			logrus.Warn("failed getting ws URL. Will not start websocket connection to tibber:", err)
 			return
 		}
+		logrus.Infof("connecting to tibber websocket: %s", wsURL)
 		reconnectWS(ctx, wsURL, config.Token, config.HomeID, func(data *DataPayload) {
 			node.UpdateState("1", devices.State{
 				"current_W":        data.Data.LiveMeasurement.Power,
