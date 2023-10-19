@@ -241,7 +241,7 @@ func connectWS(ctx context.Context, u, token, homeID string, cb updateStateFunc)
 		return fmt.Errorf("error writing: %w", err)
 	}
 
-	var lastData int64
+	lastData := time.Now().Unix()
 	go func() {
 		defer c.Close(websocket.StatusNormalClosure, "no data timeout")
 		for {
