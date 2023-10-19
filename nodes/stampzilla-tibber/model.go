@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"sort"
 	"sync"
 	"time"
@@ -12,10 +13,41 @@ import (
 type Response struct {
 	Data struct {
 		Viewer struct {
-			Homes []struct {
+			Home struct {
+				Features struct {
+					RealTimeConsumptionEnabled bool
+				}
+			}
+			WebsocketSubscriptionUrl string
+			Homes                    []struct {
 				CurrentSubscription CurrentSubscription `json:"currentSubscription"`
 			} `json:"homes"`
 		} `json:"viewer"`
+	} `json:"data"`
+}
+
+type WsMsg struct {
+	Type    string          `json:"type"`
+	ID      string          `json:"id,omitempty"`
+	Payload json.RawMessage `json:"payload,omitempty"`
+}
+
+type WsPayloadQuery struct {
+	Query string `json:"query"`
+}
+
+type DataPayload struct {
+	Data struct {
+		LiveMeasurement struct {
+			Timestamp              time.Time `json:"timestamp"`
+			Power                  float64   `json:"power"`
+			CurrentL1              float64   `json:"currentL1"`
+			CurrentL2              float64   `json:"currentL2"`
+			CurrentL3              float64   `json:"currentL3"`
+			MaxPower               float64   `json:"maxPower"`
+			AccumulatedConsumption float64   `json:"accumulatedConsumption"`
+			AccumulatedCost        float64   `json:"accumulatedCost"`
+		} `json:"liveMeasurement"`
 	} `json:"data"`
 }
 

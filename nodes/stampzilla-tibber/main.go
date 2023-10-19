@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -37,6 +38,30 @@ func start() {
 		logrus.Error(err)
 		return
 	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go func() {
+		<-node.Stopped()
+		cancel()
+	}()
+	go func() {
+		wsURL, err := getWsURL(config.Token, config.HomeID)
+		if err != nil {
+			logrus.Warn("failed getting ws URL. Will not start websocket connection to tibber:", err)
+			return
+		}
+		reconnectWS(ctx, wsURL, config.Token, config.HomeID, func(data *DataPayload) {
+			node.UpdateState("1", devices.State{
+				"current_W":        data.Data.LiveMeasurement.Power,
+				"L1_A":             data.Data.LiveMeasurement.CurrentL1,
+				"L2_A":             data.Data.LiveMeasurement.CurrentL2,
+				"L3_A":             data.Data.LiveMeasurement.CurrentL3,
+				"consumptionToday": data.Data.LiveMeasurement.AccumulatedConsumption,
+				"costToday":        data.Data.LiveMeasurement.AccumulatedCost,
+			})
+		})
+	}()
 
 	tickerLoop(config, node)
 }

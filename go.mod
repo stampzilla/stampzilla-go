@@ -77,6 +77,7 @@ require (
 	github.com/hajimehoshi/oto v1.0.1 // indirect
 	github.com/jonaz/astrotime v0.0.0-20150127084258-5d2b676e5047 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
@@ -112,6 +113,7 @@ require (
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	nhooyr.io/websocket v1.8.7 // indirect
 )
 
 replace github.com/hashicorp/mdns => github.com/jonaz/mdns v0.0.0-20220225212800-0d33a91f9c6b
