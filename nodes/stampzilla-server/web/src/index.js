@@ -1,3 +1,11 @@
+import '@fontsource/roboto/300.css';
+import '@fontsource/roboto/300-italic.css';
+import '@fontsource/roboto/400.css';
+import '@fontsource/roboto/400-italic.css';
+import '@fontsource/roboto/700.css';
+import '@fontsource/roboto/700-italic.css';
+import 'admin-lte/dist/css/adminlte.css';
+import 'react-toastify/dist/ReactToastify.css';
 import 'bootstrap/dist/js/bootstrap.bundle';
 import 'admin-lte/dist/js/adminlte';
 import 'core-js/stable';

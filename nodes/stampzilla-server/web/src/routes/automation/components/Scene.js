@@ -1,6 +1,6 @@
 import React from 'react';
 import { connect } from 'react-redux';
-import diff from 'immutable-diff';
+import diff from 'immutablediff';
 import classnames from 'classnames';
 
 import './Scene.scss';
