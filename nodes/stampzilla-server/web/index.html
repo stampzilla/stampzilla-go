@@ -16,11 +16,18 @@
     <meta name="theme-color" content="#ffffff">
 
     <meta content="width=device-width, initial-scale=1" name="viewport">
+    <script>
+      // Shim color-temperature globals to avoid strict-mode ReferenceError during ES import
+      window.colorTemperature2rgbUsingTH = undefined;
+      window.colorTemperature2rgb = undefined;
+      window.rgb2colorTemperature = undefined;
+    </script>
 </head>
 <noscript>
   Sorry, you need to have JavaScript enabled to use this :/
 </noscript>
 <body class="sidebar-mini">
-  <div class="wrapper" id="app" />
+  <div class="wrapper" id="app"></div>
+  <script type="module" src="/src/index.js"></script>
 </body>
 </html>

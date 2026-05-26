@@ -1,5 +1,4 @@
 import { Route, Switch } from 'react-router-dom';
-import { hot } from 'react-hot-loader';
 import React from 'react';
 
 import Automation from './routes/automation';
@@ -69,4 +68,4 @@ const Routes = () => (
   </Switch>
 );
 
-export default hot(module)(Routes);
+export default Routes;

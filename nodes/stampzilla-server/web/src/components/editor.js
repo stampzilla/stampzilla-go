@@ -5,7 +5,7 @@ import { Value } from 'slate';
 import { connect } from 'react-redux';
 import classnames from 'classnames';
 
-import styles from './editor.scss';
+import styles from './editor.module.scss';
 
 const mapStateToProps = state => ({
   devices: state.getIn(['devices', 'list']),
