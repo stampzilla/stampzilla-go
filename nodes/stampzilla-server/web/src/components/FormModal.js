@@ -8,7 +8,7 @@ import {
 import Form from 'react-jsonschema-form';
 import React from 'react';
 
-import styles from './FormModal.scss';
+import styles from './FormModal.module.scss';
 
 const log = type => console.log.bind(console, type); // eslint-disable-line no-console
 

@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import Moment from 'react-moment';
+import { formatRelativeTime } from '../../helpers';
 
 import { write } from '../../components/Websocket';
 import Card from '../../components/Card';
@@ -139,9 +139,9 @@ class Security extends Component {
                             .join(', ')}
                         </td>
                         <td>
-                          <Moment fromNow withTitle>
-                            {n.get('issued')}
-                          </Moment>
+                          <span title={n.get('issued') ? new Date(n.get('issued')).toLocaleString() : ''}>
+                            {formatRelativeTime(n.get('issued'))}
+                          </span>
                         </td>
                         <td>{n.getIn(['fingerprints', 'sha1'])}</td>
                         <td className="text-right">

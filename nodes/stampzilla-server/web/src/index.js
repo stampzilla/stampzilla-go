@@ -1,3 +1,7 @@
+import $ from 'jquery';
+window.$ = $;
+window.jQuery = $;
+
 import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/300-italic.css';
 import '@fontsource/roboto/400.css';
@@ -16,15 +20,6 @@ import React from 'react';
 import { ToastContainer } from 'react-toastify';
 
 import './index.scss';
-import './images/android-chrome-192x192.png';
-import './images/android-chrome-512x512.png';
-import './images/apple-touch-icon.png';
-import './images/browserconfig.xml';
-import './images/favicon-16x16.png';
-import './images/favicon-32x32.png';
-import './images/favicon.ico';
-import './images/safari-pinned-tab.svg';
-import './images/site.webmanifest';
 import ErrorBoundary from './components/ErrorBoundary';
 import Wrapper from './components/Wrapper';
 import store from './store';
