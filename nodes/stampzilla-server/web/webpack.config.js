@@ -1,7 +1,6 @@
-const GoogleFontsPlugin = require('@beyonk/google-fonts-webpack-plugin');
 const HtmlWebPackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
+const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 const WebpackPwaManifest = require('webpack-pwa-manifest');
 const TerserPlugin = require('terser-webpack-plugin');
 // const path = require('path');
@@ -16,7 +15,7 @@ module.exports = (env, argv) => {
       publicPath: '/',
     },
     optimization: {
-      minimizer: [new OptimizeCSSAssetsPlugin({}), new TerserPlugin()],
+      minimizer: [new CssMinimizerPlugin(), new TerserPlugin()],
       usedExports: true,
       sideEffects: true,
     },
@@ -24,10 +23,6 @@ module.exports = (env, argv) => {
       rules: [
         {
           test: /\.js$/,
-          // exclude: /node_modules\/(?![react-json-editor-ajrm])/,
-          // exclude: /node_modules\/(?!(react-json-editor-ajrm)\/).*/,
-          // exclude: /node_modules\/(?![react\-json\-editor\-ajrm])/,
-          // exclude: /node_modules/,
           include: [/src/, /node_modules\/react-json-editor-ajrm/],
           use: [
             {
@@ -35,8 +30,26 @@ module.exports = (env, argv) => {
             },
           ],
         },
+        // Plain CSS from node_modules (no Sass, no CSS modules)
         {
-          test: /\.s?css$/,
+          test: /\.css$/,
+          include: [/node_modules/],
+          use: [
+            {
+              loader: DEV ? 'style-loader' : MiniCssExtractPlugin.loader,
+            },
+            {
+              loader: 'css-loader',
+              options: {
+                modules: false,
+                sourceMap: DEV,
+              },
+            },
+          ],
+        },
+        // Global SCSS entry (index.scss) — no CSS modules
+        {
+          test: /\.scss$/,
           include: [/index\.scss/],
           use: [
             {
@@ -58,9 +71,10 @@ module.exports = (env, argv) => {
             },
           ],
         },
+        // Component SCSS — CSS modules
         {
-          test: /\.s?css$/,
-          exclude: [/index\.scss/],
+          test: /\.scss$/,
+          exclude: [/index\.scss/, /node_modules/],
           use: [
             {
               loader: DEV ? 'style-loader' : MiniCssExtractPlugin.loader,
@@ -92,55 +106,44 @@ module.exports = (env, argv) => {
             },
           ],
         },
+        // Images
         {
-          test: /\.jpe?g$|\.ico$|\.gif$|\.png$|\.svg$|\.ico$|\.xml$|\.webmanifest$/,
-          use: [
-            {
-              loader: 'file-loader',
-              options: {
-                name: '[name].[ext]',
-                // useRelativePath: !process.env.NODE_ENV,
-                // publicPath: (DEV && CDN_URL === '') ? '/' : '',
-                // Remove the default root slash because we load images from our CDN
-                outputPath: 'assets/',
-                publicPath: '/assets',
-              },
-            },
-          ],
+          test: /\.(jpe?g|ico|gif|png|xml|webmanifest)$/,
+          type: 'asset/resource',
+          generator: {
+            filename: 'assets/[name][ext]',
+          },
         },
-        // {
-        // test: /\.(png|jpg|gif)$/,
-        // use: [
-        // {
-        // loader: 'url-loader',
-        // options: {
-        // limit: 5000,
-        // },
-        // },
-        // ],
-        // },
+        // SVG (used as both images and icon fonts)
         {
-          test: /\.(eot|svg|ttf|woff|woff2)$/,
-          use: [
-            {
-              loader: 'file-loader',
-              options: {
-                // useRelativePath: !process.env.NODE_ENV,
-                // publicPath: (DEV && CDN_URL === '') ? '/' : '',
-                // Remove the default root slash because we load images from our CDN
-                outputPath: 'assets/',
-                publicPath: '/assets',
-              },
-            },
-          ],
+          test: /\.svg$/,
+          type: 'asset/resource',
+          generator: {
+            filename: 'assets/[name][ext]',
+          },
+        },
+        // Fonts
+        {
+          test: /\.(eot|ttf|woff|woff2)$/,
+          type: 'asset/resource',
+          generator: {
+            filename: 'assets/[name][ext]',
+          },
         },
       ],
     },
     devServer: {
       open: true,
-      overlay: true,
+      client: {
+        overlay: true,
+        webSocketURL: { protocol: 'wss', pathname: '/webpack-hmr' },
+      },
+      webSocketServer: {
+        type: 'ws',
+        options: { path: '/webpack-hmr' },
+      },
+      server: 'https',
       historyApiFallback: true,
-      http2: true,
       proxy: {
         // the ones configures in webserver.Init
         '/ws': {
@@ -178,24 +181,6 @@ module.exports = (env, argv) => {
       new MiniCssExtractPlugin({
         filename: 'assets/[name].[contenthash].css',
         chunkFilename: 'assets/[id].[contenthash].css',
-      }),
-      new GoogleFontsPlugin({
-        fonts: [
-          {
-            family: 'Roboto',
-            variants: [
-              '300',
-              '400',
-              '600',
-              '700',
-              '300italic',
-              '400italic',
-              '600italic',
-            ],
-          },
-        ],
-        path: '/',
-        filename: 'assets/fonts.css',
       }),
       new WebpackPwaManifest({
         filename: 'assets/manifest.[contenthash].json',
