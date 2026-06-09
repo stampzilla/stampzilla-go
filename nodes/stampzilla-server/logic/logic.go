@@ -167,6 +167,10 @@ func (l *Logic) EvaluateRules(ctx context.Context) {
 		if !rule.Enabled {
 			continue
 		}
+		if rule.Type() == "mirror" {
+			l.runMirror(rule)
+			continue
+		}
 		evaluation := l.evaluateRule(rule)
 		if rule.For_ == 0 {
 			l.runNow(rule, evaluation)
@@ -260,12 +264,17 @@ func (l *Logic) runNow(rule *Rule, evaluation bool) {
 	}
 }
 
-func (l *Logic) evaluateRule(r *Rule) bool {
+// rulesSnapshot builds a bool map of all rules' current active state.
+func (l *Logic) rulesSnapshot() map[string]bool {
 	rules := make(map[string]bool)
 	for _, v := range l.Rules {
 		rules[v.Uuid()] = v.Active()
 	}
-	result, err := r.Eval(l.devices, rules)
+	return rules
+}
+
+func (l *Logic) evaluateRule(r *Rule) bool {
+	result, err := r.Eval(l.devices, l.rulesSnapshot())
 	if err != nil {
 		l.onReportState(r.Uuid(), map[string]interface{}{
 			"error": err.Error(),
@@ -277,6 +286,52 @@ func (l *Logic) evaluateRule(r *Rule) bool {
 		"error": "",
 	})
 	return result
+}
+
+// runMirror evaluates a "mirror" rule and forwards the CEL expression value
+// to the configured target device key. It skips the send when the target
+// already holds the same value, which breaks potential feedback loops.
+func (l *Logic) runMirror(rule *Rule) {
+	reportErr := func(msg string) {
+		l.onReportState(rule.Uuid(), map[string]interface{}{"error": msg})
+	}
+
+	value, err := rule.EvalValue(l.devices, l.rulesSnapshot())
+	if err != nil {
+		reportErr(err.Error())
+		logrus.Debugf("Error evaluating mirror rule %s: %s", rule.Uuid(), err.Error())
+		return
+	}
+
+	targetID, err := devices.NewIDFromString(rule.Target())
+	if err != nil {
+		msg := fmt.Sprintf("invalid target %q: %s", rule.Target(), err)
+		reportErr(msg)
+		logrus.Errorf("logic: mirror rule %s: %s", rule.Uuid(), msg)
+		return
+	}
+
+	if rule.TargetKey() == "" {
+		reportErr("targetKey is not configured")
+		return
+	}
+
+	// All configuration valid — clear any previous error.
+	l.onReportState(rule.Uuid(), map[string]interface{}{"error": ""})
+
+	// Loop-breaker: only send if the target does not already hold this value.
+	if cur := l.devices.Get(targetID); cur != nil {
+		cur.Lock()
+		curVal := cur.State[rule.TargetKey()]
+		cur.Unlock()
+		if curVal == value {
+			return
+		}
+	}
+
+	sendStateChange(l.WebsocketSender, map[devices.ID]devices.State{
+		targetID: {rule.TargetKey(): value},
+	})
 }
 
 // Save saves the rules to rules.json.

@@ -5,7 +5,6 @@ import (
 
 	"github.com/google/cel-go/cel"
 	"github.com/sirupsen/logrus"
-	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
 	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/websocket"
 )
 
@@ -92,23 +91,7 @@ func (t *Task) Run() {
 			logrus.Errorf("SavedState %s does not exist", id)
 			return
 		}
-		devicesByNode := make(map[string]map[devices.ID]devices.State)
-		for id, state := range stateList.State {
-			if devicesByNode[id.Node] == nil {
-				devicesByNode[id.Node] = make(map[devices.ID]devices.State)
-			}
-			devicesByNode[id.Node][id] = state
-		}
-		for nodeID, devs := range devicesByNode {
-			logrus.WithFields(logrus.Fields{
-				"to": nodeID,
-			}).Debug("Send state change request to node")
-			err := t.sender.SendToID(nodeID, "state-change", devs)
-			if err != nil {
-				logrus.Error("logic: error sending state-change to node: ", err)
-				continue
-			}
-		}
+		sendStateChange(t.sender, stateList.State)
 	}
 }
 

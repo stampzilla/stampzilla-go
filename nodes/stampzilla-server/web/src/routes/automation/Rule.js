@@ -28,6 +28,13 @@ const schema = fromJS({
       title: 'Enabled',
       description: 'Turn on and off this rule',
     },
+    type: {
+      type: 'string',
+      title: 'Type',
+      enum: ['', 'mirror'],
+      enumNames: ['Normal (trigger + actions)', 'Mirror (copy value to a device)'],
+      default: '',
+    },
     expression: {
       type: 'string',
       title: 'Expression',
@@ -53,6 +60,16 @@ const schema = fromJS({
       description:
         'This is the conditions for the rule to be evaluated. Here you can depend one rule on an other by selecting if the parent rule has to be active or not.',
       properties: {},
+    },
+    target: {
+      type: 'string',
+      title: 'Target device',
+      description: 'Device that receives the mirrored value',
+    },
+    targetKey: {
+      type: 'string',
+      title: 'Target state key',
+      description: 'State key to write on the target device, e.g. brightness',
     },
   },
 });
@@ -156,16 +173,53 @@ class Rule extends Component {
       return acc;
     }, {});
 
+    const formData = this.state.formData || {};
+    const isMirror = formData.type === 'mirror';
+
     const patchedSchema = schema.toJS();
-    if (
-      rules.filter((rule) => rule.get('uuid') !== match.params.uuid).size === 0
-    ) {
-      // Hide the conditions part if there is no other rules
+
+    if (isMirror) {
+      // Mirror rules: expression is a value source, not a boolean trigger.
+      patchedSchema.properties.expression.description =
+        'CEL expression producing the value to mirror, e.g. devices["node.id"].brightness';
+      // Delay, actions and conditions don't apply to mirror rules.
+      delete patchedSchema.properties.for;
+      delete patchedSchema.properties.actions;
       delete patchedSchema.properties.conditions;
+
+      // Populate target dropdown from live device list.
+      const deviceIds = devices.map((d) => d.get('id')).valueSeq().toArray();
+      const deviceNames = devices.map((d) => d.get('name') || d.get('id')).valueSeq().toArray();
+      patchedSchema.properties.target.enum = deviceIds;
+      patchedSchema.properties.target.enumNames = deviceNames;
+
+      // Populate targetKey dropdown from the selected target device's state keys.
+      const targetDev = formData.target
+        ? devices.find((d) => d.get('id') === formData.target)
+        : null;
+      if (targetDev && targetDev.get('state')) {
+        const stateKeys = targetDev.get('state').keySeq().toArray();
+        patchedSchema.properties.targetKey.enum = stateKeys;
+        patchedSchema.properties.targetKey.enumNames = stateKeys;
+      }
+    } else {
+      // Normal rules: hide mirror-only fields.
+      delete patchedSchema.properties.target;
+      delete patchedSchema.properties.targetKey;
+
+      // Hide conditions when there are no other rules.
+      if (
+        rules.filter((rule) => rule.get('uuid') !== match.params.uuid).size === 0
+      ) {
+        delete patchedSchema.properties.conditions;
+      }
     }
 
     const patchedUiSchema = uiSchema.toJS();
-    patchedUiSchema.conditions.current = match.params.uuid;
+    // Only set conditions.current when the field is still present.
+    if (patchedSchema.properties.conditions) {
+      patchedUiSchema.conditions.current = match.params.uuid;
+    }
 
     return (
       <>
