@@ -32,6 +32,8 @@ type Rule struct {
 	For_          stypes.Duration `json:"for"`
 	Type_         string          `json:"type"`
 	Destinations_ []string        `json:"destinations"`
+	Target_       string          `json:"target"`
+	TargetKey_    string          `json:"targetKey"`
 	ast           *cel.Ast
 	sync.RWMutex
 	cancel context.CancelFunc
@@ -104,6 +106,18 @@ func (r *Rule) Type() string {
 	return r.Type_
 }
 
+func (r *Rule) Target() string {
+	r.RLock()
+	defer r.RUnlock()
+	return r.Target_
+}
+
+func (r *Rule) TargetKey() string {
+	r.RLock()
+	defer r.RUnlock()
+	return r.TargetKey_
+}
+
 func (r *Rule) Stop() {
 	select {
 	case r.stop <- struct{}{}:
@@ -118,6 +132,26 @@ func (r *Rule) Cancel() {
 		r.cancel()
 	}
 	r.RUnlock()
+}
+
+// sendStateChange groups devices by node and sends a "state-change" message to each node.
+func sendStateChange(sender websocket.Sender, byID map[devices.ID]devices.State) {
+	devicesByNode := make(map[string]map[devices.ID]devices.State)
+	for id, state := range byID {
+		if devicesByNode[id.Node] == nil {
+			devicesByNode[id.Node] = make(map[devices.ID]devices.State)
+		}
+		devicesByNode[id.Node][id] = state
+	}
+	for nodeID, devs := range devicesByNode {
+		logrus.WithFields(logrus.Fields{
+			"to": nodeID,
+		}).Debug("Send state change request to node")
+		err := sender.SendToID(nodeID, "state-change", devs)
+		if err != nil {
+			logrus.Error("logic: error sending state-change to node: ", err)
+		}
+	}
 }
 
 func (r *Rule) Run(store *SavedStateStore, sender websocket.Sender, triggerDestination func(string, string) error) {
@@ -154,23 +188,7 @@ func (r *Rule) Run(store *SavedStateStore, sender websocket.Sender, triggerDesti
 			logrus.Errorf("SavedState %s does not exist", v)
 			return
 		}
-		devicesByNode := make(map[string]map[devices.ID]devices.State)
-		for id, state := range stateList.State {
-			if devicesByNode[id.Node] == nil {
-				devicesByNode[id.Node] = make(map[devices.ID]devices.State)
-			}
-			devicesByNode[id.Node][id] = state
-		}
-		for nodeID, devs := range devicesByNode {
-			logrus.WithFields(logrus.Fields{
-				"to": nodeID,
-			}).Debug("Send state change request to node")
-			err := sender.SendToID(nodeID, "state-change", devs)
-			if err != nil {
-				logrus.Error("logic: error sending state-change to node: ", err)
-				continue
-			}
-		}
+		sendStateChange(sender, stateList.State)
 	}
 
 	for _, dest := range r.Destinations_ {
@@ -225,9 +243,11 @@ func getDailyCelFunc() *functions.Overload {
 	}
 }
 
-func eval(exp string, devices *devices.List, rules map[string]bool, ast *cel.Ast) (bool, error) {
+// evalRaw evaluates a CEL expression and returns the raw ref.Val result.
+// It is the shared core used by eval (bool enforcement) and evalValue (any type).
+func evalRaw(exp string, devList *devices.List, rules map[string]bool, ast *cel.Ast) (ref.Val, error) {
 	devicesState := make(map[string]map[string]interface{})
-	for devID, v := range devices.All() {
+	for devID, v := range devList.All() {
 		devicesState[devID.String()] = make(map[string]interface{})
 		v.Lock()
 		for k, v := range v.State {
@@ -240,36 +260,62 @@ func eval(exp string, devices *devices.List, rules map[string]bool, ast *cel.Ast
 		var iss *cel.Issues
 		ast, iss = celEnv.Parse(exp)
 		if iss.Err() != nil {
-			return false, iss.Err()
+			return nil, iss.Err()
 		}
 
 		c, iss := celEnv.Check(ast)
 		if iss.Err() != nil {
-			return false, iss.Err()
+			return nil, iss.Err()
 		}
 		ast = c
 	}
 
 	prg, err := celEnv.Program(ast, cel.EvalOptions(cel.OptOptimize), cel.Functions(getDailyCelFunc()))
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	result, _, err := prg.Eval(map[string]interface{}{
 		"devices": devicesState,
 		"rules":   rules,
 	})
 	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// eval evaluates a CEL expression and requires the result to be a bool.
+func eval(exp string, devList *devices.List, rules map[string]bool, ast *cel.Ast) (bool, error) {
+	result, err := evalRaw(exp, devList, rules, ast)
+	if err != nil {
 		return false, err
 	}
-
 	if result.Type() != types.BoolType {
 		if result.Type() == types.ErrType {
 			return false, result.Value().(error)
 		}
 		return false, ErrExpressionNotBool
 	}
-
 	return result == types.True, nil
+}
+
+// evalValue evaluates a CEL expression and returns its result as a native Go value.
+// Unlike eval, it accepts any result type — bool, float64, string, etc.
+func evalValue(exp string, devList *devices.List, rules map[string]bool, ast *cel.Ast) (interface{}, error) {
+	result, err := evalRaw(exp, devList, rules, ast)
+	if err != nil {
+		return nil, err
+	}
+	if result.Type() == types.ErrType {
+		return nil, result.Value().(error)
+	}
+	return result.Value(), nil
+}
+
+// EvalValue evaluates the rule's expression and returns its raw value.
+// Unlike Eval, it does not require the expression to produce a bool.
+func (r *Rule) EvalValue(devList *devices.List, rules map[string]bool) (interface{}, error) {
+	return evalValue(r.Expression(), devList, rules, r.ast)
 }
 
 var ErrExpressionNotBool = fmt.Errorf("invalid result of expression. Only bool expressions are valid")
