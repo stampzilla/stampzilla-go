@@ -47,6 +47,7 @@ require (
 	github.com/vapourismo/knx-go v0.0.0-20230307194121-5fc424ba6886
 	golang.org/x/crypto v0.9.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20230530153820-e85fd2cbaebc
+	nhooyr.io/websocket v1.8.7
 	software.sslmate.com/src/go-pkcs12 v0.2.0
 )
 
@@ -113,7 +114,6 @@ require (
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	nhooyr.io/websocket v1.8.7 // indirect
 )
 
 replace github.com/hashicorp/mdns => github.com/jonaz/mdns v0.0.0-20220225212800-0d33a91f9c6b
