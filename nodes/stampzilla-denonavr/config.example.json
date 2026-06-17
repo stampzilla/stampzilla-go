@@ -1,3 +1,12 @@
 {
-  "host": "192.168.x.x:23"
+  "devices": {
+    "1": {
+      "host": "192.168.1.100:23",
+      "name": "Living Room Receiver"
+    },
+    "2": {
+      "host": "192.168.1.101:23",
+      "name": "Bedroom Receiver"
+    }
+  }
 }

@@ -19,16 +19,15 @@ import (
 
 const (
 	defaultPort = "23"
-	deviceID    = "1"
 )
 
 func main() {
-	n, a := start()
+	n, mgr := start()
 	if n == nil {
 		return
 	}
 	n.Wait()
-	a.close()
+	mgr.close()
 }
 
 // avr holds the live TCP connection to the Denon receiver and serialises writes.
@@ -74,43 +73,122 @@ func (a *avr) close() {
 	a.set(nil)
 }
 
-// Config is the per-node application config pushed from the stampzilla server.
-type Config struct {
+// DeviceConfig represents configuration for a single AVR device.
+type DeviceConfig struct {
 	Host string `json:"host"`
+	Name string `json:"name,omitempty"`
 }
 
-var nodeConfig = &Config{}
+// Config is the per-node application config pushed from the stampzilla server.
+type Config struct {
+	Devices map[string]DeviceConfig `json:"devices"`
+}
 
-func updatedConfig(connectToHost chan<- string) node.OnFunc {
-	return func(data json.RawMessage) error {
-		newConf := &Config{}
-		if err := json.Unmarshal(data, newConf); err != nil {
-			return fmt.Errorf("denonavr: bad config: %w", err)
-		}
-		if newConf.Host != nodeConfig.Host {
-			logrus.Infof("denonavr: new host from config: %s", newConf.Host)
-			nodeConfig = newConf
-			connectToHost <- newConf.Host
-		}
-		return nil
+type deviceWorker struct {
+	id     string
+	name   string
+	host   string
+	cancel context.CancelFunc
+	avr    *avr
+}
+
+type manager struct {
+	mu      sync.Mutex
+	node    *node.Node
+	workers map[string]*deviceWorker
+}
+
+func newManager(n *node.Node) *manager {
+	return &manager{
+		node:    n,
+		workers: make(map[string]*deviceWorker),
 	}
 }
 
-func start() (*node.Node, *avr) {
-	connectToHost := make(chan string, 1)
-	a := &avr{}
+func (m *manager) getAvr(id string) *avr {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if w, ok := m.workers[id]; ok {
+		return w.avr
+	}
+	return nil
+}
 
+func (m *manager) close() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for _, w := range m.workers {
+		w.cancel()
+		w.avr.close()
+	}
+}
+
+func (m *manager) updatedConfig(data json.RawMessage) error {
+	newConf := &Config{}
+	if err := json.Unmarshal(data, newConf); err != nil {
+		return fmt.Errorf("denonavr: bad config: %w", err)
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	// Stop workers that are not in the new config or have changed hosts.
+	for id, w := range m.workers {
+		newDev, ok := newConf.Devices[id]
+		if !ok || newDev.Host != w.host {
+			logrus.Infof("denonavr [%s]: stopping worker (%s)", id, w.host)
+			w.cancel()
+			w.avr.close()
+			setDeviceOnline(m.node, id, false)
+			delete(m.workers, id)
+		}
+	}
+
+	// Start or update workers.
+	for id, dev := range newConf.Devices {
+		if w, ok := m.workers[id]; !ok {
+			logrus.Infof("denonavr [%s]: starting worker (%s - %s)", id, dev.Name, dev.Host)
+			ensureDevice(m.node, id, dev.Name)
+
+			ctx, cancel := context.WithCancel(context.Background())
+			a := &avr{}
+			m.workers[id] = &deviceWorker{
+				id:     id,
+				name:   dev.Name,
+				host:   dev.Host,
+				cancel: cancel,
+				avr:    a,
+			}
+
+			go connectionWorker(ctx, m.node, id, dev.Host, a)
+		} else if dev.Name != w.name {
+			// Update name without restarting the connection
+			logrus.Infof("denonavr [%s]: updating device name (%s -> %s)", id, w.name, dev.Name)
+			w.name = dev.Name
+			ensureDevice(m.node, id, dev.Name)
+		}
+	}
+
+	return nil
+}
+
+func start() (*node.Node, *manager) {
 	n := node.New("denonavr")
-	n.OnConfig(updatedConfig(connectToHost))
+	mgr := newManager(n)
+
+	n.OnConfig(mgr.updatedConfig)
 
 	if err := n.Connect(); err != nil {
 		logrus.Error(err)
 		return nil, nil
 	}
 
-	ensureDevice(n)
+	n.OnRequestStateChange(func(state devices.State, d *devices.Device) error {
+		a := mgr.getAvr(d.ID.ID)
+		if a == nil {
+			return fmt.Errorf("denonavr: device %s not found", d.ID.ID)
+		}
 
-	n.OnRequestStateChange(func(state devices.State, _ *devices.Device) error {
 		var err error
 
 		state.Bool("on", func(on bool) {
@@ -137,24 +215,33 @@ func start() (*node.Node, *avr) {
 		return err
 	})
 
-	go connectionWorker(n, a, connectToHost)
-
-	return n, a
+	return n, mgr
 }
 
 // ensureDevice registers the Denon AVR device with the node if it does not exist yet.
-func ensureDevice(n *node.Node) {
-	if n.GetDevice(deviceID) != nil {
+var ensureDevice = func(n *node.Node, id string, name string) {
+	if name == "" {
+		name = "Denon AVR"
+	}
+	if dev := n.GetDevice(id); dev != nil {
+		if dev.Name != name {
+			dev.Name = name
+			n.AddOrUpdate(dev)
+		}
 		return
 	}
 	n.AddOrUpdate(&devices.Device{
 		Type:   "mediaplayer",
-		ID:     devices.ID{ID: deviceID},
-		Name:   "Denon AVR",
+		ID:     devices.ID{ID: id},
+		Name:   name,
 		Online: false,
 		Traits: []string{"OnOff", "Volume"},
 		State:  devices.State{"on": false, "volume": 0.0, "source": ""},
 	})
+}
+
+var setDeviceOnline = func(n *node.Node, id string, online bool) {
+	n.SetDeviceOnline(id, online)
 }
 
 // normaliseHost appends the default telnet port (23) when none is present.
@@ -166,55 +253,35 @@ func normaliseHost(host string) string {
 }
 
 // connectionWorker maintains a persistent TCP connection to the Denon receiver.
-// It reconnects automatically on network errors and reacts to host changes
-// delivered via connectToHost (populated by OnConfig).
-func connectionWorker(n *node.Node, a *avr, connectToHost <-chan string) {
-	var host string
-
-	// Wait for the first host before attempting any connection.
-	select {
-	case h := <-connectToHost:
-		host = h
-	case <-n.Stopped():
-		return
-	}
-
+// It reconnects automatically on network errors until its context is canceled.
+func connectionWorker(ctx context.Context, n *node.Node, id string, host string, a *avr) {
 	for {
 		if strings.TrimSpace(host) == "" {
-			n.SetDeviceOnline(deviceID, false)
-			select {
-			case h := <-connectToHost:
-				host = h
-				continue
-			case <-n.Stopped():
-				return
-			}
+			setDeviceOnline(n, id, false)
+			return
 		}
 
 		addr := normaliseHost(host)
-		logrus.Infof("denonavr: connecting to %s", addr)
+		logrus.Infof("denonavr [%s]: connecting to %s", id, addr)
 
-		dialCtx, dialCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		dialCtx, dialCancel := context.WithTimeout(ctx, 10*time.Second)
 		conn, err := (&net.Dialer{}).DialContext(dialCtx, "tcp", addr)
 		dialCancel()
 
 		if err != nil {
-			logrus.Errorf("denonavr: dial %s: %s", addr, err)
-			n.SetDeviceOnline(deviceID, false)
+			logrus.Errorf("denonavr [%s]: dial %s: %s", id, addr, err)
+			setDeviceOnline(n, id, false)
 			select {
-			case h := <-connectToHost:
-				host = h
 			case <-time.After(10 * time.Second):
-			case <-n.Stopped():
+			case <-ctx.Done():
 				return
 			}
 			continue
 		}
 
-		logrus.Infof("denonavr: connected to %s", addr)
+		logrus.Infof("denonavr [%s]: connected to %s", id, addr)
 		a.set(conn)
-		ensureDevice(n)
-		n.SetDeviceOnline(deviceID, true)
+		setDeviceOnline(n, id, true)
 
 		// Query initial state.
 		_ = a.send("PW?")
@@ -225,32 +292,23 @@ func connectionWorker(n *node.Node, a *avr, connectToHost <-chan string) {
 		disconnected := make(chan struct{})
 		go func() {
 			defer close(disconnected)
-			readLoop(n, conn)
+			readLoop(n, id, conn)
 		}()
 
-		// Block until the link drops, the target host changes, or we shut down.
+		// Block until the link drops, or we shut down.
 		select {
-		case <-n.Stopped():
+		case <-ctx.Done():
 			a.close() // triggers readLoop to exit with an I/O error
 			<-disconnected
 			return
 
-		case h := <-connectToHost:
-			host = h
-			n.SetDeviceOnline(deviceID, false)
-			a.close() // triggers readLoop to exit
-			<-disconnected
-			// fall through to reconnect with new host
-
 		case <-disconnected:
 			a.set(nil)
-			n.SetDeviceOnline(deviceID, false)
-			logrus.Info("denonavr: disconnected, reconnecting in 10s")
+			setDeviceOnline(n, id, false)
+			logrus.Infof("denonavr [%s]: disconnected, reconnecting in 10s", id)
 			select {
-			case h := <-connectToHost:
-				host = h
 			case <-time.After(10 * time.Second):
-			case <-n.Stopped():
+			case <-ctx.Done():
 				return
 			}
 		}
@@ -259,7 +317,7 @@ func connectionWorker(n *node.Node, a *avr, connectToHost <-chan string) {
 
 // readLoop reads CR-terminated event lines from conn and updates device state.
 // It returns when conn is closed or an I/O error occurs.
-func readLoop(n *node.Node, conn net.Conn) {
+func readLoop(n *node.Node, id string, conn net.Conn) {
 	buf := bufio.NewReader(conn)
 	for {
 		line, err := buf.ReadString('\r')
@@ -267,16 +325,16 @@ func readLoop(n *node.Node, conn net.Conn) {
 			if errors.Is(err, net.ErrClosed) || errors.Is(err, io.EOF) {
 				return
 			}
-			logrus.Errorf("denonavr: read: %s", err)
+			logrus.Errorf("denonavr [%s]: read: %s", id, err)
 			return
 		}
 		line = strings.TrimRight(line, "\r\n ")
 		if line == "" {
 			continue
 		}
-		logrus.Debugf("denonavr: event: %s", line)
+		logrus.Debugf("denonavr [%s]: event: %s", id, line)
 		if state := parseEvent(line); len(state) > 0 {
-			n.UpdateState(deviceID, state)
+			n.UpdateState(id, state)
 		}
 	}
 }
