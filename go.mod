@@ -1,6 +1,6 @@
 module github.com/stampzilla/stampzilla-go/v2
 
-go 1.20
+go 1.25.0
 
 require (
 	github.com/RangelReale/osin v1.0.1
@@ -20,7 +20,6 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/gregdel/pushover v1.2.0
-	github.com/hashicorp/mdns v1.0.5
 	github.com/influxdata/influxdb1-client v0.0.0-20220302092344-a9ab5670611c
 	github.com/itchyny/volume-go v0.2.2
 	github.com/jonaz/cron v0.0.0-20190121203350-e9ab53dd31db
@@ -34,7 +33,7 @@ require (
 	github.com/onrik/logrus v0.11.0
 	github.com/pkg/errors v0.9.1
 	github.com/posener/wstest v0.0.0-20180217133618-28272a7ea048
-	github.com/rakyll/statik v0.1.7
+	github.com/rakyll/statik v0.1.8
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stamp/hid v0.0.0-20190105143849-bc55d7d13ce1
@@ -45,8 +44,8 @@ require (
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 	github.com/urfave/cli/v2 v2.25.5
 	github.com/vapourismo/knx-go v0.0.0-20230307194121-5fc424ba6886
-	golang.org/x/crypto v0.9.0
-	golang.org/x/sys v0.8.0
+	golang.org/x/crypto v0.54.0
+	golang.org/x/sys v0.47.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20230530153820-e85fd2cbaebc
 	nhooyr.io/websocket v1.8.7
 	software.sslmate.com/src/go-pkcs12 v0.2.0
@@ -78,6 +77,7 @@ require (
 	github.com/hajimehoshi/go-mp3 v0.3.4 // indirect
 	github.com/hajimehoshi/oto v1.0.1 // indirect
 	github.com/jonaz/astrotime v0.0.0-20150127084258-5d2b676e5047 // indirect
+	github.com/jonaz/mdns v0.0.0-20260811123635-c18bee6c11f5 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
@@ -85,7 +85,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/micro/mdns v0.3.0 // indirect
-	github.com/miekg/dns v1.1.54 // indirect
+	github.com/miekg/dns v1.1.72 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/moutend/go-wca v0.3.0 // indirect
@@ -106,16 +106,15 @@ require (
 	golang.org/x/exp/shiny v0.0.0-20230522175609-2e198f4a06a1 // indirect
 	golang.org/x/image v0.7.0 // indirect
 	golang.org/x/mobile v0.0.0-20230531173138-3c911d8e3eda // indirect
-	golang.org/x/mod v0.10.0 // indirect
-	golang.org/x/net v0.10.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
-	golang.org/x/tools v0.9.3 // indirect
+	golang.org/x/mod v0.37.0 // indirect
+	golang.org/x/net v0.57.0 // indirect
+	golang.org/x/sync v0.22.0 // indirect
+	golang.org/x/text v0.40.0 // indirect
+	golang.org/x/tools v0.47.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/hashicorp/mdns => github.com/jonaz/mdns v0.0.0-20220225212800-0d33a91f9c6b
 
 //replace github.com/stampzilla/gocast => /home/jonaz/go/src/github.com/stampzilla/gocast

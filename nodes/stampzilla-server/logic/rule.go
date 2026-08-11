@@ -226,16 +226,16 @@ func getDailyCelFunc() *functions.Overload {
 			now := time.Now()
 			start, err := time.Parse("15:04", from.Value().(string))
 			if err != nil {
-				return types.NewErr(err.Error())
+				return types.WrapErr(err)
 			}
 			end, err := time.Parse("15:04", to.Value().(string))
 			if err != nil {
-				return types.NewErr(err.Error())
+				return types.WrapErr(err)
 			}
 
 			n, err := time.Parse("15:04", now.Format("15:04"))
 			if err != nil {
-				return types.NewErr(err.Error())
+				return types.WrapErr(err)
 			}
 
 			return types.Bool(inTimeSpan(start, end, n))
