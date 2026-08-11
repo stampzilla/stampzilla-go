@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/mdns"
+	"github.com/jonaz/mdns"
 	"github.com/sirupsen/logrus"
 )
 
