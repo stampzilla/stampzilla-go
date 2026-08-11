@@ -46,6 +46,7 @@ require (
 	github.com/urfave/cli/v2 v2.25.5
 	github.com/vapourismo/knx-go v0.0.0-20230307194121-5fc424ba6886
 	golang.org/x/crypto v0.9.0
+	golang.org/x/sys v0.8.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20230530153820-e85fd2cbaebc
 	nhooyr.io/websocket v1.8.7
 	software.sslmate.com/src/go-pkcs12 v0.2.0
@@ -107,7 +108,6 @@ require (
 	golang.org/x/mobile v0.0.0-20230531173138-3c911d8e3eda // indirect
 	golang.org/x/mod v0.10.0 // indirect
 	golang.org/x/net v0.10.0 // indirect
-	golang.org/x/sys v0.8.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	golang.org/x/tools v0.9.3 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc // indirect
