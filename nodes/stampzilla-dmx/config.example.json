@@ -1,0 +1,32 @@
+{
+  "port": "/dev/ttyUSB0",
+  "fps": 30,
+  "profiles": {
+    "mypar": {
+      "channels": ["mode", "dimmer", "red", "green", "blue", "white"],
+      "static": { "mode": 255 }
+    }
+  },
+  "fixtures": {
+    "par1": { "profile": "mypar", "address": 1 },
+    "par2": { "profile": "mypar", "address": 7 },
+    "par3": { "profile": "mypar", "address": 13 },
+    "spot": { "profile": "dimmer", "address": 100 }
+  },
+  "groups": {
+    "stage": {
+      "name": "Stage wash",
+      "fixtures": ["par1", "par2", "par3"],
+      "pattern": "chase",
+      "interval": "400ms",
+      "colors": ["#ff0000", "#00ff00", "#0000ff"],
+      "reverse": false
+    },
+    "spots": {
+      "name": "Spots",
+      "fixtures": ["spot"],
+      "pattern": "pulse",
+      "interval": "2s"
+    }
+  }
+}
