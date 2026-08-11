@@ -1,43 +1,72 @@
 import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 import { Button } from 'reactstrap';
 import { connect } from 'react-redux';
 import Form from 'react-jsonschema-form';
-import JSONInput from 'react-json-editor-ajrm';
-import locale from 'react-json-editor-ajrm/locale/en';
 
 import { write } from '../../components/Websocket';
 import Card from '../../components/Card';
 import CustomCheckbox from '../../components/CustomCheckbox';
 
-const JsonWidget = (props) => {
-  const { value, onChange } = props;
+const INDENT = 2;
 
-  let parsedValue = {};
+// Returns null when the text isn't valid JSON, so callers can leave the
+// user's text untouched instead of mangling a work-in-progress edit.
+const formatJson = (value) => {
   try {
-    parsedValue = value && JSON.parse(value);
+    return JSON.stringify(JSON.parse(value), null, INDENT);
   } catch (err) {
-    parsedValue = {
-      'parse error': err,
-    };
+    return null;
   }
+};
+
+// A plain controlled <textarea> instead of a fancy syntax-highlighting
+// editor: it has no internal DOM/tokenizer state of its own to desync from
+// React, so typing, pasting and invalid JSON can never corrupt the input.
+const JsonWidget = (props) => {
+  const {
+    id, value, onChange, options, disabled, readonly,
+  } = props;
+  const formatted = formatJson(value || '');
 
   return (
-    <JSONInput
-      placeholder={typeof parsedValue === 'object' ? parsedValue : undefined}
-      onBlur={({ json, error }) => {
-        if (error !== false) { // Dont send new data to form if its not valid waitAfterKeyPress will make sure error msg is shown after 1 sec.
-          return;
-        }
-        onChange(json);
-      }}
-      theme="dark_vscode_tribute"
-      locale={locale}
-      height="550px"
-      width="100%"
-      reset={false}
-      waitAfterKeyPress={1000}
-    />
+    <>
+      <textarea
+        id={id}
+        className="form-control"
+        style={{ fontFamily: 'monospace' }}
+        rows={(options && options.rows) || 15}
+        value={value || ''}
+        disabled={disabled || readonly}
+        onChange={(event) => onChange(event.target.value)}
+      />
+      <button
+        type="button"
+        className="btn btn-secondary btn-sm mt-2"
+        disabled={formatted === null || disabled || readonly}
+        onClick={() => onChange(formatted)}
+      >
+        Format JSON
+      </button>
+    </>
   );
+};
+JsonWidget.propTypes = {
+  id: PropTypes.string,
+  value: PropTypes.string,
+  onChange: PropTypes.func.isRequired,
+  options: PropTypes.shape({
+    rows: PropTypes.number,
+  }),
+  disabled: PropTypes.bool,
+  readonly: PropTypes.bool,
+};
+JsonWidget.defaultProps = {
+  id: undefined,
+  value: '',
+  options: {},
+  disabled: false,
+  readonly: false,
 };
 
 const schema = {
@@ -63,6 +92,15 @@ const uiSchema = {
   },
 };
 
+const validate = (formData, errors) => {
+  try {
+    JSON.parse(formData.config);
+  } catch (err) {
+    errors.config.addError(`Invalid JSON: ${err.message}`);
+  }
+  return errors;
+};
+
 class Node extends Component {
   constructor(props) {
     super(props);
@@ -70,21 +108,34 @@ class Node extends Component {
     this.state = {
       isValid: true,
       formData: {},
+      loadedUuid: null,
     };
   }
 
   componentDidMount = () => {
-    this.componentWillReceiveProps(this.props);
+    this.syncFormData(this.props);
   };
 
-  componentWillReceiveProps = (props) => {
+  componentDidUpdate = () => {
+    this.syncFormData(this.props);
+  };
+
+  // Only load formData from the store when we don't have it yet for this
+  // node. The `nodes` list is replaced with a new reference on every
+  // websocket update (e.g. unrelated node heartbeats), so resyncing
+  // unconditionally here would wipe out unsaved edits while the user types.
+  syncFormData = (props) => {
     const { nodes, match } = props;
+    if (this.state.loadedUuid === match.params.uuid) {
+      return;
+    }
     const node = nodes && nodes.find((n) => n.get('uuid') === match.params.uuid);
     if (node) {
       this.setState({
+        loadedUuid: match.params.uuid,
         formData: {
           name: node.get('name'),
-          config: JSON.stringify(node.get('config')),
+          config: JSON.stringify(node.get('config'), null, INDENT),
         },
       });
     }
@@ -129,7 +180,7 @@ class Node extends Component {
               title={
                 node ? (
                   <>
-                    Settings for node
+                    Settings 1 for node
                     {' '}
                     <strong>{node.get('uuid')}</strong>
                     {' '}
@@ -146,10 +197,12 @@ class Node extends Component {
             >
               <div className="card-body">
                 <Form
+                  key={this.state.loadedUuid}
                   schema={schema}
                   uiSchema={uiSchema}
                   showErrorList={false}
                   liveValidate
+                  validate={validate}
                   onChange={this.onChange()}
                   formData={this.state.formData}
                   onSubmit={this.onSubmit()}

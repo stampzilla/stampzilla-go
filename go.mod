@@ -33,7 +33,7 @@ require (
 	github.com/onrik/logrus v0.11.0
 	github.com/pkg/errors v0.9.1
 	github.com/posener/wstest v0.0.0-20180217133618-28272a7ea048
-	github.com/rakyll/statik v0.1.7
+	github.com/rakyll/statik v0.1.8
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stamp/hid v0.0.0-20190105143849-bc55d7d13ce1

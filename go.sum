@@ -238,6 +238,8 @@ github.com/posener/wstest v0.0.0-20180217133618-28272a7ea048 h1:XJ1bEwzKDbW33q70
 github.com/posener/wstest v0.0.0-20180217133618-28272a7ea048/go.mod h1:cjC8eRbwXrr5m2069dsjp7l7b0gWqFwMTUBDLNvVqho=
 github.com/rakyll/statik v0.1.7 h1:OF3QCZUuyPxuGEP7B4ypUa7sB/iHtqOTDYZXGM8KOdQ=
 github.com/rakyll/statik v0.1.7/go.mod h1:AlZONWzMtEnMs7W4e/1LURLiI49pIMmp6V9Unghqrcc=
+github.com/rakyll/statik v0.1.8 h1:Fe7egWVZbW/2vlPUY8P/aL9o6qbtrBn71uIztkdafMU=
+github.com/rakyll/statik v0.1.8/go.mod h1:AlZONWzMtEnMs7W4e/1LURLiI49pIMmp6V9Unghqrcc=
 github.com/rogpeppe/go-internal v1.6.1/go.mod h1:xXDCJY+GAPziupqXw64V24skbSoqbTEfhy4qGm1nDQc=
 github.com/rogpeppe/go-internal v1.8.0 h1:FCbCCtXNOY3UtUuHUYaghJg4y7Fd14rXifAYUAtL9R8=
 github.com/rogpeppe/go-internal v1.8.0/go.mod h1:WmiCO8CzOY8rg0OYDC4/i/2WRWAB6poM+XZ2dLUbcbE=
