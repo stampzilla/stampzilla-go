@@ -25,9 +25,6 @@ import (
 // widget. See README.md for a latency_timer tuning tip.
 const (
 	openDMXBaud = 250000 // DMX-512's fixed line rate; not configurable
-
-	breakDuration  = 176 * time.Microsecond // DMX-512 minimum is 92us
-	markAfterBreak = 20 * time.Microsecond  // DMX-512 minimum is 12us
 )
 
 // termios2For builds the termios value used to configure the serial port at
@@ -50,8 +47,10 @@ func termios2For(baud uint32) unix.Termios {
 
 // openDMXOutput writes DMX frames to a raw Open DMX USB-style serial widget.
 type openDMXOutput struct {
-	mu sync.Mutex
-	f  *os.File
+	mu                sync.Mutex
+	f                 *os.File
+	lastWriteTime     time.Time
+	lastWriteDuration time.Duration
 }
 
 // openOpenDMXOutput opens the serial port used to talk to the DMX cable.
@@ -61,11 +60,15 @@ func openOpenDMXOutput(name string) (*openDMXOutput, error) {
 		return nil, err
 	}
 
-	t := termios2For(openDMXBaud)
-	if _, _, errno := unix.Syscall(unix.SYS_IOCTL, f.Fd(), uintptr(unix.TCSETS2), uintptr(unsafe.Pointer(&t))); errno != 0 {
+	if err := setBaudRate(f.Fd(), openDMXBaud); err != nil {
 		f.Close()
-		return nil, errno
+		return nil, err
 	}
+
+	// Assert RTS & DTR lines (Enables RS-485 transceiver DE pin on FT232 cables)
+	fd := int(f.Fd())
+	lines := unix.TIOCM_RTS | unix.TIOCM_DTR
+	_ = unix.IoctlSetInt(fd, unix.TIOCMBIS, lines)
 
 	return &openDMXOutput{f: f}, nil
 }
@@ -74,23 +77,49 @@ func (o *openDMXOutput) Send(channels []byte) error {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
+	if o.f == nil {
+		return os.ErrClosed
+	}
+
 	fd := o.f.Fd()
 
-	// Drain (wait for the previous frame to finish transmitting) without
-	// sending a break, so we never assert a break mid-byte and corrupt the
-	// tail of the prior frame. A nonzero argument means drain-only on Linux.
-	if _, _, errno := unix.Syscall(unix.SYS_IOCTL, fd, uintptr(unix.TCSBRK), 1); errno != 0 {
-		return errno
+	// 1. Wait for preceding bytes in the hardware FTDI FIFO and driver buffer to finish transmitting.
+	// Since tcdrain/TCSBRK on USB-serial adapters can return before the hardware FIFO is completely
+	// empty, we enforce the required physical transmission time ourselves to prevent asserting
+	// a BREAK in the middle of an active byte transmission.
+	if !o.lastWriteTime.IsZero() {
+		elapsed := time.Since(o.lastWriteTime)
+		if elapsed < o.lastWriteDuration {
+			time.Sleep(o.lastWriteDuration - elapsed)
+		}
 	}
 
-	if _, _, errno := unix.Syscall(unix.SYS_IOCTL, fd, uintptr(unix.TIOCSBRK), 0); errno != 0 {
-		return errno
+	// 2. Change baud rate to 50,000 baud to generate the BREAK.
+	// At 50,000 baud 8N2 (11 bits total per byte), transmitting 1 byte takes exactly 220 microseconds:
+	// - 1 start bit (low) + 8 data bits of 0x00 (low) = 9 low bits (180us BREAK)
+	// - 2 stop bits (high) = 2 high bits (40us Mark-After-Break)
+	// This generates a hardware-precise, standard-compliant Break and MAB
+	// that cannot overflow the decoder's firmware timers or cause line-fault bugs.
+	if err := setBaudRate(fd, 50000); err != nil {
+		return err
 	}
-	time.Sleep(breakDuration)
-	if _, _, errno := unix.Syscall(unix.SYS_IOCTL, fd, uintptr(unix.TIOCCBRK), 0); errno != 0 {
-		return errno
+
+	// 3. Send a single 0x00 byte to generate the Break + MAB sequence
+	if _, err := o.f.Write([]byte{0x00}); err != nil {
+		return err
 	}
-	time.Sleep(markAfterBreak)
+
+	// 4. Wait for the BREAK/MAB byte to finish transmitting physically.
+	// Since the kernel buffer is tiny (1 byte), TCSBRK/drain behaves correctly.
+	// We add a 250us safety sleep to ensure the hardware serializer has completely
+	// shifted out the stop bits before we re-configure the baud rate generator.
+	_ = ioctl(fd, uintptr(unix.TCSBRK), 1)
+	preciseSleep(250 * time.Microsecond)
+
+	// 5. Restore baud rate back to 250,000 baud for standard DMX data packet transmission.
+	if err := setBaudRate(fd, openDMXBaud); err != nil {
+		return err
+	}
 
 	data := clampChannels(channels)
 	frame := make([]byte, 0, len(data)+1)
@@ -98,6 +127,13 @@ func (o *openDMXOutput) Send(channels []byte) error {
 	frame = append(frame, data...)
 
 	_, err := o.f.Write(frame)
+	if err == nil {
+		o.lastWriteTime = time.Now()
+		// At 250,000 baud 8N2 (11 bits total per byte), transmitting 1 byte takes exactly 44 microseconds.
+		// We add a 200 microseconds safety margin to be absolutely certain the chip's transmitter
+		// is completely done shifting out the last stop bit before the next loop tries to assert BREAK.
+		o.lastWriteDuration = time.Duration(len(frame))*44*time.Microsecond + 200*time.Microsecond
+	}
 	return err
 }
 
@@ -110,4 +146,27 @@ func (o *openDMXOutput) Close() error {
 	err := o.f.Close()
 	o.f = nil
 	return err
+}
+
+func preciseSleep(d time.Duration) {
+	start := time.Now()
+	for time.Since(start) < d {
+	}
+}
+
+func setBaudRate(fd uintptr, baud uint32) error {
+	t := termios2For(baud)
+	if errno := ioctl(fd, uintptr(unix.TCSETS2), uintptr(unsafe.Pointer(&t))); errno != 0 {
+		return errno
+	}
+	return nil
+}
+
+func ioctl(fd uintptr, req uintptr, arg uintptr) unix.Errno {
+	for {
+		_, _, errno := unix.Syscall(unix.SYS_IOCTL, fd, req, arg)
+		if errno != unix.EINTR {
+			return errno
+		}
+	}
 }

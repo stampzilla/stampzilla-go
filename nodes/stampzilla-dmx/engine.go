@@ -236,9 +236,10 @@ func (e *engine) connectionSupervisor(ctx context.Context) {
 
 		if cfg.port == "" {
 			if connected {
-				_ = e.output().Close()
+				oldOut := e.output()
+				e.setOutput(logOutput{})
+				_ = oldOut.Close()
 			}
-			e.setOutput(logOutput{})
 			e.outputBroken.Store(false)
 			e.setGroupsOnline(true)
 			openPort, connected = "", false
@@ -250,7 +251,10 @@ func (e *engine) connectionSupervisor(ctx context.Context) {
 			return
 		}
 
-		_ = e.output().Close()
+		oldOut := e.output()
+		e.setOutput(logOutput{})
+		_ = oldOut.Close()
+
 		o, err := openOpenDMXOutput(cfg.port)
 		openPort = cfg.port
 		e.outputBroken.Store(false)
