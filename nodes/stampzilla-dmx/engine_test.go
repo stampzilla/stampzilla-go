@@ -85,6 +85,33 @@ const testConfig = `{
 	}
 }`
 
+// fillOnceConfig uses 6 fixtures (not testConfig's 3): count-1 needs to be
+// large enough to distinguish "interrupted mid-animation" from "already at
+// the extreme end", which 3 fixtures can't reliably do.
+const fillOnceConfig = `{
+	"fixtures": {
+		"f1": {"profile": "dimmer", "address": 1},
+		"f2": {"profile": "dimmer", "address": 2},
+		"f3": {"profile": "dimmer", "address": 3},
+		"f4": {"profile": "dimmer", "address": 4},
+		"f5": {"profile": "dimmer", "address": 5},
+		"f6": {"profile": "dimmer", "address": 6}
+	},
+	"groups": {
+		"g1": {"fixtures": ["f1", "f2", "f3", "f4", "f5", "f6"], "pattern": "fillonce", "interval": "100ms"}
+	}
+}`
+
+func litCount(frame []byte, n int) int {
+	lit := 0
+	for _, b := range frame[:n] {
+		if b != 0 {
+			lit++
+		}
+	}
+	return lit
+}
+
 func TestEngineOffBlacksOutUniverse(t *testing.T) {
 	e, out := newTestEngine(t, testConfig)
 	setGroupState(t, e, "g1", false, 1, "", 0)
@@ -204,5 +231,184 @@ func TestEngineRequestStateChangeAppliesOnAndBrightness(t *testing.T) {
 	e.mu.Unlock()
 	if !st.on || st.brightness != 0.25 {
 		t.Errorf("state = %+v, want on=true brightness=0.25", st)
+	}
+}
+
+// TestEngineFillOnceStartsSettledWhenOff is the regression test for the
+// startup-flash bug: a fresh group is off from config load (no
+// setGroupState call at all here), and must render fully dark on its very
+// first frame rather than showing step 0 of a closing animation it never
+// actually played.
+func TestEngineFillOnceStartsSettledWhenOff(t *testing.T) {
+	e, out := newTestEngine(t, fillOnceConfig)
+	e.renderFrame()
+	if lit := litCount(out.frames[0], 6); lit != 0 {
+		t.Errorf("lit = %d, want 0 - a fresh off group must start settled dark, not mid-drain", lit)
+	}
+}
+
+// TestEngineFillOnceDrainsWhileOff proves the rendersWhileOff bypass in
+// renderFrame actually engages: an off fillonce group is not simply skipped.
+func TestEngineFillOnceDrainsWhileOff(t *testing.T) {
+	e, out := newTestEngine(t, fillOnceConfig)
+	setGroupState(t, e, "g1", false, 1, "fillonce", 0)
+	e.renderFrame()
+	frame := out.frames[0]
+	if lit := litCount(frame, 6); lit != 5 {
+		t.Errorf("lit = %d, want 5 (count-1) at the start of the drain", lit)
+	}
+	if frame[5] != 0 {
+		t.Error("the last fixture (index 5) should be the first to turn off when draining")
+	}
+}
+
+func TestEngineFillOnceOffTerminalIsBlack(t *testing.T) {
+	e, out := newTestEngine(t, fillOnceConfig)
+
+	setGroupState(t, e, "g1", false, 1, "fillonce", 6*100*time.Millisecond) // count*interval
+	e.renderFrame()
+	if lit := litCount(out.frames[0], 6); lit != 0 {
+		t.Errorf("lit = %d, want 0 at the end of the drain", lit)
+	}
+
+	setGroupState(t, e, "g1", false, 1, "fillonce", 60*100*time.Millisecond) // well past the end
+	e.renderFrame()
+	if lit := litCount(out.frames[1], 6); lit != 0 {
+		t.Errorf("lit = %d, want 0 - a drained group must hold dark, not re-fill", lit)
+	}
+}
+
+// TestEngineSwitchToFillOnceWhileOffStaysDark is the regression test for the
+// switch-while-off flash: a group already off under a different pattern
+// must settle dark immediately when switched to fillonce, not animate a
+// closing sequence that was never playing.
+func TestEngineSwitchToFillOnceWhileOffStaysDark(t *testing.T) {
+	e, out := newTestEngine(t, fillOnceConfig)
+	setGroupState(t, e, "g1", false, 1, "static", 0)
+
+	if err := e.onRequestStateChange(devices.State{"pattern": "fillonce"}, &devices.Device{ID: devices.ID{ID: "g1"}}); err != nil {
+		t.Fatalf("onRequestStateChange() error = %v", err)
+	}
+
+	e.renderFrame()
+	if lit := litCount(out.frames[0], 6); lit != 0 {
+		t.Errorf("lit = %d, want 0 - switching to fillonce while off must not flash", lit)
+	}
+}
+
+// TestEngineFillOnceInterruptedFillCarriesProgress is the regression test
+// for the interrupted-toggle jump: turning a group off partway through
+// filling in must not first flash the fixtures the fill hadn't reached yet
+// before draining - the drain must pick up from the currently-visible lit
+// count.
+func TestEngineFillOnceInterruptedFillCarriesProgress(t *testing.T) {
+	e, out := newTestEngine(t, fillOnceConfig)
+	setGroupState(t, e, "g1", true, 1, "fillonce", 2*100*time.Millisecond) // step 2 -> 3 lit
+	e.renderFrame()
+	litBefore := litCount(out.frames[0], 6)
+	if litBefore != 3 {
+		t.Fatalf("setup: lit = %d, want 3 before toggling off", litBefore)
+	}
+
+	if err := e.onRequestStateChange(devices.State{"on": false}, &devices.Device{ID: devices.ID{ID: "g1"}}); err != nil {
+		t.Fatalf("onRequestStateChange() error = %v", err)
+	}
+	e.renderFrame()
+	litAfter := litCount(out.frames[1], 6)
+	if litAfter > litBefore {
+		t.Errorf("lit jumped from %d to %d after toggling off - interrupted fill must not flash extra fixtures before draining", litBefore, litAfter)
+	}
+}
+
+// TestEngineFillOnceInterruptedDrainCarriesProgress mirrors
+// TestEngineFillOnceInterruptedFillCarriesProgress in the other direction.
+func TestEngineFillOnceInterruptedDrainCarriesProgress(t *testing.T) {
+	e, out := newTestEngine(t, fillOnceConfig)
+	setGroupState(t, e, "g1", false, 1, "fillonce", 3*100*time.Millisecond) // closing step 3 -> 2 lit
+	e.renderFrame()
+	litBefore := litCount(out.frames[0], 6)
+	if litBefore != 2 {
+		t.Fatalf("setup: lit = %d, want 2 before toggling on", litBefore)
+	}
+
+	if err := e.onRequestStateChange(devices.State{"on": true}, &devices.Device{ID: devices.ID{ID: "g1"}}); err != nil {
+		t.Fatalf("onRequestStateChange() error = %v", err)
+	}
+	e.renderFrame()
+	litAfter := litCount(out.frames[1], 6)
+	if litAfter < litBefore {
+		t.Errorf("lit dropped from %d to %d after toggling on - interrupted drain must not flash dark before filling back up", litBefore, litAfter)
+	}
+}
+
+// TestEngineFillOnceRedundantOffDoesNotRestartDrain guards the
+// sawOn/oldOn-based flip detection in onRequestStateChange: resending the
+// same "on" value must not touch startedAt.
+func TestEngineFillOnceRedundantOffDoesNotRestartDrain(t *testing.T) {
+	e, _ := newTestEngine(t, fillOnceConfig)
+	setGroupState(t, e, "g1", false, 1, "fillonce", 2*100*time.Millisecond)
+
+	e.mu.Lock()
+	before := e.states["g1"].startedAt
+	e.mu.Unlock()
+
+	if err := e.onRequestStateChange(devices.State{"on": false}, &devices.Device{ID: devices.ID{ID: "g1"}}); err != nil {
+		t.Fatalf("onRequestStateChange() error = %v", err)
+	}
+
+	e.mu.Lock()
+	after := e.states["g1"].startedAt
+	e.mu.Unlock()
+
+	if !before.Equal(after) {
+		t.Errorf("startedAt moved from %v to %v on a redundant {on:false} - should be a no-op", before, after)
+	}
+}
+
+// TestEngineNonLatchingPatternStillInstantOff confirms the other 10
+// patterns are unaffected by rendersWhileOff - TestEngineOffBlacksOutUniverse
+// only covers "static"; "fill" is the pattern someone would most plausibly
+// mistake for wanting the new behavior, so it's worth its own check.
+func TestEngineNonLatchingPatternStillInstantOff(t *testing.T) {
+	e, out := newTestEngine(t, testConfig)
+	setGroupState(t, e, "g1", false, 1, "fill", 2*100*time.Millisecond)
+	e.renderFrame()
+	for i, b := range out.frames[0] {
+		if b != 0 {
+			t.Errorf("byte %d = %d, want 0 (fill is not a rendersWhileOff pattern, must be instant-off)", i, b)
+		}
+	}
+}
+
+func TestEngineFillOnceBrightnessAppliesWhileDraining(t *testing.T) {
+	e, out := newTestEngine(t, fillOnceConfig)
+	setGroupState(t, e, "g1", false, 0.5, "fillonce", 0) // step 0 closing -> fixture 0 lit
+	e.renderFrame()
+	if got := out.frames[0][0]; got != 128 {
+		t.Errorf("dimmer channel = %d, want 128 (255 scaled by 0.5 brightness) while draining", got)
+	}
+}
+
+// TestEngineFillOnceOffKeepsProfileStaticChannels pins a documented
+// divergence from every other pattern's off behavior: because an off
+// fillonce group keeps calling writeFixture (at intensity 0) instead of
+// being skipped, a static value on a color/dimmer role channel is
+// overwritten to 0, but a static value on any other role (like "mode" here)
+// is left untouched.
+func TestEngineFillOnceOffKeepsProfileStaticChannels(t *testing.T) {
+	config := `{
+		"profiles": {"withmode": {"channels": ["mode", "dimmer"], "static": {"mode": 200}}},
+		"fixtures": {"f1": {"profile": "withmode", "address": 1}},
+		"groups": {"g1": {"fixtures": ["f1"], "pattern": "fillonce", "interval": "100ms"}}
+	}`
+	e, out := newTestEngine(t, config)
+	setGroupState(t, e, "g1", false, 1, "fillonce", 10*time.Second) // fully drained
+	e.renderFrame()
+	frame := out.frames[0]
+	if frame[0] != 200 {
+		t.Errorf("mode channel = %d, want 200 (static, unaffected by fillonce's off-drain)", frame[0])
+	}
+	if frame[1] != 0 {
+		t.Errorf("dimmer channel = %d, want 0 (fillonce's off-drain zeroes color/dimmer channels)", frame[1])
 	}
 }

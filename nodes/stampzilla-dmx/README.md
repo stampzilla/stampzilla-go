@@ -40,25 +40,32 @@ line, just not a valid or expected DMX signal — bypass the server entirely
 and drive the cable directly:
 
 ```
-stampzilla-dmx -selftest-port /dev/ttyUSB0 -selftest-mode full
+stampzilla-dmx selftest -port /dev/ttyUSB0 -mode full
 ```
+
+This is a **subcommand**, not a flag on the main command line — the node's
+own flags (`-host`, `-port`, `-loglevel`, ...) are parsed by a separate
+mechanism deep inside node startup that has no way to learn about extra
+flags, so selftest options live behind the leading `selftest` argument
+instead of colliding with them. Running `stampzilla-dmx` (no subcommand)
+still shows the normal node flags and env vars, unaffected.
 
 This sends a continuous 255-on-every-channel frame with no config, no
 server connection and no device state involved. Other modes:
 
-- `-selftest-mode walk` — lights one channel at a time (2s each by default),
-  logging which DMX slot is active, so a decoder's physical outputs can be
-  mapped to addresses without reading its (possibly locked) front panel.
-- `-selftest-mode ramp` — a slow fade across all channels, to check dimming
+- `-mode walk` — lights one channel at a time (2s each by default), logging
+  which DMX slot is active, so a decoder's physical outputs can be mapped to
+  addresses without reading its (possibly locked) front panel.
+- `-mode ramp` — a slow fade across all channels, to check dimming
   independently of on/off.
 
-Combine with `-selftest-break-mode ioctl|baud` and `-selftest-de-mode
-none|assert|clear` to try every combination without rebuilding — see
-`breakMode`/`deMode` below, which are the same settings the normal `port`
-config exposes. `-selftest-echo` additionally reads from the port while
-transmitting and logs anything seen, which on some cables confirms the
-framing made it onto the wire (best-effort: most transceivers won't echo
-their own output). Run `stampzilla-dmx -h` for the full flag list.
+Combine with `-break-mode ioctl|baud` and `-de-mode none|assert|clear` to
+try every combination without rebuilding — see `breakMode`/`deMode` below,
+which are the same settings the normal `port` config exposes. `-echo`
+additionally reads from the port while transmitting and logs anything seen,
+which on some cables confirms the framing made it onto the wire
+(best-effort: most transceivers won't echo their own output). Run
+`stampzilla-dmx selftest -h` for the full flag list.
 
 **It does not speak the Enttec DMX USB Pro / DMXKing UltraDMX Widget API
 protocol**, so it will not work with those (or similarly "smart",
@@ -153,7 +160,7 @@ echo 1 | sudo tee /sys/bus/usb-serial/devices/ttyUSB0/latency_timer
   - `colors` — hex colors (`#rgb` or `#rrggbb`) the pattern draws from.
     Defaults to `["#ffffff"]`.
   - `reverse` — flips fixture order for the positional patterns
-    (`chase`, `fill`, `alternate`, `wave`, `rainbow`).
+    (`chase`, `fill`, `fillonce`, `alternate`, `wave`, `rainbow`).
 
 ## Patterns
 
@@ -163,6 +170,7 @@ echo 1 | sudo tee /sys/bus/usb-serial/devices/ttyUSB0/latency_timer
 | `static` | Every fixture at full brightness. | First color only |
 | `chase` | One fixture lit at a time, moving through the group in order. | Cycles through colors, one per step |
 | `fill` | Fixtures light up one at a time (0, 1, 2, ...) until the whole group is on, then turn off one at a time starting from the last one lit, then repeat. | First color only |
+| `fillonce` | Like `fill`, but doesn't loop: turning the group **on** fills fixtures in order once and holds them lit; turning it **off** plays the same fill in reverse (last fixture first) once and holds everything dark. Each direction takes `channel count × interval`. See note below — this is the only pattern where turning a group off is animated instead of instant. | First color only |
 | `alternate` | Every other fixture lit; which half is lit flips each step. | Cycles through colors, one per step |
 | `pulse` | All fixtures breathe (fade in and out) together. | First color only |
 | `wave` | Like `pulse`, but each fixture is phase-offset by its position, producing a wave that travels across the group. | First color only |
@@ -171,10 +179,23 @@ echo 1 | sudo tee /sys/bus/usb-serial/devices/ttyUSB0/latency_timer
 | `random` | Deterministic pseudo-random intensity and color per fixture, changing every step (reproducible, not `math/rand`). | Picked pseudo-randomly per fixture/step |
 
 `reverse` flips fixture order for the positional patterns (`chase`, `fill`,
-`alternate`, `wave`, `rainbow`) — the others ignore fixture position and are
-unaffected.
+`fillonce`, `alternate`, `wave`, `rainbow`) — the others ignore fixture
+position and are unaffected. For `fillonce`, `reverse` also flips which end
+each direction starts from.
 
 Fixtures without a `dimmer` channel have their color channels scaled directly
 by intensity/brightness; fixtures with a `dimmer` channel keep color channels
 at full value and let `dimmer` carry the level. `white` (on `rgbw`-style
 profiles) is derived from the minimum of the pattern's red/green/blue.
+
+Every pattern except `fillonce` stops being rendered the instant a group is
+switched off — channels simply go to (or stay at) whatever a fixture's
+profile `static` values say, since the group is skipped entirely. `fillonce`
+is the one exception: it keeps rendering (at intensity 0, counting down)
+while it plays its off animation, so a `static` value on a color/dimmer role
+channel is temporarily overwritten to 0 during and after that drain, while
+`static` values on other roles (e.g. `mode`, `amber`, `uv`) are unaffected.
+Interrupting a `fillonce` animation partway through and reversing it (e.g.
+toggling off after only a few fixtures have filled in) resumes the new
+direction from the currently-visible fixture count rather than restarting
+from the opposite extreme, so it never flashes extra fixtures first.

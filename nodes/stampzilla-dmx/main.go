@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -9,10 +10,17 @@ import (
 )
 
 func main() {
-	// -selftest-port bypasses the server entirely to bring up the DMX cable
-	// standalone - see selftest.go.
-	if handled, code := maybeRunSelftest(os.Args[1:]); handled {
-		os.Exit(code)
+	args := os.Args[1:]
+
+	// `stampzilla-dmx selftest ...` bypasses the server entirely to bring up
+	// the DMX cable standalone - see selftest.go for why this has to be a
+	// positional subcommand rather than a top-level flag.
+	if selftestRequested(args) {
+		os.Exit(runSelftestCommand(args[1:]))
+	}
+	if hint := legacySelftestHint(args); hint != "" {
+		fmt.Fprintln(os.Stderr, hint)
+		os.Exit(2)
 	}
 
 	n, e := start()

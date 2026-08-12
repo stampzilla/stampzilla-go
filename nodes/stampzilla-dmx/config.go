@@ -144,6 +144,17 @@ type resolvedGroup struct {
 	reverse  bool
 }
 
+// tickInterval returns g's pattern step interval, falling back to
+// defaultInterval. Shared by renderFrame and onRequestStateChange so their
+// step arithmetic (including fillonce's on/off toggle carry-over math) can
+// never disagree.
+func (g *resolvedGroup) tickInterval() time.Duration {
+	if g.interval <= 0 {
+		return defaultInterval
+	}
+	return g.interval
+}
+
 // resolvedConfig is a fully validated Config.
 type resolvedConfig struct {
 	port         string

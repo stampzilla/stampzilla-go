@@ -1,6 +1,9 @@
 {
   "port": "/dev/ttyUSB0",
   "fps": 30,
+  "universeSize": 512,
+  "breakMode": "baud",
+  "deMode": "none",
   "profiles": {
     "mypar": {
       "channels": ["mode", "dimmer", "red", "green", "blue", "white"],

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"math"
+	"time"
 )
 
 // frame is the input a pattern function receives once per rendered frame,
@@ -15,6 +16,7 @@ type frame struct {
 	Phase   float64 // 0.0-1.0 position within the current Step
 	Colors  []rgb   // the group's configured colors, never empty
 	Reverse bool
+	Closing bool // true while playing a rendersWhileOff pattern's off animation
 }
 
 // patternOutput is what a pattern function computes for one fixture.
@@ -32,12 +34,25 @@ var patterns = map[string]patternFunc{
 	"static":     patternStatic,
 	"chase":      patternChase,
 	"fill":       patternFill,
+	"fillonce":   patternFillOnce,
 	"alternate":  patternAlternate,
 	"pulse":      patternPulse,
 	"wave":       patternWave,
 	"colorcycle": patternColorCycle,
 	"rainbow":    patternRainbow,
 	"random":     patternRandom,
+}
+
+// rendersWhileOff marks patterns the engine keeps rendering (rather than
+// skipping) for a while after a group's `on` goes false, so they can play a
+// closing animation before actually going dark - see renderFrame's use of
+// frame.Closing. Every other pattern is skipped the instant `on` is false,
+// same as before this existed. Kept as an explicit opt-in set rather than
+// inferring "closing" from whether the previous output was nonzero, which
+// would need per-fixture history in the engine and break the "pattern is a
+// pure function of frame" contract the backdated-startedAt tests rely on.
+var rendersWhileOff = map[string]bool{
+	"fillonce": true,
 }
 
 // patternOff keeps every fixture dark.
@@ -87,6 +102,96 @@ func patternFill(f frame) patternOutput {
 		return patternOutput{}
 	}
 	return patternOutput{Intensity: 1, Color: f.Colors[0]}
+}
+
+// patternFillOnce is like patternFill, but doesn't loop: while a group is on
+// it fills fixtures in order (0, 1, 2, ...) once and then holds them lit;
+// while switched off (f.Closing) it plays the same fill in reverse (last
+// fixture first) once and then holds everything dark. See rendersWhileOff
+// for how the engine keeps this pattern rendering after a group turns off,
+// and fillOnceLitCount/fillOnceStartForLitCount for how on/off toggles carry
+// visible progress across the flip instead of restarting from the extreme
+// end.
+func patternFillOnce(f frame) patternOutput {
+	if f.Count == 0 {
+		return patternOutput{}
+	}
+
+	step := f.Step
+	if step < 0 {
+		step = 0
+	}
+	if step > f.Count-1 {
+		step = f.Count - 1
+	}
+
+	var on bool
+	if !f.Closing {
+		on = f.Index <= step
+	} else {
+		on = f.Index < f.Count-1-step
+	}
+	if !on {
+		return patternOutput{}
+	}
+	return patternOutput{Intensity: 1, Color: f.Colors[0]}
+}
+
+// fillOnceLitCount returns how many fixtures a fillonce group currently has
+// lit, given whether it's filling (closing=false) or draining (closing=true)
+// and how long the current animation has been running. It mirrors
+// patternFillOnce's own step math so the two can never disagree.
+func fillOnceLitCount(closing bool, elapsed, interval time.Duration, count int) int {
+	if interval <= 0 {
+		interval = defaultInterval
+	}
+	step := int(elapsed / interval)
+	if step < 0 {
+		step = 0
+	}
+	if count > 0 && step > count-1 {
+		step = count - 1
+	}
+	if !closing {
+		return step + 1
+	}
+	lit := count - 1 - step
+	if lit < 0 {
+		lit = 0
+	}
+	return lit
+}
+
+// fillOnceStartForLitCount returns the startedAt that makes a fillonce
+// group's animation, starting now, already show exactly lit fixtures in the
+// given direction - used to carry visible progress across an on/off toggle
+// instead of restarting the new direction from its extreme end (which would
+// otherwise flash every fixture the old direction hadn't reached yet).
+func fillOnceStartForLitCount(closing bool, lit, count int, interval time.Duration) time.Time {
+	if interval <= 0 {
+		interval = defaultInterval
+	}
+	var step int
+	if !closing {
+		step = lit - 1
+	} else {
+		step = count - 1 - lit
+	}
+	if step < 0 {
+		step = 0
+	}
+	return time.Now().Add(-time.Duration(step) * interval)
+}
+
+// fillOnceSettledDark returns a startedAt far enough in the past that a
+// fillonce group renders fully dark immediately - used when a group starts,
+// or switches to fillonce, while already off, so it never flashes the tail
+// of a drain animation it never actually played.
+func fillOnceSettledDark(count int, interval time.Duration) time.Time {
+	if interval <= 0 {
+		interval = defaultInterval
+	}
+	return time.Now().Add(-time.Duration(count+1) * interval)
 }
 
 // patternAlternate lights every other fixture, flipping which half is lit
