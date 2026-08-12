@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sort"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 // duration wraps time.Duration so it can be configured as a JSON string such
@@ -61,11 +63,14 @@ type Group struct {
 // Config is the free-form application config pushed from the stampzilla
 // server (see config.example.json).
 type Config struct {
-	Port     string             `json:"port"`
-	FPS      int                `json:"fps"`
-	Profiles map[string]Profile `json:"profiles"`
-	Fixtures map[string]Fixture `json:"fixtures"`
-	Groups   map[string]Group   `json:"groups"`
+	Port         string             `json:"port"`
+	FPS          int                `json:"fps"`
+	UniverseSize int                `json:"universeSize"`
+	BreakMode    string             `json:"breakMode"`
+	DEMode       string             `json:"deMode"`
+	Profiles     map[string]Profile `json:"profiles"`
+	Fixtures     map[string]Fixture `json:"fixtures"`
+	Groups       map[string]Group   `json:"groups"`
 }
 
 const (
@@ -74,6 +79,17 @@ const (
 	defaultInterval     = 500 * time.Millisecond
 	minUniverseSize     = 24
 	dmxUniverseChannels = 512
+
+	// microsPerDataByte is how long transmitting one DMX data byte takes at
+	// 250,000 baud 8N2 (11 bits/byte). Used to sanity-check fps against
+	// universeSize so renderFrame's write never overruns the frame ticker.
+	microsPerDataByte = 44
+
+	// minBreakOverhead is a conservative estimate of break+MAB transmission
+	// time (180us break + 40us MAB, plus a safety margin for the baud
+	// switches around it), added on top of data-byte time when sanity
+	// checking fps against universeSize.
+	minBreakOverhead = 500 * time.Microsecond
 )
 
 // builtinProfiles are always available and can be overridden by profiles
@@ -128,10 +144,23 @@ type resolvedGroup struct {
 	reverse  bool
 }
 
+// tickInterval returns g's pattern step interval, falling back to
+// defaultInterval. Shared by renderFrame and onRequestStateChange so their
+// step arithmetic (including fillonce's on/off toggle carry-over math) can
+// never disagree.
+func (g *resolvedGroup) tickInterval() time.Duration {
+	if g.interval <= 0 {
+		return defaultInterval
+	}
+	return g.interval
+}
+
 // resolvedConfig is a fully validated Config.
 type resolvedConfig struct {
 	port         string
 	fps          int
+	breakMode    breakMode
+	deMode       deMode
 	fixtures     map[string]resolvedFixture
 	groups       map[string]*resolvedGroup
 	universeSize int
@@ -157,6 +186,24 @@ func resolveConfig(c *Config) (*resolvedConfig, error) {
 	}
 	if fps < 1 {
 		return nil, fmt.Errorf("dmx: fps must be positive")
+	}
+
+	breakMode := breakMode(c.BreakMode)
+	switch breakMode {
+	case "":
+		breakMode = breakModeBaud
+	case breakModeBaud, breakModeIoctl:
+	default:
+		return nil, fmt.Errorf("dmx: unknown breakMode %q (want %q or %q)", c.BreakMode, breakModeBaud, breakModeIoctl)
+	}
+
+	deMode := deMode(c.DEMode)
+	switch deMode {
+	case "":
+		deMode = deModeNone
+	case deModeNone, deModeAssert, deModeClear:
+	default:
+		return nil, fmt.Errorf("dmx: unknown deMode %q (want %q, %q or %q)", c.DEMode, deModeNone, deModeAssert, deModeClear)
 	}
 
 	profiles := make(map[string]Profile, len(builtinProfiles)+len(c.Profiles))
@@ -205,8 +252,37 @@ func resolveConfig(c *Config) (*resolvedConfig, error) {
 			universeSize = end + 1
 		}
 	}
+	if c.UniverseSize > 0 {
+		// A decoder addressed past the frame this node sends never receives
+		// its channels at all, so an explicit universeSize (e.g. to always
+		// send the full 512-channel universe, like a real controller does)
+		// is allowed as long as it still covers every declared fixture.
+		if c.UniverseSize > dmxUniverseChannels {
+			return nil, fmt.Errorf("dmx: universeSize must be <= %d", dmxUniverseChannels)
+		}
+		if c.UniverseSize < universeSize {
+			return nil, fmt.Errorf("dmx: universeSize %d is smaller than the %d channels used by configured fixtures", c.UniverseSize, universeSize)
+		}
+		universeSize = c.UniverseSize
+	}
 	if universeSize > dmxUniverseChannels {
 		universeSize = dmxUniverseChannels
+	}
+
+	// A full-universe frame takes real transmission time on this
+	// software-timed cable: (universeSize+1 bytes)*44us, plus break/MAB
+	// overhead. If fps demands a shorter interval than that, renderFrame's
+	// own Send() call will run long and the frame ticker (buffered 1) drops
+	// ticks, silently degrading the real output rate. Clamp fps down instead
+	// of letting that happen invisibly.
+	frameBytes := time.Duration(universeSize+1) * microsPerDataByte * time.Microsecond
+	minFrameInterval := frameBytes + minBreakOverhead
+	if maxAchievableFPS := int(time.Second / minFrameInterval); maxAchievableFPS < fps {
+		if maxAchievableFPS < 1 {
+			maxAchievableFPS = 1
+		}
+		logrus.Warnf("dmx: fps %d is unachievable with a %d-channel universe (min frame time %s); clamping to %d", fps, universeSize, minFrameInterval, maxAchievableFPS)
+		fps = maxAchievableFPS
 	}
 
 	groups := make(map[string]*resolvedGroup, len(c.Groups))
@@ -221,6 +297,8 @@ func resolveConfig(c *Config) (*resolvedConfig, error) {
 	return &resolvedConfig{
 		port:         c.Port,
 		fps:          fps,
+		breakMode:    breakMode,
+		deMode:       deMode,
 		fixtures:     fixtures,
 		groups:       groups,
 		universeSize: universeSize,

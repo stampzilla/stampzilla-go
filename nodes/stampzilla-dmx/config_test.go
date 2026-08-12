@@ -86,6 +86,60 @@ func TestFPSClamped(t *testing.T) {
 	}
 }
 
+func TestResolveConfigBreakModeAndDEModeDefaults(t *testing.T) {
+	data := []byte(`{"fixtures": {}, "groups": {}}`)
+	cfg, err := loadConfig(data)
+	if err != nil {
+		t.Fatalf("loadConfig() error = %v", err)
+	}
+	if cfg.breakMode != breakModeBaud {
+		t.Errorf("breakMode = %q, want default %q", cfg.breakMode, breakModeBaud)
+	}
+	if cfg.deMode != deModeNone {
+		t.Errorf("deMode = %q, want default %q", cfg.deMode, deModeNone)
+	}
+}
+
+func TestResolveConfigBreakModeAndDEModeExplicit(t *testing.T) {
+	data := []byte(`{"breakMode": "ioctl", "deMode": "assert", "fixtures": {}, "groups": {}}`)
+	cfg, err := loadConfig(data)
+	if err != nil {
+		t.Fatalf("loadConfig() error = %v", err)
+	}
+	if cfg.breakMode != breakModeIoctl {
+		t.Errorf("breakMode = %q, want %q", cfg.breakMode, breakModeIoctl)
+	}
+	if cfg.deMode != deModeAssert {
+		t.Errorf("deMode = %q, want %q", cfg.deMode, deModeAssert)
+	}
+}
+
+func TestResolveConfigUniverseSizeExplicit(t *testing.T) {
+	data := []byte(`{
+		"universeSize": 512,
+		"fixtures": {"f1": {"profile": "rgb", "address": 1}},
+		"groups": {"g1": {"fixtures": ["f1"]}}
+	}`)
+	cfg, err := loadConfig(data)
+	if err != nil {
+		t.Fatalf("loadConfig() error = %v", err)
+	}
+	if cfg.universeSize != dmxUniverseChannels {
+		t.Errorf("universeSize = %d, want %d", cfg.universeSize, dmxUniverseChannels)
+	}
+}
+
+func TestResolveConfigFPSClampedForLargeUniverse(t *testing.T) {
+	data := []byte(`{"fps": 44, "universeSize": 512, "fixtures": {}, "groups": {}}`)
+	cfg, err := loadConfig(data)
+	if err != nil {
+		t.Fatalf("loadConfig() error = %v", err)
+	}
+	if cfg.fps >= 44 {
+		t.Errorf("fps = %d, want clamped below 44 for a 512-channel universe", cfg.fps)
+	}
+}
+
 func TestResolveConfigErrors(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -146,6 +200,26 @@ func TestResolveConfigErrors(t *testing.T) {
 			"static references undeclared channel",
 			`{"profiles":{"p":{"channels":["dimmer"],"static":{"mode":1}}},"fixtures":{"f1":{"profile":"p","address":1}},"groups":{}}`,
 			"is not declared",
+		},
+		{
+			"unknown breakMode",
+			`{"breakMode":"nope","fixtures":{},"groups":{}}`,
+			"unknown breakMode",
+		},
+		{
+			"unknown deMode",
+			`{"deMode":"nope","fixtures":{},"groups":{}}`,
+			"unknown deMode",
+		},
+		{
+			"universeSize too large",
+			`{"universeSize":600,"fixtures":{},"groups":{}}`,
+			"universeSize must be",
+		},
+		{
+			"universeSize smaller than fixtures need",
+			`{"universeSize":5,"fixtures":{"f1":{"profile":"rgb","address":1}},"groups":{}}`,
+			"is smaller than",
 		},
 	}
 	for _, tt := range tests {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 	"unsafe"
 
 	"golang.org/x/sys/unix"
@@ -38,13 +39,15 @@ func TestTermios2ForDifferentBaud(t *testing.T) {
 	}
 }
 
-// TestOpenDMXIoctlSequenceOnPTY exercises the exact ioctl sequence
-// openDMXOutput uses (TCSETS2/BOTHER, TCSBRK drain, TIOCSBRK, TIOCCBRK)
-// against a real pseudo-terminal, which implements the kernel tty layer
-// like a genuine serial port would. It doesn't require root or real
-// hardware, and it validates the ioctl encoding is well-formed on the
-// actual syscall interface - it cannot confirm real DMX electrical timing,
-// which needs a scope or real fixtures.
+// TestOpenDMXIoctlSequenceOnPTY exercises the raw ioctls (TCSETS2/BOTHER,
+// TCSBRK drain, TIOCSBRK, TIOCCBRK) against a real pseudo-terminal, which
+// implements the kernel tty layer like a genuine serial port would. Send()
+// itself only calls TIOCSBRK/TIOCCBRK when breakMode is breakModeIoctl (see
+// TestOpenDMXOutputSendIoctlBreakMode); breakModeBaud (the default) never
+// touches them. This test doesn't require root or real hardware, and it
+// validates the ioctl encoding is well-formed on the actual syscall
+// interface - it cannot confirm real DMX electrical timing, which needs a
+// scope or real fixtures.
 func TestOpenDMXIoctlSequenceOnPTY(t *testing.T) {
 	master, err := os.OpenFile("/dev/ptmx", unix.O_RDWR|unix.O_NOCTTY, 0)
 	if err != nil {
@@ -79,5 +82,101 @@ func TestOpenDMXIoctlSequenceOnPTY(t *testing.T) {
 	}
 	if _, _, errno := unix.Syscall(unix.SYS_IOCTL, fd, uintptr(unix.TIOCCBRK), 0); errno != 0 {
 		t.Errorf("TIOCCBRK: %v", errno)
+	}
+}
+
+func TestOpenDMXOutputSendTiming(t *testing.T) {
+	master, err := os.OpenFile("/dev/ptmx", unix.O_RDWR|unix.O_NOCTTY, 0)
+	if err != nil {
+		t.Skipf("cannot open /dev/ptmx: %v", err)
+	}
+	defer master.Close()
+
+	if err := unix.IoctlSetPointerInt(int(master.Fd()), unix.TIOCSPTLCK, 0); err != nil {
+		t.Skipf("unlockpt: %v", err)
+	}
+	n, err := unix.IoctlGetInt(int(master.Fd()), unix.TIOCGPTN)
+	if err != nil {
+		t.Skipf("ioctl(TIOCGPTN): %v", err)
+	}
+
+	slave, err := os.OpenFile(fmt.Sprintf("/dev/pts/%d", n), unix.O_RDWR|unix.O_NOCTTY, 0)
+	if err != nil {
+		t.Skipf("open pty slave: %v", err)
+	}
+	defer slave.Close()
+
+	o := &openDMXOutput{f: slave}
+
+	channels := make([]byte, 24) // minChannels is 24, so 24 clamped channels
+
+	// Send first frame
+	start := time.Now()
+	if err := o.Send(channels); err != nil {
+		t.Fatalf("first Send failed: %v", err)
+	}
+
+	// Verify lastWriteTime and lastWriteDuration are set properly
+	if o.lastWriteTime.Before(start) {
+		t.Errorf("lastWriteTime not updated correctly, got %v, started at %v", o.lastWriteTime, start)
+	}
+
+	// Clamped to min 24 channels + 1 start code = 25 bytes.
+	// Expected duration: 25 * 44us + 200us = 1300us
+	expectedDuration := 25*44*time.Microsecond + 200*time.Microsecond
+	if o.lastWriteDuration != expectedDuration {
+		t.Errorf("lastWriteDuration = %v, want %v", o.lastWriteDuration, expectedDuration)
+	}
+
+	// Send second frame immediately. It should wait for the first frame to complete transmission.
+	send2Start := time.Now()
+	if err := o.Send(channels); err != nil {
+		t.Fatalf("second Send failed: %v", err)
+	}
+	duration := time.Since(send2Start)
+
+	// We expect the sleep to take approximately expectedDuration.
+	// Allow for some minor scheduler variations, but it should be at least a reasonable portion of expectedDuration.
+	if duration < 500*time.Microsecond {
+		t.Errorf("second Send completed too fast: took %v, expected sleep ~%v", duration, expectedDuration)
+	}
+}
+
+// TestOpenDMXOutputSendIoctlBreakMode exercises the breakModeIoctl path
+// (TIOCSBRK/TIOCCBRK) end-to-end through Send(), on a pty.
+func TestOpenDMXOutputSendIoctlBreakMode(t *testing.T) {
+	master, err := os.OpenFile("/dev/ptmx", unix.O_RDWR|unix.O_NOCTTY, 0)
+	if err != nil {
+		t.Skipf("cannot open /dev/ptmx: %v", err)
+	}
+	defer master.Close()
+
+	if err := unix.IoctlSetPointerInt(int(master.Fd()), unix.TIOCSPTLCK, 0); err != nil {
+		t.Skipf("unlockpt: %v", err)
+	}
+	n, err := unix.IoctlGetInt(int(master.Fd()), unix.TIOCGPTN)
+	if err != nil {
+		t.Skipf("ioctl(TIOCGPTN): %v", err)
+	}
+
+	slave, err := os.OpenFile(fmt.Sprintf("/dev/pts/%d", n), unix.O_RDWR|unix.O_NOCTTY, 0)
+	if err != nil {
+		t.Skipf("open pty slave: %v", err)
+	}
+	defer slave.Close()
+
+	o := &openDMXOutput{f: slave, breakMode: breakModeIoctl}
+
+	if err := o.Send(make([]byte, 24)); err != nil {
+		t.Fatalf("Send() with breakModeIoctl error = %v", err)
+	}
+}
+
+// TestOpenDMXOutputSendClosed verifies Send returns os.ErrClosed once the
+// output has been closed, rather than panicking or hanging.
+func TestOpenDMXOutputSendClosed(t *testing.T) {
+	o := &openDMXOutput{}
+	if err := o.Send(make([]byte, 24)); err != os.ErrClosed {
+		t.Errorf("Send() on unopened output error = %v, want %v", err, os.ErrClosed)
 	}
 }

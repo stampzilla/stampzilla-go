@@ -42,6 +42,10 @@ type engine struct {
 
 	rateSignal   chan struct{}
 	outputSignal chan struct{}
+
+	// lastFrameLog is owned by the frame-loop goroutine only (renderFrame is
+	// only ever called from run()), so it needs no lock.
+	lastFrameLog time.Time
 }
 
 type outputBoxValue struct{ out dmxOutput }
@@ -89,7 +93,16 @@ func (e *engine) updatedConfig(data json.RawMessage) error {
 			newStates[key] = st
 			continue
 		}
-		newStates[key] = &groupState{brightness: 1, pattern: g.pattern, startedAt: time.Now()}
+		// New groups start off (ensureGroupDevice below seeds "on": false).
+		// A rendersWhileOff pattern must start already-settled-dark rather
+		// than at time.Now(), or the very first frame would render step 0
+		// of its closing animation - e.g. fillonce would blast on all but
+		// one fixture before draining, with no user interaction at all.
+		st := &groupState{brightness: 1, pattern: g.pattern, startedAt: time.Now()}
+		if rendersWhileOff[g.pattern] {
+			st.startedAt = fillOnceSettledDark(len(g.fixtures), g.tickInterval())
+		}
+		newStates[key] = st
 	}
 	e.states = newStates
 	e.mu.Unlock()
@@ -170,11 +183,49 @@ func (e *engine) onRequestStateChange(state devices.State, device *devices.Devic
 		}
 	}
 
-	state.Bool("on", func(on bool) { st.on = on })
+	oldOn := st.on
+	sawOn := false
+	state.Bool("on", func(on bool) { sawOn = true; st.on = on })
 	state.Float("brightness", func(b float64) { st.brightness = clamp01(b) })
-	if newPattern != "" {
+
+	// count/interval are only needed for rendersWhileOff bookkeeping below;
+	// states and cfg.groups share keys by construction (both derive from the
+	// same resolved config), but this runs inside a state-change callback
+	// that must never panic on an unexpected shape.
+	var count int
+	interval := defaultInterval
+	if e.cfg != nil {
+		if g, ok := e.cfg.groups[device.ID.ID]; ok {
+			count = len(g.fixtures)
+			interval = g.tickInterval()
+		}
+	}
+
+	switch {
+	case newPattern != "":
+		// A pattern change wins over an on/off flip in the same diff: any
+		// progress carried from the old pattern's geometry would be
+		// meaningless under the new one.
 		st.pattern = newPattern
-		st.startedAt = time.Now() // restart the pattern from the beginning
+		if !st.on && rendersWhileOff[newPattern] {
+			// Switching to a rendersWhileOff pattern while off must settle
+			// dark immediately, not animate a closing sequence that was
+			// never actually playing.
+			st.startedAt = fillOnceSettledDark(count, interval)
+		} else {
+			st.startedAt = time.Now() // restart the pattern from the beginning
+		}
+
+	case sawOn && oldOn != st.on && rendersWhileOff[st.pattern]:
+		// Carry the currently-visible progress across the flip instead of
+		// restarting the new direction from its extreme end - otherwise
+		// interrupting a fill partway through and reversing it would first
+		// flash every fixture the old direction hadn't reached yet (see
+		// fillOnceLitCount/fillOnceStartForLitCount).
+		elapsed := time.Since(st.startedAt)
+		wasClosing := !oldOn
+		lit := fillOnceLitCount(wasClosing, elapsed, interval, count)
+		st.startedAt = fillOnceStartForLitCount(!st.on, lit, count, interval)
 	}
 
 	return nil
@@ -197,6 +248,9 @@ func (e *engine) run(ctx context.Context) {
 	ticker := time.NewTicker(defaultFrameInterval)
 	defer ticker.Stop()
 
+	interval := defaultFrameInterval
+	lastTick := time.Now()
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -206,9 +260,18 @@ func (e *engine) run(ctx context.Context) {
 			cfg := e.cfg
 			e.mu.Unlock()
 			if cfg != nil {
-				ticker.Reset(time.Second / time.Duration(cfg.fps))
+				interval = time.Second / time.Duration(cfg.fps)
+				ticker.Reset(interval)
 			}
-		case <-ticker.C:
+		case now := <-ticker.C:
+			// time.Ticker's channel has capacity 1: if renderFrame ever takes
+			// longer than interval, ticks pile up and are silently dropped
+			// rather than queued, so the real output rate degrades without
+			// any error. Surface that instead of staying quiet about it.
+			if gap := now.Sub(lastTick); gap > interval*3/2 {
+				logrus.Warnf("dmx: frame loop fell behind: %s since last frame (want %s) - renderFrame/Send is too slow for the configured fps/universe size", gap, interval)
+			}
+			lastTick = now
 			e.renderFrame()
 		}
 	}
@@ -236,9 +299,10 @@ func (e *engine) connectionSupervisor(ctx context.Context) {
 
 		if cfg.port == "" {
 			if connected {
-				_ = e.output().Close()
+				oldOut := e.output()
+				e.setOutput(logOutput{})
+				_ = oldOut.Close()
 			}
-			e.setOutput(logOutput{})
 			e.outputBroken.Store(false)
 			e.setGroupsOnline(true)
 			openPort, connected = "", false
@@ -250,8 +314,11 @@ func (e *engine) connectionSupervisor(ctx context.Context) {
 			return
 		}
 
-		_ = e.output().Close()
-		o, err := openOpenDMXOutput(cfg.port)
+		oldOut := e.output()
+		e.setOutput(logOutput{})
+		_ = oldOut.Close()
+
+		o, err := openOpenDMXOutput(cfg.port, cfg.breakMode, cfg.deMode)
 		openPort = cfg.port
 		e.outputBroken.Store(false)
 		if err != nil {
@@ -313,8 +380,23 @@ func (e *engine) renderFrame() {
 	for _, key := range sortedKeys(cfg.groups) {
 		g := cfg.groups[key]
 		st := e.states[key]
-		if st == nil || !st.on {
+		if st == nil {
 			continue
+		}
+
+		// rendersWhileOff patterns (e.g. fillonce) keep rendering after `on`
+		// goes false so their closing animation can play; every other
+		// pattern is skipped instantly, same as always. Once a closing
+		// animation finishes, the pattern function itself keeps returning
+		// all-zero forever, so there's no need to ever stop rendering it
+		// again - the extra per-frame arithmetic for an idle group is
+		// negligible.
+		closing := false
+		if !st.on {
+			if !rendersWhileOff[st.pattern] {
+				continue
+			}
+			closing = true
 		}
 
 		patternFn, ok := patterns[st.pattern]
@@ -322,10 +404,7 @@ func (e *engine) renderFrame() {
 			patternFn = patterns["off"]
 		}
 
-		interval := g.interval
-		if interval <= 0 {
-			interval = defaultInterval
-		}
+		interval := g.tickInterval()
 		elapsed := time.Since(st.startedAt)
 		step := int(elapsed / interval)
 		phase := float64(elapsed%interval) / float64(interval)
@@ -343,6 +422,7 @@ func (e *engine) renderFrame() {
 				Phase:   phase,
 				Colors:  g.colors,
 				Reverse: g.reverse,
+				Closing: closing,
 			})
 
 			fx, ok := cfg.fixtures[fixtureKey]
@@ -354,6 +434,26 @@ func (e *engine) renderFrame() {
 	}
 
 	e.mu.Unlock()
+
+	// Throttled so a running node can confirm what it's actually sending
+	// (non-zero content vs. an all-zero frame) without flooding the log at
+	// frame rate - this is the fastest way to tell "framing is fine but
+	// every group is off/config has no groups" apart from "framing itself is
+	// broken", from a normally-running node with no extra tooling.
+	if logrus.IsLevelEnabled(logrus.DebugLevel) && time.Since(e.lastFrameLog) >= time.Second {
+		e.lastFrameLog = time.Now()
+		nonZero := 0
+		for _, v := range buf {
+			if v != 0 {
+				nonZero++
+			}
+		}
+		preview := buf
+		if len(preview) > 32 {
+			preview = preview[:32]
+		}
+		logrus.Debugf("dmx: frame: %d/%d channels non-zero, first %d: % x", nonZero, len(buf), len(preview), preview)
+	}
 
 	if err := e.output().Send(buf); err != nil {
 		logrus.Warnf("dmx: send frame: %s", err)
