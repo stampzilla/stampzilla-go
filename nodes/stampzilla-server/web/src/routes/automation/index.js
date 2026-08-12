@@ -61,7 +61,7 @@ class Automation extends Component {
                 <tbody>
                   {rules
                     && rules
-                      .filter((n) => n.get('type') === '')
+                      .filter((n) => n.get('type') === '' || n.get('type') === 'mirror')
                       .sort((a, b) => a.get('name').localeCompare(b.get('name')))
                       .map((n) => (
                         <tr
