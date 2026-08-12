@@ -65,11 +65,13 @@ func openOpenDMXOutput(name string) (*openDMXOutput, error) {
 		return nil, err
 	}
 
-	// Assert RTS & DTR lines (Enables RS-485 transceiver DE pin on FT232 cables)
+	// Assert RTS & DTR lines (enables RS-485 transceiver DE pin on some FT232 cables)
 	fd := int(f.Fd())
 	lines := unix.TIOCM_RTS | unix.TIOCM_DTR
-	_ = unix.IoctlSetInt(fd, unix.TIOCMBIS, lines)
-
+	if err := unix.IoctlSetInt(fd, unix.TIOCMBIS, lines); err != nil {
+		_ = f.Close()
+		return nil, err
+	}
 	return &openDMXOutput{f: f}, nil
 }
 
