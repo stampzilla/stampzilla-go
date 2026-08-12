@@ -2,12 +2,19 @@ package main
 
 import (
 	"context"
+	"os"
 
 	"github.com/sirupsen/logrus"
 	"github.com/stampzilla/stampzilla-go/v2/pkg/node"
 )
 
 func main() {
+	// -selftest-port bypasses the server entirely to bring up the DMX cable
+	// standalone - see selftest.go.
+	if handled, code := maybeRunSelftest(os.Args[1:]); handled {
+		os.Exit(code)
+	}
+
 	n, e := start()
 	if n == nil {
 		return

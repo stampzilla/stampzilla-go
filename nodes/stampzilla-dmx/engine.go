@@ -42,6 +42,10 @@ type engine struct {
 
 	rateSignal   chan struct{}
 	outputSignal chan struct{}
+
+	// lastFrameLog is owned by the frame-loop goroutine only (renderFrame is
+	// only ever called from run()), so it needs no lock.
+	lastFrameLog time.Time
 }
 
 type outputBoxValue struct{ out dmxOutput }
@@ -197,6 +201,9 @@ func (e *engine) run(ctx context.Context) {
 	ticker := time.NewTicker(defaultFrameInterval)
 	defer ticker.Stop()
 
+	interval := defaultFrameInterval
+	lastTick := time.Now()
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -206,9 +213,18 @@ func (e *engine) run(ctx context.Context) {
 			cfg := e.cfg
 			e.mu.Unlock()
 			if cfg != nil {
-				ticker.Reset(time.Second / time.Duration(cfg.fps))
+				interval = time.Second / time.Duration(cfg.fps)
+				ticker.Reset(interval)
 			}
-		case <-ticker.C:
+		case now := <-ticker.C:
+			// time.Ticker's channel has capacity 1: if renderFrame ever takes
+			// longer than interval, ticks pile up and are silently dropped
+			// rather than queued, so the real output rate degrades without
+			// any error. Surface that instead of staying quiet about it.
+			if gap := now.Sub(lastTick); gap > interval*3/2 {
+				logrus.Warnf("dmx: frame loop fell behind: %s since last frame (want %s) - renderFrame/Send is too slow for the configured fps/universe size", gap, interval)
+			}
+			lastTick = now
 			e.renderFrame()
 		}
 	}
@@ -255,7 +271,7 @@ func (e *engine) connectionSupervisor(ctx context.Context) {
 		e.setOutput(logOutput{})
 		_ = oldOut.Close()
 
-		o, err := openOpenDMXOutput(cfg.port)
+		o, err := openOpenDMXOutput(cfg.port, cfg.breakMode, cfg.deMode)
 		openPort = cfg.port
 		e.outputBroken.Store(false)
 		if err != nil {
@@ -358,6 +374,26 @@ func (e *engine) renderFrame() {
 	}
 
 	e.mu.Unlock()
+
+	// Throttled so a running node can confirm what it's actually sending
+	// (non-zero content vs. an all-zero frame) without flooding the log at
+	// frame rate - this is the fastest way to tell "framing is fine but
+	// every group is off/config has no groups" apart from "framing itself is
+	// broken", from a normally-running node with no extra tooling.
+	if logrus.IsLevelEnabled(logrus.DebugLevel) && time.Since(e.lastFrameLog) >= time.Second {
+		e.lastFrameLog = time.Now()
+		nonZero := 0
+		for _, v := range buf {
+			if v != 0 {
+				nonZero++
+			}
+		}
+		preview := buf
+		if len(preview) > 32 {
+			preview = preview[:32]
+		}
+		logrus.Debugf("dmx: frame: %d/%d channels non-zero, first %d: % x", nonZero, len(buf), len(preview), preview)
+	}
 
 	if err := e.output().Send(buf); err != nil {
 		logrus.Warnf("dmx: send frame: %s", err)

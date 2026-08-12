@@ -22,7 +22,43 @@ chip plus an RS485 line driver, with no onboard microcontroller (these are
 sold generically as "USB to DMX RS485 FTDI cable" and similar). The node
 generates the DMX-512 line timing itself (break, mark-after-break, 250,000
 baud 8N2) directly over the serial port — Linux only, using raw
-`termios2`/`BOTHER` and break ioctls (see `opendmx_linux.go`).
+`termios2`/`BOTHER` (see `opendmx_linux.go`). The break itself can be
+generated two different ways (see `breakMode` below) — which one actually
+works reliably is adapter/kernel-driver dependent and isn't something that
+can be predicted in advance.
+
+Some RS485 cables also wire the transceiver's driver-enable (DE) pin to the
+FT232's RTS or DTR line; whether that pin needs to be asserted, cleared, or
+left alone to enable the line driver also varies by cable (see `deMode`
+below).
+
+### Standalone bring-up / troubleshooting
+
+If a decoder isn't responding — especially if its address buttons lock up as
+soon as this node starts, which usually means *something* is arriving on the
+line, just not a valid or expected DMX signal — bypass the server entirely
+and drive the cable directly:
+
+```
+stampzilla-dmx -selftest-port /dev/ttyUSB0 -selftest-mode full
+```
+
+This sends a continuous 255-on-every-channel frame with no config, no
+server connection and no device state involved. Other modes:
+
+- `-selftest-mode walk` — lights one channel at a time (2s each by default),
+  logging which DMX slot is active, so a decoder's physical outputs can be
+  mapped to addresses without reading its (possibly locked) front panel.
+- `-selftest-mode ramp` — a slow fade across all channels, to check dimming
+  independently of on/off.
+
+Combine with `-selftest-break-mode ioctl|baud` and `-selftest-de-mode
+none|assert|clear` to try every combination without rebuilding — see
+`breakMode`/`deMode` below, which are the same settings the normal `port`
+config exposes. `-selftest-echo` additionally reads from the port while
+transmitting and logs anything seen, which on some cables confirms the
+framing made it onto the wire (best-effort: most transceivers won't echo
+their own output). Run `stampzilla-dmx -h` for the full flag list.
 
 **It does not speak the Enttec DMX USB Pro / DMXKing UltraDMX Widget API
 protocol**, so it will not work with those (or similarly "smart",
@@ -81,7 +117,27 @@ echo 1 | sudo tee /sys/bus/usb-serial/devices/ttyUSB0/latency_timer
 
 - `port` — serial device for the DMX cable. Empty logs frames instead of
   sending them. Always driven at a fixed 250,000 baud, 8N2 — not configurable.
-- `fps` — frame rate the universe is refreshed at, defaults to 30, clamped to 44.
+- `fps` — frame rate the universe is refreshed at, defaults to 30, clamped to
+  44, and further clamped down if it's unachievable for the configured
+  `universeSize` (a full 512-channel frame takes real transmission time on
+  this software-timed cable).
+- `universeSize` — number of channels sent every frame, 24-512. Defaults to
+  just enough to cover the highest-addressed configured fixture (floored at
+  24). Set explicitly (e.g. to 512) to always send the full universe, like a
+  real DMX controller does — otherwise a fixture addressed above the
+  smallest frame that happens to cover your other fixtures will never
+  receive its channels.
+- `breakMode` — how the BREAK/MAB is generated: `baud` (default; drops to
+  50,000 baud and writes a single `0x00` byte) or `ioctl` (`TIOCSBRK`/
+  `TIOCCBRK` with fixed sleeps). Both are legitimate for a bare FTDI/RS485
+  cable; which one a given adapter/kernel combination handles cleanly isn't
+  predictable, so it's a config knob rather than fixed — see "Standalone
+  bring-up" above to try both against real hardware.
+- `deMode` — whether to touch the RTS/DTR modem control lines when opening
+  the port: `none` (default; never touch them), `assert`, or `clear`. Only
+  relevant for RS485 cables whose transceiver DE pin is wired to RTS or DTR;
+  a failure here (e.g. an adapter that doesn't support it) is logged and
+  otherwise ignored, never fatal.
 - `profiles` — named channel layouts. Each entry in `channels` is a role,
   applied at increasing offsets from a fixture's `address`. Recognised roles:
   `dimmer`, `red`, `green`, `blue`, `white`, `amber`, `uv`. Any other name
