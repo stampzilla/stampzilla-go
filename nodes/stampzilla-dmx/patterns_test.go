@@ -41,6 +41,55 @@ func TestPatternChase(t *testing.T) {
 	}
 }
 
+func TestPatternScannerBounces(t *testing.T) {
+	colors := []rgb{{1, 0, 0}}
+	count := 4
+
+	// Hand-verified sequence for count=4 (period=2*(4-1)=6): the light
+	// sweeps 0..3 then bounces back through 2,1 before hitting 0 again,
+	// without pausing or double-hitting either end.
+	want := []int{0, 1, 2, 3, 2, 1, 0, 1, 2}
+
+	for step, wantActive := range want {
+		lit := -1
+		for i := 0; i < count; i++ {
+			out := patterns["scanner"](frame{Index: i, Count: count, Step: step, Colors: colors})
+			if out.Intensity > 0 {
+				if lit != -1 {
+					t.Fatalf("scanner step=%d: more than one fixture lit (%d and %d)", step, lit, i)
+				}
+				lit = i
+			}
+		}
+		if lit != wantActive {
+			t.Errorf("scanner step=%d: lit index=%d, want %d", step, lit, wantActive)
+		}
+	}
+}
+
+func TestPatternScannerColorStaysFixed(t *testing.T) {
+	colors := []rgb{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}
+	for step := 0; step < 6; step++ {
+		out := patterns["scanner"](frame{Index: 0, Count: 1, Step: step, Colors: colors})
+		if out.Color != colors[0] {
+			t.Errorf("scanner step=%d: color=%+v, want %+v (first color only, unlike chase)", step, out.Color, colors[0])
+		}
+	}
+}
+
+func TestPatternScannerEdgeCounts(t *testing.T) {
+	if out := patterns["scanner"](frame{Count: 0}); out.Intensity != 0 {
+		t.Errorf("scanner with Count=0 = %+v, want zero output", out)
+	}
+	colors := []rgb{{1, 1, 1}}
+	for step := 0; step < 3; step++ {
+		out := patterns["scanner"](frame{Index: 0, Count: 1, Step: step, Colors: colors})
+		if out.Intensity == 0 {
+			t.Errorf("scanner with Count=1 step=%d should always be lit", step)
+		}
+	}
+}
+
 func TestPatternFill(t *testing.T) {
 	colors := []rgb{{1, 1, 1}}
 	count := 4

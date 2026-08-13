@@ -33,6 +33,7 @@ var patterns = map[string]patternFunc{
 	"off":        patternOff,
 	"static":     patternStatic,
 	"chase":      patternChase,
+	"scanner":    patternScanner,
 	"fill":       patternFill,
 	"fillonce":   patternFillOnce,
 	"alternate":  patternAlternate,
@@ -77,6 +78,34 @@ func patternChase(f frame) patternOutput {
 		return patternOutput{}
 	}
 	return patternOutput{Intensity: 1, Color: f.Colors[f.Step%len(f.Colors)]}
+}
+
+// patternScanner sweeps a single lit fixture back and forth across the
+// group - a "Knight Rider"/KITT-style scanner: 0,1,2,...,Count-1,Count-2,
+// ...,1,0,1,... Each end is visited once per bounce, not twice, so the
+// light never pauses or double-hits at either end. Unlike patternChase, the
+// color stays fixed at the group's first configured color as the light
+// moves.
+func patternScanner(f frame) patternOutput {
+	if f.Count == 0 {
+		return patternOutput{}
+	}
+
+	active := 0
+	if f.Count > 1 {
+		period := 2 * (f.Count - 1)
+		pos := f.Step % period
+		if pos >= f.Count {
+			active = period - pos
+		} else {
+			active = pos
+		}
+	}
+
+	if f.Index != active {
+		return patternOutput{}
+	}
+	return patternOutput{Intensity: 1, Color: f.Colors[0]}
 }
 
 // patternFill lights fixtures up one at a time in order (0, 1, 2, ...) until
