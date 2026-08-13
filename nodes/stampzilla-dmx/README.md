@@ -160,7 +160,7 @@ echo 1 | sudo tee /sys/bus/usb-serial/devices/ttyUSB0/latency_timer
   - `colors` — hex colors (`#rgb` or `#rrggbb`) the pattern draws from.
     Defaults to `["#ffffff"]`.
   - `reverse` — flips fixture order for the positional patterns
-    (`chase`, `fill`, `fillonce`, `alternate`, `wave`, `rainbow`).
+    (`chase`, `scanner`, `fill`, `fillonce`, `alternate`, `wave`, `rainbow`).
 
 ## Patterns
 
@@ -169,6 +169,7 @@ echo 1 | sudo tee /sys/bus/usb-serial/devices/ttyUSB0/latency_timer
 | `off` | Every fixture stays dark. | — |
 | `static` | Every fixture at full brightness. | First color only |
 | `chase` | One fixture lit at a time, moving through the group in order. | Cycles through colors, one per step |
+| `scanner` | One fixture lit at a time, sweeping back and forth across the group (Knight Rider/KITT-style) instead of wrapping like `chase` — each end is visited once per bounce, no pause or double-hit. | First color only |
 | `fill` | Fixtures light up one at a time (0, 1, 2, ...) until the whole group is on, then turn off one at a time starting from the last one lit, then repeat. | First color only |
 | `fillonce` | Like `fill`, but doesn't loop: turning the group **on** fills fixtures in order once and holds them lit; turning it **off** plays the same fill in reverse (last fixture first) once and holds everything dark. Each direction takes `channel count × interval`. See note below — this is the only pattern where turning a group off is animated instead of instant. | First color only |
 | `alternate` | Every other fixture lit; which half is lit flips each step. | Cycles through colors, one per step |
@@ -178,10 +179,11 @@ echo 1 | sudo tee /sys/bus/usb-serial/devices/ttyUSB0/latency_timer
 | `rainbow` | Hue sweeps across the full color wheel, offset by each fixture's position in the group. | Ignored — uses an HSV hue sweep instead |
 | `random` | Deterministic pseudo-random intensity and color per fixture, changing every step (reproducible, not `math/rand`). | Picked pseudo-randomly per fixture/step |
 
-`reverse` flips fixture order for the positional patterns (`chase`, `fill`,
-`fillonce`, `alternate`, `wave`, `rainbow`) — the others ignore fixture
-position and are unaffected. For `fillonce`, `reverse` also flips which end
-each direction starts from.
+`reverse` flips fixture order for the positional patterns (`chase`, `scanner`,
+`fill`, `fillonce`, `alternate`, `wave`, `rainbow`) — the others ignore
+fixture position and are unaffected. For `fillonce`, `reverse` also flips
+which end each direction starts from; for `scanner`, it just flips which end
+the sweep starts from.
 
 Fixtures without a `dimmer` channel have their color channels scaled directly
 by intensity/brightness; fixtures with a `dimmer` channel keep color channels
