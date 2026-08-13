@@ -412,3 +412,34 @@ func TestEngineFillOnceOffKeepsProfileStaticChannels(t *testing.T) {
 		t.Errorf("dimmer channel = %d, want 0 (fillonce's off-drain zeroes color/dimmer channels)", frame[1])
 	}
 }
+
+// TestEngineFillOnceStopsClobberingSharedFixturesAfterSettling is the
+// regression test for a real-world bug: several groups (alternative
+// effects/"scenes") declared over the same physical fixtures, toggled one
+// at a time. Group keys are rendered in sortedKeys order, so a settled, off
+// fillonce group whose key sorts after an active group's key was
+// overwriting that group's output with zeros every frame, forever, because
+// renderFrame never stopped rendering it once its animation had finished.
+// The key names here ("a_on"/"b_fillonce") are chosen so alphabetical order
+// reproduces that exact ordering.
+func TestEngineFillOnceStopsClobberingSharedFixturesAfterSettling(t *testing.T) {
+	config := `{
+		"fixtures": {
+			"f1": {"profile": "dimmer", "address": 1},
+			"f2": {"profile": "dimmer", "address": 2}
+		},
+		"groups": {
+			"a_on": {"fixtures": ["f1", "f2"], "pattern": "static", "colors": ["#ffffff"], "interval": "100ms"},
+			"b_fillonce": {"fixtures": ["f1", "f2"], "pattern": "fillonce", "interval": "100ms"}
+		}
+	}`
+	e, out := newTestEngine(t, config)
+	setGroupState(t, e, "a_on", true, 1, "static", 0)
+	setGroupState(t, e, "b_fillonce", false, 1, "fillonce", 10*time.Second) // long settled
+
+	e.renderFrame()
+	frame := out.frames[0]
+	if frame[0] == 0 || frame[1] == 0 {
+		t.Errorf("frame = %v, want both fixtures lit from the 'a_on' static group - a settled, off fillonce group sorting after it must not keep clobbering shared fixtures with zeros", frame)
+	}
+}
