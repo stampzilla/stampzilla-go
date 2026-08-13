@@ -384,16 +384,23 @@ func (e *engine) renderFrame() {
 			continue
 		}
 
+		count := len(g.fixtures)
+		interval := g.tickInterval()
+
 		// rendersWhileOff patterns (e.g. fillonce) keep rendering after `on`
-		// goes false so their closing animation can play; every other
-		// pattern is skipped instantly, same as always. Once a closing
-		// animation finishes, the pattern function itself keeps returning
-		// all-zero forever, so there's no need to ever stop rendering it
-		// again - the extra per-frame arithmetic for an idle group is
-		// negligible.
+		// goes false so their closing animation can play, but only for the
+		// animation's own duration. Once it finishes, this group must go
+		// back to being fully skipped like every other off pattern -
+		// otherwise it would hold its fixtures at zero forever, silently
+		// overwriting any other group that legitimately shares the same
+		// physical channels (e.g. several alternative effects declared over
+		// the same fixtures, toggled one at a time - a settled, off group
+		// sorting after an active one in sortedKeys would blank it out
+		// every frame).
+		elapsed := time.Since(st.startedAt)
 		closing := false
 		if !st.on {
-			if !rendersWhileOff[st.pattern] {
+			if !rendersWhileOff[st.pattern] || elapsed >= time.Duration(count)*interval {
 				continue
 			}
 			closing = true
@@ -404,12 +411,8 @@ func (e *engine) renderFrame() {
 			patternFn = patterns["off"]
 		}
 
-		interval := g.tickInterval()
-		elapsed := time.Since(st.startedAt)
 		step := int(elapsed / interval)
 		phase := float64(elapsed%interval) / float64(interval)
-
-		count := len(g.fixtures)
 		for i, fixtureKey := range g.fixtures {
 			idx := i
 			if g.reverse {
