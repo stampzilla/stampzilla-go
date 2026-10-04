@@ -54,19 +54,23 @@ func (t *Installer) Update(nodes ...string) error {
 
 // Download downloads a file and takes a callback. If callback returns true, skip download.
 func download(nodes []string, cb ...func(github.ReleaseAsset) bool) error {
-	releases := GetReleases()
-
-	if len(releases) < 1 {
-		return fmt.Errorf("No available releases found")
+	release, err := GetLatestRelease()
+	if err != nil {
+		return err
 	}
 
-	checksums := getChecksums(releases[0].Assets)
+	checksums, err := getChecksums(release.Assets)
+	if err != nil {
+		return err
+	}
 
 	expectedToInstall := make([]string, len(nodes))
 	copy(expectedToInstall, nodes)
 
+	logrus.Infof("looking for binaries with suffix: %s", runtime.GOOS+"-"+runtime.GOARCH)
 outer:
-	for _, v := range releases[0].Assets {
+	for _, v := range release.Assets {
+		logrus.Debugf("checking asset: %s %s", v.GetName(), v.GetBrowserDownloadURL())
 		// Skip all with wrong ARCH
 		if !strings.HasSuffix(v.GetName(), runtime.GOOS+"-"+runtime.GOARCH) {
 			continue
@@ -102,7 +106,7 @@ outer:
 		}()
 
 		// Download the file
-		err = fetch(v, *releases[0].TagName, tmp)
+		err = fetch(v, release.GetTagName(), tmp)
 		if err != nil {
 			return err
 		}
@@ -166,6 +170,10 @@ func fetch(v github.ReleaseAsset, version string, file *os.File) error {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("error downloading %s: %s", v.GetName(), resp.Status)
+	}
+
 	_, err = io.Copy(file, resp.Body)
 	if err != nil {
 		return err
@@ -174,16 +182,20 @@ func fetch(v github.ReleaseAsset, version string, file *os.File) error {
 	return file.Chmod(0755)
 }
 
-func getChecksums(assets []github.ReleaseAsset) map[string]string {
+func getChecksums(assets []github.ReleaseAsset) (map[string]string, error) {
 	checksums := make(map[string]string)
 
 	for _, v := range assets {
 		if v.GetName() == "checksum" {
 			resp, err := http.Get(v.GetBrowserDownloadURL())
 			if err != nil {
-				logrus.Fatal(err)
+				return nil, err
 			}
 			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				return nil, fmt.Errorf("error downloading checksum: %s", resp.Status)
+			}
 
 			scanner := bufio.NewScanner(resp.Body)
 			for scanner.Scan() {
@@ -195,10 +207,13 @@ func getChecksums(assets []github.ReleaseAsset) map[string]string {
 				line[1] = strings.TrimSpace(line[1])
 				checksums[filepath.Base(line[1])] = line[0]
 			}
+			if err := scanner.Err(); err != nil {
+				return nil, err
+			}
 		}
 	}
 
-	return checksums
+	return checksums, nil
 }
 
 func GetBinPath() string {

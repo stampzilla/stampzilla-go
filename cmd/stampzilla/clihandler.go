@@ -212,16 +212,12 @@ func (t *cliHandler) Log(c *cli.Context) error {
 }
 
 func (t *cliHandler) SelfUpdate(c *cli.Context) error {
-	releases := binary.GetReleases()
-	if releases == nil {
-		return fmt.Errorf("error fetching releases from github.com")
+	release, err := binary.GetLatestRelease()
+	if err != nil {
+		return err
 	}
 
-	if len(releases) == 0 {
-		return fmt.Errorf("found 0 releases on github.com")
-	}
-
-	version := releases[0].GetName()
+	version := release.GetTagName()
 
 	if version == build.Version {
 		logrus.Info("Found no new version")
@@ -232,7 +228,7 @@ func (t *cliHandler) SelfUpdate(c *cli.Context) error {
 
 	asset := fmt.Sprintf("stampzilla-%s-%s", runtime.GOOS, runtime.GOARCH)
 	u := ""
-	for _, a := range releases[0].Assets {
+	for _, a := range release.Assets {
 		if a.GetName() == asset {
 			u = a.GetBrowserDownloadURL()
 		}
@@ -255,6 +251,10 @@ func (t *cliHandler) SelfUpdate(c *cli.Context) error {
 		return err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("error downloading %s: %s", asset, resp.Status)
+	}
 
 	err = os.Rename(binPath, binPath+".backup")
 	if err != nil {

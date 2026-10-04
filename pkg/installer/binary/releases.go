@@ -2,45 +2,31 @@ package binary
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/go-github/github"
+	"github.com/sirupsen/logrus"
 )
 
-func GetReleases() []*github.RepositoryRelease {
+// GetLatestRelease returns the newest published release that has binaries attached.
+func GetLatestRelease() (*github.RepositoryRelease, error) {
 	client := github.NewClient(nil)
-	ctx := context.Background()
-	releases, _, err := client.Repositories.ListReleases(ctx, "stampzilla", "stampzilla-go", &github.ListOptions{})
+	releases, _, err := client.Repositories.ListReleases(context.Background(), "stampzilla", "stampzilla-go", &github.ListOptions{})
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("error fetching releases from github.com: %w", err)
 	}
 
-	return releases
+	for _, r := range releases {
+		if r.GetDraft() || r.GetPrerelease() {
+			continue
+		}
+		for _, a := range r.Assets {
+			if a.GetName() == "checksum" {
+				return r, nil
+			}
+		}
+		logrus.Warnf("skipping release %s: no binaries found", r.GetTagName())
+	}
 
-	////commits, _, err := client.Repositories.ListCommits(ctx, "stampzilla", "stampzilla-go"
-
-	// url := "https://api.github.com/repos/stampzilla/stampzilla-go/releases"
-
-	// req, err := http.NewRequest("GET", url, nil)
-	// if err != nil {
-	// log.Fatal("NewRequest: ", err)
-	// return []Release{}
-	//}
-
-	// client := &http.Client{}
-
-	// resp, err := client.Do(req)
-	// if err != nil {
-	// log.Fatal("Do: ", err)
-	// return []Release{}
-	//}
-
-	// defer resp.Body.Close()
-
-	// var releases []Release
-
-	// if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
-	// log.Println(err)
-	//}
-
-	// return releases
+	return nil, fmt.Errorf("found no release with binaries on github.com")
 }

@@ -61,8 +61,9 @@ func build(path string, release *Release) {
 				cgo = "1"
 			}
 
-			fmt.Printf("building %s...\n", binName)
-			cmd := exec.Command("go", getArgs(path, binName)...) // #nosec
+			args := getArgs(path, binName)
+			fmt.Printf("building %s with args: %s\n", binName, args)
+			cmd := exec.Command("go", args...) // #nosec
 			cmd.Env = os.Environ()
 			cmd.Env = append(cmd.Env, "GOOS="+goos, "GOARCH="+goarch, "CGO_ENABLED="+cgo)
 			stdoutStderr, err := cmd.CombinedOutput()
@@ -79,16 +80,25 @@ func getArgs(path, binName string) []string {
 	m := []string{
 		"build",
 		"-ldflags",
-		"-X github.com/stampzilla/stampzilla-go/v2/pkg/build.Version=" + os.Getenv("TRAVIS_TAG") + ` -X "github.com/stampzilla/stampzilla-go/v2/pkg/build.BuildTime=` + time.Now().Format(time.RFC3339) + `" -X github.com/stampzilla/stampzilla-go/v2/pkg/build.Commit=` + os.Getenv("TRAVIS_COMMIT"),
+		"-X github.com/stampzilla/stampzilla-go/v2/pkg/build.Version=" + version() + ` -X "github.com/stampzilla/stampzilla-go/v2/pkg/build.BuildTime=` + time.Now().Format(time.RFC3339) + `" -X github.com/stampzilla/stampzilla-go/v2/pkg/build.Commit=` + os.Getenv("GITHUB_SHA"),
 		"-o",
 		filepath.Join(dest, binName),
+		"./" + path,
 	}
-	filesToBuild, err := filepath.Glob(filepath.Join(path, "*.go"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	m = append(m, filesToBuild...)
+	// filesToBuild, err := filepath.Glob(filepath.Join(path, "*.go"))
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// m = append(m, filesToBuild...)
 	return m
+}
+
+// version returns the tag name when building from a tag in GitHub Actions.
+func version() string {
+	if os.Getenv("GITHUB_REF_TYPE") == "tag" {
+		return os.Getenv("GITHUB_REF_NAME")
+	}
+	return ""
 }
 
 func loadReleaseFromFile(file string) (*Release, error) {
