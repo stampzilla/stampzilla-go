@@ -13,6 +13,9 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+      - name: Install ALSA headers
+        # stampzilla-linux links against alsa and is compiled for coverage
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
       - name: Test
         run: make cover
       - uses: codecov/codecov-action@v5
