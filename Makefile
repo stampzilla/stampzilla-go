@@ -1,24 +1,17 @@
-.PHONY:	test cover cover-html cover-test
+.PHONY:	test cover cover-html build-ui
+
+# stampzilla-telldus needs telldus-core headers
+PKGS = $(shell go list ./... | grep -v stampzilla-telldus)
 
 test:
-	go test `go list ./... | grep -v /vendor/ | grep -v stampzilla-telldus`
+	go test $(PKGS)
 
-# todo: use this when golang issue 23910 is resolved
-# go test -v -coverpkg=./... -coverprofile=all `go list ./... | grep -v /vendor/ `
 cover:
-	@echo Running coverage
-	go install github.com/wadey/gocovmerge@latest
-	$(eval PKGS := $(shell go list ./... | grep -v /vendor/ ))
-	$(eval PKGS_DELIM := $(shell echo $(PKGS) | sed -e 's/ /,/g'))
-	go list -f '{{if or (len .TestGoFiles) (len .XTestGoFiles)}}go test -test.v -test.timeout=120s -covermode=atomic -coverprofile={{.Name}}_{{len .Imports}}_{{len .Deps}}.coverprofile -coverpkg $(PKGS_DELIM) {{.ImportPath}}{{end}}' $(PKGS) | xargs -I {} bash -c {}
-	gocovmerge `ls *.coverprofile` > coverage.txt
-	rm *.coverprofile
-cover-normal:
-	bash coverage
+	go test -coverprofile=coverage.txt -coverpkg=./... $(PKGS)
 
 cover-html: cover
 	go tool cover -html coverage.txt
 
-build-ui: 
+build-ui:
 	cd nodes/stampzilla-server/public && gulp
 	cd nodes/stampzilla-server && go generate

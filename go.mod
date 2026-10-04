@@ -27,6 +27,7 @@ require (
 	github.com/jonaz/goenocean v0.0.0-20190218201525-96fde8f44745
 	github.com/jonaz/gograce v0.5.0
 	github.com/jonaz/gombus v0.0.0-20220624105700-6fdec46046e8
+	github.com/jonaz/mdns v0.0.0-20260811123635-c18bee6c11f5
 	github.com/koding/multiconfig v0.0.0-20171124222453-69c27309b2d7
 	github.com/lesismal/melody v0.0.0-20210520115724-c116958ce5fc
 	github.com/llgcode/draw2d v0.0.0-20210904075650-80aa0a2a901d
@@ -77,7 +78,6 @@ require (
 	github.com/hajimehoshi/go-mp3 v0.3.4 // indirect
 	github.com/hajimehoshi/oto v1.0.1 // indirect
 	github.com/jonaz/astrotime v0.0.0-20150127084258-5d2b676e5047 // indirect
-	github.com/jonaz/mdns v0.0.0-20260811123635-c18bee6c11f5 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
