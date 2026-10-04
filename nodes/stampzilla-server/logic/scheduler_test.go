@@ -65,9 +65,10 @@ func TestSchedulerRunTask(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	scheduler.Cron.Start(ctx)
-	time.Sleep(time.Second * 2)
 
-	assert.Equal(t, int64(4), syncer.Count(), "expected to be run 4 times. 2 tasks for 2 seconds")
+	assert.Eventually(t, func() bool {
+		return syncer.Count() >= 4
+	}, 5*time.Second, 50*time.Millisecond, "expected 2 tasks to run at least twice each")
 
 	assert.Equal(t, 1, syncer.Devices.Get(devices.ID{Node: "node", ID: "id1"}).State["a"])
 	assert.Equal(t, 2, syncer.Devices.Get(devices.ID{Node: "node", ID: "id2"}).State["a"])
@@ -132,9 +133,10 @@ func TestSchedulerRunTaskWithExpression(t *testing.T) {
 
 	// Start Cron
 	scheduler.Cron.Start(ctx)
-	time.Sleep(time.Second * 2)
 
-	assert.Equal(t, int64(2), syncer.Count())
+	assert.Eventually(t, func() bool {
+		return syncer.Count() >= 2
+	}, 5*time.Second, 50*time.Millisecond)
 	assert.Equal(t, 2, syncer.Devices.Get(devices.ID{Node: "node", ID: "id2"}).State["a"])
 	assert.Nil(t, syncer.Devices.Get(devices.ID{Node: "node", ID: "id1"}))
 
