@@ -3,6 +3,7 @@ package main
 type Config struct {
 	Registers Registers
 	Device    string
+	Baud      int
 }
 
 func NewConfig() *Config {
