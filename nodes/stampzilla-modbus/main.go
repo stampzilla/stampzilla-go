@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"log"
+	"math"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -17,7 +19,10 @@ func main() {
 	node := node.New("modbus")
 	config := NewConfig()
 
+	modbusConnection := &Modbus{}
+
 	node.OnConfig(updatedConfig(config))
+	node.OnRequestStateChange(onStateChange(config, modbusConnection))
 	wait := node.WaitForFirstConfig()
 
 	err := node.Connect()
@@ -32,7 +37,6 @@ func main() {
 		return
 	}
 
-	modbusConnection := &Modbus{}
 	logrus.Infof("Connecting to modbus device: %s", config.Device)
 	err = modbusConnection.Connect()
 
@@ -67,7 +71,7 @@ func main() {
 	// connection := basenode.Connect()
 	dev := &devices.Device{
 		Name:   "modbusDevice",
-		Type:   "sensor", // TODO if we add modbus write support we need to have another type
+		Type:   "sensor",
 		ID:     devices.ID{ID: "1"},
 		Online: true,
 		Traits: []string{},
@@ -83,16 +87,12 @@ func main() {
 	for {
 		select {
 		case <-ticker.C:
-			if len(config.Registers) == 0 {
+			registers := config.GetRegisters()
+			if len(registers) == 0 {
 				logrus.Info("no configured registers to poll yet")
 				continue
 			}
-			fetchRegisters(config.Registers, modbusConnection)
-
-			newState := make(devices.State)
-			for _, v := range config.Registers {
-				newState[v.Name] = v.Value
-			}
+			newState := fetchRegisters(registers, modbusConnection)
 			node.UpdateState(dev.ID.ID, newState)
 		case <-node.Stopped():
 			ticker.Stop()
@@ -104,13 +104,83 @@ func main() {
 
 func updatedConfig(config *Config) func(data json.RawMessage) error {
 	return func(data json.RawMessage) error {
+		config.Lock()
+		defer config.Unlock()
 		return json.Unmarshal(data, config)
 	}
 }
 
-func fetchRegisters(registers Registers, connection *Modbus) {
+func onStateChange(config *Config, connection *Modbus) func(state devices.State, device *devices.Device) error {
+	return func(state devices.State, device *devices.Device) error {
+		registers := config.GetRegisters()
+		for key, value := range state {
+			reg := findRegister(registers, key)
+			if reg == nil {
+				return fmt.Errorf("no register configured with name %s", key)
+			}
+			if !reg.Write {
+				return fmt.Errorf("register %s is not writable", key)
+			}
+			raw, err := encode(value, reg.Base)
+			if err != nil {
+				return fmt.Errorf("register %s: %w", key, err)
+			}
+			logrus.Infof("writing %d to register %s (%d)", raw, reg.Name, reg.Id)
+			err = connection.WriteHoldingRegister(reg.Id, raw)
+			if err != nil {
+				return fmt.Errorf("error writing register %s: %w", key, err)
+			}
+		}
+		return nil
+	}
+}
+
+func findRegister(registers []Register, name string) *Register {
+	for i := range registers {
+		if registers[i].Name == name {
+			return &registers[i]
+		}
+	}
+	return nil
+}
+
+// encode converts a state value to the raw int16 register value, multiplying with base if set.
+func encode(value interface{}, base int64) (uint16, error) {
+	var f float64
+	switch v := value.(type) {
+	case float64:
+		f = v
+	case int:
+		f = float64(v)
+	case int64:
+		f = float64(v)
+	case bool:
+		if v {
+			f = 1
+		}
+	default:
+		return 0, fmt.Errorf("unsupported value type %T", value)
+	}
+	if base != 0 {
+		f *= float64(base)
+	}
+	f = math.Round(f)
+	if f < math.MinInt16 || f > math.MaxInt16 {
+		return 0, fmt.Errorf("value %v out of range", f)
+	}
+	return uint16(int16(f)), nil
+}
+
+func fetchRegisters(registers []Register, connection *Modbus) devices.State {
+	state := make(devices.State)
 	for _, v := range registers {
-		data, err := connection.ReadInputRegister(v.Id)
+		var data []byte
+		var err error
+		if v.Write {
+			data, err = connection.ReadHoldingRegister(v.Id)
+		} else {
+			data, err = connection.ReadInputRegister(v.Id)
+		}
 		if err != nil {
 			/*
 				if connection.handler.Logger == nil {
@@ -126,11 +196,12 @@ func fetchRegisters(registers Registers, connection *Modbus) {
 			continue
 		}
 		if v.Base != 0 {
-			v.Value = decode(data) / float64(v.Base)
+			state[v.Name] = decode(data) / float64(v.Base)
 			continue
 		}
-		v.Value = decode(data)
+		state[v.Name] = decode(data)
 	}
+	return state
 }
 
 func decode(data []byte) float64 {

@@ -25,9 +25,16 @@
             "Name": "bypassSignal",
             "Id": 301
         },
+        "tempSetpoint": {
+            "Name": "tempSetpoint",
+            "Id": 222,
+            "Base": 10,
+            "Write": true
+        },
         "fanSpeed": {
             "Name": "fanSpeed",
-            "Id": 101
+            "Id": 101,
+            "Write": true
         },
         "defrostState": {
             "Name": "defrostState",
