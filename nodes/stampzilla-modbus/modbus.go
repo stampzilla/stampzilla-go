@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"sync"
 	"time"
 
 	"github.com/goburrow/modbus"
@@ -9,6 +11,7 @@ import (
 type Modbus struct {
 	client  modbus.Client
 	handler *modbus.RTUClientHandler
+	sync.Mutex
 }
 
 func (m *Modbus) Connect(config *Config) error {
@@ -35,5 +38,23 @@ func (m *Modbus) Close() error {
 }
 
 func (m *Modbus) ReadInputRegister(address uint16) ([]byte, error) {
+	m.Lock()
+	defer m.Unlock()
 	return m.client.ReadInputRegisters(address-1, 1)
+}
+
+func (m *Modbus) ReadHoldingRegister(address uint16) ([]byte, error) {
+	m.Lock()
+	defer m.Unlock()
+	return m.client.ReadHoldingRegisters(address-1, 1)
+}
+
+func (m *Modbus) WriteHoldingRegister(address, value uint16) error {
+	m.Lock()
+	defer m.Unlock()
+	if m.client == nil {
+		return fmt.Errorf("modbus not connected")
+	}
+	_, err := m.client.WriteSingleRegister(address-1, value)
+	return err
 }
