@@ -490,6 +490,7 @@ func (n *Node) OnRequestStateChange(cb func(state devices.State, device *devices
 			if oldDev == nil {
 				continue // got state-change request for a device we dont have
 			}
+			oldDev.RLock()
 			for s, newState := range state {
 				oldState := oldDev.State[s]
 				if newState != oldState {
@@ -499,6 +500,7 @@ func (n *Node) OnRequestStateChange(cb func(state devices.State, device *devices
 					foundChange = true
 				}
 			}
+			oldDev.RUnlock()
 			if foundChange {
 				err := cb(stateChange, oldDev)
 				if err != nil {
@@ -511,8 +513,9 @@ func (n *Node) OnRequestStateChange(cb func(state devices.State, device *devices
 					continue
 				}
 
-				// set the new state and send it to the server
-				err = n.Devices.SetState(devID, state.Merge(stateChange))
+				// set the new state and send it to the server. Only merge the changed keys so values
+				// updated while the callback was running are not overwritten by the request.
+				err = n.Devices.MergeState(devID, stateChange)
 				if err != nil {
 					logrus.Error(err)
 					continue

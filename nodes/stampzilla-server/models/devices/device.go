@@ -183,10 +183,30 @@ func (d *List) Add(dev *Device) {
 
 // Update the state of a device.
 func (d *List) SetState(id ID, state State) error {
-	d.Lock()
-	defer d.Unlock()
+	d.RLock()
+	defer d.RUnlock()
 	if dev, ok := d.devices[id]; ok {
+		dev.Lock()
 		dev.State = state
+		dev.Unlock()
+		return nil
+	}
+
+	return fmt.Errorf("Node not found (%s)", id.String())
+}
+
+// MergeState merges state onto the current state of a device. The device is locked during the whole
+// merge so concurrent updates of other keys are not lost.
+func (d *List) MergeState(id ID, state State) error {
+	d.RLock()
+	defer d.RUnlock()
+	if dev, ok := d.devices[id]; ok {
+		dev.Lock()
+		if dev.State == nil {
+			dev.State = make(State)
+		}
+		dev.State.MergeWith(state)
+		dev.Unlock()
 		return nil
 	}
 

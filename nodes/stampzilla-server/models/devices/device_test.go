@@ -180,3 +180,17 @@ func TestDeviceEqual(t *testing.T) {
 	eq = dev1.Equal(dev2)
 	assert.Equal(t, false, eq)
 }
+
+func TestListMergeState(t *testing.T) {
+	list := NewList()
+	d := testDevice("id")
+	d.State["temperature"] = 21.5
+	list.Add(d)
+
+	err := list.MergeState(d.ID, State{"on": false, "brightness": 0.5})
+	assert.NoError(t, err)
+	assert.Equal(t, State{"on": false, "temperature": 21.5, "brightness": 0.5}, list.Get(d.ID).State)
+
+	err = list.MergeState(ID{Node: "node", ID: "missing"}, State{"on": true})
+	assert.Error(t, err)
+}
