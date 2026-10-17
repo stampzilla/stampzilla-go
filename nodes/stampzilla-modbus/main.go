@@ -37,8 +37,12 @@ func main() {
 		return
 	}
 
-	logrus.Infof("Connecting to modbus device: %s", config.Device)
-	err = modbusConnection.Connect()
+	if config.Baud == 0 {
+		config.Baud = 9600
+	}
+
+	logrus.Infof("Connecting to modbus device: %s baud: %d", config.Device, config.Baud)
+	err = modbusConnection.Connect(config)
 
 	if err != nil {
 		logrus.Error("error connecting to modbus: ", err)

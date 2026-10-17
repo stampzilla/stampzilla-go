@@ -5,6 +5,7 @@ import "sync"
 type Config struct {
 	Registers Registers
 	Device    string
+	Baud      int
 	sync.Mutex
 }
 
