@@ -187,7 +187,7 @@ func TestListMergeState(t *testing.T) {
 	d.State["temperature"] = 21.5
 	list.Add(d)
 
-	err := list.MergeState(d.ID, State{"on": false}, State{"brightness": 0.5})
+	err := list.MergeState(d.ID, State{"on": false, "brightness": 0.5})
 	assert.NoError(t, err)
 	assert.Equal(t, State{"on": false, "temperature": 21.5, "brightness": 0.5}, list.Get(d.ID).State)
 

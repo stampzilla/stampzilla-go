@@ -54,3 +54,35 @@ func TestOnRequestStateChangeKeepsUnrelatedState(t *testing.T) {
 	assert.Equal(t, devices.State{"on": true}, got)
 	assert.Equal(t, devices.State{"on": true, "temperature": 21.5}, n.GetDevice("1").State)
 }
+
+func TestOnRequestStateChangeKeepsValuesUpdatedDuringCallback(t *testing.T) {
+	n := NewWithClient(&fakeWebsocket{})
+	dev := &devices.Device{
+		ID: devices.ID{ID: "1"},
+		State: devices.State{
+			"on":          false,
+			"temperature": 21.5,
+		},
+	}
+	n.Devices.Add(dev) // AddOrUpdate needs the sync worker running
+
+	n.OnRequestStateChange(func(state devices.State, device *devices.Device) error {
+		// simulate a poll updating another key while the callback is running
+		device.Lock()
+		device.State["temperature"] = 22.0
+		device.Unlock()
+		return nil
+	})
+
+	// a full state request like the ones sent from the web UI
+	data, err := json.Marshal(map[devices.ID]devices.State{
+		dev.ID: {"on": true, "temperature": 21.5},
+	})
+	assert.NoError(t, err)
+
+	for _, cb := range n.getCallbacks()["state-change"] {
+		assert.NoError(t, cb(data))
+	}
+
+	assert.Equal(t, devices.State{"on": true, "temperature": 22.0}, n.GetDevice("1").State)
+}

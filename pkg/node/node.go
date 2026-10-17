@@ -513,9 +513,9 @@ func (n *Node) OnRequestStateChange(cb func(state devices.State, device *devices
 					continue
 				}
 
-				// set the new state and send it to the server. Merge onto the current state since
-				// requests from rules and scenes only contain the keys they change.
-				err = n.Devices.MergeState(devID, state, stateChange)
+				// set the new state and send it to the server. Only merge the changed keys so values
+				// updated while the callback was running are not overwritten by the request.
+				err = n.Devices.MergeState(devID, stateChange)
 				if err != nil {
 					logrus.Error(err)
 					continue
