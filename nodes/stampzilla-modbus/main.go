@@ -20,9 +20,10 @@ func main() {
 	config := NewConfig()
 
 	modbusConnection := &Modbus{}
+	writes := newWriteTracker()
 
 	node.OnConfig(updatedConfig(config))
-	node.OnRequestStateChange(onStateChange(config, modbusConnection))
+	node.OnRequestStateChange(onStateChange(config, modbusConnection, writes))
 	wait := node.WaitForFirstConfig()
 
 	err := node.Connect()
@@ -96,8 +97,11 @@ func main() {
 				logrus.Info("no configured registers to poll yet")
 				continue
 			}
+			snapshot := writes.Snapshot()
 			newState := fetchRegisters(registers, modbusConnection)
-			node.UpdateState(dev.ID.ID, newState)
+			writes.Publish(snapshot, newState, func(state devices.State) {
+				node.UpdateState(dev.ID.ID, state)
+			})
 		case <-node.Stopped():
 			ticker.Stop()
 			log.Println("Stopping modbus node")
@@ -114,9 +118,17 @@ func updatedConfig(config *Config) func(data json.RawMessage) error {
 	}
 }
 
-func onStateChange(config *Config, connection *Modbus) func(state devices.State, device *devices.Device) error {
+func onStateChange(config *Config, connection *Modbus, writes *writeTracker) func(state devices.State, device *devices.Device) error {
+	type write struct {
+		reg Register
+		raw uint16
+	}
 	return func(state devices.State, device *devices.Device) error {
 		registers := config.GetRegisters()
+
+		// validate everything before writing so a rejected request does not partially change the device
+		toWrite := make([]write, 0, len(state))
+		names := make([]string, 0, len(state))
 		for key, value := range state {
 			reg := findRegister(registers, key)
 			if reg == nil {
@@ -129,10 +141,16 @@ func onStateChange(config *Config, connection *Modbus) func(state devices.State,
 			if err != nil {
 				return fmt.Errorf("register %s: %w", key, err)
 			}
-			logrus.Infof("writing %d to register %s (%d)", raw, reg.Name, reg.Id)
-			err = connection.WriteHoldingRegister(reg.Id, raw)
+			toWrite = append(toWrite, write{reg: *reg, raw: raw})
+			names = append(names, key)
+		}
+
+		writes.Written(names...)
+		for _, w := range toWrite {
+			logrus.Infof("writing %d to register %s (%d)", w.raw, w.reg.Name, w.reg.Id)
+			err := connection.WriteHoldingRegister(w.reg.Id, w.raw)
 			if err != nil {
-				return fmt.Errorf("error writing register %s: %w", key, err)
+				return fmt.Errorf("error writing register %s: %w", w.reg.Name, err)
 			}
 		}
 		return nil
