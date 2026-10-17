@@ -24,3 +24,16 @@ func TestWriteTrackerDropsStaleValues(t *testing.T) {
 	w.Publish(snapshot, polled, func(s devices.State) { published = s })
 	assert.Equal(t, devices.State{"fanSpeed": 2.0, "outsideTemp": 5.0}, published)
 }
+
+func TestWriteTrackerDropsPollStartedDuringWrite(t *testing.T) {
+	w := newWriteTracker()
+
+	w.Written("fanSpeed") // write started
+	snapshot := w.Snapshot()
+	polled := devices.State{"fanSpeed": 1.0, "outsideTemp": 5.0} // read before the serial write
+	w.Written("fanSpeed")                                        // write done
+
+	var published devices.State
+	w.Publish(snapshot, polled, func(s devices.State) { published = s })
+	assert.Equal(t, devices.State{"outsideTemp": 5.0}, published)
+}

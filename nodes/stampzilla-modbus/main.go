@@ -145,7 +145,9 @@ func onStateChange(config *Config, connection *Modbus, writes *writeTracker) fun
 			names = append(names, key)
 		}
 
+		// mark before and after writing so polls started before or during the write are both invalidated
 		writes.Written(names...)
+		defer writes.Written(names...)
 		for _, w := range toWrite {
 			logrus.Infof("writing %d to register %s (%d)", w.raw, w.reg.Name, w.reg.Id)
 			err := connection.WriteHoldingRegister(w.reg.Id, w.raw)
@@ -153,6 +155,15 @@ func onStateChange(config *Config, connection *Modbus, writes *writeTracker) fun
 				return fmt.Errorf("error writing register %s: %w", w.reg.Name, err)
 			}
 		}
+
+		// the node replaces the device state with the requested state, keep the values not part of the request
+		device.RLock()
+		for k, v := range device.State {
+			if _, ok := state[k]; !ok {
+				state[k] = v
+			}
+		}
+		device.RUnlock()
 		return nil
 	}
 }
