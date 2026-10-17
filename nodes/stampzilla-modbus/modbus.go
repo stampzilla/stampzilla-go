@@ -11,10 +11,10 @@ type Modbus struct {
 	handler *modbus.RTUClientHandler
 }
 
-func (m *Modbus) Connect() error {
+func (m *Modbus) Connect(config *Config) error {
 	// Modbus RTU/ASCII
-	handler := modbus.NewRTUClientHandler("/dev/ttyUSB0")
-	handler.BaudRate = 9600
+	handler := modbus.NewRTUClientHandler(config.Device)
+	handler.BaudRate = config.Baud
 	handler.DataBits = 8
 	handler.Parity = "N"
 	handler.StopBits = 2
