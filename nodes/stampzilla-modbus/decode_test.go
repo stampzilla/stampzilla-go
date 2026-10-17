@@ -17,3 +17,23 @@ func TestDecode(t *testing.T) {
 	assert.Equal(t, 6.0, decode(data3)/10)
 	assert.Equal(t, 0.2, decode(data4)/10)
 }
+
+func TestEncode(t *testing.T) {
+	v, err := encode(-0.1, 10)
+	assert.NoError(t, err)
+	assert.Equal(t, []byte{0xff, 0xff}, []byte{byte(v >> 8), byte(v)})
+
+	v, err = encode(6.0, 10)
+	assert.NoError(t, err)
+	assert.Equal(t, uint16(60), v)
+
+	v, err = encode(true, 0)
+	assert.NoError(t, err)
+	assert.Equal(t, uint16(1), v)
+
+	_, err = encode(40000.0, 0)
+	assert.Error(t, err)
+
+	_, err = encode("foo", 0)
+	assert.Error(t, err)
+}

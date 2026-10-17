@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"log"
+	"math"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -17,7 +19,11 @@ func main() {
 	node := node.New("modbus")
 	config := NewConfig()
 
+	modbusConnection := &Modbus{}
+	writes := newWriteTracker()
+
 	node.OnConfig(updatedConfig(config))
+	node.OnRequestStateChange(onStateChange(config, modbusConnection, writes))
 	wait := node.WaitForFirstConfig()
 
 	err := node.Connect()
@@ -36,7 +42,6 @@ func main() {
 		config.Baud = 9600
 	}
 
-	modbusConnection := &Modbus{}
 	logrus.Infof("Connecting to modbus device: %s baud: %d", config.Device, config.Baud)
 	err = modbusConnection.Connect(config)
 
@@ -71,7 +76,7 @@ func main() {
 	// connection := basenode.Connect()
 	dev := &devices.Device{
 		Name:   "modbusDevice",
-		Type:   "sensor", // TODO if we add modbus write support we need to have another type
+		Type:   "sensor",
 		ID:     devices.ID{ID: "1"},
 		Online: true,
 		Traits: []string{},
@@ -87,17 +92,16 @@ func main() {
 	for {
 		select {
 		case <-ticker.C:
-			if len(config.Registers) == 0 {
+			registers := config.GetRegisters()
+			if len(registers) == 0 {
 				logrus.Info("no configured registers to poll yet")
 				continue
 			}
-			fetchRegisters(config.Registers, modbusConnection)
-
-			newState := make(devices.State)
-			for _, v := range config.Registers {
-				newState[v.Name] = v.Value
-			}
-			node.UpdateState(dev.ID.ID, newState)
+			snapshot := writes.Snapshot()
+			newState := fetchRegisters(registers, modbusConnection)
+			writes.Publish(snapshot, newState, func(state devices.State) {
+				node.UpdateState(dev.ID.ID, state)
+			})
 		case <-node.Stopped():
 			ticker.Stop()
 			log.Println("Stopping modbus node")
@@ -108,13 +112,108 @@ func main() {
 
 func updatedConfig(config *Config) func(data json.RawMessage) error {
 	return func(data json.RawMessage) error {
+		config.Lock()
+		defer config.Unlock()
 		return json.Unmarshal(data, config)
 	}
 }
 
-func fetchRegisters(registers Registers, connection *Modbus) {
+func onStateChange(config *Config, connection *Modbus, writes *writeTracker) func(state devices.State, device *devices.Device) error {
+	type write struct {
+		reg Register
+		raw uint16
+	}
+	return func(state devices.State, device *devices.Device) error {
+		registers := config.GetRegisters()
+
+		// validate everything before writing so a rejected request does not partially change the device
+		toWrite := make([]write, 0, len(state))
+		names := make([]string, 0, len(state))
+		for key, value := range state {
+			reg := findRegister(registers, key)
+			if reg == nil {
+				return fmt.Errorf("no register configured with name %s", key)
+			}
+			if !reg.Write {
+				return fmt.Errorf("register %s is not writable", key)
+			}
+			raw, err := encode(value, reg.Base)
+			if err != nil {
+				return fmt.Errorf("register %s: %w", key, err)
+			}
+			toWrite = append(toWrite, write{reg: *reg, raw: raw})
+			names = append(names, key)
+		}
+
+		// mark before and after writing so polls started before or during the write are both invalidated
+		writes.Written(names...)
+		defer writes.Written(names...)
+		for _, w := range toWrite {
+			logrus.Infof("writing %d to register %s (%d)", w.raw, w.reg.Name, w.reg.Id)
+			err := connection.WriteHoldingRegister(w.reg.Id, w.raw)
+			if err != nil {
+				return fmt.Errorf("error writing register %s: %w", w.reg.Name, err)
+			}
+		}
+
+		// the node replaces the device state with the requested state, keep the values not part of the request
+		device.RLock()
+		for k, v := range device.State {
+			if _, ok := state[k]; !ok {
+				state[k] = v
+			}
+		}
+		device.RUnlock()
+		return nil
+	}
+}
+
+func findRegister(registers []Register, name string) *Register {
+	for i := range registers {
+		if registers[i].Name == name {
+			return &registers[i]
+		}
+	}
+	return nil
+}
+
+// encode converts a state value to the raw int16 register value, multiplying with base if set.
+func encode(value interface{}, base int64) (uint16, error) {
+	var f float64
+	switch v := value.(type) {
+	case float64:
+		f = v
+	case int:
+		f = float64(v)
+	case int64:
+		f = float64(v)
+	case bool:
+		if v {
+			f = 1
+		}
+	default:
+		return 0, fmt.Errorf("unsupported value type %T", value)
+	}
+	if base != 0 {
+		f *= float64(base)
+	}
+	f = math.Round(f)
+	if f < math.MinInt16 || f > math.MaxInt16 {
+		return 0, fmt.Errorf("value %v out of range", f)
+	}
+	return uint16(int16(f)), nil
+}
+
+func fetchRegisters(registers []Register, connection *Modbus) devices.State {
+	state := make(devices.State)
 	for _, v := range registers {
-		data, err := connection.ReadInputRegister(v.Id)
+		var data []byte
+		var err error
+		if v.Write {
+			data, err = connection.ReadHoldingRegister(v.Id)
+		} else {
+			data, err = connection.ReadInputRegister(v.Id)
+		}
 		if err != nil {
 			/*
 				if connection.handler.Logger == nil {
@@ -130,11 +229,12 @@ func fetchRegisters(registers Registers, connection *Modbus) {
 			continue
 		}
 		if v.Base != 0 {
-			v.Value = decode(data) / float64(v.Base)
+			state[v.Name] = decode(data) / float64(v.Base)
 			continue
 		}
-		v.Value = decode(data)
+		state[v.Name] = decode(data)
 	}
+	return state
 }
 
 func decode(data []byte) float64 {
