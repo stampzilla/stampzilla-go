@@ -186,7 +186,28 @@ func (d *List) SetState(id ID, state State) error {
 	d.Lock()
 	defer d.Unlock()
 	if dev, ok := d.devices[id]; ok {
+		dev.Lock()
 		dev.State = state
+		dev.Unlock()
+		return nil
+	}
+
+	return fmt.Errorf("Node not found (%s)", id.String())
+}
+
+// MergeState merges states in order onto the current state of a device. The device is locked during
+// the whole merge so concurrent updates of other keys are not lost.
+func (d *List) MergeState(id ID, states ...State) error {
+	d.Lock()
+	defer d.Unlock()
+	if dev, ok := d.devices[id]; ok {
+		dev.Lock()
+		newState := dev.State.Clone()
+		for _, s := range states {
+			newState.MergeWith(s)
+		}
+		dev.State = newState
+		dev.Unlock()
 		return nil
 	}
 
