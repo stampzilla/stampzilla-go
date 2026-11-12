@@ -273,3 +273,16 @@ func (sd *Systemd) Disable(names ...string) error {
 func getUnitName(s string) string {
 	return GetProcessName(s) + ".service"
 }
+
+// Running returns the node names (unit name without .service) of all active stampzilla units.
+func (sd *Systemd) Running() ([]string, error) {
+	units, err := sd.dbus().ListUnitsByPatterns([]string{"active", "activating"}, []string{"stampzilla-*.service"})
+	if err != nil {
+		return nil, err
+	}
+	ret := make([]string, 0, len(units))
+	for _, u := range units {
+		ret = append(ret, strings.TrimSuffix(u.Name, ".service"))
+	}
+	return ret, nil
+}
