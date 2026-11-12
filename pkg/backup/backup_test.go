@@ -132,3 +132,96 @@ func TestBackupWarnsAboutSymlinks(t *testing.T) {
 	require.Len(t, warnings, 1)
 	assert.Contains(t, warnings[0], "link")
 }
+
+type testEntry struct {
+	name    string
+	content string
+	typ     byte
+}
+
+// buildArchive builds a bundle by hand. If truncate is set the gzip stream is cut off.
+func buildArchive(t *testing.T, m *Manifest, entries []testEntry, truncate bool) []byte {
+	t.Helper()
+	buf := &bytes.Buffer{}
+	gz := gzip.NewWriter(buf)
+	tw := tar.NewWriter(gz)
+	require.NoError(t, writeManifest(tw, m))
+	for _, e := range entries {
+		typ := e.typ
+		if typ == 0 {
+			typ = tar.TypeReg
+		}
+		require.NoError(t, tw.WriteHeader(&tar.Header{Name: e.name, Mode: 0o755, Size: int64(len(e.content)), Typeflag: typ}))
+		_, err := tw.Write([]byte(e.content))
+		require.NoError(t, err)
+	}
+	require.NoError(t, tw.Close())
+	require.NoError(t, gz.Close())
+	b := buf.Bytes()
+	if truncate {
+		b = b[:len(b)-30]
+	}
+	return b
+}
+
+func TestManifestRejectsInvalidNodeNames(t *testing.T) {
+	for _, name := range []string{"stampzilla-/../../tmp/pwn", "other", "stampzilla-a b", "stampzilla-x.new", ""} {
+		data := buildArchive(t, &Manifest{FormatVersion: FormatVersion, Nodes: []string{name}}, nil, false)
+		_, err := ReadManifest(bytes.NewReader(data))
+		assert.ErrorContains(t, err, "invalid node name", name)
+	}
+}
+
+func TestExtractRejectsNestedBinaries(t *testing.T) {
+	data := buildArchive(t, &Manifest{FormatVersion: FormatVersion}, []testEntry{{name: "bin/link/stampzilla-x", content: "x"}}, false)
+	dir := t.TempDir()
+	_, err := Extract(bytes.NewReader(data), Paths{ConfigDir: filepath.Join(dir, "etc"), BinDir: filepath.Join(dir, "bin")}, RestoreOptions{})
+	assert.ErrorContains(t, err, "unexpected binary entry")
+}
+
+func TestCorruptBundleLeavesBinariesUntouched(t *testing.T) {
+	dir := t.TempDir()
+	dst := Paths{ConfigDir: filepath.Join(dir, "etc"), BinDir: filepath.Join(dir, "bin")}
+	writeTestFile(t, filepath.Join(dst.BinDir, "stampzilla-server"), "old", 0o755)
+
+	data := buildArchive(t, &Manifest{FormatVersion: FormatVersion}, []testEntry{
+		{name: "bin/stampzilla-server", content: "new"},
+		{name: "config/big", content: string(bytes.Repeat([]byte("x"), 100000))},
+	}, true)
+	_, err := Extract(bytes.NewReader(data), dst, RestoreOptions{})
+	require.Error(t, err)
+
+	got, err := os.ReadFile(filepath.Join(dst.BinDir, "stampzilla-server"))
+	require.NoError(t, err)
+	assert.Equal(t, "old", string(got))
+	entries, err := os.ReadDir(dst.BinDir)
+	require.NoError(t, err)
+	assert.Len(t, entries, 1, "staged temp files should be removed")
+}
+
+func TestBackupBinariesRejectsSymlinkedBinary(t *testing.T) {
+	src := setupSource(t)
+	knx := filepath.Join(src.BinDir, "stampzilla-knx")
+	require.NoError(t, os.Remove(knx))
+	require.NoError(t, os.Symlink(filepath.Join(src.BinDir, "other"), knx))
+	_, err := Create(&bytes.Buffer{}, src, Options{IncludeBinaries: true})
+	assert.ErrorContains(t, err, "not a regular file")
+}
+
+func TestExtractChownsWholeTreeAfterwards(t *testing.T) {
+	src := setupSource(t)
+	buf := &bytes.Buffer{}
+	_, err := Create(buf, src, Options{})
+	require.NoError(t, err)
+
+	dir := t.TempDir()
+	dst := Paths{ConfigDir: filepath.Join(dir, "etc"), BinDir: filepath.Join(dir, "bin")}
+	chowned := map[string]bool{}
+	_, err = Extract(bytes.NewReader(buf.Bytes()), dst, RestoreOptions{Chown: func(p string) error {
+		chowned[p] = true
+		return nil
+	}})
+	require.NoError(t, err)
+	assert.True(t, chowned[dst.ConfigDir])
+	assert.True(t, chowned[filepath.Join(dst.ConfigDir, "nodes", "stampzilla-server", "certificates", "ca.key")])
+}

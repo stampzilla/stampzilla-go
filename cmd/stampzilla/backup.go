@@ -62,11 +62,13 @@ func (t *cliHandler) Backup(c *cli.Context) error {
 		}
 	}
 
-	tmp := out + ".tmp"
-	f, err := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600) // contains private keys
+	// CreateTemp makes a new 0600 file (the bundle contains private keys) and
+	// never reuses or follows an existing path.
+	f, err := os.CreateTemp(filepath.Dir(out), "."+filepath.Base(out)+".tmp-*")
 	if err != nil {
 		return err
 	}
+	tmp := f.Name()
 	m, err := backup.Create(f, defaultBackupPaths, backup.Options{
 		IncludeBinaries: c.Bool("binaries"),
 		Version:         build.Version,
@@ -146,7 +148,10 @@ func (t *cliHandler) Restore(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	installer.CreateDirAsUser(cfgDir, "stampzilla")
+	// Owned by root during extraction, Extract hands it over to stampzilla when done.
+	if err := os.Mkdir(cfgDir, 0o755); err != nil {
+		return err
+	}
 
 	if _, err := f.Seek(0, 0); err != nil {
 		return err
@@ -163,11 +168,19 @@ func (t *cliHandler) Restore(c *cli.Context) error {
 	installer.CreateDirAsUser(filepath.Join(cfgDir, "nodes"), "stampzilla")
 	logrus.Infof("Config restored to %s", cfgDir)
 
-	if skipBinaries && !c.Bool("skip-install") && len(m.Nodes) > 0 {
-		logrus.Info("Downloading binaries")
-		// Install skips binaries that already exist.
-		if err := binary.NewInstaller().Install(m.Nodes...); err != nil {
-			return fmt.Errorf("install binaries: %w", err)
+	if skipBinaries && !c.Bool("skip-install") {
+		// Install reports existing binaries as failed, so only ask for missing ones.
+		missing := []string{}
+		for _, n := range m.Nodes {
+			if _, err := os.Lstat(filepath.Join(defaultBackupPaths.BinDir, n)); os.IsNotExist(err) {
+				missing = append(missing, n)
+			}
+		}
+		if len(missing) > 0 {
+			logrus.Infof("Downloading binaries: %v", missing)
+			if err := binary.NewInstaller().Install(missing...); err != nil {
+				return fmt.Errorf("install binaries: %w", err)
+			}
 		}
 	}
 

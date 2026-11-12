@@ -18,6 +18,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"sort"
 	"strings"
@@ -85,8 +86,12 @@ func Create(w io.Writer, p Paths, opts Options) (*Manifest, error) {
 
 	if opts.IncludeBinaries {
 		for _, n := range nodes {
-			if _, err := os.Stat(filepath.Join(p.BinDir, n)); err != nil {
+			fi, err := os.Lstat(filepath.Join(p.BinDir, n))
+			if err != nil {
 				return nil, fmt.Errorf("binary for %s: %w", n, err)
+			}
+			if !fi.Mode().IsRegular() {
+				return nil, fmt.Errorf("binary for %s is not a regular file (%s)", n, fi.Mode().Type())
 			}
 		}
 		m.Binaries = len(nodes) > 0
@@ -152,7 +157,7 @@ func listNodeNames(dir string, dirs bool) ([]string, error) {
 		if e.IsDir() != dirs {
 			continue
 		}
-		if !strings.HasPrefix(e.Name(), "stampzilla-") || strings.HasSuffix(e.Name(), ".new") {
+		if !validNodeName.MatchString(e.Name()) { // also skips installer leftovers like stampzilla-x.new
 			continue
 		}
 		ret = append(ret, e.Name())
@@ -267,18 +272,31 @@ func decodeManifest(r io.Reader) (*Manifest, error) {
 	if m.FormatVersion < 1 || m.FormatVersion > FormatVersion {
 		return nil, fmt.Errorf("unsupported backup format version %d", m.FormatVersion)
 	}
+	for _, n := range m.Nodes {
+		if !validNodeName.MatchString(n) {
+			return nil, fmt.Errorf("invalid node name in manifest: %q", n)
+		}
+	}
 	return m, nil
 }
+
+var validNodeName = regexp.MustCompile(`^stampzilla-[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
 
 // RestoreOptions controls how a bundle is extracted.
 type RestoreOptions struct {
 	// SkipBinaries skips extraction of bundled binaries.
 	SkipBinaries bool
-	// Chown is called for every extracted config file and directory. Optional.
+	// Chown is called for every extracted config file and directory, including
+	// ConfigDir itself, once the whole bundle has been extracted. Optional.
 	Chown func(path string) error
 }
 
-// Extract restores a bundle into p. ConfigDir is expected to be empty or missing.
+// Extract restores a bundle into p. ConfigDir is expected to be empty or
+// missing and should be owned by root until Extract has returned.
+//
+// Binaries are staged next to their destination and only moved into place
+// once the whole bundle has been read successfully, so a corrupt bundle
+// leaves the existing binaries untouched.
 func Extract(r io.Reader, p Paths, opts RestoreOptions) (*Manifest, error) {
 	gz, err := gzip.NewReader(r)
 	if err != nil {
@@ -286,6 +304,14 @@ func Extract(r io.Reader, p Paths, opts RestoreOptions) (*Manifest, error) {
 	}
 	defer gz.Close()
 	tr := tar.NewReader(gz)
+
+	type staged struct{ tmp, dst string }
+	var pending []staged
+	defer func() {
+		for _, s := range pending {
+			os.Remove(s.tmp)
+		}
+	}()
 
 	var m *Manifest
 	for {
@@ -316,81 +342,121 @@ func Extract(r io.Reader, p Paths, opts RestoreOptions) (*Manifest, error) {
 			return nil, fmt.Errorf("unexpected entry in backup: %q", hdr.Name)
 		}
 
-		var dstRoot string
-		var chown func(string) error
 		switch root {
 		case configPrefix:
-			dstRoot = p.ConfigDir
-			chown = opts.Chown
+			dst, err := safeJoin(p.ConfigDir, rel)
+			if err != nil {
+				return nil, err
+			}
+			mode := hdr.FileInfo().Mode().Perm()
+			switch hdr.Typeflag {
+			case tar.TypeDir:
+				if err := os.MkdirAll(dst, 0o755); err != nil {
+					return nil, err
+				}
+				if err := os.Chmod(dst, mode); err != nil {
+					return nil, err
+				}
+			case tar.TypeReg:
+				if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+					return nil, err
+				}
+				tmp, err := writeTemp(filepath.Dir(dst), filepath.Base(dst), tr, mode)
+				if err != nil {
+					return nil, err
+				}
+				if err := os.Rename(tmp, dst); err != nil {
+					os.Remove(tmp)
+					return nil, err
+				}
+			default:
+				return nil, fmt.Errorf("unsupported entry type %q for %s", hdr.Typeflag, hdr.Name)
+			}
+			_ = os.Chtimes(dst, hdr.ModTime, hdr.ModTime)
+
 		case binPrefix:
 			if opts.SkipBinaries {
 				continue
 			}
-			dstRoot = p.BinDir
+			// binaries are flat regular files named after the node
+			if hdr.Typeflag != tar.TypeReg || !validNodeName.MatchString(rel) {
+				return nil, fmt.Errorf("unexpected binary entry in backup: %q", hdr.Name)
+			}
+			if len(pending) == 0 {
+				if err := os.MkdirAll(p.BinDir, 0o755); err != nil {
+					return nil, err
+				}
+				fi, err := os.Lstat(p.BinDir)
+				if err != nil {
+					return nil, err
+				}
+				if !fi.IsDir() {
+					return nil, fmt.Errorf("%s is not a directory", p.BinDir)
+				}
+			}
+			tmp, err := writeTemp(p.BinDir, rel, tr, hdr.FileInfo().Mode().Perm())
+			if err != nil {
+				return nil, err
+			}
+			pending = append(pending, staged{tmp: tmp, dst: filepath.Join(p.BinDir, rel)})
+
 		default:
 			return nil, fmt.Errorf("unexpected entry in backup: %q", hdr.Name)
 		}
-
-		dst, err := safeJoin(dstRoot, rel)
-		if err != nil {
-			return nil, err
-		}
-
-		switch hdr.Typeflag {
-		case tar.TypeDir:
-			if err := os.MkdirAll(dst, 0o755); err != nil {
-				return nil, err
-			}
-			if err := os.Chmod(dst, hdr.FileInfo().Mode().Perm()); err != nil {
-				return nil, err
-			}
-		case tar.TypeReg:
-			if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-				return nil, err
-			}
-			if err := writeFile(dst, tr, hdr.FileInfo().Mode().Perm()); err != nil {
-				return nil, err
-			}
-		default:
-			return nil, fmt.Errorf("unsupported entry type %q for %s", hdr.Typeflag, hdr.Name)
-		}
-
-		if chown != nil {
-			if err := chown(dst); err != nil {
-				return nil, err
-			}
-		}
-		_ = os.Chtimes(dst, hdr.ModTime, hdr.ModTime)
 	}
 
 	if m == nil {
 		return nil, fmt.Errorf("not a stampzilla backup: empty archive")
 	}
+
+	// Ownership is handed over last so the config tree can't be tampered
+	// with (e.g. swapping a directory for a symlink) while root writes to it.
+	if opts.Chown != nil {
+		err := filepath.WalkDir(p.ConfigDir, func(path string, _ fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			return opts.Chown(path)
+		})
+		if err != nil {
+			return nil, fmt.Errorf("chown config: %w", err)
+		}
+	}
+
+	for len(pending) > 0 {
+		s := pending[0]
+		if err := os.Rename(s.tmp, s.dst); err != nil {
+			return nil, err
+		}
+		pending = pending[1:]
+	}
 	return m, nil
 }
 
-// writeFile writes to a temporary file and renames it into place so running
-// binaries can be replaced without "text file busy" errors.
-func writeFile(dst string, r io.Reader, mode fs.FileMode) error {
-	tmp := dst + ".new"
-	f, err := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
+// writeTemp writes r to a new, exclusively created temporary file in dir and
+// returns its path. Renaming it into place lets running binaries be replaced
+// without "text file busy" errors.
+func writeTemp(dir, base string, r io.Reader, mode fs.FileMode) (string, error) {
+	f, err := os.CreateTemp(dir, "."+base+".tmp-*")
 	if err != nil {
-		return err
+		return "", err
 	}
+	tmp := f.Name()
 	if _, err := io.Copy(f, r); err != nil {
 		f.Close()
 		os.Remove(tmp)
-		return err
+		return "", err
+	}
+	if err := f.Chmod(mode); err != nil {
+		f.Close()
+		os.Remove(tmp)
+		return "", err
 	}
 	if err := f.Close(); err != nil {
 		os.Remove(tmp)
-		return err
+		return "", err
 	}
-	if err := os.Chmod(tmp, mode); err != nil {
-		os.Remove(tmp)
-		return err
-	}
-	return os.Rename(tmp, dst)
+	return tmp, nil
 }
 
 func safeJoin(root, rel string) (string, error) {
