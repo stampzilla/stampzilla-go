@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -90,6 +91,90 @@ func TestListNodesFallsBackToConfigDirs(t *testing.T) {
 	nodes, err := ListNodes(src)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"stampzilla-knx", "stampzilla-server"}, nodes)
+}
+
+func TestListNodesMergesBinariesAndConfigDirs(t *testing.T) {
+	src := setupSource(t)
+	require.NoError(t, os.Remove(filepath.Join(src.BinDir, "stampzilla-knx")))
+	require.NoError(t, os.RemoveAll(filepath.Join(src.ConfigDir, "nodes", "stampzilla-server")))
+	writeTestFile(t, filepath.Join(src.BinDir, "stampzilla-tibber"), "tibber-binary", 0o755)
+	nodes, err := ListNodes(src)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"stampzilla-knx", "stampzilla-server", "stampzilla-tibber"}, nodes)
+}
+
+func TestBackupBinariesDetectsPartiallyMissingBinaries(t *testing.T) {
+	src := setupSource(t)
+	require.NoError(t, os.Remove(filepath.Join(src.BinDir, "stampzilla-knx")))
+	_, err := Create(&bytes.Buffer{}, src, Options{IncludeBinaries: true})
+	assert.ErrorContains(t, err, "binary for stampzilla-knx")
+}
+
+func TestExtractRejectsBadGzipChecksum(t *testing.T) {
+	dir := t.TempDir()
+	dst := Paths{ConfigDir: filepath.Join(dir, "etc"), BinDir: filepath.Join(dir, "bin")}
+	writeTestFile(t, filepath.Join(dst.BinDir, "stampzilla-server"), "old", 0o755)
+
+	data := buildArchive(t, &Manifest{FormatVersion: FormatVersion}, []testEntry{
+		{name: "config/", typ: tar.TypeDir},
+		{name: "bin/stampzilla-server", content: "new"},
+	}, false)
+	data[len(data)-8] ^= 0xff // CRC32 in the gzip trailer
+	_, err := Extract(bytes.NewReader(data), dst, RestoreOptions{})
+	assert.ErrorContains(t, err, "checksum")
+
+	got, err := os.ReadFile(filepath.Join(dst.BinDir, "stampzilla-server"))
+	require.NoError(t, err)
+	assert.Equal(t, "old", string(got))
+}
+
+func TestExtractRestoresDirModes(t *testing.T) {
+	src := setupSource(t)
+	require.NoError(t, os.Chmod(src.ConfigDir, 0o700))
+	require.NoError(t, os.Chmod(filepath.Join(src.ConfigDir, "nodes", "stampzilla-knx"), 0o750))
+	buf := &bytes.Buffer{}
+	_, err := Create(buf, src, Options{})
+	require.NoError(t, err)
+
+	dir := t.TempDir()
+	dst := Paths{ConfigDir: filepath.Join(dir, "etc"), BinDir: filepath.Join(dir, "bin")}
+	_, err = Extract(bytes.NewReader(buf.Bytes()), dst, RestoreOptions{})
+	require.NoError(t, err)
+
+	for p, want := range map[string]os.FileMode{
+		dst.ConfigDir: 0o700,
+		filepath.Join(dst.ConfigDir, "nodes", "stampzilla-knx"):    0o750,
+		filepath.Join(dst.ConfigDir, "nodes", "stampzilla-server"): 0o755,
+	} {
+		fi, err := os.Stat(p)
+		require.NoError(t, err)
+		assert.Equal(t, want, fi.Mode().Perm(), p)
+	}
+}
+
+func TestExtractKeepsDirsPrivateUntilDone(t *testing.T) {
+	src := setupSource(t)
+	require.NoError(t, os.Chmod(filepath.Join(src.ConfigDir, "nodes"), 0o777))
+	buf := &bytes.Buffer{}
+	_, err := Create(buf, src, Options{})
+	require.NoError(t, err)
+
+	dir := t.TempDir()
+	dst := Paths{ConfigDir: filepath.Join(dir, "etc"), BinDir: filepath.Join(dir, "bin")}
+	nodesDir := filepath.Join(dst.ConfigDir, "nodes")
+	_, err = Extract(bytes.NewReader(buf.Bytes()), dst, RestoreOptions{Chown: func(p string) error {
+		if p == nodesDir {
+			// the mode is applied right after the dir has been handed over
+			fi, err := os.Stat(p)
+			require.NoError(t, err)
+			assert.Equal(t, os.FileMode(0o700), fi.Mode().Perm())
+		}
+		return nil
+	}})
+	require.NoError(t, err)
+	fi, err := os.Stat(nodesDir)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o777), fi.Mode().Perm())
 }
 
 func TestExtractRejectsPathTraversal(t *testing.T) {
@@ -224,4 +309,29 @@ func TestExtractChownsWholeTreeAfterwards(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, chowned[dst.ConfigDir])
 	assert.True(t, chowned[filepath.Join(dst.ConfigDir, "nodes", "stampzilla-server", "certificates", "ca.key")])
+}
+
+func TestExtractChownsChildrenBeforeParents(t *testing.T) {
+	src := setupSource(t)
+	buf := &bytes.Buffer{}
+	_, err := Create(buf, src, Options{})
+	require.NoError(t, err)
+
+	dir := t.TempDir()
+	dst := Paths{ConfigDir: filepath.Join(dir, "etc"), BinDir: filepath.Join(dir, "bin")}
+	var order []string
+	_, err = Extract(bytes.NewReader(buf.Bytes()), dst, RestoreOptions{Chown: func(p string) error {
+		order = append(order, p)
+		return nil
+	}})
+	require.NoError(t, err)
+	require.NotEmpty(t, order)
+	assert.Equal(t, dst.ConfigDir, order[len(order)-1])
+	done := map[string]bool{}
+	for _, p := range order {
+		for parent := filepath.Dir(p); strings.HasPrefix(parent, dst.ConfigDir); parent = filepath.Dir(parent) {
+			assert.False(t, done[parent], "%s chowned before its child %s", parent, p)
+		}
+		done[p] = true
+	}
 }

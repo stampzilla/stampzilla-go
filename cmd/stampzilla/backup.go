@@ -148,8 +148,14 @@ func (t *cliHandler) Restore(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	// Owned by root during extraction, Extract hands it over to stampzilla when done.
-	if err := os.Mkdir(cfgDir, 0o755); err != nil {
+	// Owned by root and private during extraction, Extract applies the
+	// archived modes and hands it over to stampzilla when done. nodes is
+	// created here, before the handoff, so root never touches the tree after
+	// stampzilla owns it.
+	if err := os.Mkdir(cfgDir, 0o700); err != nil {
+		return err
+	}
+	if err := os.Mkdir(filepath.Join(cfgDir, "nodes"), 0o700); err != nil {
 		return err
 	}
 
@@ -165,7 +171,6 @@ func (t *cliHandler) Restore(c *cli.Context) error {
 		}
 		return fmt.Errorf("restore failed, previous config was put back: %w", err)
 	}
-	installer.CreateDirAsUser(filepath.Join(cfgDir, "nodes"), "stampzilla")
 	logrus.Infof("Config restored to %s", cfgDir)
 
 	if skipBinaries && !c.Bool("skip-install") {

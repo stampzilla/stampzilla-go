@@ -130,20 +130,30 @@ func Create(w io.Writer, p Paths, opts Options) (*Manifest, error) {
 	return m, nil
 }
 
-// ListNodes returns the installed stampzilla nodes. It looks in the binary dir
-// first and falls back to the node config dirs if no binaries are found.
+// ListNodes returns the installed stampzilla nodes: every node that has a
+// binary in the binary dir or a config dir below ConfigDir/nodes.
 func ListNodes(p Paths) ([]string, error) {
-	nodes, err := listNodeNames(p.BinDir, false)
-	if err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return nil, err
+	seen := map[string]bool{}
+	for _, src := range []struct {
+		dir  string
+		dirs bool
+	}{
+		{p.BinDir, false},
+		{filepath.Join(p.ConfigDir, "nodes"), true},
+	} {
+		names, err := listNodeNames(src.dir, src.dirs)
+		if err != nil && !errors.Is(err, fs.ErrNotExist) {
+			return nil, err
+		}
+		for _, n := range names {
+			seen[n] = true
+		}
 	}
-	if len(nodes) > 0 {
-		return nodes, nil
+	nodes := make([]string, 0, len(seen))
+	for n := range seen {
+		nodes = append(nodes, n)
 	}
-	nodes, err = listNodeNames(filepath.Join(p.ConfigDir, "nodes"), true)
-	if err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return nil, err
-	}
+	sort.Strings(nodes)
 	return nodes, nil
 }
 
@@ -287,12 +297,17 @@ type RestoreOptions struct {
 	// SkipBinaries skips extraction of bundled binaries.
 	SkipBinaries bool
 	// Chown is called for every extracted config file and directory, including
-	// ConfigDir itself, once the whole bundle has been extracted. Optional.
+	// ConfigDir itself, once the whole bundle has been extracted. Children are
+	// handed over before their parents and ConfigDir last. Optional.
 	Chown func(path string) error
 }
 
 // Extract restores a bundle into p. ConfigDir is expected to be empty or
 // missing and should be owned by root until Extract has returned.
+//
+// Directories are kept private (0700) while extracting so nobody can plant
+// symlinks in them. Their archived modes are applied at the end together
+// with the ownership handoff.
 //
 // Binaries are staged next to their destination and only moved into place
 // once the whole bundle has been read successfully, so a corrupt bundle
@@ -313,6 +328,7 @@ func Extract(r io.Reader, p Paths, opts RestoreOptions) (*Manifest, error) {
 		}
 	}()
 
+	dirModes := map[string]fs.FileMode{}
 	var m *Manifest
 	for {
 		hdr, err := tr.Next()
@@ -336,7 +352,14 @@ func Extract(r io.Reader, p Paths, opts RestoreOptions) (*Manifest, error) {
 
 		root, rel, ok := strings.Cut(strings.TrimSuffix(hdr.Name, "/"), "/")
 		if !ok {
-			if hdr.Typeflag == tar.TypeDir && (root == configPrefix || root == binPrefix) {
+			if hdr.Typeflag == tar.TypeDir && root == configPrefix {
+				if err := os.MkdirAll(p.ConfigDir, 0o700); err != nil {
+					return nil, err
+				}
+				dirModes[p.ConfigDir] = hdr.FileInfo().Mode().Perm()
+				continue
+			}
+			if hdr.Typeflag == tar.TypeDir && root == binPrefix {
 				continue // top level dir
 			}
 			return nil, fmt.Errorf("unexpected entry in backup: %q", hdr.Name)
@@ -351,14 +374,12 @@ func Extract(r io.Reader, p Paths, opts RestoreOptions) (*Manifest, error) {
 			mode := hdr.FileInfo().Mode().Perm()
 			switch hdr.Typeflag {
 			case tar.TypeDir:
-				if err := os.MkdirAll(dst, 0o755); err != nil {
+				if err := os.MkdirAll(dst, 0o700); err != nil {
 					return nil, err
 				}
-				if err := os.Chmod(dst, mode); err != nil {
-					return nil, err
-				}
+				dirModes[dst] = mode
 			case tar.TypeReg:
-				if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+				if err := os.MkdirAll(filepath.Dir(dst), 0o700); err != nil {
 					return nil, err
 				}
 				tmp, err := writeTemp(filepath.Dir(dst), filepath.Base(dst), tr, mode)
@@ -409,18 +430,14 @@ func Extract(r io.Reader, p Paths, opts RestoreOptions) (*Manifest, error) {
 		return nil, fmt.Errorf("not a stampzilla backup: empty archive")
 	}
 
-	// Ownership is handed over last so the config tree can't be tampered
-	// with (e.g. swapping a directory for a symlink) while root writes to it.
-	if opts.Chown != nil {
-		err := filepath.WalkDir(p.ConfigDir, func(path string, _ fs.DirEntry, err error) error {
-			if err != nil {
-				return err
-			}
-			return opts.Chown(path)
-		})
-		if err != nil {
-			return nil, fmt.Errorf("chown config: %w", err)
-		}
+	// The tar reader stops at the end-of-archive marker without reading the
+	// gzip trailer, so drain it to have the checksum verified.
+	if _, err := io.Copy(io.Discard, gz); err != nil {
+		return nil, fmt.Errorf("corrupt backup: %w", err)
+	}
+
+	if err := finalizeConfig(p.ConfigDir, dirModes, opts.Chown); err != nil {
+		return nil, err
 	}
 
 	for len(pending) > 0 {
@@ -431,6 +448,46 @@ func Extract(r io.Reader, p Paths, opts RestoreOptions) (*Manifest, error) {
 		pending = pending[1:]
 	}
 	return m, nil
+}
+
+// finalizeConfig applies directory modes and hands ownership of the config
+// tree over. All paths are collected while the tree is still only writable by
+// us, then processed children first so a directory is only given away once
+// everything below it is done and its parent is still ours.
+func finalizeConfig(root string, dirModes map[string]fs.FileMode, chown func(string) error) error {
+	type entry struct {
+		path string
+		dir  bool
+	}
+	var entries []entry
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		entries = append(entries, entry{path: path, dir: d.IsDir()})
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("finalize config: %w", err)
+	}
+	for i := len(entries) - 1; i >= 0; i-- {
+		e := entries[i]
+		if chown != nil {
+			if err := chown(e.path); err != nil {
+				return fmt.Errorf("chown config: %w", err)
+			}
+		}
+		if e.dir {
+			mode, ok := dirModes[e.path]
+			if !ok {
+				mode = 0o755
+			}
+			if err := os.Chmod(e.path, mode); err != nil {
+				return fmt.Errorf("chmod config: %w", err)
+			}
+		}
+	}
+	return nil
 }
 
 // writeTemp writes r to a new, exclusively created temporary file in dir and
