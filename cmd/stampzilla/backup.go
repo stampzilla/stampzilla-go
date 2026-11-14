@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -118,6 +119,12 @@ func (t *cliHandler) Restore(c *cli.Context) (retErr error) {
 		skipBinaries = true
 	}
 
+	// Restore replaces the config dir itself. A symlink would be moved aside
+	// and replaced with a plain directory, silently changing the layout.
+	if fi, err := os.Lstat(defaultBackupPaths.ConfigDir); err == nil && fi.Mode()&os.ModeSymlink != 0 {
+		return fmt.Errorf("%s is a symlink, restore into a plain directory only. Replace the symlink with the directory it points to and try again", defaultBackupPaths.ConfigDir)
+	}
+
 	// Creates the stampzilla user and the base directories.
 	if err := installer.Prepare(); err != nil {
 		return err
@@ -138,7 +145,7 @@ func (t *cliHandler) Restore(c *cli.Context) (retErr error) {
 		}
 	}
 
-	chown, err := chownTo("stampzilla")
+	uid, gid, err := lookupUser("stampzilla")
 	if err != nil {
 		return err
 	}
@@ -186,7 +193,12 @@ func (t *cliHandler) Restore(c *cli.Context) (retErr error) {
 	}
 	if _, err := backup.Extract(f, defaultBackupPaths, backup.RestoreOptions{
 		SkipBinaries: skipBinaries,
-		Chown:        chown,
+		Chown: func(p string) error {
+			return os.Lchown(p, uid, gid)
+		},
+		CheckBinDir: func(fi os.FileInfo) error {
+			return ownedBy(fi, uid)
+		},
 	}); err != nil {
 		return err
 	}
@@ -264,20 +276,30 @@ func isInside(p, dir string) (bool, error) {
 	return rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))), nil
 }
 
-func chownTo(username string) (func(string) error, error) {
+func lookupUser(username string) (uid, gid int, err error) {
 	u, err := user.Lookup(username)
 	if err != nil {
-		return nil, err
+		return 0, 0, err
 	}
-	uid, err := strconv.Atoi(u.Uid)
-	if err != nil {
-		return nil, err
+	if uid, err = strconv.Atoi(u.Uid); err != nil {
+		return 0, 0, err
 	}
-	gid, err := strconv.Atoi(u.Gid)
-	if err != nil {
-		return nil, err
+	if gid, err = strconv.Atoi(u.Gid); err != nil {
+		return 0, 0, err
 	}
-	return func(p string) error {
-		return os.Lchown(p, uid, gid)
-	}, nil
+	return uid, gid, nil
+}
+
+// ownedBy refuses a directory that is not owned by uid. Root writes into the
+// binary dir, so if its path has been redirected to a directory owned by
+// someone else, for example root, nothing must be written there.
+func ownedBy(fi os.FileInfo, uid int) error {
+	st, ok := fi.Sys().(*syscall.Stat_t)
+	if !ok {
+		return fmt.Errorf("cannot check owner")
+	}
+	if int(st.Uid) != uid {
+		return fmt.Errorf("owned by uid %d, expected %d. Has the path been redirected with a symlink?", st.Uid, uid)
+	}
+	return nil
 }

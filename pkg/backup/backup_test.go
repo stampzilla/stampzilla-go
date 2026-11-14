@@ -410,3 +410,50 @@ func TestBinaryCommitReplacesExistingBinaries(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, entries, 2, "previous binaries kept during commit should be removed")
 }
+
+func TestBinaryCommitDoesNotFollowSymlinkedBinary(t *testing.T) {
+	dir := t.TempDir()
+	dst := Paths{ConfigDir: filepath.Join(dir, "etc"), BinDir: filepath.Join(dir, "bin")}
+	outside := filepath.Join(dir, "outside")
+	writeTestFile(t, outside, "important", 0o644)
+	require.NoError(t, os.MkdirAll(dst.BinDir, 0o755))
+	require.NoError(t, os.Symlink(outside, filepath.Join(dst.BinDir, "stampzilla-a")))
+
+	data := buildArchive(t, &Manifest{FormatVersion: FormatVersion}, []testEntry{
+		{name: "config/", typ: tar.TypeDir},
+		{name: "bin/stampzilla-a", content: "new-a"},
+	}, false)
+	_, err := Extract(bytes.NewReader(data), dst, RestoreOptions{})
+	require.NoError(t, err)
+
+	got, err := os.ReadFile(outside)
+	require.NoError(t, err)
+	assert.Equal(t, "important", string(got), "file behind the symlink must not be touched")
+	fi, err := os.Lstat(filepath.Join(dst.BinDir, "stampzilla-a"))
+	require.NoError(t, err)
+	assert.True(t, fi.Mode().IsRegular(), "symlink should be replaced by the binary")
+}
+
+func TestExtractRefusesBinDirRejectedByCheck(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "elsewhere")
+	require.NoError(t, os.MkdirAll(target, 0o755))
+	dst := Paths{ConfigDir: filepath.Join(dir, "etc"), BinDir: filepath.Join(dir, "bin")}
+	require.NoError(t, os.Symlink(target, dst.BinDir))
+
+	data := buildArchive(t, &Manifest{FormatVersion: FormatVersion}, []testEntry{
+		{name: "config/", typ: tar.TypeDir},
+		{name: "bin/stampzilla-a", content: "new-a"},
+	}, false)
+	var checked os.FileInfo
+	_, err := Extract(bytes.NewReader(data), dst, RestoreOptions{CheckBinDir: func(fi os.FileInfo) error {
+		checked = fi
+		return assert.AnError
+	}})
+	require.ErrorIs(t, err, assert.AnError)
+	require.NotNil(t, checked)
+	assert.True(t, checked.IsDir(), "check should get the directory the symlink points to")
+	entries, err := os.ReadDir(target)
+	require.NoError(t, err)
+	assert.Empty(t, entries, "nothing should be written to a refused bin dir")
+}

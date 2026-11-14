@@ -10,6 +10,8 @@ package backup
 import (
 	"archive/tar"
 	"compress/gzip"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -329,10 +331,16 @@ type RestoreOptions struct {
 	// ConfigDir itself, once the whole bundle has been extracted. Children are
 	// handed over before their parents and ConfigDir last. Optional.
 	Chown func(path string) error
+	// CheckBinDir is called with the binary dir that was actually opened,
+	// after following any symlinks in its path, before anything is written
+	// to it. Return an error to refuse it, for example when it is not owned
+	// by the expected user. Optional.
+	CheckBinDir func(fi fs.FileInfo) error
 }
 
-// staged is a binary written to a temp file next to its destination.
-type staged struct{ tmp, dst string }
+// staged is a binary written to a temp file next to its destination. Both
+// names are relative to the binary dir.
+type staged struct{ tmp, name string }
 
 // Extract restores a bundle into p. ConfigDir is expected to be empty or
 // missing and should be owned by root until Extract has returned.
@@ -343,7 +351,9 @@ type staged struct{ tmp, dst string }
 //
 // Binaries are staged next to their destination and only moved into place
 // once the whole bundle has been read successfully, so a corrupt bundle
-// leaves the existing binaries untouched.
+// leaves the existing binaries untouched. The binary dir is usually not
+// owned by root, so all writes to it go through an os.Root and can not be
+// redirected outside of it with symlinks.
 func Extract(r io.Reader, p Paths, opts RestoreOptions) (*Manifest, error) {
 	gz, err := gzip.NewReader(r)
 	if err != nil {
@@ -352,11 +362,16 @@ func Extract(r io.Reader, p Paths, opts RestoreOptions) (*Manifest, error) {
 	defer gz.Close()
 	tr := tar.NewReader(gz)
 
+	var binRoot *os.Root
 	var pending []staged
 	defer func() {
-		for _, s := range pending {
-			os.Remove(s.tmp)
+		if binRoot == nil {
+			return
 		}
+		for _, s := range pending {
+			binRoot.Remove(s.tmp)
+		}
+		binRoot.Close()
 	}()
 
 	dirModes := map[string]fs.FileMode{}
@@ -434,23 +449,16 @@ func Extract(r io.Reader, p Paths, opts RestoreOptions) (*Manifest, error) {
 			if hdr.Typeflag != tar.TypeReg || !validNodeName.MatchString(rel) {
 				return nil, fmt.Errorf("unexpected binary entry in backup: %q", hdr.Name)
 			}
-			if len(pending) == 0 {
-				if err := os.MkdirAll(p.BinDir, 0o755); err != nil {
+			if binRoot == nil {
+				if binRoot, err = openBinDir(p.BinDir, opts.CheckBinDir); err != nil {
 					return nil, err
-				}
-				fi, err := os.Lstat(p.BinDir)
-				if err != nil {
-					return nil, err
-				}
-				if !fi.IsDir() {
-					return nil, fmt.Errorf("%s is not a directory", p.BinDir)
 				}
 			}
-			tmp, err := writeTemp(p.BinDir, rel, tr, hdr.FileInfo().Mode().Perm())
+			tmp, err := writeTempIn(binRoot, rel, tr, hdr.FileInfo().Mode().Perm())
 			if err != nil {
 				return nil, err
 			}
-			pending = append(pending, staged{tmp: tmp, dst: filepath.Join(p.BinDir, rel)})
+			pending = append(pending, staged{tmp: tmp, name: rel})
 
 		default:
 			return nil, fmt.Errorf("unexpected entry in backup: %q", hdr.Name)
@@ -471,33 +479,60 @@ func Extract(r io.Reader, p Paths, opts RestoreOptions) (*Manifest, error) {
 		return nil, err
 	}
 
-	if err := commitBinaries(pending); err != nil {
-		return nil, err
+	if binRoot != nil {
+		if err := commitBinaries(binRoot, pending); err != nil {
+			return nil, err
+		}
 	}
 	pending = nil
 	return m, nil
 }
 
+// openBinDir opens the binary dir as an os.Root. Symlinks in the path itself
+// are followed, check is then given the directory that was actually opened so
+// a path redirected to somewhere else can be refused.
+func openBinDir(dir string, check func(fs.FileInfo) error) (*os.Root, error) {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return nil, err
+	}
+	root, err := os.OpenRoot(dir)
+	if err != nil {
+		return nil, err
+	}
+	fi, err := root.Stat(".")
+	if err != nil {
+		root.Close()
+		return nil, err
+	}
+	if check != nil {
+		if err := check(fi); err != nil {
+			root.Close()
+			return nil, fmt.Errorf("binary dir %s: %w", dir, err)
+		}
+	}
+	return root, nil
+}
+
 // commitBinaries moves staged binaries into place. The previous binaries are
 // kept as hard links until all of them have been replaced, so a failure
 // halfway puts the old ones back instead of leaving a mix.
-func commitBinaries(pending []staged) error {
-	type done struct{ dst, old string }
+func commitBinaries(root *os.Root, pending []staged) error {
+	type done struct{ name, old string }
 	var committed []done
 	rollback := func() {
 		for i := len(committed) - 1; i >= 0; i-- {
 			c := committed[i]
 			if c.old == "" {
-				os.Remove(c.dst)
+				root.Remove(c.name)
 				continue
 			}
-			os.Rename(c.old, c.dst)
+			root.Rename(c.old, c.name)
 		}
 	}
 
 	for _, s := range pending {
 		old := ""
-		fi, err := os.Lstat(s.dst)
+		fi, err := root.Lstat(s.name)
 		switch {
 		case errors.Is(err, fs.ErrNotExist):
 		case err != nil:
@@ -505,50 +540,86 @@ func commitBinaries(pending []staged) error {
 			return err
 		case fi.IsDir():
 			rollback()
-			return fmt.Errorf("install %s: is a directory", s.dst)
+			return fmt.Errorf("install %s: is a directory", s.name)
 		default:
-			old, err = reserveName(filepath.Dir(s.dst), filepath.Base(s.dst)+".old")
+			old, err = linkAside(root, s.name)
 			if err != nil {
 				rollback()
-				return err
-			}
-			if err := os.Link(s.dst, old); err != nil {
-				rollback()
-				return fmt.Errorf("keep previous %s: %w", s.dst, err)
+				return fmt.Errorf("keep previous %s: %w", s.name, err)
 			}
 		}
-		if err := os.Rename(s.tmp, s.dst); err != nil {
+		if err := root.Rename(s.tmp, s.name); err != nil {
 			if old != "" {
-				os.Remove(old)
+				root.Remove(old)
 			}
 			rollback()
-			return fmt.Errorf("install %s: %w", s.dst, err)
+			return fmt.Errorf("install %s: %w", s.name, err)
 		}
-		committed = append(committed, done{dst: s.dst, old: old})
+		committed = append(committed, done{name: s.name, old: old})
 	}
 
 	for _, c := range committed {
 		if c.old != "" {
-			os.Remove(c.old)
+			root.Remove(c.old)
 		}
 	}
 	return nil
 }
 
-// reserveName returns an unused path in dir for a hard link. The placeholder
-// file is removed again, os.Link fails rather than follows if something else
-// shows up at that name in the meantime.
-func reserveName(dir, base string) (string, error) {
-	f, err := os.CreateTemp(dir, "."+base+"-*")
-	if err != nil {
+// linkAside hard links name to a new, unused name in root and returns it.
+func linkAside(root *os.Root, name string) (string, error) {
+	for range 10 {
+		old := "." + name + ".old-" + randSuffix()
+		err := root.Link(name, old)
+		if errors.Is(err, fs.ErrExist) {
+			continue
+		}
+		return old, err
+	}
+	return "", fmt.Errorf("no free name for %s", name)
+}
+
+// writeTempIn writes r to a new, exclusively created temporary file in root
+// and returns its name.
+func writeTempIn(root *os.Root, base string, r io.Reader, mode fs.FileMode) (string, error) {
+	var f *os.File
+	var name string
+	for range 10 {
+		name = "." + base + ".tmp-" + randSuffix()
+		var err error
+		f, err = root.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+		if errors.Is(err, fs.ErrExist) {
+			continue
+		}
+		if err != nil {
+			return "", err
+		}
+		break
+	}
+	if f == nil {
+		return "", fmt.Errorf("no free temp name for %s", base)
+	}
+	if _, err := io.Copy(f, r); err != nil {
+		f.Close()
+		root.Remove(name)
 		return "", err
 	}
-	name := f.Name()
-	f.Close()
-	if err := os.Remove(name); err != nil {
+	if err := f.Chmod(mode); err != nil {
+		f.Close()
+		root.Remove(name)
+		return "", err
+	}
+	if err := f.Close(); err != nil {
+		root.Remove(name)
 		return "", err
 	}
 	return name, nil
+}
+
+func randSuffix() string {
+	b := make([]byte, 8)
+	rand.Read(b)
+	return hex.EncodeToString(b)
 }
 
 // finalizeConfig applies directory modes and hands ownership of the config
