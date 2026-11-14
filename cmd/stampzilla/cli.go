@@ -125,6 +125,43 @@ func main() {
 			Action:  cliHandler.UpdateConfig,
 		},
 		{
+			Name:      "backup",
+			Usage:     "Create a backup bundle of all stampzilla config and state on this machine",
+			ArgsUsage: " ",
+			Action:    cliHandler.Backup,
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:    "output",
+					Aliases: []string{"o"},
+					Usage:   "output file (default stampzilla-backup-<hostname>-<time>.tar.gz)",
+				},
+				&cli.BoolFlag{
+					Name:  "binaries",
+					Usage: "include node binaries in the bundle",
+				},
+				&cli.BoolFlag{
+					Name:  "stop",
+					Usage: "stop running nodes during backup for a consistent snapshot, and start them again afterwards",
+				},
+			},
+		},
+		{
+			Name:      "restore",
+			Usage:     "Restore a backup bundle on this machine. The existing config is moved to /etc/stampzilla.pre-restore-<time>",
+			ArgsUsage: "<backup.tar.gz>",
+			Action:    cliHandler.Restore,
+			Flags: []cli.Flag{
+				&cli.BoolFlag{
+					Name:  "skip-install",
+					Usage: "only restore config, do not install binaries",
+				},
+				&cli.BoolFlag{
+					Name:  "start",
+					Usage: "start the restored nodes when done",
+				},
+			},
+		},
+		{
 			Name:   "self-update",
 			Usage:  "Update stampzilla cli",
 			Action: (cliHandler.SelfUpdate),
