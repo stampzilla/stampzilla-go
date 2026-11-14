@@ -335,3 +335,78 @@ func TestExtractChownsChildrenBeforeParents(t *testing.T) {
 		done[p] = true
 	}
 }
+
+func TestBackupFollowsSymlinkedConfigDir(t *testing.T) {
+	src := setupSource(t)
+	link := filepath.Join(t.TempDir(), "etc-link")
+	require.NoError(t, os.Symlink(src.ConfigDir, link))
+	src.ConfigDir = link
+
+	buf := &bytes.Buffer{}
+	_, err := Create(buf, src, Options{})
+	require.NoError(t, err)
+
+	dir := t.TempDir()
+	dst := Paths{ConfigDir: filepath.Join(dir, "etc"), BinDir: filepath.Join(dir, "bin")}
+	_, err = Extract(bytes.NewReader(buf.Bytes()), dst, RestoreOptions{})
+	require.NoError(t, err)
+	got, err := os.ReadFile(filepath.Join(dst.ConfigDir, "nodes", "stampzilla-server", "config.json"))
+	require.NoError(t, err)
+	assert.Equal(t, `{"port":"8080"}`, string(got))
+}
+
+func TestBackupRejectsConfigDirThatIsAFile(t *testing.T) {
+	f := filepath.Join(t.TempDir(), "etc")
+	writeTestFile(t, f, "", 0o644)
+	_, err := Create(&bytes.Buffer{}, Paths{ConfigDir: f, BinDir: t.TempDir()}, Options{})
+	assert.ErrorContains(t, err, "not a directory")
+}
+
+func TestFailedBinaryCommitRestoresPreviousBinaries(t *testing.T) {
+	dir := t.TempDir()
+	dst := Paths{ConfigDir: filepath.Join(dir, "etc"), BinDir: filepath.Join(dir, "bin")}
+	writeTestFile(t, filepath.Join(dst.BinDir, "stampzilla-a"), "old-a", 0o755)
+	// a directory where the second binary should go makes its commit fail
+	require.NoError(t, os.MkdirAll(filepath.Join(dst.BinDir, "stampzilla-b"), 0o755))
+
+	data := buildArchive(t, &Manifest{FormatVersion: FormatVersion}, []testEntry{
+		{name: "config/", typ: tar.TypeDir},
+		{name: "bin/stampzilla-a", content: "new-a"},
+		{name: "bin/stampzilla-b", content: "new-b"},
+		{name: "bin/stampzilla-c", content: "new-c"},
+	}, false)
+	_, err := Extract(bytes.NewReader(data), dst, RestoreOptions{})
+	require.ErrorContains(t, err, "is a directory")
+
+	got, err := os.ReadFile(filepath.Join(dst.BinDir, "stampzilla-a"))
+	require.NoError(t, err)
+	assert.Equal(t, "old-a", string(got))
+	entries, err := os.ReadDir(dst.BinDir)
+	require.NoError(t, err)
+	names := []string{}
+	for _, e := range entries {
+		names = append(names, e.Name())
+	}
+	assert.ElementsMatch(t, []string{"stampzilla-a", "stampzilla-b"}, names, "no temp files or new binaries should be left")
+}
+
+func TestBinaryCommitReplacesExistingBinaries(t *testing.T) {
+	dir := t.TempDir()
+	dst := Paths{ConfigDir: filepath.Join(dir, "etc"), BinDir: filepath.Join(dir, "bin")}
+	writeTestFile(t, filepath.Join(dst.BinDir, "stampzilla-a"), "old-a", 0o755)
+
+	data := buildArchive(t, &Manifest{FormatVersion: FormatVersion}, []testEntry{
+		{name: "config/", typ: tar.TypeDir},
+		{name: "bin/stampzilla-a", content: "new-a"},
+		{name: "bin/stampzilla-b", content: "new-b"},
+	}, false)
+	_, err := Extract(bytes.NewReader(data), dst, RestoreOptions{})
+	require.NoError(t, err)
+
+	got, err := os.ReadFile(filepath.Join(dst.BinDir, "stampzilla-a"))
+	require.NoError(t, err)
+	assert.Equal(t, "new-a", string(got))
+	entries, err := os.ReadDir(dst.BinDir)
+	require.NoError(t, err)
+	assert.Len(t, entries, 2, "previous binaries kept during commit should be removed")
+}

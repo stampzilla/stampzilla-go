@@ -61,8 +61,21 @@ type Options struct {
 
 // Create writes a backup bundle to w.
 func Create(w io.Writer, p Paths, opts Options) (*Manifest, error) {
-	if _, err := os.Stat(p.ConfigDir); err != nil {
+	// WalkDir does not descend into a symlinked root, so resolve the roots
+	// first. Otherwise a symlinked config dir would give an empty backup.
+	var err error
+	if p.ConfigDir, err = resolveDir(p.ConfigDir); err != nil {
 		return nil, fmt.Errorf("config dir: %w", err)
+	}
+	if opts.IncludeBinaries {
+		// a missing bin dir is reported per node below
+		binDir, err := resolveDir(p.BinDir)
+		switch {
+		case err == nil:
+			p.BinDir = binDir
+		case !errors.Is(err, fs.ErrNotExist):
+			return nil, fmt.Errorf("binary dir: %w", err)
+		}
 	}
 
 	nodes, err := ListNodes(p)
@@ -128,6 +141,22 @@ func Create(w io.Writer, p Paths, opts Options) (*Manifest, error) {
 		return nil, err
 	}
 	return m, nil
+}
+
+// resolveDir follows symlinks in dir and checks that the result is a directory.
+func resolveDir(dir string) (string, error) {
+	resolved, err := filepath.EvalSymlinks(dir)
+	if err != nil {
+		return "", err
+	}
+	fi, err := os.Stat(resolved)
+	if err != nil {
+		return "", err
+	}
+	if !fi.IsDir() {
+		return "", fmt.Errorf("%s is not a directory", dir)
+	}
+	return resolved, nil
 }
 
 // ListNodes returns the installed stampzilla nodes: every node that has a
@@ -302,6 +331,9 @@ type RestoreOptions struct {
 	Chown func(path string) error
 }
 
+// staged is a binary written to a temp file next to its destination.
+type staged struct{ tmp, dst string }
+
 // Extract restores a bundle into p. ConfigDir is expected to be empty or
 // missing and should be owned by root until Extract has returned.
 //
@@ -320,7 +352,6 @@ func Extract(r io.Reader, p Paths, opts RestoreOptions) (*Manifest, error) {
 	defer gz.Close()
 	tr := tar.NewReader(gz)
 
-	type staged struct{ tmp, dst string }
 	var pending []staged
 	defer func() {
 		for _, s := range pending {
@@ -440,14 +471,84 @@ func Extract(r io.Reader, p Paths, opts RestoreOptions) (*Manifest, error) {
 		return nil, err
 	}
 
-	for len(pending) > 0 {
-		s := pending[0]
-		if err := os.Rename(s.tmp, s.dst); err != nil {
-			return nil, err
-		}
-		pending = pending[1:]
+	if err := commitBinaries(pending); err != nil {
+		return nil, err
 	}
+	pending = nil
 	return m, nil
+}
+
+// commitBinaries moves staged binaries into place. The previous binaries are
+// kept as hard links until all of them have been replaced, so a failure
+// halfway puts the old ones back instead of leaving a mix.
+func commitBinaries(pending []staged) error {
+	type done struct{ dst, old string }
+	var committed []done
+	rollback := func() {
+		for i := len(committed) - 1; i >= 0; i-- {
+			c := committed[i]
+			if c.old == "" {
+				os.Remove(c.dst)
+				continue
+			}
+			os.Rename(c.old, c.dst)
+		}
+	}
+
+	for _, s := range pending {
+		old := ""
+		fi, err := os.Lstat(s.dst)
+		switch {
+		case errors.Is(err, fs.ErrNotExist):
+		case err != nil:
+			rollback()
+			return err
+		case fi.IsDir():
+			rollback()
+			return fmt.Errorf("install %s: is a directory", s.dst)
+		default:
+			old, err = reserveName(filepath.Dir(s.dst), filepath.Base(s.dst)+".old")
+			if err != nil {
+				rollback()
+				return err
+			}
+			if err := os.Link(s.dst, old); err != nil {
+				rollback()
+				return fmt.Errorf("keep previous %s: %w", s.dst, err)
+			}
+		}
+		if err := os.Rename(s.tmp, s.dst); err != nil {
+			if old != "" {
+				os.Remove(old)
+			}
+			rollback()
+			return fmt.Errorf("install %s: %w", s.dst, err)
+		}
+		committed = append(committed, done{dst: s.dst, old: old})
+	}
+
+	for _, c := range committed {
+		if c.old != "" {
+			os.Remove(c.old)
+		}
+	}
+	return nil
+}
+
+// reserveName returns an unused path in dir for a hard link. The placeholder
+// file is removed again, os.Link fails rather than follows if something else
+// shows up at that name in the meantime.
+func reserveName(dir, base string) (string, error) {
+	f, err := os.CreateTemp(dir, "."+base+"-*")
+	if err != nil {
+		return "", err
+	}
+	name := f.Name()
+	f.Close()
+	if err := os.Remove(name); err != nil {
+		return "", err
+	}
+	return name, nil
 }
 
 // finalizeConfig applies directory modes and hands ownership of the config

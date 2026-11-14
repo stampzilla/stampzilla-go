@@ -89,13 +89,15 @@ func (t *cliHandler) Backup(c *cli.Context) error {
 	return nil
 }
 
-func (t *cliHandler) Restore(c *cli.Context) error {
+func (t *cliHandler) Restore(c *cli.Context) (retErr error) {
 	requireRoot()
 
-	file := c.Args().First()
-	if file == "" {
-		return fmt.Errorf("usage: stampzilla restore <backup.tar.gz>")
+	// Flags after the file name are not parsed by cli and would end up here,
+	// silently ignoring for example --skip-install.
+	if c.NArg() != 1 {
+		return fmt.Errorf("usage: stampzilla restore [--skip-install] [--start] <backup.tar.gz> (flags go before the file)")
 	}
+	file := c.Args().First()
 
 	f, err := os.Open(file)
 	if err != nil {
@@ -136,6 +138,11 @@ func (t *cliHandler) Restore(c *cli.Context) error {
 		}
 	}
 
+	chown, err := chownTo("stampzilla")
+	if err != nil {
+		return err
+	}
+
 	// Keep the current config so nothing is lost if the restore was a mistake.
 	cfgDir := defaultBackupPaths.ConfigDir
 	old := fmt.Sprintf("%s.pre-restore-%s", cfgDir, time.Now().Format("20060102-150405"))
@@ -144,19 +151,34 @@ func (t *cliHandler) Restore(c *cli.Context) error {
 	}
 	logrus.Infof("Existing config moved to %s", old)
 
-	chown, err := chownTo("stampzilla")
-	if err != nil {
-		return err
-	}
+	// Put the previous config back if anything fails before the new one is
+	// completely in place.
+	configRestored := false
+	defer func() {
+		if configRestored || retErr == nil {
+			return
+		}
+		if rbErr := rollback(cfgDir, old); rbErr != nil {
+			retErr = fmt.Errorf("restore failed: %w (rollback also failed: %s, previous config is in %s)", retErr, rbErr, old)
+			return
+		}
+		retErr = fmt.Errorf("restore failed, previous config was put back: %w", retErr)
+	}()
+
 	// Owned by root and private during extraction, Extract applies the
-	// archived modes and hands it over to stampzilla when done. nodes is
-	// created here, before the handoff, so root never touches the tree after
-	// stampzilla owns it.
+	// archived modes and hands it over to stampzilla when done. nodes and
+	// the node dirs the units run in are created here, before the handoff,
+	// so root never touches the tree after stampzilla owns it.
 	if err := os.Mkdir(cfgDir, 0o700); err != nil {
 		return err
 	}
 	if err := os.Mkdir(filepath.Join(cfgDir, "nodes"), 0o700); err != nil {
 		return err
+	}
+	for _, n := range m.Nodes {
+		if err := os.Mkdir(filepath.Join(cfgDir, "nodes", n), 0o700); err != nil {
+			return err
+		}
 	}
 
 	if _, err := f.Seek(0, 0); err != nil {
@@ -166,11 +188,9 @@ func (t *cliHandler) Restore(c *cli.Context) error {
 		SkipBinaries: skipBinaries,
 		Chown:        chown,
 	}); err != nil {
-		if rbErr := rollback(cfgDir, old); rbErr != nil {
-			return fmt.Errorf("restore failed: %w (rollback also failed: %s, previous config is in %s)", err, rbErr, old)
-		}
-		return fmt.Errorf("restore failed, previous config was put back: %w", err)
+		return err
 	}
+	configRestored = true
 	logrus.Infof("Config restored to %s", cfgDir)
 
 	if skipBinaries && !c.Bool("skip-install") {
@@ -191,7 +211,9 @@ func (t *cliHandler) Restore(c *cli.Context) error {
 
 	if sd != nil {
 		for _, node := range m.Nodes {
-			if err := sd.GenerateUnit(node); err != nil {
+			// The node dirs were created before the config was handed over
+			// to stampzilla, GenerateUnit would chown them again as root.
+			if err := sd.WriteUnit(node); err != nil {
 				return err
 			}
 		}

@@ -198,7 +198,23 @@ func (sd *Systemd) getStats(pid uint32) (cpu float64, memPercent float32, mem ui
 	return
 }
 
+// GenerateUnit creates the node's config dir, owned by stampzilla, and writes
+// and enables its systemd unit.
 func (sd *Systemd) GenerateUnit(name string) error {
+	installer.CreateDirAsUser(nodeConfigDir(name), "stampzilla")
+	return sd.WriteUnit(name)
+}
+
+// nodeConfigDir returns the working directory a node's unit runs in.
+func nodeConfigDir(name string) string {
+	name = strings.Split(name, "@")[0]
+	return filepath.Join("/", "etc", "stampzilla", "nodes", GetProcessName(name))
+}
+
+// WriteUnit writes and enables the node's systemd unit without touching its
+// config dir. Use it when the config dir already is in place and might be
+// owned by someone else than root.
+func (sd *Systemd) WriteUnit(name string) error {
 	u := `[Unit]
 Description={{.Name}}
 
@@ -233,7 +249,6 @@ WantedBy=multi-user.target
 	}
 
 	unitName := getUnitName(name)
-	installer.CreateDirAsUser(filepath.Join("/", "etc", "stampzilla", "nodes", strings.TrimSuffix(unitName, filepath.Ext(unitName))), "stampzilla")
 	p := filepath.Join("/", "etc", "systemd", "system", unitName)
 	f, err := os.Create(p)
 	if err != nil {
