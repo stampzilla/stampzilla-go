@@ -253,8 +253,8 @@ github.com/stamp/hid v0.0.0-20190105143849-bc55d7d13ce1 h1:BG7MhC3qshAG6YSA1JiTF
 github.com/stamp/hid v0.0.0-20190105143849-bc55d7d13ce1/go.mod h1:8a9qaZSBHmyhaqWfYpMnsvd4paEG6AGdl1TAy+gQkd4=
 github.com/stamp/mdns v0.0.0-20190125083120-df204ac59ca1 h1:jyz3mRLWb5vddsc4uJ2phQFBRLoT1kCqWDI6EPJeSBw=
 github.com/stamp/mdns v0.0.0-20190125083120-df204ac59ca1/go.mod h1:9mFtaGN6WXY4xq6Nb2tbURezOfVh0KX2KgbpaWwcoiA=
-github.com/stampzilla/gocast v0.5.3 h1:hcckKrQ0ZHg2WsX18VgglLHujz4UADIfPWenxjoxMyA=
-github.com/stampzilla/gocast v0.5.3/go.mod h1:GzKoxcLnVePtQqhWWubC4tZkoBcpLsCTU4W9gXtdO9o=
+github.com/stampzilla/gocast v0.5.4 h1:gZkSnHH6vFr+jK5wA0aVzy8LU+QooyVke41VDq5HGZA=
+github.com/stampzilla/gocast v0.5.4/go.mod h1:GzKoxcLnVePtQqhWWubC4tZkoBcpLsCTU4W9gXtdO9o=
 github.com/stampzilla/gozwave v0.0.0-20190221183844-576012815e01 h1:GRRheWNWtlXb+948wNX/bCQoLteqNi5B8Lx56cTDgp8=
 github.com/stampzilla/gozwave v0.0.0-20190221183844-576012815e01/go.mod h1:wlBQc7Be/mfObs+lwcTwSUss/xnjAoGmSHJGFDFe/mU=
 github.com/stoewer/go-strcase v1.3.0 h1:g0eASXYtp+yvN9fK8sH94oCIk0fau9uV1/ZdJ0AVEzs=
