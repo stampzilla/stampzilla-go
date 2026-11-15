@@ -39,7 +39,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stamp/hid v0.0.0-20190105143849-bc55d7d13ce1
 	github.com/stamp/mdns v0.0.0-20190125083120-df204ac59ca1
-	github.com/stampzilla/gocast v0.5.4
+	github.com/stampzilla/gocast v0.5.5
 	github.com/stampzilla/gozwave v0.0.0-20190221183844-576012815e01
 	github.com/stretchr/testify v1.8.4
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
@@ -82,9 +82,9 @@ require (
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
+	github.com/libp2p/zeroconf/v2 v2.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
-	github.com/micro/mdns v0.3.0 // indirect
 	github.com/miekg/dns v1.1.72 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
