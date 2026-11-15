@@ -62,10 +62,14 @@ func discoveryListner(ctx context.Context, node *node.Node, discovery *discovery
 			logrus.Debugf("New device discovered: %s", device.String())
 			d := NewChromecast(node, device)
 			chromecasts.Add(d)
-			err := device.Connect(ctx)
-			if err != nil {
-				logrus.Error(err)
-			}
+			// Connect in the background. discovery only waits 1 second for us to
+			// receive each found device and never re-sends one it has dropped, so
+			// a slow TLS dial here would make us lose devices.
+			go func() {
+				if err := device.Connect(ctx); err != nil {
+					logrus.Error(err)
+				}
+			}()
 		case <-ctx.Done():
 			return
 		}
