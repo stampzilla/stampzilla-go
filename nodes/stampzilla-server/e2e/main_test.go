@@ -202,13 +202,19 @@ func TestSecureUpdateDestinations(t *testing.T) {
 }
 	`)
 
-	err = node.Client.WriteMessage(websocket.TextMessage, b)
-	assert.NoError(t, err)
-
-	// wait for one destination
-	WaitFor(t, 1*time.Second, "we should have 1 destination", func() bool {
-		return len(main.Store.GetDestinations()) == 1
+	// The server first rejects the gui connection with 4001 because the admin
+	// person is added after connecting, and the client then reconnects. A write
+	// during that window fails or is dropped, so keep sending until it is stored.
+	WaitFor(t, 5*time.Second, "we should have 1 destination", func() bool {
+		if len(main.Store.GetDestinations()) == 1 {
+			return true
+		}
+		_ = node.Client.WriteMessage(websocket.TextMessage, b)
+		return false
 	})
+	if !assert.Len(t, main.Store.GetDestinations(), 1) {
+		return
+	}
 
 	assert.Equal(t, "0285d687-5782-4fd1-8d1d-3dc6568e08e9", main.Store.Destinations.Get("0285d687-5782-4fd1-8d1d-3dc6568e08e9").UUID)
 	assert.Len(t, main.Store.Destinations.Get("0285d687-5782-4fd1-8d1d-3dc6568e08e9").Destinations, 2)
