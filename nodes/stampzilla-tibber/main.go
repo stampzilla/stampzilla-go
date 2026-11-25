@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -46,12 +47,7 @@ func start() {
 		cancel()
 	}()
 	go func() {
-		wsURL, err := getWsURL(config.Token, config.HomeID)
-		if err != nil {
-			logrus.Warn("failed getting ws URL. Will not start websocket connection to tibber:", err)
-			return
-		}
-		reconnectWS(ctx, wsURL, config.Token, config.HomeID, func(data *DataPayload) {
+		err := reconnectWS(ctx, config.Token, config.HomeID, func(data *DataPayload) {
 			node.UpdateState("1", devices.State{
 				"current_W":        data.Data.LiveMeasurement.Power,
 				"L1_A":             data.Data.LiveMeasurement.CurrentL1,
@@ -61,6 +57,9 @@ func start() {
 				"costToday":        data.Data.LiveMeasurement.AccumulatedCost,
 			})
 		})
+		if err != nil && !errors.Is(err, context.Canceled) {
+			logrus.Warn("will not start websocket connection to tibber: ", err)
+		}
 	}()
 
 	tickerLoop(config, node)
@@ -85,15 +84,13 @@ func tickerLoop(config *Config, node *node.Node) {
 
 	node.AddOrUpdate(dev)
 
-	delay := nextDelay()
+	delay := scheduleDelay(fetchAndCalculate(config, node))
 	timer := time.NewTimer(delay)
-	fetchAndCalculate(config, node)
-	logrus.Info("scheduling first run in", delay)
+	logrus.Info("scheduling next run in ", delay)
 	for {
 		select {
 		case <-timer.C:
-			timer.Reset(nextDelay())
-			fetchAndCalculate(config, node)
+			timer.Reset(scheduleDelay(fetchAndCalculate(config, node)))
 
 		case <-node.Stopped():
 			timer.Stop()
@@ -117,6 +114,19 @@ func updatedConfig(config *Config) func(data json.RawMessage) error {
 		config.carChargeDuration = dur
 		return nil
 	}
+}
+
+const fetchRetryDelay = time.Minute
+
+// scheduleDelay returns when to run the next fetch. If the last fetch failed
+// we retry sooner instead of waiting for the next half hour.
+func scheduleDelay(err error) time.Duration {
+	delay := nextDelay()
+	if err != nil && delay > fetchRetryDelay {
+		logrus.Infof("fetch failed, retrying in %s", fetchRetryDelay)
+		return fetchRetryDelay
+	}
+	return delay
 }
 
 func nextDelay() time.Duration {

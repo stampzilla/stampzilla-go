@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -16,7 +17,7 @@ import (
 	"nhooyr.io/websocket/wsjson"
 )
 
-func fetchAndCalculate(config *Config, node *node.Node) {
+func fetchAndCalculate(config *Config, node *node.Node) error {
 	prices, err := fetchPrices(config.Token)
 	if err != nil {
 		logrus.Error(err)
@@ -25,7 +26,7 @@ func fetchAndCalculate(config *Config, node *node.Node) {
 			logrus.Errorf("using cached value for Price: %#v", curr)
 			node.UpdateState("1", pricesStore.State())
 		}
-		return
+		return err
 	}
 
 	now := time.Now()
@@ -55,6 +56,7 @@ func fetchAndCalculate(config *Config, node *node.Node) {
 	}
 
 	node.UpdateState("1", pricesStore.State())
+	return nil
 }
 
 func fetchPrices(token string) ([]Price, error) {
@@ -115,6 +117,9 @@ func fetchPrices(token string) ([]Price, error) {
 	}
 	return response.Data.Viewer.Homes[0].CurrentSubscription.PriceRating.Hourly.Entries, nil
 }
+
+var errRealTimeNotEnabled = errors.New("RealTimeConsumptionEnabled not enabled")
+
 func getWsURL(token, homeID string) (string, error) {
 	query := fmt.Sprintf(`
 {
@@ -159,7 +164,7 @@ func getWsURL(token, homeID string) (string, error) {
 		return "", err
 	}
 	if !response.Data.Viewer.Home.Features.RealTimeConsumptionEnabled {
-		return "", fmt.Errorf("RealTimeConsumptionEnabled not enabled for home %s", homeID)
+		return "", fmt.Errorf("%w for home %s", errRealTimeNotEnabled, homeID)
 	}
 
 	return response.Data.Viewer.WebsocketSubscriptionUrl, nil
@@ -167,14 +172,23 @@ func getWsURL(token, homeID string) (string, error) {
 
 type updateStateFunc func(data *DataPayload)
 
-func reconnectWS(ctx context.Context, u, token, homeID string, cb updateStateFunc) error {
+// reconnectWS keeps the websocket connection alive. The websocket URL is fetched
+// on every attempt so a failing API lookup (DNS/network down at startup etc)
+// does not permanently disable the live measurements.
+func reconnectWS(ctx context.Context, token, homeID string, cb updateStateFunc) error {
 	i := 0
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
 		connectTime := time.Now()
-		err := connectWS(ctx, u, token, homeID, cb)
+		u, err := getWsURL(token, homeID)
+		if errors.Is(err, errRealTimeNotEnabled) {
+			return err
+		}
+		if err == nil {
+			err = connectWS(ctx, u, token, homeID, cb)
+		}
 		connectedDuration := time.Since(connectTime)
 
 		if connectedDuration.Seconds() < 1.0 && i < 30 { // we was connected for less than 1 sec. Lets backoff.
@@ -188,7 +202,11 @@ func reconnectWS(ctx context.Context, u, token, homeID string, cb updateStateFun
 			logrus.Errorf("connectWs err %s reconnecting in %s", err, sleepDuration)
 		}
 
-		time.Sleep(sleepDuration)
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(sleepDuration):
+		}
 	}
 }
 
