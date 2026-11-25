@@ -112,6 +112,9 @@ func fetchPrices(token string) ([]Price, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := response.Err(); err != nil {
+		return nil, err
+	}
 	if len(response.Data.Viewer.Homes) == 0 {
 		return nil, fmt.Errorf("no homes found in response")
 	}
@@ -120,7 +123,7 @@ func fetchPrices(token string) ([]Price, error) {
 
 var errRealTimeNotEnabled = errors.New("RealTimeConsumptionEnabled not enabled")
 
-func getWsURL(token, homeID string) (string, error) {
+func getWsURL(ctx context.Context, token, homeID string) (string, error) {
 	query := fmt.Sprintf(`
 {
   viewer {
@@ -140,7 +143,7 @@ func getWsURL(token, homeID string) (string, error) {
 	}
 	reqBody := fmt.Sprintf(`{"query":%s}`, out)
 
-	req, err := http.NewRequest("POST", "https://api.tibber.com/v1-beta/gql", strings.NewReader(reqBody))
+	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.tibber.com/v1-beta/gql", strings.NewReader(reqBody))
 	if err != nil {
 		return "", err
 	}
@@ -163,6 +166,12 @@ func getWsURL(token, homeID string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if err := response.Err(); err != nil {
+		return "", err
+	}
+	if response.Data.Viewer.Home == nil {
+		return "", fmt.Errorf("home %s not found in tibber api response", homeID)
+	}
 	if !response.Data.Viewer.Home.Features.RealTimeConsumptionEnabled {
 		return "", fmt.Errorf("%w for home %s", errRealTimeNotEnabled, homeID)
 	}
@@ -182,7 +191,7 @@ func reconnectWS(ctx context.Context, token, homeID string, cb updateStateFunc) 
 			return ctx.Err()
 		}
 		connectTime := time.Now()
-		u, err := getWsURL(token, homeID)
+		u, err := getWsURL(ctx, token, homeID)
 		if errors.Is(err, errRealTimeNotEnabled) {
 			return err
 		}

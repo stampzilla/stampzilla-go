@@ -84,13 +84,23 @@ func tickerLoop(config *Config, node *node.Node) {
 
 	node.AddOrUpdate(dev)
 
-	delay := scheduleDelay(fetchAndCalculate(config, node))
+	failures := 0
+	run := func() time.Duration {
+		if err := fetchAndCalculate(config, node); err != nil {
+			failures++
+		} else {
+			failures = 0
+		}
+		return scheduleDelay(failures, nextDelay())
+	}
+
+	delay := run()
 	timer := time.NewTimer(delay)
 	logrus.Info("scheduling next run in ", delay)
 	for {
 		select {
 		case <-timer.C:
-			timer.Reset(scheduleDelay(fetchAndCalculate(config, node)))
+			timer.Reset(run())
 
 		case <-node.Stopped():
 			timer.Stop()
@@ -118,15 +128,19 @@ func updatedConfig(config *Config) func(data json.RawMessage) error {
 
 const fetchRetryDelay = time.Minute
 
-// scheduleDelay returns when to run the next fetch. If the last fetch failed
-// we retry sooner instead of waiting for the next half hour.
-func scheduleDelay(err error) time.Duration {
-	delay := nextDelay()
-	if err != nil && delay > fetchRetryDelay {
-		logrus.Infof("fetch failed, retrying in %s", fetchRetryDelay)
-		return fetchRetryDelay
+// scheduleDelay returns when to run the next fetch. After failed fetches we
+// retry sooner than the next full hour, with exponential backoff (1m, 2m, 4m...)
+// capped at the regular schedule.
+func scheduleDelay(failures int, regular time.Duration) time.Duration {
+	if failures == 0 {
+		return regular
 	}
-	return delay
+	retry := fetchRetryDelay << min(failures-1, 6)
+	if retry >= regular {
+		return regular
+	}
+	logrus.Infof("fetch failed %d time(s), retrying in %s", failures, retry)
+	return retry
 }
 
 func nextDelay() time.Duration {

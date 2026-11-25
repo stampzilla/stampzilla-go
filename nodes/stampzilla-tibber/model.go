@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -10,10 +12,15 @@ import (
 	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
 )
 
+type GraphQLError struct {
+	Message string `json:"message"`
+}
+
 type Response struct {
-	Data struct {
+	Errors []GraphQLError `json:"errors"`
+	Data   struct {
 		Viewer struct {
-			Home struct {
+			Home *struct {
 				Features struct {
 					RealTimeConsumptionEnabled bool
 				}
@@ -24,6 +31,19 @@ type Response struct {
 			} `json:"homes"`
 		} `json:"viewer"`
 	} `json:"data"`
+}
+
+// Err returns an error if the GraphQL response contains errors. The tibber api
+// can return http 200 with errors and null data.
+func (r *Response) Err() error {
+	if len(r.Errors) == 0 {
+		return nil
+	}
+	msgs := make([]string, len(r.Errors))
+	for i, e := range r.Errors {
+		msgs[i] = e.Message
+	}
+	return fmt.Errorf("tibber api error: %s", strings.Join(msgs, "; "))
 }
 
 type WsMsg struct {
