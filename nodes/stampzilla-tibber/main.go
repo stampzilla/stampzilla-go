@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -46,12 +47,7 @@ func start() {
 		cancel()
 	}()
 	go func() {
-		wsURL, err := getWsURL(config.Token, config.HomeID)
-		if err != nil {
-			logrus.Warn("failed getting ws URL. Will not start websocket connection to tibber:", err)
-			return
-		}
-		reconnectWS(ctx, wsURL, config.Token, config.HomeID, func(data *DataPayload) {
+		err := reconnectWS(ctx, config.Token, config.HomeID, func(data *DataPayload) {
 			node.UpdateState("1", devices.State{
 				"current_W":        data.Data.LiveMeasurement.Power,
 				"L1_A":             data.Data.LiveMeasurement.CurrentL1,
@@ -61,6 +57,9 @@ func start() {
 				"costToday":        data.Data.LiveMeasurement.AccumulatedCost,
 			})
 		})
+		if err != nil && !errors.Is(err, context.Canceled) {
+			logrus.Warn("will not start websocket connection to tibber: ", err)
+		}
 	}()
 
 	tickerLoop(config, node)
@@ -85,15 +84,23 @@ func tickerLoop(config *Config, node *node.Node) {
 
 	node.AddOrUpdate(dev)
 
-	delay := nextDelay()
+	failures := 0
+	run := func() time.Duration {
+		if err := fetchAndCalculate(config, node); err != nil {
+			failures++
+		} else {
+			failures = 0
+		}
+		return scheduleDelay(failures, nextDelay(time.Now(), config.slot))
+	}
+
+	delay := run()
 	timer := time.NewTimer(delay)
-	fetchAndCalculate(config, node)
-	logrus.Info("scheduling first run in", delay)
+	logrus.Info("scheduling next run in ", delay)
 	for {
 		select {
 		case <-timer.C:
-			timer.Reset(nextDelay())
-			fetchAndCalculate(config, node)
+			timer.Reset(run())
 
 		case <-node.Stopped():
 			timer.Stop()
@@ -115,19 +122,41 @@ func updatedConfig(config *Config) func(data json.RawMessage) error {
 			return fmt.Errorf("wrong duration format %s: %w", config.carChargeDuration, err)
 		}
 		config.carChargeDuration = dur
+
+		switch config.Resolution {
+		case "", ResolutionQuarterHourly:
+			config.Resolution = ResolutionQuarterHourly
+			config.slot = 15 * time.Minute
+		case ResolutionHourly:
+			config.slot = time.Hour
+		default:
+			return fmt.Errorf("unknown resolution %q, must be %s or %s", config.Resolution, ResolutionQuarterHourly, ResolutionHourly)
+		}
 		return nil
 	}
 }
 
-func nextDelay() time.Duration {
-	now := time.Now()
-	return truncateHour(now).Add(time.Hour).Sub(now)
+const fetchRetryDelay = time.Minute
+
+// scheduleDelay returns when to run the next fetch. After failed fetches we
+// retry sooner than the next price period, with exponential backoff (1m, 2m, 4m...)
+// capped at the regular schedule.
+func scheduleDelay(failures int, regular time.Duration) time.Duration {
+	if failures == 0 {
+		return regular
+	}
+	retry := fetchRetryDelay << min(failures-1, 6)
+	if retry >= regular {
+		return regular
+	}
+	logrus.Infof("fetch failed %d time(s), retrying in %s", failures, retry)
+	return retry
 }
 
-func truncateHour(t time.Time) time.Time {
-	t = t.Truncate(time.Minute * 30)
-	if t.Minute() > 0 {
-		t = t.Add(time.Minute * -1).Truncate(time.Minute * 30)
+// nextDelay returns the duration until the start of the next price period.
+func nextDelay(now time.Time, slot time.Duration) time.Duration {
+	if slot <= 0 {
+		slot = time.Hour
 	}
-	return t
+	return now.Truncate(slot).Add(slot).Sub(now)
 }

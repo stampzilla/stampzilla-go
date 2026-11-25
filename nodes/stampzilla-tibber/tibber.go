@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -16,8 +17,9 @@ import (
 	"nhooyr.io/websocket/wsjson"
 )
 
-func fetchAndCalculate(config *Config, node *node.Node) {
-	prices, err := fetchPrices(config.Token)
+func fetchAndCalculate(config *Config, node *node.Node) error {
+	pricesStore.SetSlot(config.slot)
+	prices, err := fetchPrices(config.Token, config.Resolution)
 	if err != nil {
 		logrus.Error(err)
 		curr := pricesStore.Current()
@@ -25,7 +27,7 @@ func fetchAndCalculate(config *Config, node *node.Node) {
 			logrus.Errorf("using cached value for Price: %#v", curr)
 			node.UpdateState("1", pricesStore.State())
 		}
-		return
+		return err
 	}
 
 	now := time.Now()
@@ -55,31 +57,23 @@ func fetchAndCalculate(config *Config, node *node.Node) {
 	}
 
 	node.UpdateState("1", pricesStore.State())
+	return nil
 }
 
-func fetchPrices(token string) ([]Price, error) {
-	query := `
+func fetchPrices(token, resolution string) ([]Price, error) {
+	query := fmt.Sprintf(`
 {
   viewer {
-    websocketSubscriptionUrl
     homes {
-      currentSubscription{
-        priceRating{
-          hourly {
-            entries {
-              total
-              time
-              level
-              energy
-              difference
-              tax
-            }
-          }
+      currentSubscription {
+        priceInfo(resolution: %s) {
+          today { total energy tax startsAt level currency }
+          tomorrow { total energy tax startsAt level currency }
         }
       }
     }
   }
-}`
+}`, resolution)
 
 	out, err := json.Marshal(query)
 	if err != nil {
@@ -110,12 +104,28 @@ func fetchPrices(token string) ([]Price, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := response.Err(); err != nil {
+		return nil, err
+	}
 	if len(response.Data.Viewer.Homes) == 0 {
 		return nil, fmt.Errorf("no homes found in response")
 	}
-	return response.Data.Viewer.Homes[0].CurrentSubscription.PriceRating.Hourly.Entries, nil
+	info := response.Data.Viewer.Homes[0].CurrentSubscription.PriceInfo
+	if info == nil {
+		return nil, fmt.Errorf("no priceInfo found in response")
+	}
+	prices := make([]Price, 0, len(info.Today)+len(info.Tomorrow))
+	for _, list := range [][]APIPrice{info.Today, info.Tomorrow} {
+		for _, p := range list {
+			prices = append(prices, p.Price())
+		}
+	}
+	return prices, nil
 }
-func getWsURL(token, homeID string) (string, error) {
+
+var errRealTimeNotEnabled = errors.New("RealTimeConsumptionEnabled not enabled")
+
+func getWsURL(ctx context.Context, token, homeID string) (string, error) {
 	query := fmt.Sprintf(`
 {
   viewer {
@@ -135,7 +145,7 @@ func getWsURL(token, homeID string) (string, error) {
 	}
 	reqBody := fmt.Sprintf(`{"query":%s}`, out)
 
-	req, err := http.NewRequest("POST", "https://api.tibber.com/v1-beta/gql", strings.NewReader(reqBody))
+	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.tibber.com/v1-beta/gql", strings.NewReader(reqBody))
 	if err != nil {
 		return "", err
 	}
@@ -158,8 +168,14 @@ func getWsURL(token, homeID string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if err := response.Err(); err != nil {
+		return "", err
+	}
+	if response.Data.Viewer.Home == nil {
+		return "", fmt.Errorf("home %s not found in tibber api response", homeID)
+	}
 	if !response.Data.Viewer.Home.Features.RealTimeConsumptionEnabled {
-		return "", fmt.Errorf("RealTimeConsumptionEnabled not enabled for home %s", homeID)
+		return "", fmt.Errorf("%w for home %s", errRealTimeNotEnabled, homeID)
 	}
 
 	return response.Data.Viewer.WebsocketSubscriptionUrl, nil
@@ -167,14 +183,23 @@ func getWsURL(token, homeID string) (string, error) {
 
 type updateStateFunc func(data *DataPayload)
 
-func reconnectWS(ctx context.Context, u, token, homeID string, cb updateStateFunc) error {
+// reconnectWS keeps the websocket connection alive. The websocket URL is fetched
+// on every attempt so a failing API lookup (DNS/network down at startup etc)
+// does not permanently disable the live measurements.
+func reconnectWS(ctx context.Context, token, homeID string, cb updateStateFunc) error {
 	i := 0
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
 		connectTime := time.Now()
-		err := connectWS(ctx, u, token, homeID, cb)
+		u, err := getWsURL(ctx, token, homeID)
+		if errors.Is(err, errRealTimeNotEnabled) {
+			return err
+		}
+		if err == nil {
+			err = connectWS(ctx, u, token, homeID, cb)
+		}
 		connectedDuration := time.Since(connectTime)
 
 		if connectedDuration.Seconds() < 1.0 && i < 30 { // we was connected for less than 1 sec. Lets backoff.
@@ -188,7 +213,11 @@ func reconnectWS(ctx context.Context, u, token, homeID string, cb updateStateFun
 			logrus.Errorf("connectWs err %s reconnecting in %s", err, sleepDuration)
 		}
 
-		time.Sleep(sleepDuration)
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(sleepDuration):
+		}
 	}
 }
 

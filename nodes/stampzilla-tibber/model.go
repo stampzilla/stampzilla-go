@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -10,10 +12,15 @@ import (
 	"github.com/stampzilla/stampzilla-go/v2/nodes/stampzilla-server/models/devices"
 )
 
+type GraphQLError struct {
+	Message string `json:"message"`
+}
+
 type Response struct {
-	Data struct {
+	Errors []GraphQLError `json:"errors"`
+	Data   struct {
 		Viewer struct {
-			Home struct {
+			Home *struct {
 				Features struct {
 					RealTimeConsumptionEnabled bool
 				}
@@ -24,6 +31,19 @@ type Response struct {
 			} `json:"homes"`
 		} `json:"viewer"`
 	} `json:"data"`
+}
+
+// Err returns an error if the GraphQL response contains errors. The tibber api
+// can return http 200 with errors and null data.
+func (r *Response) Err() error {
+	if len(r.Errors) == 0 {
+		return nil
+	}
+	msgs := make([]string, len(r.Errors))
+	for i, e := range r.Errors {
+		msgs[i] = e.Message
+	}
+	return fmt.Errorf("tibber api error: %s", strings.Join(msgs, "; "))
 }
 
 type WsMsg struct {
@@ -52,15 +72,33 @@ type DataPayload struct {
 }
 
 type CurrentSubscription struct {
-	PriceRating *PriceRating `json:"priceRating"`
+	PriceInfo *PriceInfo `json:"priceInfo"`
 }
 
-type PriceRating struct {
-	Hourly Hourly `json:"hourly"`
+type PriceInfo struct {
+	Today    []APIPrice `json:"today"`
+	Tomorrow []APIPrice `json:"tomorrow"`
 }
 
-type Hourly struct {
-	Entries []Price `json:"entries"`
+// APIPrice is a price entry as returned by tibber priceInfo.
+type APIPrice struct {
+	Level    string    `json:"level"`
+	Total    float64   `json:"total"`
+	Energy   float64   `json:"energy"`
+	Tax      float64   `json:"tax"`
+	Currency string    `json:"currency"`
+	StartsAt time.Time `json:"startsAt"`
+}
+
+func (a APIPrice) Price() Price {
+	return Price{
+		Level:    a.Level,
+		Total:    a.Total,
+		Energy:   a.Energy,
+		Tax:      a.Tax,
+		Currency: a.Currency,
+		Time:     a.StartsAt,
+	}
 }
 
 type Price struct {
@@ -74,6 +112,7 @@ type Price struct {
 
 type Prices struct {
 	prices              map[time.Time]Price
+	slot                time.Duration // length of each price period (1h or 15m)
 	mutex               sync.RWMutex
 	cheapestChargeStart time.Time
 	cheapestHour        time.Time
@@ -83,7 +122,25 @@ type Prices struct {
 func NewPrices() *Prices {
 	return &Prices{
 		prices: make(map[time.Time]Price),
+		slot:   time.Hour,
 	}
+}
+
+// SetSlot sets the length of each price period. Stored prices are cleared if it changes.
+func (p *Prices) SetSlot(d time.Duration) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	if p.slot == d {
+		return
+	}
+	p.slot = d
+	p.prices = make(map[time.Time]Price)
+}
+
+func (p *Prices) Slot() time.Duration {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	return p.slot
 }
 
 func (p *Prices) Add(price Price) {
@@ -151,13 +208,19 @@ func (p *Prices) calculateCheapestHour(from, to time.Time) time.Time {
 func (p *Prices) Current() *Price {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
+	now := time.Now()
+	var current *Price
 	for t, price := range p.prices {
-		if inTimeSpan(t, t.Add(60*time.Minute), time.Now()) {
-			return &price
+		if t.After(now) || !now.Before(t.Add(p.slot)) {
+			continue
+		}
+		if current == nil || t.After(current.Time) {
+			price := price
+			current = &price
 		}
 	}
 
-	return nil
+	return current
 }
 
 func (p *Prices) HasTomorrowPricesYet() bool {
@@ -226,9 +289,10 @@ func (p *Prices) calculateCheapestTimes(start time.Time, count int, hoursBetween
 }
 
 func (p *Prices) calculateBestChargeHours(start time.Time, dur time.Duration) time.Time {
-	dur = dur.Round(time.Hour)
+	slot := p.Slot()
+	dur = dur.Round(slot)
 	sumPriceForTimePlusDur := make(map[time.Time]float64)
-	last := p.Last().Add(time.Hour * 1)
+	last := p.Last().Add(slot)
 	p.mutex.Lock()
 	for t := range p.prices {
 		if start.After(t) {
@@ -238,7 +302,7 @@ func (p *Prices) calculateBestChargeHours(start time.Time, dur time.Duration) ti
 		priceSum := 0.0
 		for d < dur {
 			priceSum += p.prices[t.Add(d)].Total
-			d += time.Hour
+			d += slot
 		}
 		if t.Add(dur).Before(last) || t.Add(dur).Equal(last) {
 			sumPriceForTimePlusDur[t] = priceSum

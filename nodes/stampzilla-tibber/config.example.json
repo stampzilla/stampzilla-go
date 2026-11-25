@@ -1,4 +1,5 @@
 {
     "carChargeDuration": "6h",
-    "token": "asdf"
+    "token": "asdf",
+    "resolution": "QUARTER_HOURLY"
 }
