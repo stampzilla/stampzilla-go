@@ -91,7 +91,7 @@ func tickerLoop(config *Config, node *node.Node) {
 		} else {
 			failures = 0
 		}
-		return scheduleDelay(failures, nextDelay())
+		return scheduleDelay(failures, nextDelay(time.Now(), config.slot))
 	}
 
 	delay := run()
@@ -122,6 +122,16 @@ func updatedConfig(config *Config) func(data json.RawMessage) error {
 			return fmt.Errorf("wrong duration format %s: %w", config.carChargeDuration, err)
 		}
 		config.carChargeDuration = dur
+
+		switch config.Resolution {
+		case "", ResolutionQuarterHourly:
+			config.Resolution = ResolutionQuarterHourly
+			config.slot = 15 * time.Minute
+		case ResolutionHourly:
+			config.slot = time.Hour
+		default:
+			return fmt.Errorf("unknown resolution %q, must be %s or %s", config.Resolution, ResolutionQuarterHourly, ResolutionHourly)
+		}
 		return nil
 	}
 }
@@ -129,7 +139,7 @@ func updatedConfig(config *Config) func(data json.RawMessage) error {
 const fetchRetryDelay = time.Minute
 
 // scheduleDelay returns when to run the next fetch. After failed fetches we
-// retry sooner than the next full hour, with exponential backoff (1m, 2m, 4m...)
+// retry sooner than the next price period, with exponential backoff (1m, 2m, 4m...)
 // capped at the regular schedule.
 func scheduleDelay(failures int, regular time.Duration) time.Duration {
 	if failures == 0 {
@@ -143,15 +153,10 @@ func scheduleDelay(failures int, regular time.Duration) time.Duration {
 	return retry
 }
 
-func nextDelay() time.Duration {
-	now := time.Now()
-	return truncateHour(now).Add(time.Hour).Sub(now)
-}
-
-func truncateHour(t time.Time) time.Time {
-	t = t.Truncate(time.Minute * 30)
-	if t.Minute() > 0 {
-		t = t.Add(time.Minute * -1).Truncate(time.Minute * 30)
+// nextDelay returns the duration until the start of the next price period.
+func nextDelay(now time.Time, slot time.Duration) time.Duration {
+	if slot <= 0 {
+		slot = time.Hour
 	}
-	return t
+	return now.Truncate(slot).Add(slot).Sub(now)
 }

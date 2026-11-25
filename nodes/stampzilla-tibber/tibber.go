@@ -18,7 +18,8 @@ import (
 )
 
 func fetchAndCalculate(config *Config, node *node.Node) error {
-	prices, err := fetchPrices(config.Token)
+	pricesStore.SetSlot(config.slot)
+	prices, err := fetchPrices(config.Token, config.Resolution)
 	if err != nil {
 		logrus.Error(err)
 		curr := pricesStore.Current()
@@ -59,29 +60,20 @@ func fetchAndCalculate(config *Config, node *node.Node) error {
 	return nil
 }
 
-func fetchPrices(token string) ([]Price, error) {
-	query := `
+func fetchPrices(token, resolution string) ([]Price, error) {
+	query := fmt.Sprintf(`
 {
   viewer {
-    websocketSubscriptionUrl
     homes {
-      currentSubscription{
-        priceRating{
-          hourly {
-            entries {
-              total
-              time
-              level
-              energy
-              difference
-              tax
-            }
-          }
+      currentSubscription {
+        priceInfo(resolution: %s) {
+          today { total energy tax startsAt level currency }
+          tomorrow { total energy tax startsAt level currency }
         }
       }
     }
   }
-}`
+}`, resolution)
 
 	out, err := json.Marshal(query)
 	if err != nil {
@@ -118,7 +110,17 @@ func fetchPrices(token string) ([]Price, error) {
 	if len(response.Data.Viewer.Homes) == 0 {
 		return nil, fmt.Errorf("no homes found in response")
 	}
-	return response.Data.Viewer.Homes[0].CurrentSubscription.PriceRating.Hourly.Entries, nil
+	info := response.Data.Viewer.Homes[0].CurrentSubscription.PriceInfo
+	if info == nil {
+		return nil, fmt.Errorf("no priceInfo found in response")
+	}
+	prices := make([]Price, 0, len(info.Today)+len(info.Tomorrow))
+	for _, list := range [][]APIPrice{info.Today, info.Tomorrow} {
+		for _, p := range list {
+			prices = append(prices, p.Price())
+		}
+	}
+	return prices, nil
 }
 
 var errRealTimeNotEnabled = errors.New("RealTimeConsumptionEnabled not enabled")
