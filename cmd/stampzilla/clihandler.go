@@ -44,6 +44,14 @@ func (t *cliHandler) UpdateConfig(c *cli.Context) error {
 }
 
 func (t *cliHandler) Install(c *cli.Context) error {
+	return t.runBinaryInstaller(c, false)
+}
+
+func (t *cliHandler) Update(c *cli.Context) error {
+	return t.runBinaryInstaller(c, true)
+}
+
+func (t *cliHandler) runBinaryInstaller(c *cli.Context, update bool) error {
 	i, err := installer.New(installer.Binaries)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
@@ -52,7 +60,7 @@ func (t *cliHandler) Install(c *cli.Context) error {
 		return nil
 	}
 
-	return t.runInstaller(c, i)
+	return t.runInstaller(c, i, update)
 }
 
 func (t *cliHandler) Build(c *cli.Context) error {
@@ -64,7 +72,7 @@ func (t *cliHandler) Build(c *cli.Context) error {
 		return nil
 	}
 
-	return t.runInstaller(c, i)
+	return t.runInstaller(c, i, c.Bool("u"))
 }
 
 func (t *cliHandler) List(c *cli.Context) error {
@@ -81,7 +89,7 @@ func (t *cliHandler) List(c *cli.Context) error {
 	return nil
 }
 
-func (t *cliHandler) runInstaller(c *cli.Context, i installer.Installer) error {
+func (t *cliHandler) runInstaller(c *cli.Context, i installer.Installer, update bool) error {
 	requireRoot()
 
 	err := installer.Prepare()
@@ -94,7 +102,7 @@ func (t *cliHandler) runInstaller(c *cli.Context, i installer.Installer) error {
 		return fmt.Errorf("Failed to run installer prepare: %s", err)
 	}
 
-	if c.Bool("u") {
+	if update {
 		err = i.Update(c.Args().Slice()...)
 	} else {
 		err = i.Install(c.Args().Slice()...)
@@ -103,33 +111,35 @@ func (t *cliHandler) runInstaller(c *cli.Context, i installer.Installer) error {
 		return err
 	}
 
-	if c.Bool("systemd") {
-		r := &runner.Systemd{}
-		defer r.Close()
-		if c.Args().Len() > 0 {
-			for _, node := range c.Args().Slice() {
-				err := r.GenerateUnit(node)
-				if err != nil {
-					return err
-				}
-			}
-			return nil
-		}
+	if !c.Bool("systemd") {
+		return nil
+	}
 
+	r := &runner.Systemd{}
+	defer r.Close()
+
+	nodes := c.Args().Slice()
+	if len(nodes) == 0 {
 		// generate for all nodes in binary dir
-		nodes, err := getNodesFromDisk()
+		nodes, err = getNodesFromDisk()
 		if err != nil {
 			return err
 		}
-		for _, node := range nodes {
-			err := r.GenerateUnit(node)
-			if err != nil {
-				return err
-			}
+	}
+	for _, node := range nodes {
+		err := r.GenerateUnit(node)
+		if err != nil {
+			return err
 		}
 	}
 
-	return nil
+	if !update {
+		return nil
+	}
+
+	// Restart the updated nodes that are running so they use the new binary.
+	// Stopped nodes are left stopped.
+	return r.Restart(c.Args().Slice()...)
 }
 
 func (t *cliHandler) Start(c *cli.Context) error {

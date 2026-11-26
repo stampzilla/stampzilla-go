@@ -34,7 +34,7 @@ func (t *Installer) Install(nodes ...string) error {
 	return download(nodes, func(a github.ReleaseAsset) bool {
 		_, err := os.Stat(getFilePath(a))
 		if err == nil {
-			logrus.Infof("%s already exists. use stampzilla install -u to update", getFilePath(a))
+			logrus.Infof("%s already exists. use stampzilla update to update", getFilePath(a))
 			return true
 		}
 		return false
