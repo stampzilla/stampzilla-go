@@ -6,7 +6,6 @@ import (
 	"crypto/sha512"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -97,57 +96,7 @@ outer:
 			}
 		}
 
-		//
-		tmp, err := ioutil.TempFile("", "stampzilla")
-		if err != nil {
-			return err
-		}
-		defer func() {
-			tmp.Close()
-			os.Remove(tmp.Name())
-		}()
-
-		// Download the file
-		err = fetch(v, release.GetTagName(), tmp)
-		if err != nil {
-			return err
-		}
-
-		// Validate checksum
-		hasher := sha512.New()
-		tmp.Seek(0, 0)
-		if _, err := io.Copy(hasher, tmp); err != nil {
-			return err
-		}
-		checksum := fmt.Sprintf("%x", hasher.Sum(nil))
-		if checksums[v.GetName()] != checksum {
-			logrus.WithFields(logrus.Fields{
-				"expected": checksums[v.GetName()],
-				"got":      checksum,
-			}).Errorf("Wrong checksum for %s", v.GetName())
-			return fmt.Errorf("checksum validation failed")
-		}
-
-		// Move to temp file in installation dir
-		dst, err := os.OpenFile(getFilePath(v)+".new", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
-		if err != nil {
-			return err
-		}
-		tmp.Seek(0, 0)
-		err = writeBinary(dst, tmp, isGzip(v))
-		// Close can report delayed write errors, never install a file that failed to close.
-		if cerr := dst.Close(); err == nil {
-			err = cerr
-		}
-		if err != nil {
-			os.Remove(getFilePath(v) + ".new")
-			return fmt.Errorf("error writing %s: %w", v.GetName(), err)
-		}
-
-		// Do atomic rename to avoid file busy errors
-		err = os.Rename(getFilePath(v)+".new", getFilePath(v))
-		if err != nil {
-			os.Remove(getFilePath(v) + ".new")
+		if err := installAsset(v, release.GetTagName(), checksums); err != nil {
 			return err
 		}
 
@@ -162,6 +111,64 @@ outer:
 	if len(expectedToInstall) > 0 {
 		return fmt.Errorf("Failed to install %s", strings.Join(expectedToInstall, ","))
 	}
+	return nil
+}
+
+// installAsset downloads, validates and installs one release asset.
+func installAsset(v github.ReleaseAsset, version string, checksums map[string]string) error {
+	tmp, err := os.CreateTemp("", "stampzilla")
+	if err != nil {
+		return err
+	}
+	defer func() {
+		tmp.Close()
+		os.Remove(tmp.Name())
+	}()
+
+	// Download the file
+	err = fetch(v, version, tmp)
+	if err != nil {
+		return err
+	}
+
+	// Validate checksum
+	hasher := sha512.New()
+	tmp.Seek(0, 0)
+	if _, err := io.Copy(hasher, tmp); err != nil {
+		return err
+	}
+	checksum := fmt.Sprintf("%x", hasher.Sum(nil))
+	if checksums[v.GetName()] != checksum {
+		logrus.WithFields(logrus.Fields{
+			"expected": checksums[v.GetName()],
+			"got":      checksum,
+		}).Errorf("Wrong checksum for %s", v.GetName())
+		return fmt.Errorf("checksum validation failed")
+	}
+
+	// Move to temp file in installation dir
+	dst, err := os.OpenFile(getFilePath(v)+".new", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	if err != nil {
+		return err
+	}
+	tmp.Seek(0, 0)
+	err = writeBinary(dst, tmp, isGzip(v))
+	// Close can report delayed write errors, never install a file that failed to close.
+	if cerr := dst.Close(); err == nil {
+		err = cerr
+	}
+	if err != nil {
+		os.Remove(getFilePath(v) + ".new")
+		return fmt.Errorf("error writing %s: %w", v.GetName(), err)
+	}
+
+	// Do atomic rename to avoid file busy errors
+	err = os.Rename(getFilePath(v)+".new", getFilePath(v))
+	if err != nil {
+		os.Remove(getFilePath(v) + ".new")
+		return err
+	}
+
 	return nil
 }
 
