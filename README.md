@@ -21,13 +21,14 @@ This creates a stampzilla user. checksout the code in stampzilla user home folde
 
 ### Updating
 
-Update the cli with `stampzilla self-update`
-
-Update nodes with
+Always update the cli first, then the nodes:
 ```
+sudo stampzilla self-update
 sudo stampzilla install -u
 sudo stampzilla restart
 ```
+
+Updating the cli first matters because newer releases can change how the binaries are published. Since the switch to gzip compressed node binaries, a cli older than that release can't find the nodes and fails with `Failed to install ...`.
 
 ### Documentation
 Is work in progress and can be found here:
