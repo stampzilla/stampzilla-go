@@ -34,7 +34,7 @@ func (t *Installer) Install(nodes ...string) error {
 	return download(nodes, func(a github.ReleaseAsset) bool {
 		_, err := os.Stat(getFilePath(a))
 		if err == nil {
-			logrus.Infof("%s already exists. use stampzilla install -u to update", a.GetName())
+			logrus.Infof("%s already exists. use stampzilla install -u to update", getFilePath(a))
 			return true
 		}
 		return false
@@ -45,7 +45,7 @@ func (t *Installer) Update(nodes ...string) error {
 	return download(nodes, func(a github.ReleaseAsset) bool {
 		_, err := os.Stat(getFilePath(a))
 		if os.IsNotExist(err) {
-			logrus.Infof("%s does not exist. use stampzilla install to install", a.GetName())
+			logrus.Infof("%s does not exist. use stampzilla install to install", getFilePath(a))
 			return true
 		}
 		return false
@@ -159,7 +159,7 @@ func installAsset(v github.ReleaseAsset, version string, checksums map[string]st
 	}
 	if err != nil {
 		os.Remove(getFilePath(v) + ".new")
-		return fmt.Errorf("error writing %s: %w", v.GetName(), err)
+		return fmt.Errorf("error writing %s: %w", getFilePath(v), err)
 	}
 
 	// Do atomic rename to avoid file busy errors
