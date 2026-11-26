@@ -2,6 +2,7 @@ package binary
 
 import (
 	"bufio"
+	"compress/gzip"
 	"crypto/sha512"
 	"fmt"
 	"io"
@@ -71,15 +72,16 @@ func download(nodes []string, cb ...func(github.ReleaseAsset) bool) error {
 outer:
 	for _, v := range release.Assets {
 		logrus.Debugf("checking asset: %s %s", v.GetName(), v.GetBrowserDownloadURL())
+		name := binaryName(v)
 		// Skip all with wrong ARCH
-		if !strings.HasSuffix(v.GetName(), runtime.GOOS+"-"+runtime.GOARCH) {
+		if !strings.HasSuffix(name, runtime.GOOS+"-"+runtime.GOARCH) {
 			continue
 		}
 
 		// Skip nodes not requested from command line arguments
 		inNodeList := false
 		for _, n := range nodes {
-			if strings.HasSuffix(v.GetName(), n+"-"+runtime.GOOS+"-"+runtime.GOARCH) {
+			if strings.HasSuffix(name, n+"-"+runtime.GOOS+"-"+runtime.GOARCH) {
 				inNodeList = true
 				break
 			}
@@ -132,9 +134,11 @@ outer:
 			return err
 		}
 		tmp.Seek(0, 0)
-		_, err = io.Copy(dst, tmp)
+		err = writeBinary(dst, tmp, isGzip(v))
+		dst.Close()
 		if err != nil {
-			return err
+			os.Remove(getFilePath(v) + ".new")
+			return fmt.Errorf("error writing %s: %w", v.GetName(), err)
 		}
 
 		// Do atomic rename to avoid file busy errors
@@ -144,7 +148,7 @@ outer:
 		}
 
 		for k, n := range expectedToInstall {
-			if strings.HasSuffix(v.GetName(), n+"-"+runtime.GOOS+"-"+runtime.GOARCH) {
+			if strings.HasSuffix(name, n+"-"+runtime.GOOS+"-"+runtime.GOARCH) {
 				expectedToInstall = append(expectedToInstall[:k], expectedToInstall[k+1:]...)
 				break
 			}
@@ -157,8 +161,32 @@ outer:
 	return nil
 }
 
+// isGzip reports whether the release asset is a gzip compressed binary.
+func isGzip(ra github.ReleaseAsset) bool {
+	return strings.HasSuffix(ra.GetName(), ".gz")
+}
+
+// binaryName returns the asset name without compression suffix, ex stampzilla-server-linux-amd64.
+func binaryName(ra github.ReleaseAsset) string {
+	return strings.TrimSuffix(ra.GetName(), ".gz")
+}
+
+// writeBinary copies src to dst, decompressing it first if compressed is true.
+func writeBinary(dst io.Writer, src io.Reader, compressed bool) error {
+	if compressed {
+		gz, err := gzip.NewReader(src)
+		if err != nil {
+			return err
+		}
+		defer gz.Close()
+		src = gz
+	}
+	_, err := io.Copy(dst, src)
+	return err
+}
+
 func getFilePath(ra github.ReleaseAsset) string {
-	filename := strings.TrimSuffix(ra.GetName(), "-"+runtime.GOOS+"-"+runtime.GOARCH)
+	filename := strings.TrimSuffix(binaryName(ra), "-"+runtime.GOOS+"-"+runtime.GOARCH)
 	return filepath.Join(GetBinPath(), filename)
 }
 

@@ -1,8 +1,10 @@
 package main
 
 import (
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -40,14 +42,16 @@ func main() {
 		log.Println("found RELEASE file", dir.Name())
 
 		release, _ := loadReleaseFromFile(filepath.Join("nodes", dir.Name(), "RELEASE"))
-		build(path, release)
+		build(path, release, true)
 	}
 
+	// The cli is not compressed since older versions of "stampzilla self-update"
+	// and the install instructions in README.md download it by its plain name.
 	fmt.Println("Building stampzilla cli")
-	build("cmd/stampzilla", nil)
+	build("cmd/stampzilla", nil, false)
 }
 
-func build(path string, release *Release) {
+func build(path string, release *Release, compress bool) {
 	for _, goos := range []string{"linux"} {
 		arch := []string{"amd64", "arm", "arm64"}
 		if release != nil && len(release.Arch) > 0 {
@@ -71,16 +75,53 @@ func build(path string, release *Release) {
 				log.Println(string(stdoutStderr))
 				log.Fatal(err)
 			}
+
+			if compress {
+				if err := gzipFile(filepath.Join(dest, binName)); err != nil {
+					log.Fatal(err)
+				}
+			}
 		}
 	}
 	fmt.Printf("done\n")
 }
 
+// gzipFile replaces file with a gzip compressed file named file.gz.
+func gzipFile(file string) error {
+	src, err := os.Open(file)
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	dst, err := os.Create(file + ".gz")
+	if err != nil {
+		return err
+	}
+	defer dst.Close()
+
+	gz, err := gzip.NewWriterLevel(dst, gzip.BestCompression)
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(gz, src); err != nil {
+		return err
+	}
+	if err := gz.Close(); err != nil {
+		return err
+	}
+	if err := dst.Close(); err != nil {
+		return err
+	}
+	return os.Remove(file)
+}
+
 func getArgs(path, binName string) []string {
 	m := []string{
 		"build",
+		"-trimpath",
 		"-ldflags",
-		"-X github.com/stampzilla/stampzilla-go/v2/pkg/build.Version=" + version() + ` -X "github.com/stampzilla/stampzilla-go/v2/pkg/build.BuildTime=` + time.Now().Format(time.RFC3339) + `" -X github.com/stampzilla/stampzilla-go/v2/pkg/build.Commit=` + os.Getenv("GITHUB_SHA"),
+		"-s -w -X github.com/stampzilla/stampzilla-go/v2/pkg/build.Version=" + version() + ` -X "github.com/stampzilla/stampzilla-go/v2/pkg/build.BuildTime=` + time.Now().Format(time.RFC3339) + `" -X github.com/stampzilla/stampzilla-go/v2/pkg/build.Commit=` + os.Getenv("GITHUB_SHA"),
 		"-o",
 		filepath.Join(dest, binName),
 		"./" + path,
