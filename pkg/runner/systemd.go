@@ -134,19 +134,23 @@ func (sd *Systemd) Restart(nodes ...string) error {
 	}
 
 	for _, unit := range toRestart {
-		logrus.Info("Stopping ", unit)
-		_, err := conn.StopUnit(unit, "replace", ch)
+		logrus.Info("Restarting ", unit)
+		_, err := conn.RestartUnit(unit, "replace", ch)
 		if err != nil {
 			return err
 		}
-		<-ch
+		if err := jobResult(unit, <-ch); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
-		logrus.Info("Starting ", unit)
-		_, err = conn.StartUnit(unit, "replace", ch)
-		if err != nil {
-			return err
-		}
-		<-ch
+// jobResult converts the result of a systemd job to an error. The result is
+// "done" on success, otherwise ex "failed", "timeout", "canceled" or "dependency".
+func jobResult(unit, result string) error {
+	if result != "done" {
+		return fmt.Errorf("%s: systemd job %s", unit, result)
 	}
 	return nil
 }
