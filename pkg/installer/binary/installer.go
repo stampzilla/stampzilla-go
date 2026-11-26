@@ -135,7 +135,10 @@ outer:
 		}
 		tmp.Seek(0, 0)
 		err = writeBinary(dst, tmp, isGzip(v))
-		dst.Close()
+		// Close can report delayed write errors, never install a file that failed to close.
+		if cerr := dst.Close(); err == nil {
+			err = cerr
+		}
 		if err != nil {
 			os.Remove(getFilePath(v) + ".new")
 			return fmt.Errorf("error writing %s: %w", v.GetName(), err)
@@ -144,6 +147,7 @@ outer:
 		// Do atomic rename to avoid file busy errors
 		err = os.Rename(getFilePath(v)+".new", getFilePath(v))
 		if err != nil {
+			os.Remove(getFilePath(v) + ".new")
 			return err
 		}
 
