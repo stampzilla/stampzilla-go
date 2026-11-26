@@ -31,7 +31,7 @@ func (t *Installer) Install(nodes ...string) error {
 	if len(nodes) == 0 {
 		return fmt.Errorf("Please specify which nodes you like to install. (ex 'stampzilla install server example')")
 	}
-	return download(nodes, func(a github.ReleaseAsset) bool {
+	return downloadVersions(nodes, func(a github.ReleaseAsset) bool {
 		_, err := os.Stat(getFilePath(a))
 		if err == nil {
 			logrus.Infof("%s already exists. use stampzilla update to update", getFilePath(a))
@@ -42,7 +42,7 @@ func (t *Installer) Install(nodes ...string) error {
 }
 
 func (t *Installer) Update(nodes ...string) error {
-	return download(nodes, func(a github.ReleaseAsset) bool {
+	return downloadVersions(nodes, func(a github.ReleaseAsset) bool {
 		_, err := os.Stat(getFilePath(a))
 		if os.IsNotExist(err) {
 			logrus.Infof("%s does not exist. use stampzilla install to install", getFilePath(a))
@@ -52,9 +52,49 @@ func (t *Installer) Update(nodes ...string) error {
 	})
 }
 
+// SplitVersion splits a node argument like "tibber@v2.9.0" into name and
+// release version. The version is empty if none was given, which means latest.
+func SplitVersion(node string) (name, version string) {
+	name, version, _ = strings.Cut(node, "@")
+	if version != "" && !strings.HasPrefix(version, "v") {
+		version = "v" + version
+	}
+	return name, version
+}
+
+// groupByVersion groups node names by requested release version, keeping
+// the order in which versions first appear.
+func groupByVersion(nodes []string) ([]string, map[string][]string) {
+	versions := []string{}
+	groups := make(map[string][]string)
+	for _, n := range nodes {
+		name, version := SplitVersion(n)
+		if _, ok := groups[version]; !ok {
+			versions = append(versions, version)
+		}
+		groups[version] = append(groups[version], name)
+	}
+	return versions, groups
+}
+
+// downloadVersions downloads nodes, each from its requested release (ex tibber@v2.9.0) or the latest one.
+func downloadVersions(nodes []string, cb ...func(github.ReleaseAsset) bool) error {
+	if len(nodes) == 0 {
+		return download("", nil, cb...)
+	}
+	versions, groups := groupByVersion(nodes)
+	for _, version := range versions {
+		if err := download(version, groups[version], cb...); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // Download downloads a file and takes a callback. If callback returns true, skip download.
-func download(nodes []string, cb ...func(github.ReleaseAsset) bool) error {
-	release, err := GetLatestRelease()
+// An empty version means the latest release.
+func download(version string, nodes []string, cb ...func(github.ReleaseAsset) bool) error {
+	release, err := getRelease(version)
 	if err != nil {
 		return err
 	}

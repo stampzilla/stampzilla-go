@@ -8,6 +8,25 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// getRelease returns the release with the given tag, or the latest release if version is empty.
+func getRelease(version string) (*github.RepositoryRelease, error) {
+	if version == "" {
+		return GetLatestRelease()
+	}
+
+	client := github.NewClient(nil)
+	r, _, err := client.Repositories.GetReleaseByTag(context.Background(), "stampzilla", "stampzilla-go", version)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching release %s from github.com: %w", version, err)
+	}
+	for _, a := range r.Assets {
+		if a.GetName() == "checksum" {
+			return r, nil
+		}
+	}
+	return nil, fmt.Errorf("release %s has no binaries", version)
+}
+
 // GetLatestRelease returns the newest published release that has binaries attached.
 func GetLatestRelease() (*github.RepositoryRelease, error) {
 	client := github.NewClient(nil)

@@ -97,13 +97,13 @@ func main() {
 		{
 			Name:    "install",
 			Aliases: []string{"i"},
-			Usage:   "Downloads and installs stampzilla nodes from precompiled binaries. ex: stampzilla install server deconz",
+			Usage:   "Downloads and installs stampzilla nodes from precompiled binaries. ex: stampzilla install server deconz@v2.9.1",
 			Action:  (cliHandler.Install),
 		},
 		{
 			Name:    "update",
 			Aliases: []string{"u"},
-			Usage:   "Updates installed nodes to the latest release and restarts the running ones. If none is specified, all installed nodes are updated",
+			Usage:   "Updates installed nodes to the latest release, or a specific one with node@version, and restarts the running ones. If none is specified, all installed nodes are updated",
 			Action:  (cliHandler.Update),
 		},
 		{

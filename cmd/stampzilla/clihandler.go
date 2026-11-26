@@ -138,8 +138,13 @@ func (t *cliHandler) runInstaller(c *cli.Context, i installer.Installer, update 
 	}
 
 	// Restart the updated nodes that are running so they use the new binary.
-	// Stopped nodes are left stopped.
-	return r.Restart(c.Args().Slice()...)
+	// Stopped nodes are left stopped. Strip @version since units are named without it.
+	toRestart := []string{}
+	for _, n := range c.Args().Slice() {
+		name, _ := binary.SplitVersion(n)
+		toRestart = append(toRestart, name)
+	}
+	return r.Restart(toRestart...)
 }
 
 func (t *cliHandler) Start(c *cli.Context) error {
