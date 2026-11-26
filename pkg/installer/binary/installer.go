@@ -202,7 +202,7 @@ func getFilePath(ra github.ReleaseAsset) string {
 }
 
 func fetch(v github.ReleaseAsset, version string, file *os.File) error {
-	logrus.Infof("Downloading %s@%s from github.com", v.GetName(), version)
+	logrus.Infof("Downloading %s@%s from github.com", filepath.Base(getFilePath(v)), version)
 	resp, err := http.Get(v.GetBrowserDownloadURL())
 	if err != nil {
 		return err
