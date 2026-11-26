@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"text/tabwriter"
+	"time"
 
 	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/dustin/go-humanize"
@@ -133,6 +134,7 @@ func (sd *Systemd) Restart(nodes ...string) error {
 		}
 	}
 
+	pids := make(map[string]uint32)
 	for _, unit := range toRestart {
 		logrus.Info("Restarting ", unit)
 		_, err := conn.RestartUnit(unit, "replace", ch)
@@ -142,6 +144,78 @@ func (sd *Systemd) Restart(nodes ...string) error {
 		if err := jobResult(unit, <-ch); err != nil {
 			return err
 		}
+		pids[unit], err = sd.mainPID(unit)
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(toRestart) == 0 {
+		return nil
+	}
+
+	// A crashing node still gives a successful restart job since the units are
+	// Type=simple. Wait a moment and verify that the units are still running.
+	logrus.Infof("Waiting %s to verify that restarted nodes keep running", restartCheckDelay)
+	time.Sleep(restartCheckDelay)
+
+	failed := []string{}
+	for _, unit := range toRestart {
+		state, err := sd.unitState(unit)
+		if err != nil {
+			return err
+		}
+		if err := checkRunning(unit, pids[unit], state); err != nil {
+			logrus.Error(err)
+			failed = append(failed, unit)
+		}
+	}
+	if len(failed) > 0 {
+		return fmt.Errorf("not running after restart: %s (see stampzilla log <node>)", strings.Join(failed, ", "))
+	}
+	return nil
+}
+
+// restartCheckDelay is how long Restart waits before verifying that restarted units keep running.
+var restartCheckDelay = 3 * time.Second
+
+type unitState struct {
+	ActiveState string
+	SubState    string
+	MainPID     uint32
+}
+
+func (sd *Systemd) mainPID(unit string) (uint32, error) {
+	p, err := sd.dbus().GetUnitTypeProperty(unit, "Service", "MainPID")
+	if err != nil {
+		return 0, err
+	}
+	pid, _ := p.Value.Value().(uint32)
+	return pid, nil
+}
+
+func (sd *Systemd) unitState(unit string) (unitState, error) {
+	props, err := sd.dbus().GetUnitProperties(unit)
+	if err != nil {
+		return unitState{}, err
+	}
+	pid, err := sd.mainPID(unit)
+	if err != nil {
+		return unitState{}, err
+	}
+	active, _ := props["ActiveState"].(string)
+	sub, _ := props["SubState"].(string)
+	return unitState{ActiveState: active, SubState: sub, MainPID: pid}, nil
+}
+
+// checkRunning returns an error if the unit is not running, or has been
+// restarted by systemd (new main pid) since startedPID was read.
+func checkRunning(unit string, startedPID uint32, s unitState) error {
+	if s.ActiveState != "active" || s.SubState != "running" {
+		return fmt.Errorf("%s is %s (%s) after restart", unit, s.ActiveState, s.SubState)
+	}
+	if startedPID != 0 && s.MainPID != startedPID {
+		return fmt.Errorf("%s crashed and was restarted by systemd (pid %d -> %d)", unit, startedPID, s.MainPID)
 	}
 	return nil
 }

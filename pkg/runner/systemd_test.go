@@ -13,3 +13,15 @@ func TestJobResult(t *testing.T) {
 		assert.EqualError(t, err, "stampzilla-tibber.service: systemd job "+r)
 	}
 }
+
+func TestCheckRunning(t *testing.T) {
+	u := "stampzilla-tibber.service"
+	assert.NoError(t, checkRunning(u, 100, unitState{"active", "running", 100}))
+
+	assert.EqualError(t, checkRunning(u, 100, unitState{"activating", "auto-restart", 0}),
+		u+" is activating (auto-restart) after restart")
+	assert.EqualError(t, checkRunning(u, 100, unitState{"failed", "failed", 0}),
+		u+" is failed (failed) after restart")
+	assert.EqualError(t, checkRunning(u, 100, unitState{"active", "running", 200}),
+		u+" crashed and was restarted by systemd (pid 100 -> 200)")
+}
