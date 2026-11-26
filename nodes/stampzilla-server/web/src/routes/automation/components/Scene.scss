@@ -14,13 +14,13 @@
     color: #999;
 
     .trait {
-      filter: blur(2px);
+      opacity: 0.4;
     }
     .selected {
       color: #000;
 
       .trait {
-        filter: none;
+        opacity: 1;
       }
     }
   }
