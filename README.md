@@ -7,9 +7,9 @@ Awesome homeautomation software written in Go and React
 
 Installation from precompiled binaries
 ```bash
-sudo curl -fsSL -o /usr/local/bin/stampzilla https://github.com/stampzilla/stampzilla-go/releases/latest/download/stampzilla-linux-$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/;s/armv.*/arm/') && sudo chmod +x /usr/local/bin/stampzilla && sudo stampzilla install server deconz
+sudo curl -fsSL -o /usr/local/bin/stampzilla https://github.com/stampzilla/stampzilla-go/releases/latest/download/stampzilla-linux-$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/;s/armv.*/arm/') && sudo chmod +x /usr/local/bin/stampzilla && sudo stampzilla install server
 ```
-This downloads the cli for your architecture (amd64, arm64 or arm) and installs the server and the deconz node. Replace `server deconz` with the nodes you want.
+This downloads the cli for your architecture (amd64, arm64 or arm) and installs the server. Add nodes later with for example `sudo stampzilla install deconz`.
 
 Installation from source
 ```bash
