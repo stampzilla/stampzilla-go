@@ -2,10 +2,10 @@ package binary
 
 import (
 	"bufio"
+	"compress/gzip"
 	"crypto/sha512"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -34,7 +34,7 @@ func (t *Installer) Install(nodes ...string) error {
 	return download(nodes, func(a github.ReleaseAsset) bool {
 		_, err := os.Stat(getFilePath(a))
 		if err == nil {
-			logrus.Infof("%s already exists. use stampzilla install -u to update", a.GetName())
+			logrus.Infof("%s already exists. use stampzilla install -u to update", getFilePath(a))
 			return true
 		}
 		return false
@@ -45,7 +45,7 @@ func (t *Installer) Update(nodes ...string) error {
 	return download(nodes, func(a github.ReleaseAsset) bool {
 		_, err := os.Stat(getFilePath(a))
 		if os.IsNotExist(err) {
-			logrus.Infof("%s does not exist. use stampzilla install to install", a.GetName())
+			logrus.Infof("%s does not exist. use stampzilla install to install", getFilePath(a))
 			return true
 		}
 		return false
@@ -71,15 +71,16 @@ func download(nodes []string, cb ...func(github.ReleaseAsset) bool) error {
 outer:
 	for _, v := range release.Assets {
 		logrus.Debugf("checking asset: %s %s", v.GetName(), v.GetBrowserDownloadURL())
+		name := binaryName(v)
 		// Skip all with wrong ARCH
-		if !strings.HasSuffix(v.GetName(), runtime.GOOS+"-"+runtime.GOARCH) {
+		if !strings.HasSuffix(name, runtime.GOOS+"-"+runtime.GOARCH) {
 			continue
 		}
 
 		// Skip nodes not requested from command line arguments
 		inNodeList := false
 		for _, n := range nodes {
-			if strings.HasSuffix(v.GetName(), n+"-"+runtime.GOOS+"-"+runtime.GOARCH) {
+			if strings.HasSuffix(name, n+"-"+runtime.GOOS+"-"+runtime.GOARCH) {
 				inNodeList = true
 				break
 			}
@@ -95,56 +96,12 @@ outer:
 			}
 		}
 
-		//
-		tmp, err := ioutil.TempFile("", "stampzilla")
-		if err != nil {
-			return err
-		}
-		defer func() {
-			tmp.Close()
-			os.Remove(tmp.Name())
-		}()
-
-		// Download the file
-		err = fetch(v, release.GetTagName(), tmp)
-		if err != nil {
-			return err
-		}
-
-		// Validate checksum
-		hasher := sha512.New()
-		tmp.Seek(0, 0)
-		if _, err := io.Copy(hasher, tmp); err != nil {
-			return err
-		}
-		checksum := fmt.Sprintf("%x", hasher.Sum(nil))
-		if checksums[v.GetName()] != checksum {
-			logrus.WithFields(logrus.Fields{
-				"expected": checksums[v.GetName()],
-				"got":      checksum,
-			}).Errorf("Wrong checksum for %s", v.GetName())
-			return fmt.Errorf("checksum validation failed")
-		}
-
-		// Move to temp file in installation dir
-		dst, err := os.OpenFile(getFilePath(v)+".new", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
-		if err != nil {
-			return err
-		}
-		tmp.Seek(0, 0)
-		_, err = io.Copy(dst, tmp)
-		if err != nil {
-			return err
-		}
-
-		// Do atomic rename to avoid file busy errors
-		err = os.Rename(getFilePath(v)+".new", getFilePath(v))
-		if err != nil {
+		if err := installAsset(v, release.GetTagName(), checksums); err != nil {
 			return err
 		}
 
 		for k, n := range expectedToInstall {
-			if strings.HasSuffix(v.GetName(), n+"-"+runtime.GOOS+"-"+runtime.GOARCH) {
+			if strings.HasSuffix(name, n+"-"+runtime.GOOS+"-"+runtime.GOARCH) {
 				expectedToInstall = append(expectedToInstall[:k], expectedToInstall[k+1:]...)
 				break
 			}
@@ -157,8 +114,90 @@ outer:
 	return nil
 }
 
+// installAsset downloads, validates and installs one release asset.
+func installAsset(v github.ReleaseAsset, version string, checksums map[string]string) error {
+	tmp, err := os.CreateTemp("", "stampzilla")
+	if err != nil {
+		return err
+	}
+	defer func() {
+		tmp.Close()
+		os.Remove(tmp.Name())
+	}()
+
+	// Download the file
+	err = fetch(v, version, tmp)
+	if err != nil {
+		return err
+	}
+
+	// Validate checksum
+	hasher := sha512.New()
+	tmp.Seek(0, 0)
+	if _, err := io.Copy(hasher, tmp); err != nil {
+		return err
+	}
+	checksum := fmt.Sprintf("%x", hasher.Sum(nil))
+	if checksums[v.GetName()] != checksum {
+		logrus.WithFields(logrus.Fields{
+			"expected": checksums[v.GetName()],
+			"got":      checksum,
+		}).Errorf("Wrong checksum for %s", v.GetName())
+		return fmt.Errorf("checksum validation failed")
+	}
+
+	// Move to temp file in installation dir
+	dst, err := os.OpenFile(getFilePath(v)+".new", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	if err != nil {
+		return err
+	}
+	tmp.Seek(0, 0)
+	err = writeBinary(dst, tmp, isGzip(v))
+	// Close can report delayed write errors, never install a file that failed to close.
+	if cerr := dst.Close(); err == nil {
+		err = cerr
+	}
+	if err != nil {
+		os.Remove(getFilePath(v) + ".new")
+		return fmt.Errorf("error writing %s: %w", getFilePath(v), err)
+	}
+
+	// Do atomic rename to avoid file busy errors
+	err = os.Rename(getFilePath(v)+".new", getFilePath(v))
+	if err != nil {
+		os.Remove(getFilePath(v) + ".new")
+		return err
+	}
+
+	return nil
+}
+
+// isGzip reports whether the release asset is a gzip compressed binary.
+func isGzip(ra github.ReleaseAsset) bool {
+	return strings.HasSuffix(ra.GetName(), ".gz")
+}
+
+// binaryName returns the asset name without compression suffix, ex stampzilla-server-linux-amd64.
+func binaryName(ra github.ReleaseAsset) string {
+	return strings.TrimSuffix(ra.GetName(), ".gz")
+}
+
+// writeBinary copies src to dst, decompressing it first if compressed is true.
+func writeBinary(dst io.Writer, src io.Reader, compressed bool) error {
+	if compressed {
+		gz, err := gzip.NewReader(src)
+		if err != nil {
+			return err
+		}
+		defer gz.Close()
+		src = gz
+	}
+	_, err := io.Copy(dst, src)
+	return err
+}
+
 func getFilePath(ra github.ReleaseAsset) string {
-	filename := strings.TrimSuffix(ra.GetName(), "-"+runtime.GOOS+"-"+runtime.GOARCH)
+	filename := strings.TrimSuffix(binaryName(ra), "-"+runtime.GOOS+"-"+runtime.GOARCH)
 	return filepath.Join(GetBinPath(), filename)
 }
 
