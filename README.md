@@ -23,9 +23,11 @@ This creates a stampzilla user. checksout the code in stampzilla user home folde
 Always update the cli first, then the nodes:
 ```
 sudo stampzilla self-update
-sudo stampzilla install -u
-sudo stampzilla restart
+sudo stampzilla update
 ```
+`stampzilla update` updates all installed nodes and restarts the ones that are running. Update specific nodes with for example `sudo stampzilla update server tibber`.
+
+Add `@version` to install, upgrade or downgrade a node to a specific release, for example `sudo stampzilla update tibber@v2.9.1`. A later `stampzilla update` without a version moves it back to the latest release.
 
 Updating the cli first matters because newer releases can change how the binaries are published. Since the switch to gzip compressed node binaries, a cli older than that release can't find the nodes and fails with `Failed to install ...`.
 

@@ -49,3 +49,26 @@ func TestWriteBinary(t *testing.T) {
 	// Not gzip data
 	assert.Error(t, writeBinary(&out, bytes.NewReader(content), true))
 }
+
+func TestSplitVersion(t *testing.T) {
+	tests := []struct{ in, name, version string }{
+		{"tibber", "tibber", ""},
+		{"stampzilla-tibber", "stampzilla-tibber", ""},
+		{"tibber@v2.9.0", "tibber", "v2.9.0"},
+		{"tibber@2.9.0", "tibber", "v2.9.0"},
+		{"tibber@", "tibber", ""},
+	}
+	for _, tt := range tests {
+		name, version := SplitVersion(tt.in)
+		assert.Equal(t, tt.name, name, tt.in)
+		assert.Equal(t, tt.version, version, tt.in)
+	}
+}
+
+func TestGroupByVersion(t *testing.T) {
+	versions, groups := groupByVersion([]string{"server", "tibber@v2.9.0", "deconz", "wled@v2.9.0", "knx@v2.8.2"})
+	assert.Equal(t, []string{"", "v2.9.0", "v2.8.2"}, versions)
+	assert.Equal(t, []string{"server", "deconz"}, groups[""])
+	assert.Equal(t, []string{"tibber", "wled"}, groups["v2.9.0"])
+	assert.Equal(t, []string{"knx"}, groups["v2.8.2"])
+}
